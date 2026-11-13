@@ -1,11 +1,11 @@
 {
  "what": "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py; do not edit by hand",
  "meta": {
-  "date": "2026-10-31",
-  "host": "AMD EPYC 9754, shared host, cores 128-223 without SMT siblings: milestone m1031-msm's G1 on 2026-10-31 (07:31-09:19 UTC), at most one job per CCX of 8 cores, each on the least busy core of a CCX whose least busy core was below 50 % busy (g g > g g g g g FC on the reserved CCX 216-223; cores per record: host_cpus); host load average 186-344 (other users' processes and the milestone's whole-suite gate and campaign ran at the same time); timings indicative (user 2026-10-28), one round, no repeats for contention",
+  "date": "2026-11-11",
+  "host": "AMD EPYC 9754, shared host: the final G1 re-time (lit-report R3) on 2026-11-11 (01:23-04:29 UTC), 10 units on cores 0, 24, 27, 83, 125, 126, 129, 138, 223, 243 (one per idle physical core at launch), concurrent with the Table 2 re-time; host state per step (r3 progress-*.jsonl): load 260-16037, MemAvailable >= 226 GiB, the timed core busy <= 1.00 before a step, its SMT sibling <= 1.00",
   "gate_factor": 1.3,
-  "engine_on_loop": "c8885cc5",
-  "native_build_on_loop": "loop-native-v2-slice-e0a8375c",
+  "engine_on_loop": "524e6cfa",
+  "native_build_on_loop": "loop-native-v2-slice-678c4749",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
@@ -23,19 +23,19 @@
      "basis": "git merge-base --is-ancestor 0ea83af2 6f5a64cc (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 71e2041e",
+     "newer": "integrated 524e6cfa",
      "older": "development_records 0ea83af2",
-     "basis": "git merge-base --is-ancestor 0ea83af2 71e2041e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 0ea83af2 524e6cfa (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 71e2041e",
+     "newer": "integrated 524e6cfa",
      "older": "development_records 6f5a64cc",
-     "basis": "git merge-base --is-ancestor 6f5a64cc 71e2041e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 6f5a64cc 524e6cfa (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 71e2041e",
+     "newer": "integrated 524e6cfa",
      "older": "development_records fef92189",
-     "basis": "git merge-base --is-ancestor fef92189 71e2041e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor fef92189 524e6cfa (milestone.json ancestry)"
     }
    ],
    "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, GENERATION_RULE, Recency; ancestry: milestone.json ancestry"
@@ -44,10 +44,11 @@
    "integrated": {
     "kind": "g1",
     "label": "on loop",
-    "revision": "71e2041e",
-    "lc_revision": "71e2041e",
-    "native_build": "loop-native-v2-slice-71e2041e",
-    "date": "2026-10-31",
+    "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+    "lc_revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+    "native_build": "loop-native-v2-slice-678c4749",
+    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+    "date": "2026-11-11",
     "inputs": [
      "native"
     ],
@@ -142,7 +143,7 @@
       "gg_ggggg"
      ]
     },
-    "source": "g1.json slice_revision, slice_lc_revision, slice_build, date; the EW rows of msm-g1.json (gg_ttxemepg_ew, same engine)"
+    "source": "g1.json slice_revision, slice_lc_revision, slice_build, slice_native_digest, date; the EW rows of msm-g1.json (gg_ttxemepg_ew, same engine)"
    },
    "development_records": {
     "kind": "records",
@@ -222,11 +223,74 @@
       8
      ],
      "tolerance": 2e-08,
-     "label": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
-     "short": "accepted (user 2026-10-25)",
-     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points"
+     "label": "accepted: binary64 within the estimate, DD = NJet",
+     "short": "accepted",
+     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points; at the final retime (M-LIT-a0, ca602436) the binary64 deviations are 1.5e-7 (point 4) and 2.6e-8 (point 8), still the only points above the tolerance, within E (1.5e-6 and 3.4e-7) and with pyAmpliCol's double-double values equal to NJet's: the binary64 values moved with the accepted rounding-level changes since M-SM (g1.json values_note), amplified at these conditioned points; below the user's lax precision rule (~1e-5)"
     }
    ]
+  },
+  "provider_protocols": [
+   "optimistic",
+   "production"
+  ],
+  "provider_points": {
+   "madloop": [
+    8,
+    16
+   ],
+   "openloops": [
+    8,
+    16
+   ],
+   "recola": [
+    6,
+    6
+   ]
+  },
+  "provider_kept": "gg_gggg recola (its optimistic run stopped as hopeless after 88 min under the 45-minute rule (HANDOFF 0.1): still in Recola's generation / first call at ~51 % of its core); uux_ggggg madloop (its recorded generation / initial call 6006 s: beyond the 45-minute rule, HANDOFF 0.1); uux_ggggg recola (its recorded generation / initial call 10220 s: beyond the 45-minute rule, HANDOFF 0.1)",
+  "report": {
+   "date": "2026-11-12",
+   "head": "524e6cfa",
+   "table1": "524e6cfa",
+   "table2": "524e6cfa",
+   "provenance": {
+    "shipped": {
+     "version": "1.0.3",
+     "revision": "779f4931",
+     "dependencies": {
+      "TIRust": "bc94b496",
+      "NinjaRS": "5fe7f392",
+      "oneloopmaster": "bd703d09",
+      "Symbolica": "dfe6bd97"
+     }
+    },
+    "timed": {
+     "revision": "524e6cfa",
+     "dependencies": {
+      "TIRust": "fefb5f2b",
+      "NinjaRS": "71eddb15",
+      "oneloopmaster": "bd703d09",
+      "Symbolica": "dfe6bd97"
+     }
+    },
+    "timing_check": "the times are the same at the shipped commit (paired same-core check on two rows, B = 128: \u00d70.98 and \u00d71.01, within the timing noise), and Table 3's loop-induced agreement check is measured there.",
+    "older": [
+     {
+      "what": "Table 3's Born-interfered agreement check",
+      "date": "2026-11-08"
+     },
+     {
+      "what": "the validation of the loop-induced processes where TIRust served every point (not re-run)",
+      "date": "2026-11-08"
+     },
+     {
+      "what": "the double-double and arbitrary-precision checks of g g \u2192 a a g g, g g \u2192 h g g g, g g \u2192 h h g g and g g \u2192 z z z z (multi-hour, not re-run)",
+      "date": "2026-11-08"
+     }
+    ],
+    "source": "dependencies/manifest.json at 779f4931 and 524e6cfa (NinjaRS 71eddb15 and 5fe7f392 have the same source tree); timing check: report3 (tmp/report3/ab: 3 alternating rounds, natives loop-native-v2-slice-678c4749 and loop-native-v2-slice-779f4931); agreement check: lit-val's records re-run at 779f4931 by report3"
+   },
+   "source": "milestone.json date and provenance; the newest revision of the measured cells of summary.json and summary-li.json (git ancestry: milestone.json ancestry)"
   }
  },
  "groups": [
@@ -256,42 +320,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 6.71083819543108e-13,
-        "median_finite": 9.91465254499107e-15,
+        "max_finite": 1.280780452633965e-12,
+        "median_finite": 2.365229412572033e-14,
         "worst_point": 4
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 3.0829006137430657e-13,
-        "median_finite": 1.824758459850819e-14,
-        "worst_point": 4
+        "points": 6,
+        "max_finite": 1.0266110405216225e-13,
+        "median_finite": 1.6461811137517965e-14,
+        "worst_point": 6
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 2.9790840484193607e-13,
-        "median_finite": 1.0452864468746435e-14,
+        "max_finite": 3.0061666306786144e-13,
+        "median_finite": 6.037520733979422e-15,
         "worst_point": 4
        }
       ],
-      "max_finite": 6.71083819543108e-13,
-      "median_finite": 1.824758459850819e-14,
+      "max_finite": 1.280780452633965e-12,
+      "median_finite": 2.365229412572033e-14,
       "source": "g1.json processes[gg_gg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 4,
-       "estimate": 5.064935108506371e-12,
+       "estimate": 3.846628696163974e-12,
        "within_estimate": true,
        "dd_closest": 9.399912925506945e-14,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[gg_gg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -299,24 +363,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 7.628886199789122,
-       "generate_s": 5.9024044189136475,
-       "export_s": 1.7264817808754742,
-       "model_s": 2.953090737108141,
-       "peak_gib": 0.578,
-       "plan_mb": 0.305,
+       "seconds": 9.321927360724658,
+       "generate_s": 8.798909560777247,
+       "export_s": 0.5230177999474108,
+       "model_s": 3.3246057596988976,
+       "peak_gib": 0.575,
+       "plan_mb": 0.024,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 53.622491241733805,
+       "ratio_to_fastest": 36.11494213726607,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -327,7 +391,7 @@
         "compile_s": 2.794095706078224
        },
        "recola": {
-        "seconds": 0.142270268
+        "seconds": 0.258118297
        },
        "openloops": {
         "prebuilt": "ppjj"
@@ -336,7 +400,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.142270268
+       "seconds": 0.258118297
       },
       "source": "g1.json processes[gg_gg].providers (MadLoop generation, Recola setup)"
      },
@@ -345,27 +409,27 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0015202308113657637,
-       "uncertainty": 0.015154524929746607,
+       "seconds_per_point": 0.0014394078243640251,
+       "uncertainty": 0.05636969747714019,
        "stages": {
-        "inputs": 0.0001802614453125,
-        "numerator": 0.0008538628906249999,
-        "scatter": 7.182255468750001e-05,
-        "ninjars": 0.00011992029687499998,
-        "masters": 4.1848976562500004e-05,
-        "glue": 0.00025491780351474683,
+        "inputs": 0.0002406350546875,
+        "numerator": 0.0005730452421875,
+        "scatter": 8.714255468750002e-05,
+        "ninjars": 0.00016245385937499997,
+        "masters": 5.273403906250001e-05,
+        "glue": 0.00022893494000449967,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.7519726696297956,
+       "ratio_to_fastest": 0.6758674850363005,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -373,28 +437,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.002021657,
+        "seconds_per_point": 0.0021297190000000004,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.0100246345,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.018924768,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.003200296,
+        "seconds_per_point": 0.0076065515,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjj"
        }
       },
       "fastest": {
        "name": "MadLoop",
        "key": "madloop",
-       "seconds_per_point": 0.002021657
+       "seconds_per_point": 0.0021297190000000004
       },
       "source": "g1.json processes[gg_gg].providers (median s/pt)"
      },
@@ -402,20 +469,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0006571391950274119,
+       "seconds_per_point": 0.0009086971131182509,
        "schedule": "B",
        "families": 12,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0015202308113657637,
-       "lc_over_fc": 0.43226277885858866,
+       "fc_seconds_per_point": 0.0014394078243640251,
+       "lc_over_fc": 0.6312992730324648,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -451,52 +518,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 6.675644361275736e-13,
-        "median_finite": 5.5685773736309785e-14,
+        "max_finite": 4.4856822041184317e-13,
+        "median_finite": 3.2693125503801015e-14,
         "worst_point": 9
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 3.2770312228115884e-10,
-        "median_finite": 8.707642041040554e-14,
-        "worst_point": 1
+        "points": 6,
+        "max_finite": 2.999833070097518e-12,
+        "median_finite": 6.850754083010383e-14,
+        "worst_point": 0
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 6.684194347379823e-13,
-        "median_finite": 3.05212421165652e-14,
-        "worst_point": 1
+        "max_finite": 7.899185333262633e-13,
+        "median_finite": 4.7195689349418255e-14,
+        "worst_point": 2
        }
       ],
-      "max_finite": 3.2770312228115884e-10,
-      "median_finite": 8.707642041040554e-14,
+      "max_finite": 2.999833070097518e-12,
+      "median_finite": 6.850754083010383e-14,
       "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].values_vs_providers",
-      "worst_point": {
-       "index": 1,
-       "estimate": 7.811027055973921e-12,
-       "within_estimate": false,
-       "dd_closest": 3.188177722534943e-13,
-       "revision": "71e2041e",
-       "source": "g1.json processes[uux_ddxg].stability (native/full)",
-       "reference_own": {
-        "key": "recola",
-        "short": "Rc",
-        "dd_deviation": 3.2750291935874243e-10,
-        "dd_estimate": 1.0823463007137027e-27,
-        "independent": {
-         "key": "madloop",
-         "dd_deviation": 3.188177722534943e-13
-        }
-       }
-      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -504,24 +553,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 8.064984941156581,
-       "generate_s": 5.947815736057237,
-       "export_s": 2.1171692050993443,
-       "model_s": 3.027482593199238,
-       "peak_gib": 0.583,
-       "plan_mb": 0.282,
+       "seconds": 10.371832732576877,
+       "generate_s": 9.129994697868824,
+       "export_s": 1.2418380347080529,
+       "model_s": 4.1861812570132315,
+       "peak_gib": 0.579,
+       "plan_mb": 0.03,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 19.854802997597297,
+       "ratio_to_fastest": 13.248759561786501,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -532,7 +581,7 @@
         "compile_s": 3.0366066900314763
        },
        "recola": {
-        "seconds": 0.406198185
+        "seconds": 0.782853118
        },
        "openloops": {
         "prebuilt": "ppjjj"
@@ -541,7 +590,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.406198185
+       "seconds": 0.782853118
       },
       "source": "g1.json processes[uux_ddxg].providers (MadLoop generation, Recola setup)"
      },
@@ -550,32 +599,32 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0019613645872595953,
-       "uncertainty": 0.021785364955156452,
+       "seconds_per_point": 0.0030165327589202207,
+       "uncertainty": 0.00773603811666432,
        "stages": {
-        "inputs": 8.3690421875e-05,
-        "numerator": 0.0007856517734375001,
-        "scatter": 0.00040657040624999987,
-        "ninjars": 0.00015354316406249996,
-        "masters": 0.0001287719140625,
-        "glue": 0.00040462919788409116,
+        "inputs": 0.0001709314921875,
+        "numerator": 0.001010812109375,
+        "scatter": 0.0006570037343749998,
+        "ninjars": 0.0003274951171875,
+        "masters": 0.00021764421874999996,
+        "glue": 0.0006135793895466813,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 1.2943366221979342,
+       "ratio_to_fastest": 0.8370006481503417,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.9956435555368726,
+        "ratio_to_limit": 0.6438466524233398,
         "band": [
-         0.9635338975797927,
-         1.0277532134939524
+         0.58990207264915,
+         0.6977912321975297
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.0019699465499999997,
-        "measured_status": "open",
+        "limit_seconds": 0.0046851727,
+        "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
         "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
@@ -584,7 +633,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -592,28 +641,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.0031719975,
+        "seconds_per_point": 0.0059309294999999995,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.0031816020000000004,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.005857409500000001,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.0015153435,
+        "seconds_per_point": 0.003603979,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.0015153435
+       "seconds_per_point": 0.003603979
       },
       "source": "g1.json processes[uux_ddxg].providers (median s/pt)"
      },
@@ -621,20 +673,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.001245123115950264,
+       "seconds_per_point": 0.0020326361027400708,
        "schedule": "B",
        "families": 27,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0019613645872595953,
-       "lc_over_fc": 0.6348249193638911,
+       "fc_seconds_per_point": 0.0030165327589202207,
+       "lc_over_fc": 0.6738319339411585,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -665,52 +717,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.443747572472725e-12,
-        "median_finite": 3.688641071201554e-14,
+        "max_finite": 5.46100080764226e-12,
+        "median_finite": 6.325775884668576e-14,
         "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 7.183915256842913e-11,
-        "median_finite": 1.6697387046793994e-13,
-        "worst_point": 1
+        "points": 6,
+        "max_finite": 6.029737689508766e-12,
+        "median_finite": 1.7100896675588957e-13,
+        "worst_point": 0
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 6.149326984134708e-12,
-        "median_finite": 2.514904050167193e-14,
-        "worst_point": 13
+        "max_finite": 1.3935928138218636e-12,
+        "median_finite": 1.7961257333006285e-14,
+        "worst_point": 6
        }
       ],
-      "max_finite": 7.183915256842913e-11,
-      "median_finite": 1.6697387046793994e-13,
+      "max_finite": 6.029737689508766e-12,
+      "median_finite": 1.7100896675588957e-13,
       "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].values_vs_providers",
-      "worst_point": {
-       "index": 1,
-       "estimate": 7.918161179875604e-12,
-       "within_estimate": false,
-       "dd_closest": 2.428328642024099e-13,
-       "revision": "71e2041e",
-       "source": "g1.json processes[uux_uuxg].stability (native/full)",
-       "reference_own": {
-        "key": "recola",
-        "short": "Rc",
-        "dd_deviation": 7.146208078913632e-11,
-        "dd_estimate": 7.384581540757834e-28,
-        "independent": {
-         "key": "madloop",
-         "dd_deviation": 2.428328642024099e-13
-        }
-       }
-      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -718,24 +752,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 8.029931666096672,
-       "generate_s": 5.933856708928943,
-       "export_s": 2.0960749571677297,
-       "model_s": 2.971823814092204,
-       "peak_gib": 0.582,
-       "plan_mb": 0.388,
+       "seconds": 13.697926851920784,
+       "generate_s": 12.644672084134072,
+       "export_s": 1.0532547677867115,
+       "model_s": 7.30967383692041,
+       "peak_gib": 0.58,
+       "plan_mb": 0.036,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 17.39052506038472,
+       "ratio_to_fastest": 27.205880697752345,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -746,7 +780,7 @@
         "compile_s": 2.9676319089485332
        },
        "recola": {
-        "seconds": 0.461741761
+        "seconds": 0.503491396
        },
        "openloops": {
         "prebuilt": "ppjjj"
@@ -755,7 +789,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.461741761
+       "seconds": 0.503491396
       },
       "source": "g1.json processes[uux_uuxg].providers (MadLoop generation, Recola setup)"
      },
@@ -764,31 +798,31 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0027897812815353973,
-       "uncertainty": 0.010882506065261605,
+       "seconds_per_point": 0.002433690116959042,
+       "uncertainty": 0.008470160284130904,
        "stages": {
-        "inputs": 0.000124068640625,
-        "numerator": 0.0012736242890625002,
-        "scatter": 0.00042114703124999985,
-        "ninjars": 0.00025270107812500005,
-        "masters": 0.00019235176562500003,
-        "glue": 0.0005135222021995867,
+        "inputs": 0.00015777500781250002,
+        "numerator": 0.0009220966249999997,
+        "scatter": 0.00045833388281250003,
+        "ninjars": 0.00028978049218749996,
+        "masters": 0.0002035585078125,
+        "glue": 0.00040152376872503413,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.9541882851842265,
+       "ratio_to_fastest": 0.6377469302775868,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.7339909886032512,
+        "ratio_to_limit": 0.49057456175198977,
         "band": [
-         0.7165588846584101,
-         0.7514230925480923
+         0.46771745505896123,
+         0.5134316684450183
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.0038008386,
+        "limit_seconds": 0.0049608975,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
         "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
@@ -798,7 +832,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -806,28 +840,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.008589745,
+        "seconds_per_point": 0.0090259115,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.005549573,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.0054136919999999995,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.002923722,
+        "seconds_per_point": 0.003816075,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.002923722
+       "seconds_per_point": 0.003816075
       },
       "source": "g1.json processes[uux_uuxg].providers (median s/pt)"
      },
@@ -835,20 +872,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0015924304843792925,
+       "seconds_per_point": 0.0014973807647038484,
        "schedule": "B",
        "families": 42,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0027897812815353973,
-       "lc_over_fc": 0.5708083622608848,
+       "fc_seconds_per_point": 0.002433690116959042,
+       "lc_over_fc": 0.6152717448575022,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -879,34 +916,26 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.396483371209522e-13,
-        "median_finite": 9.13150006827707e-15,
-        "worst_point": 0
+        "max_finite": 6.863479156573788e-14,
+        "median_finite": 8.71610872407747e-15,
+        "worst_point": 12
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 1.0082259547704522e-13,
-        "median_finite": 5.980562533069601e-15,
-        "worst_point": 0
+        "points": 6,
+        "max_finite": 7.528816421751809e-14,
+        "median_finite": 1.3534585105226489e-14,
+        "worst_point": 12
        }
       ],
-      "max_finite": 1.396483371209522e-13,
-      "median_finite": 9.13150006827707e-15,
+      "max_finite": 7.528816421751809e-14,
+      "median_finite": 1.3534585105226489e-14,
       "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].values_vs_providers",
-      "worst_point": {
-       "index": 0,
-       "estimate": 2.4959090223715664e-12,
-       "within_estimate": true,
-       "dd_closest": 7.516482734555493e-15,
-       "revision": "71e2041e",
-       "source": "g1.json processes[uux_emepg].stability (native/full)"
-      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -914,24 +943,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 11.88347254996188,
-       "generate_s": 7.985476620960981,
-       "export_s": 3.897995929000899,
-       "model_s": 2.979348029009998,
-       "peak_gib": 0.621,
-       "plan_mb": 0.31,
+       "seconds": 17.385658029466867,
+       "generate_s": 15.059326025657356,
+       "export_s": 2.3263320038095117,
+       "model_s": 5.274683055002242,
+       "peak_gib": 0.613,
+       "plan_mb": 0.053,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 16.944517784220256,
+       "ratio_to_fastest": 21.32269897213563,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -942,14 +971,14 @@
         "compile_s": 3.0063044719863683
        },
        "recola": {
-        "seconds": 0.701316656
+        "seconds": 0.815359165
        },
        "openloops": null
       },
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.701316656
+       "seconds": 0.815359165
       },
       "source": "g1.json processes[uux_emepg].providers (MadLoop generation, Recola setup)"
      },
@@ -958,31 +987,31 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0007015030532784294,
-       "uncertainty": 0.006439158160121307,
+       "seconds_per_point": 0.0006717715896229493,
+       "uncertainty": 0.013756015222690522,
        "stages": {
-        "inputs": 4.51739375e-05,
-        "numerator": 0.00027148871875,
-        "scatter": 0.0001229318203125,
-        "ninjars": 2.9119921874999993e-05,
-        "masters": 2.00280234375e-05,
-        "glue": 0.0002117610996686109,
+        "inputs": 4.9180499999999994e-05,
+        "numerator": 0.00022709009375000003,
+        "scatter": 0.00013144803125000003,
+        "ninjars": 3.442673437499999e-05,
+        "masters": 2.360573437500001e-05,
+        "glue": 0.00019300208856546318,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.7402304288552799,
+       "ratio_to_fastest": 1.1337783175944744,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.7402304288552799,
+        "ratio_to_limit": 0.8721371673803648,
         "band": [
-         0.7352512536091215,
-         0.7452096041014382
+         0.8577274873447696,
+         0.8865468474159602
         ],
-        "binding": "MadLoop",
-        "limit_seconds": 0.000947682,
+        "binding": "Recola",
+        "limit_seconds": 0.0007702591000000001,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
         "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
@@ -992,7 +1021,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1000,15 +1029,17 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.000947682,
+        "seconds_per_point": 0.000944678,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.0010836225,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.000592507,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "unavailable",
@@ -1016,9 +1047,9 @@
        }
       },
       "fastest": {
-       "name": "MadLoop",
-       "key": "madloop",
-       "seconds_per_point": 0.000947682
+       "name": "Recola",
+       "key": "recola",
+       "seconds_per_point": 0.000592507
       },
       "source": "g1.json processes[uux_emepg].providers (median s/pt)"
      },
@@ -1026,20 +1057,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0004835053605347639,
+       "seconds_per_point": 0.0004993976563127944,
        "schedule": "B",
        "families": 7,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0007015030532784294,
-       "lc_over_fc": 0.6892419901454921,
+       "fc_seconds_per_point": 0.0006717715896229493,
+       "lc_over_fc": 0.743403954598758,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1070,52 +1101,52 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.3640338923966015e-12,
-        "median_finite": 5.608521670563499e-14,
-        "worst_point": 15
+        "max_finite": 9.226446012917728e-13,
+        "median_finite": 5.1916629089285577e-14,
+        "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 1.4736181504735765e-12,
-        "median_finite": 6.74692114318086e-14,
-        "worst_point": 1
+        "points": 6,
+        "max_finite": 3.330619737261877e-13,
+        "median_finite": 4.918867633252497e-14,
+        "worst_point": 15
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 8.392436872394888e-11,
-        "median_finite": 3.9626252858931106e-14,
+        "max_finite": 8.384988914025161e-11,
+        "median_finite": 3.465204294229811e-14,
         "worst_point": 2
        }
       ],
-      "max_finite": 8.392436872394888e-11,
-      "median_finite": 6.74692114318086e-14,
+      "max_finite": 8.384988914025161e-11,
+      "median_finite": 5.1916629089285577e-14,
       "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
-       "estimate": 1.3728388508239048e-12,
+       "estimate": 1.274360389819556e-12,
        "within_estimate": false,
-       "dd_closest": 1.3348289027384224e-14,
-       "revision": "71e2041e",
+       "dd_closest": 1.7991172167344195e-14,
+       "revision": "ca602436",
        "source": "g1.json processes[uux_ggg].stability (native/full)",
        "reference_own": {
         "key": "openloops",
         "short": "OL",
         "dd_deviation": 8.383731466508194e-11,
-        "dd_estimate": 1.2712973811450364e-28,
+        "dd_estimate": 1.2606120461169158e-28,
         "independent": {
          "key": "madloop",
-         "dd_deviation": 1.3348289027384224e-14
+         "dd_deviation": 1.7991172167344195e-14
         }
        }
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -1123,24 +1154,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 8.423439071048051,
-       "generate_s": 6.12982178805396,
-       "export_s": 2.2936172829940915,
-       "model_s": 3.0161774570588022,
-       "peak_gib": 0.589,
-       "plan_mb": 0.656,
+       "seconds": 11.811724049039185,
+       "generate_s": 11.048156896140426,
+       "export_s": 0.7635671528987586,
+       "model_s": 8.667891194112599,
+       "peak_gib": 0.583,
+       "plan_mb": 0.049,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 13.27884973190268,
+       "ratio_to_fastest": 11.11036461710471,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1151,7 +1182,7 @@
         "compile_s": 4.120793938986026
        },
        "recola": {
-        "seconds": 0.634350056
+        "seconds": 1.06312659
        },
        "openloops": {
         "prebuilt": "ppjjj"
@@ -1160,7 +1191,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.634350056
+       "seconds": 1.06312659
       },
       "source": "g1.json processes[uux_ggg].providers (MadLoop generation, Recola setup)"
      },
@@ -1169,37 +1200,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.005469752195494948,
-       "uncertainty": 0.01222158960425002,
+       "seconds_per_point": 0.006725624041791889,
+       "uncertainty": 0.040113431869557375,
        "stages": {
-        "inputs": 0.0004601918203125,
-        "numerator": 0.00310491853125,
-        "scatter": 0.0004560935234375,
-        "ninjars": 0.0005195645937499996,
-        "masters": 0.00024450566406250003,
-        "glue": 0.0006756682874774975,
+        "inputs": 0.0009967624140625,
+        "numerator": 0.0028369418203125,
+        "scatter": 0.000668365296875,
+        "ninjars": 0.0009310891874999999,
+        "masters": 0.00035422505468750003,
+        "glue": 0.0008711024868166481,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.44158776120765986,
+       "ratio_to_fastest": 0.3004260647710709,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.3396828932366614,
+        "ratio_to_limit": 0.23109697290082382,
         "band": [
-         0.3280267070898061,
-         0.3513390793835167
+         0.20198560589364026,
+         0.2602083399080074
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.01610252475
+        "limit_seconds": 0.02910303825
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1207,28 +1238,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.028201326999999998,
+        "seconds_per_point": 0.052164271,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.025324977,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.046032465999999994,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.0123865575,
+        "seconds_per_point": 0.0223869525,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.0123865575
+       "seconds_per_point": 0.0223869525
       },
       "source": "g1.json processes[uux_ggg].providers (median s/pt)"
      },
@@ -1236,20 +1270,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0027654465011437424,
+       "seconds_per_point": 0.0031773509399499744,
        "schedule": "B",
        "families": 62,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.005469752195494948,
-       "lc_over_fc": 0.5055889923900844,
+       "fc_seconds_per_point": 0.006725624041791889,
+       "lc_over_fc": 0.47242470292815264,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1280,42 +1314,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.0055794222017534e-06,
-        "median_finite": 2.5804285560687e-13,
+        "max_finite": 2.982381447114195e-06,
+        "median_finite": 2.205891595358425e-13,
         "worst_point": 10
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 1.0478376106736159e-06,
-        "median_finite": 2.8146028374173776e-13,
-        "worst_point": 10
+        "points": 6,
+        "max_finite": 1.4060002707972674e-12,
+        "median_finite": 2.8820641905084256e-13,
+        "worst_point": 6
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.0478550735291764e-06,
-        "median_finite": 4.894591031862869e-13,
+        "max_finite": 3.324996877770546e-07,
+        "median_finite": 5.833962677441958e-13,
         "worst_point": 10
        }
       ],
-      "max_finite": 1.0478550735291764e-06,
-      "median_finite": 4.894591031862869e-13,
+      "max_finite": 2.982381447114195e-06,
+      "median_finite": 5.833962677441958e-13,
       "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 10,
-       "estimate": 2.026681162398939e-05,
+       "estimate": 1.2633174164973792e-05,
        "within_estimate": true,
-       "dd_closest": 5.96903309784672e-12,
-       "revision": "71e2041e",
+       "dd_closest": 1.1493840760830463e-11,
+       "revision": "ca602436",
        "source": "g1.json processes[gg_ggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -1323,24 +1357,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 9.928472748957574,
-       "generate_s": 7.094872575020418,
-       "export_s": 2.833600173937157,
-       "model_s": 3.056166023015976,
-       "peak_gib": 0.631,
-       "plan_mb": 1.852,
+       "seconds": 12.346747766714543,
+       "generate_s": 11.192438762634993,
+       "export_s": 1.1543090040795505,
+       "model_s": 4.459815270733088,
+       "peak_gib": 0.597,
+       "plan_mb": 0.112,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.4977141146607689,
+       "ratio_to_fastest": 1.056884430627644,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1351,7 +1385,7 @@
         "compile_s": 6.643208839930594
        },
        "recola": {
-        "seconds": 6.62908405
+        "seconds": 11.6822118
        },
        "openloops": {
         "prebuilt": "ppjjj"
@@ -1360,7 +1394,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 6.62908405
+       "seconds": 11.6822118
       },
       "source": "g1.json processes[gg_ggg].providers (MadLoop generation, Recola setup)"
      },
@@ -1369,37 +1403,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.020408023201525793,
-       "uncertainty": 0.00914946298019868,
+       "seconds_per_point": 0.024576972602517344,
+       "uncertainty": 0.0823500693097268,
        "stages": {
-        "inputs": 0.0043300306171875,
-        "numerator": 0.011863961968749998,
-        "scatter": 0.0005081847421875,
-        "ninjars": 0.002082883546875,
-        "masters": 0.0005023681093750002,
-        "glue": 0.0011167902148045382,
+        "inputs": 0.007533343171875,
+        "numerator": 0.010045750890624998,
+        "scatter": 0.0007739787968750003,
+        "ninjars": 0.004485961679687501,
+        "masters": 0.0007836730390625001,
+        "glue": 0.00143711588763739,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.21045929860471607,
+       "ratio_to_fastest": 0.1438009288479463,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.16189176815747391,
+        "ratio_to_limit": 0.11061609911380484,
         "band": [
-         0.16036199736473242,
-         0.1634215389502154
+         0.09789331288923499,
+         0.12333888533837468
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.12605967205
+        "limit_seconds": 0.2221826009
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1407,28 +1441,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.247035011,
+        "seconds_per_point": 0.287286756,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.35100113349999995,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.783657668,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.0969689785,
+        "seconds_per_point": 0.170909693,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.0969689785
+       "seconds_per_point": 0.170909693
       },
       "source": "g1.json processes[gg_ggg].providers (median s/pt)"
      },
@@ -1436,20 +1473,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.008477517749270191,
+       "seconds_per_point": 0.011305932406685315,
        "schedule": "B",
        "families": 77,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.020408023201525793,
-       "lc_over_fc": 0.41540122066484003,
+       "fc_seconds_per_point": 0.024576972602517344,
+       "lc_over_fc": 0.46002136184695436,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1485,34 +1522,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 9.425936900016517e-11,
-        "median_finite": 5.990204584070291e-14,
+        "max_finite": 1.944666715804291e-10,
+        "median_finite": 7.22188608193225e-14,
         "worst_point": 8
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 4.684822552137076e-11,
-        "median_finite": 6.343218999433089e-14,
-        "worst_point": 10
+        "points": 6,
+        "max_finite": 3.679791845074467e-13,
+        "median_finite": 5.397037433338805e-14,
+        "worst_point": 3
        }
       ],
-      "max_finite": 9.425936900016517e-11,
-      "median_finite": 6.343218999433089e-14,
+      "max_finite": 1.944666715804291e-10,
+      "median_finite": 7.22188608193225e-14,
       "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 8,
-       "estimate": 3.37021621578259e-09,
+       "estimate": 1.6669903621322162e-09,
        "within_estimate": true,
-       "dd_closest": 4.306016249662366e-13,
-       "revision": "71e2041e",
+       "dd_closest": 8.890883011469711e-11,
+       "revision": "ca602436",
        "source": "g1.json processes[uux_emepgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -1520,24 +1557,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 12.943563323933631,
-       "generate_s": 8.899554939940572,
-       "export_s": 4.044008383993059,
-       "model_s": 2.9796815279405564,
-       "peak_gib": 0.631,
-       "plan_mb": 0.624,
+       "seconds": 19.56177742080763,
+       "generate_s": 16.694668856915087,
+       "export_s": 2.8671085638925433,
+       "model_s": 4.8105489001609385,
+       "peak_gib": 0.621,
+       "plan_mb": 0.068,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 15.546204318210616,
+       "ratio_to_fastest": 13.235314809528163,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1548,14 +1585,14 @@
         "compile_s": 4.659791474929079
        },
        "recola": {
-        "seconds": 0.832586724
+        "seconds": 1.47799865
        },
        "openloops": null
       },
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 0.832586724
+       "seconds": 1.47799865
       },
       "source": "g1.json processes[uux_emepgg].providers (MadLoop generation, Recola setup)"
      },
@@ -1564,37 +1601,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.005013427187805064,
-       "uncertainty": 0.009164505754966228,
+       "seconds_per_point": 0.006135527772130445,
+       "uncertainty": 0.042899360691388035,
        "stages": {
-        "inputs": 0.0001776126875,
-        "numerator": 0.0028996156640625002,
-        "scatter": 0.0006272564921874999,
-        "ninjars": 0.00046442478906250003,
-        "masters": 0.00025076582031249996,
-        "glue": 0.0005925311883490901,
+        "inputs": 0.0002561291171875,
+        "numerator": 0.0025727609843750002,
+        "scatter": 0.0008042100390625003,
+        "ninjars": 0.0006895605703124998,
+        "masters": 0.00032991337500000006,
+        "glue": 0.0006794309946081762,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.4900931691843654,
+       "ratio_to_fastest": 0.32546743843806064,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.37699474552643497,
+        "ratio_to_limit": 0.25035956802927745,
         "band": [
-         0.372250492612949,
-         0.381738998439921
+         0.23231792874594562,
+         0.26840120731260925
         ],
         "binding": "Recola",
-        "limit_seconds": 0.013298400699999999
+        "limit_seconds": 0.02450686355
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1602,15 +1639,17 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.027294375,
+        "seconds_per_point": 0.061333324499999994,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.010229539,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 0.0188514335,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "unavailable",
@@ -1620,7 +1659,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds_per_point": 0.010229539
+       "seconds_per_point": 0.0188514335
       },
       "source": "g1.json processes[uux_emepgg].providers (median s/pt)"
      },
@@ -1628,20 +1667,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0017353115472360514,
+       "seconds_per_point": 0.0027219107359996997,
        "schedule": "B",
        "families": 33,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.005013427187805064,
-       "lc_over_fc": 0.3461327914479577,
+       "fc_seconds_per_point": 0.006135527772130445,
+       "lc_over_fc": 0.44363106762608107,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -1672,42 +1711,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.4010560038704824e-08,
-        "median_finite": 1.8904470807837898e-11,
+        "max_finite": 6.612239040557363e-09,
+        "median_finite": 1.2477441706250354e-11,
         "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 7.890873474358063e-09,
-        "median_finite": 1.7497269138100448e-11,
-        "worst_point": 13
+        "points": 6,
+        "max_finite": 1.340746605109525e-11,
+        "median_finite": 8.058873972348075e-12,
+        "worst_point": 3
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 7.884831502353888e-09,
-        "median_finite": 1.145123457349969e-11,
+        "max_finite": 2.6604840456285833e-09,
+        "median_finite": 6.8003402431415986e-12,
         "worst_point": 13
        }
       ],
-      "max_finite": 1.4010560038704824e-08,
-      "median_finite": 1.8904470807837898e-11,
+      "max_finite": 6.612239040557363e-09,
+      "median_finite": 1.2477441706250354e-11,
       "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 13,
-       "estimate": 1.002576146880242e-07,
+       "estimate": 8.865243094799081e-08,
        "within_estimate": true,
        "dd_closest": 5.504855442237677e-15,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[gg_ttxgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -1720,20 +1759,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 13.883720548124984,
-       "generate_s": 9.47921643499285,
-       "export_s": 4.404504113132134,
-       "model_s": 2.898726494051516,
-       "peak_gib": 0.723,
-       "plan_mb": 3.712,
+       "seconds": 19.3377354783006,
+       "generate_s": 16.440302999224514,
+       "export_s": 2.8974324790760875,
+       "model_s": 4.47998359426856,
+       "peak_gib": 0.644,
+       "plan_mb": 0.32,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -1742,7 +1781,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.22616914977190436,
+       "ratio_to_fastest": 0.3025396753724997,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1753,7 +1792,7 @@
         "compile_s": 16.22347637801431
        },
        "recola": {
-        "seconds": 61.3864471
+        "seconds": 63.9180149
        },
        "openloops": {
         "prebuilt": "ppttjj"
@@ -1762,7 +1801,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 61.3864471
+       "seconds": 63.9180149
       },
       "source": "g1.json processes[gg_ttxgg].providers (MadLoop generation, Recola setup)"
      },
@@ -1771,37 +1810,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0984586796403164,
-       "uncertainty": 0.01140143993649439,
+       "seconds_per_point": 0.07613893386223936,
+       "uncertainty": 0.010123351229053475,
        "stages": {
-        "inputs": 0.011521049929687499,
-        "numerator": 0.04663679281249999,
-        "scatter": 0.0010326312109375005,
-        "ninjars": 0.023866732484374997,
-        "masters": 0.006495443867187499,
-        "glue": 0.00870243981818436,
+        "inputs": 0.012751347078125001,
+        "numerator": 0.027689154398437495,
+        "scatter": 0.0010096103515625002,
+        "ninjars": 0.021565709164062495,
+        "masters": 0.007006320117187501,
+        "glue": 0.005523208187154585,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.20869064847507354,
+       "ratio_to_fastest": 0.151888295359355,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.16053126805774887,
+        "ratio_to_limit": 0.11683715027642692,
         "band": [
-         0.15732711249769174,
-         0.163735423617806
+         0.11561273567400336,
+         0.1180615648788505
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.6133302305
+        "limit_seconds": 0.6516671596500001
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -1814,28 +1853,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 5.445641895,
+        "seconds_per_point": 5.647281385,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 1.967374655,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 2.18826202,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.471792485,
+        "seconds_per_point": 0.5012824305000001,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppttjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.471792485
+       "seconds_per_point": 0.5012824305000001
       },
       "source": "g1.json processes[gg_ttxgg].providers (median s/pt)"
      },
@@ -1843,20 +1885,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.03239766506158048,
+       "seconds_per_point": 0.028050696668287856,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0984586796403164,
-       "lc_over_fc": 0.32904833966831337,
+       "fc_seconds_per_point": 0.07613893386223936,
+       "lc_over_fc": 0.36841462370672134,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -1891,35 +1933,35 @@
        {
         "key": "recola",
         "short": "Rc",
-        "points": 8,
-        "max_finite": 9.275753694107175e-12,
-        "median_finite": 1.5160588538619698e-12,
-        "worst_point": 7
+        "points": 6,
+        "max_finite": 2.797018187416119e-10,
+        "median_finite": 5.387033981483821e-13,
+        "worst_point": 9
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.6374056714391052e-10,
-        "median_finite": 1.3108214635916342e-12,
+        "max_finite": 2.300595883288435e-10,
+        "median_finite": 1.6633119954886014e-12,
         "worst_point": 9
        }
       ],
-      "max_finite": 1.6374056714391052e-10,
-      "median_finite": 1.5160588538619698e-12,
+      "max_finite": 2.797018187416119e-10,
+      "median_finite": 1.6633119954886014e-12,
       "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 9,
-       "estimate": 5.554902124412405e-10,
+       "estimate": 2.966095604354987e-09,
        "within_estimate": true,
        "dd_closest": 1.897028113555094e-13,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[uux_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -1927,30 +1969,30 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 13.949421978089958,
-       "generate_s": 8.726719536120072,
-       "export_s": 5.222702441969886,
-       "model_s": 2.9232215851079673,
-       "peak_gib": 0.733,
-       "plan_mb": 4.537,
+       "seconds": 23.420384500641376,
+       "generate_s": 17.910355660598725,
+       "export_s": 5.510028840042651,
+       "model_s": 6.218611037358642,
+       "peak_gib": 0.656,
+       "plan_mb": 0.382,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.42517330768685174,
+       "ratio_to_fastest": 0.653675498108639,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": null,
        "recola": {
-        "seconds": 32.8087905
+        "seconds": 35.828763
        },
        "openloops": {
         "prebuilt": "ppjjjj"
@@ -1959,7 +2001,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 32.8087905
+       "seconds": 35.828763
       },
       "source": "g1.json processes[uux_gggg].providers (MadLoop generation, Recola setup)"
      },
@@ -1968,63 +2010,66 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.07737278897548094,
-       "uncertainty": 0.008721041518498859,
+       "seconds_per_point": 0.05873296127720096,
+       "uncertainty": 0.024068348062421075,
        "stages": {
-        "inputs": 0.009556114234375,
-        "numerator": 0.0486981911171875,
-        "scatter": 0.0017867029375000004,
-        "ninjars": 0.009387396875,
-        "masters": 0.0029220445390624994,
-        "glue": 0.005269142346966127,
+        "inputs": 0.011424101484375,
+        "numerator": 0.027927859609374998,
+        "scatter": 0.0018476519453125002,
+        "ninjars": 0.010163720023437496,
+        "masters": 0.0031704254765624997,
+        "glue": 0.003167077412323409,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.20697968849668796,
+       "ratio_to_fastest": 0.14769095601237858,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.1592151449974523,
+        "ratio_to_limit": 0.11360842770182968,
         "band": [
-         0.15560879391713703,
-         0.16282149607776758
+         0.10942690470697093,
+         0.11778995069668843
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.48596375034999995
+        "limit_seconds": 0.51697715095
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
       },
       "providers": {
        "madloop": {
-        "status": "not run"
+        "status": "unavailable",
+        "reason": "not exported: the MadLoop export of g g > g g g g took 2.4 h, and HANDOFF \u00a70.1 allows no provider generation beyond about 45 minutes"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.90834764,
-        "points": 8,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "seconds_per_point": 1.22823334,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (below 7 legs)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.37381826949999997,
+        "seconds_per_point": 0.3976747315,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.37381826949999997
+       "seconds_per_point": 0.3976747315
       },
       "source": "g1.json processes[uux_gggg].providers (median s/pt)",
       "madloop_note": "not exported: the g g > g g g g export took 2.4 h (HANDOFF section 0.1)"
@@ -2033,20 +2078,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0303176881170657,
+       "seconds_per_point": 0.02672359023017634,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.07737278897548094,
-       "lc_over_fc": 0.3918391532541657,
+       "fc_seconds_per_point": 0.05873296127720096,
+       "lc_over_fc": 0.4550015808678447,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ]
@@ -2077,42 +2122,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 8,
-        "max_finite": 2.2058098891874584e-07,
-        "median_finite": 3.0375877090800754e-11,
+        "max_finite": 1.6862454503572582e-07,
+        "median_finite": 1.7258228785988238e-11,
         "worst_point": 1
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 8,
-        "max_finite": 2.78045675184126e-08,
-        "median_finite": 2.6605512058391946e-11,
-        "worst_point": 5
+        "max_finite": 1.4872926579423295e-07,
+        "median_finite": 2.3170263624788005e-11,
+        "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 8,
-        "max_finite": 2.7811954948639456e-08,
-        "median_finite": 1.0383270975890928e-11,
-        "worst_point": 5
+        "max_finite": 1.4880479153992196e-07,
+        "median_finite": 8.290215999526941e-12,
+        "worst_point": 1
        }
       ],
-      "max_finite": 2.2058098891874584e-07,
-      "median_finite": 3.0375877090800754e-11,
+      "max_finite": 1.6862454503572582e-07,
+      "median_finite": 2.3170263624788005e-11,
       "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 2.067998262040044e-06,
+       "estimate": 1.836236163256585e-06,
        "within_estimate": true,
        "dd_closest": 4.35793642888872e-12,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[gg_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -2125,20 +2170,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 33.12943323189393,
-       "generate_s": 18.808769430965185,
-       "export_s": 14.320663800928742,
-       "model_s": 2.924796251114458,
-       "peak_gib": 1.272,
-       "plan_mb": 16.103,
+       "seconds": 20.249408503063023,
+       "generate_s": 11.707976810168475,
+       "export_s": 8.541431692894548,
+       "model_s": 3.546813420020044,
+       "peak_gib": 0.895,
+       "plan_mb": 1.234,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2147,7 +2192,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.015589949342947652,
+       "ratio_to_fastest": 0.009528905930195381,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2176,37 +2221,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.37053675101560657,
-       "uncertainty": 0.01744706024936535,
+       "seconds_per_point": 0.4631720544057316,
+       "uncertainty": 0.11648104769918975,
        "stages": {
-        "inputs": 0.1004061129765625,
-        "numerator": 0.20878203832031247,
-        "scatter": 0.0023675215390625,
-        "ninjars": 0.042676110148437495,
-        "masters": 0.0057933637578125,
-        "glue": 0.010544359434800976,
+        "inputs": 0.1875210138359375,
+        "numerator": 0.16460096414843747,
+        "scatter": 0.003292887,
+        "ninjars": 0.07204894000781249,
+        "masters": 0.008678529749999999,
+        "glue": 0.007474441894308681,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.13043425448552584,
+       "ratio_to_fastest": 0.09656124320447697,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.10033404191194295,
+        "ratio_to_limit": 0.0742778793880592,
         "band": [
-         0.09839010636058691,
-         0.10227797746329897
+         0.06532395504962532,
+         0.0832318037264931
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 3.693031238
+        "limit_seconds": 6.2356660989999995
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2219,28 +2264,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 38.66037815,
+        "seconds_per_point": 56.88681625,
         "points": 8,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache as in production (below 7 legs)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 17.644638,
         "points": 8,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 2.84079326,
+        "seconds_per_point": 4.79666623,
         "points": 8,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppjjjj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 2.84079326
+       "seconds_per_point": 4.79666623
       },
       "source": "g1.json processes[gg_gggg].providers (median s/pt)"
      },
@@ -2248,20 +2296,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.15523976241274795,
+       "seconds_per_point": 0.17519986833576695,
        "schedule": "B",
        "families": 550,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.37053675101560657,
-       "lc_over_fc": 0.4189591504412188,
+       "fc_seconds_per_point": 0.4631720544057316,
+       "lc_over_fc": 0.3782608788014109,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2302,42 +2350,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 3.739898165029625e-11,
-        "median_finite": 2.1110503664497394e-13,
+        "max_finite": 3.4800145615202596e-11,
+        "median_finite": 1.9129119646991649e-13,
         "worst_point": 15
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 5.170944968108935e-11,
-        "median_finite": 7.713062468811672e-13,
-        "worst_point": 15
+        "points": 6,
+        "max_finite": 4.5421180685580616e-11,
+        "median_finite": 8.865221933267083e-13,
+        "worst_point": 9
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 5.1568316455526004e-11,
-        "median_finite": 6.590370717271419e-14,
+        "max_finite": 1.933348773785545e-11,
+        "median_finite": 5.868861096314259e-14,
         "worst_point": 15
        }
       ],
-      "max_finite": 5.170944968108935e-11,
-      "median_finite": 7.713062468811672e-13,
+      "max_finite": 4.5421180685580616e-11,
+      "median_finite": 8.865221933267083e-13,
       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].values_vs_providers",
-      "worst_point": {
-       "index": 15,
-       "estimate": 1.3934466175856437e-09,
-       "within_estimate": true,
-       "dd_closest": 5.535068690347794e-14,
-       "revision": "71e2041e",
-       "source": "g1.json processes[uux_emepddxg].stability (native/full)"
-      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -2350,20 +2390,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 15.764419586164877,
-       "generate_s": 10.397588534047827,
-       "export_s": 5.36683105211705,
-       "model_s": 3.2041213689371943,
-       "peak_gib": 0.663,
-       "plan_mb": 1.129,
+       "seconds": 14.842461336404085,
+       "generate_s": 11.918241307139397,
+       "export_s": 2.9242200292646885,
+       "model_s": 3.5915258331224322,
+       "peak_gib": 0.632,
+       "plan_mb": 0.096,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2372,7 +2412,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 2.342489025820894,
+       "ratio_to_fastest": 2.1355724207334186,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2383,7 +2423,7 @@
         "compile_s": 7.405032398062758
        },
        "recola": {
-        "seconds": 6.72977308
+        "seconds": 6.95010911
        },
        "openloops": {
         "prebuilt": "pplljjj"
@@ -2392,7 +2432,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 6.72977308
+       "seconds": 6.95010911
       },
       "source": "g1.json processes[uux_emepddxg].providers (MadLoop generation, Recola setup)"
      },
@@ -2401,37 +2441,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.01606306080429931,
-       "uncertainty": 0.009287906544747182,
+       "seconds_per_point": 0.014253244582505431,
+       "uncertainty": 0.029416665486076854,
        "stages": {
-        "inputs": 0.00054151309375,
-        "numerator": 0.008477868742187498,
-        "scatter": 0.001870279320312499,
-        "ninjars": 0.0019658693124999997,
-        "masters": 0.0012994445,
-        "glue": 0.0017639315917888834,
+        "inputs": 0.0008399433203125,
+        "numerator": 0.00634658315625,
+        "scatter": 0.0020027362734375007,
+        "ninjars": 0.0024254988046875,
+        "masters": 0.0015999035703125005,
+        "glue": 0.001392153614504,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.45479169007869474,
+       "ratio_to_fastest": 0.3730942582400753,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.34983976159899594,
+        "ratio_to_limit": 0.2869955832615964,
         "band": [
-         0.32158799261365084,
-         0.378091530584341
+         0.2737958623535641,
+         0.3001953041696287
         ],
         "binding": "Recola",
-        "limit_seconds": 0.04591548065
+        "limit_seconds": 0.049663637399999995
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2444,28 +2484,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.13206965799999998,
+        "seconds_per_point": 0.1665280295,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.0353196005,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "seconds_per_point": 0.038202797999999996,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.0509826425,
+        "seconds_per_point": 0.07642439549999999,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "pplljjj"
        }
       },
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds_per_point": 0.0353196005
+       "seconds_per_point": 0.038202797999999996
       },
       "source": "g1.json processes[uux_emepddxg].providers (median s/pt)"
      },
@@ -2473,20 +2516,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.006332954071694985,
+       "seconds_per_point": 0.0065142150579049485,
        "schedule": "B",
        "families": 114,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.01606306080429931,
-       "lc_over_fc": 0.39425574919071193,
+       "fc_seconds_per_point": 0.014253244582505431,
+       "lc_over_fc": 0.45703383676587983,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2522,42 +2565,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.945935503640898e-11,
-        "median_finite": 1.6860214064139062e-13,
+        "max_finite": 6.118505443287198e-11,
+        "median_finite": 1.2914569875465283e-13,
         "worst_point": 8
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 1.0949855428317263e-10,
-        "median_finite": 1.4646653383715404e-12,
-        "worst_point": 8
+        "points": 6,
+        "max_finite": 7.1486367991482955e-12,
+        "median_finite": 2.312294514809939e-12,
+        "worst_point": 6
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.1020839081145274e-10,
-        "median_finite": 1.577839221152533e-13,
+        "max_finite": 4.297011982186038e-11,
+        "median_finite": 1.0623906822181214e-13,
         "worst_point": 8
        }
       ],
-      "max_finite": 1.1020839081145274e-10,
-      "median_finite": 1.4646653383715404e-12,
+      "max_finite": 6.118505443287198e-11,
+      "median_finite": 2.312294514809939e-12,
       "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 8,
-       "estimate": 1.643880971968413e-09,
+       "estimate": 3.769303914766018e-10,
        "within_estimate": true,
        "dd_closest": 7.676155313492963e-14,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[uux_emepggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -2570,20 +2613,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 16.145756480051205,
-       "generate_s": 10.911978365154937,
-       "export_s": 5.233778114896268,
-       "model_s": 3.523733481997624,
-       "peak_gib": 0.679,
-       "plan_mb": 2.447,
+       "seconds": 14.835284993983805,
+       "generate_s": 12.110206590034068,
+       "export_s": 2.7250784039497375,
+       "model_s": 3.575161520857364,
+       "peak_gib": 0.643,
+       "plan_mb": 0.179,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2592,7 +2635,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.2060697342208448,
+       "ratio_to_fastest": 1.0649775736602736,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2603,7 +2646,7 @@
         "compile_s": 11.008945616078563
        },
        "recola": {
-        "seconds": 13.3870837
+        "seconds": 13.9301384
        },
        "openloops": {
         "prebuilt": "pplljjj"
@@ -2612,7 +2655,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 13.3870837
+       "seconds": 13.9301384
       },
       "source": "g1.json processes[uux_emepggg].providers (MadLoop generation, Recola setup)"
      },
@@ -2621,37 +2664,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.05973021576573956,
-       "uncertainty": 0.036508910824969966,
+       "seconds_per_point": 0.043193594516196754,
+       "uncertainty": 0.00724217549816782,
        "stages": {
-        "inputs": 0.00169626290625,
-        "numerator": 0.041623350507812504,
-        "scatter": 0.0021011079609375006,
-        "ninjars": 0.008130540125000004,
-        "masters": 0.0026892011250000004,
-        "glue": 0.0035318353410091485,
+        "inputs": 0.0019147842812500002,
+        "numerator": 0.024859013710937496,
+        "scatter": 0.0022266847968750005,
+        "ninjars": 0.008969640945312503,
+        "masters": 0.0028890556406250003,
+        "glue": 0.002361751644637644,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.2381693202492504,
+       "ratio_to_fastest": 0.15103661059739182,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.1832071694225003,
+        "ratio_to_limit": 0.11618200815183986,
         "band": [
-         0.16254592669457682,
-         0.20386841215042376
+         0.11530087120644802,
+         0.11706314509723169
         ],
         "binding": "Recola",
-        "limit_seconds": 0.32602553684999996
+        "limit_seconds": 0.37177524474999996
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2664,28 +2707,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 1.417189965,
+        "seconds_per_point": 1.480794245,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.2507888745,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "seconds_per_point": 0.28598095749999997,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.3456512245,
+        "seconds_per_point": 0.363236062,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "pplljjj"
        }
       },
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds_per_point": 0.2507888745
+       "seconds_per_point": 0.28598095749999997
       },
       "source": "g1.json processes[uux_emepggg].providers (median s/pt)"
      },
@@ -2693,20 +2739,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.010679581437216257,
+       "seconds_per_point": 0.009377916036100942,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.05973021576573956,
-       "lc_over_fc": 0.17879696733561642,
+       "fc_seconds_per_point": 0.043193594516196754,
+       "lc_over_fc": 0.2171135822600827,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2742,42 +2788,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.7096212264319e-09,
-        "median_finite": 9.661397842157726e-12,
+        "max_finite": 1.6693468998741637e-08,
+        "median_finite": 1.7395201206952254e-11,
         "worst_point": 2
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 16,
-        "max_finite": 4.3844248426251955e-09,
-        "median_finite": 2.664495793002343e-11,
-        "worst_point": 2
+        "points": 6,
+        "max_finite": 2.613313312952085e-10,
+        "median_finite": 1.5486510343043527e-11,
+        "worst_point": 15
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 5.6245888318501e-09,
-        "median_finite": 1.0687409129421636e-11,
+        "max_finite": 3.495785244572383e-09,
+        "median_finite": 1.364502504717211e-12,
         "worst_point": 2
        }
       ],
-      "max_finite": 8.7096212264319e-09,
-      "median_finite": 2.664495793002343e-11,
+      "max_finite": 1.6693468998741637e-08,
+      "median_finite": 1.7395201206952254e-11,
       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
-       "estimate": 5.714716664117523e-08,
+       "estimate": 4.29647022903004e-08,
        "within_estimate": true,
        "dd_closest": 5.839256271708991e-13,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[gg_ttxemepg_qcd].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -2790,20 +2836,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 17.272843665909022,
-       "generate_s": 11.025251139886677,
-       "export_s": 6.247592526022345,
-       "model_s": 3.4168169139884412,
-       "peak_gib": 0.752,
-       "plan_mb": 2.13,
+       "seconds": 20.72491445671767,
+       "generate_s": 17.240298492833972,
+       "export_s": 3.484615963883698,
+       "model_s": 5.1438935860060155,
+       "peak_gib": 0.645,
+       "plan_mb": 0.176,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2812,7 +2858,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.6245973074065003,
+       "ratio_to_fastest": 0.6414595173852131,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2823,7 +2869,7 @@
         "compile_s": 14.854780457098968
        },
        "recola": {
-        "seconds": 27.6543678
+        "seconds": 32.3089983
        },
        "openloops": {
         "prebuilt": "ppllttj"
@@ -2832,7 +2878,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 27.6543678
+       "seconds": 32.3089983
       },
       "source": "g1.json processes[gg_ttxemepg_qcd].providers (MadLoop generation, Recola setup)"
      },
@@ -2841,37 +2887,37 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.06251937442175404,
-       "uncertainty": 0.00459908370205299,
+       "seconds_per_point": 0.07542312435543863,
+       "uncertainty": 0.054984733015750624,
        "stages": {
-        "inputs": 0.002815173890625,
-        "numerator": 0.039328651429687514,
-        "scatter": 0.0008274016250000001,
-        "ninjars": 0.010889838796874999,
-        "masters": 0.0041098482109375,
-        "glue": 0.004807953675345755,
+        "inputs": 0.0058065403046875,
+        "numerator": 0.033445042078125,
+        "scatter": 0.001179061546875,
+        "ninjars": 0.02043543691406249,
+        "masters": 0.006198208906250002,
+        "glue": 0.003057819286399921,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.15486904414146715,
+       "ratio_to_fastest": 0.10387164649805139,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.11913003395497472,
+        "ratio_to_limit": 0.07990126653696261,
         "band": [
-         0.10949652792333481,
-         0.12876353998661463
+         0.06531685926616265,
+         0.09448567380776257
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.5247994342500001
+        "limit_seconds": 0.9439540526000001
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2884,28 +2930,31 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 3.03517586,
+        "seconds_per_point": 4.02471596,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.620191463,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "seconds_per_point": 0.8535306795,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.40369187250000005,
+        "seconds_per_point": 0.726118502,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppllttj"
        }
       },
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.40369187250000005
+       "seconds_per_point": 0.726118502
       },
       "source": "g1.json processes[gg_ttxemepg_qcd].providers (median s/pt)"
      },
@@ -2913,20 +2962,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.011643409172393149,
+       "seconds_per_point": 0.015549764559182222,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.06251937442175404,
-       "lc_over_fc": 0.18623681506867007,
+       "fc_seconds_per_point": 0.07542312435543863,
+       "lc_over_fc": 0.20616707000763426,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -2962,26 +3011,26 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 2.5964228698210107e-09,
-        "median_finite": 6.849002681664112e-10,
+        "max_finite": 2.7654357816497515e-09,
+        "median_finite": 7.610870317101895e-10,
         "worst_point": 5
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.7848332341339946e-09,
-        "median_finite": 6.153914661063093e-11,
-        "worst_point": 3
+        "max_finite": 2.725824459021703e-10,
+        "median_finite": 2.1784057929708975e-11,
+        "worst_point": 2
        }
       ],
-      "max_finite": 2.5964228698210107e-09,
-      "median_finite": 6.849002681664112e-10,
+      "max_finite": 2.7654357816497515e-09,
+      "median_finite": 7.610870317101895e-10,
       "source": "msm-g1.json processes[gg_ttxemepg_ew].pyamplicol['native/full'].values_vs_providers",
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        }
       ]
@@ -2989,24 +3038,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 317.7172970159445,
-       "generate_s": 233.61281360592693,
-       "export_s": 84.10448341001756,
-       "model_s": 6.7275361539795995,
-       "peak_gib": 8.926,
-       "plan_mb": 4.473,
+       "seconds": 452.9450086369179,
+       "generate_s": 345.99474609596655,
+       "export_s": 106.95026254095137,
+       "model_s": 9.375066616106778,
+       "peak_gib": 9.399,
+       "plan_mb": 0.445,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "msm-g1.json processes[gg_ttxemepg_ew].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 13.513448897468276,
+       "ratio_to_fastest": 13.248680017867528,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -3017,7 +3066,7 @@
         "compile_s": 74.24591242498718
        },
        "recola": {
-        "seconds": 23.5111924
+        "seconds": 34.1879348
        },
        "openloops": {
         "prebuilt": "ppllttj_ew"
@@ -3026,112 +3075,91 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 23.5111924
+       "seconds": 34.1879348
       },
       "source": "msm-g1.json processes[gg_ttxemepg_ew].providers (MadLoop generation, Recola setup)"
      },
      "full_colour": {
-      "gate_rule": "EW: indicative, not gated",
+      "gate_rule": "G1",
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.15284918623547128,
-       "uncertainty": 0.006882951062562231,
+       "seconds_per_point": 0.18067203909413365,
+       "uncertainty": 0.05402957545703592,
        "stages": {
-        "inputs": 0.006658540296875,
-        "numerator": 0.07976483079687498,
-        "scatter": 0.0019058889140624996,
-        "ninjars": 0.03324830843749999,
-        "masters": 0.015747516031250006,
-        "glue": 0.015916105667351077,
+        "inputs": 0.012067799148437499,
+        "numerator": 0.066900655609375,
+        "scatter": 0.0026913274375,
+        "ninjars": 0.054844319656250015,
+        "masters": 0.0225708298046875,
+        "glue": 0.010813976943636727,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "msm-g1.json processes[gg_ttxemepg_ew].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.15490418480658677,
+       "ratio_to_fastest": 0.11875967244966039,
+       "gate": {
+        "status": "pass",
+        "ratio_to_limit": 0.09135359419204644,
+        "band": [
+         0.08540520578454294,
+         0.09730198259954995
+        ],
+        "binding": "OpenLoops",
+        "limit_seconds": 1.9777222855000003
+       },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         }
        ],
        "note": {
         "kind": "run conditions",
-        "label": "model: the workspace's py3 G_mu copy",
-        "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as MS-VALIDATE's earlier run), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; an indicative timing, no verdict",
-        "source": "milestone.json cell_notes (G1 campaign m1031-msm (msm-g1.json ew_model, STATE.md))"
+        "label": "model: unpatched G_mu UFO",
+        "reason": "timed with the benchmark tool's default copy of the loop_qcd_qed_sm_Gmu UFO model, not with the patched model that pyAmpliCol ships and validated (UFOmodeldb 6ca4b120 with fixes to an R2 coupling, the CKM matrix and a b-mass counterterm); the gate is taken on this timing",
+        "source": "milestone.json cell_notes (the final G1 re-time lit-report R3 (msm-g1.json ew_model))"
        }
       },
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 7.070939095,
+        "seconds_per_point": 11.32362495,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "optimistic"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.986733744,
-        "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "seconds_per_point": 2.090148385,
+        "points": 6,
+        "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "optimistic"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 1.40479684,
+        "seconds_per_point": 1.5213248350000002,
         "points": 16,
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
+        "protocol": "optimistic",
         "library": "ppllttj_ew"
        }
       },
       "fastest": {
-       "name": "Recola",
-       "key": "recola",
-       "seconds_per_point": 0.986733744
+       "name": "OpenLoops",
+       "key": "openloops",
+       "seconds_per_point": 1.5213248350000002
       },
-      "source": "msm-g1.json processes[gg_ttxemepg_ew].providers (median s/pt)",
-      "alternative": null,
-      "sanity_checks": {
-       "rotation": {
-        "status": "not run",
-        "configurations": {},
-        "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
-        "source": "msm-g1.json processes[gg_ttxemepg_ew].stability"
-       },
-       "ward": {
-        "status": "not run",
-        "reason": null,
-        "reason_source": "milestone.json status_notes.notes[gg_ttxemepg_ew].ward",
-        "lower_multiplicity": [
-         {
-          "key": "gg_ggg",
-          "legs": 5,
-          "rows": 2,
-          "passed": true,
-          "max_virtual_ratio": 1.7228640465066138e-12,
-          "source": "g1.json processes[gg_ggg].ward"
-         },
-         {
-          "key": "gg_gggg",
-          "legs": 6,
-          "rows": 1,
-          "passed": true,
-          "max_virtual_ratio": 2.8385304913362043e-10,
-          "source": "g1.json processes[gg_gggg].ward"
-         }
-        ]
-       }
-      },
-      "gate_rule_reason": "the EW speed gate binds with the final G1 retime, deferred to the next milestone (m-sm/PLAN.md [U5]; DECISIONS 2026-11-05 ~07:35)",
-      "gate_rule_source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
+      "source": "msm-g1.json processes[gg_ttxemepg_ew].providers (median s/pt)"
      },
      "leading_colour": {
       "main": {
        "status": "not supported",
-       "reason": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
+       "reason": "refused by design: no leading-colour expansion for electroweak corrections",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       }
      },
@@ -3160,34 +3188,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 3,
-        "max_finite": 1.9412723701756803e-12,
-        "median_finite": 1.269121558962121e-12,
+        "max_finite": 2.095433741230877e-12,
+        "median_finite": 1.380799400592456e-12,
         "worst_point": 1
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 3,
-        "max_finite": 2.8642125293030807e-10,
-        "median_finite": 7.083108468606327e-11,
+        "max_finite": 2.863095750887096e-10,
+        "median_finite": 6.973273717667813e-11,
         "worst_point": 0
        }
       ],
-      "max_finite": 2.8642125293030807e-10,
-      "median_finite": 7.083108468606327e-11,
+      "max_finite": 2.863095750887096e-10,
+      "median_finite": 6.973273717667813e-11,
       "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 0,
-       "estimate": 3.162909381804696e-11,
+       "estimate": 1.708837678625134e-11,
        "within_estimate": false,
        "dd_closest": 1.4144241420398502e-12,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[uux_ggggg].stability (native/full)",
        "reference_own": {
         "key": "recola",
         "short": "Rc",
         "dd_deviation": 2.8627595034727174e-10,
-        "dd_estimate": 1.5320494996085359e-27,
+        "dd_estimate": 1.279773582501737e-27,
         "independent": {
          "key": "madloop",
          "dd_deviation": 1.4144241420398502e-12
@@ -3197,7 +3225,7 @@
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -3210,20 +3238,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 134.05243592872284,
-       "generate_s": 48.6385357088875,
-       "export_s": 85.41390021983534,
-       "model_s": 3.5493354969657958,
-       "peak_gib": 3.03,
-       "plan_mb": 69.176,
+       "seconds": 135.7209216793999,
+       "generate_s": 51.97319529205561,
+       "export_s": 83.7477263873443,
+       "model_s": 5.1622980600222945,
+       "peak_gib": 2.759,
+       "plan_mb": 14.679,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -3232,7 +3260,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.013116626523348902,
+       "ratio_to_fastest": 0.013279882821524617,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -3259,29 +3287,29 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 1.7209043809143623,
-       "uncertainty": 0.009237264926412952,
+       "seconds_per_point": 1.8064867693101405,
+       "uncertainty": 0.029536398866923476,
        "stages": {
-        "inputs": 0.2233093897109375,
-        "numerator": 1.1278982162421873,
-        "scatter": 0.009462283867187496,
-        "ninjars": 0.2529696241640624,
-        "masters": 0.04513421470312501,
-        "glue": 0.05458969092237487,
+        "inputs": 0.367481509796875,
+        "numerator": 0.9127309523203126,
+        "scatter": 0.012267103171875004,
+        "ninjars": 0.36403753779687487,
+        "masters": 0.063683374171875,
+        "glue": 0.03670513944144016,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.009444550910082228,
+       "ratio_to_fastest": 0.009914238379749132,
        "ratio_to_fastest_bound": "lower",
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.0030240152589540623,
+        "ratio_to_limit": 0.0031744027245662176,
         "band": [
-         0.0027654509168960765,
-         0.0032825796010120486
+         0.0021939961520786515,
+         0.004154809297053784
         ],
         "binding": "MadLoop",
         "limit_seconds": 569.079265
@@ -3290,7 +3318,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -3305,7 +3333,8 @@
         "status": "measured",
         "seconds_per_point": 569.079265,
         "points": 3,
-        "mode": "reference campaign: MadLoop MLStabThres (production setting), MadLoop default (CTModeRun=-1 after initialization), production build True"
+        "mode": "reference campaign: MadLoop MLStabThres (production setting), MadLoop default (CTModeRun=-1 after initialization), production build True",
+        "protocol": "production"
        },
        "recola": {
         "status": "unavailable",
@@ -3340,20 +3369,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.5813559022972186,
+       "seconds_per_point": 0.5958463564056729,
        "schedule": "B",
        "families": 2712,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 1.7209043809143623,
-       "lc_over_fc": 0.33781999089823267,
+       "fc_seconds_per_point": 1.8064867693101405,
+       "lc_over_fc": 0.32983709957267726,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -3389,28 +3418,28 @@
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
         "points": 10,
-        "max_finite": 4.37652487584053e-08,
-        "median_finite": 3.2054269422542804e-09,
+        "max_finite": 1.5074628401226497e-07,
+        "median_finite": 3.380924962918574e-09,
         "worst_point": 4,
         "fixture": "gg_ggggg_njet"
        }
       ],
-      "max_finite": 4.37652487584053e-08,
-      "median_finite": 3.2054269422542804e-09,
+      "max_finite": 1.5074628401226497e-07,
+      "median_finite": 3.380924962918574e-09,
       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
       "worst_point": {
        "index": 4,
        "fixture": "gg_ggggg_njet",
-       "estimate": 1.6985230107850273e-06,
+       "estimate": 1.5389672760479995e-06,
        "within_estimate": true,
        "dd_closest": 0.0,
-       "revision": "71e2041e",
+       "revision": "ca602436",
        "source": "g1.json processes[gg_ggggg].fixture_stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "71e2041e",
+        "revision": "524e6cfa",
         "status": "compared"
        },
        {
@@ -3425,16 +3454,16 @@
        }
       ],
       "accepted": {
-       "status": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
-       "short": "accepted (user 2026-10-25)",
+       "status": "accepted: binary64 within the estimate, DD = NJet",
+       "short": "accepted",
        "points": [
         {
          "index": 4,
          "finite": {
-          "njet_dd_oneloop_R1": 4.37652487584053e-08
+          "njet_dd_oneloop_R1": 1.5074628401226497e-07
          },
-         "max_error": 4.9449310320594686e-08,
-         "estimate": 1.6985230107850273e-06,
+         "max_error": 1.5643034496636756e-07,
+         "estimate": 1.5389672760479995e-06,
          "dd_deviation": {
           "njet_dd_oneloop_R1": 0.0
          }
@@ -3442,10 +3471,10 @@
         {
          "index": 8,
          "finite": {
-          "njet_dd_oneloop_R1": 2.1021632887477516e-08
+          "njet_dd_oneloop_R1": 2.563275289351335e-08
          },
-         "max_error": 2.1021632887477516e-08,
-         "estimate": 3.3291508279555467e-07,
+         "max_error": 2.563275289351335e-08,
+         "estimate": 3.3840889324714603e-07,
          "dd_deviation": {
           "njet_dd_oneloop_R1": 0.0
          }
@@ -3462,20 +3491,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 384.35013907728717,
-       "generate_s": 171.36997165111825,
-       "export_s": 212.98016742616892,
-       "model_s": 2.844357789028436,
-       "peak_gib": 9.541,
-       "plan_mb": 159.867,
+       "seconds": 173.48772514378652,
+       "generate_s": 61.171563480980694,
+       "export_s": 112.31616166280583,
+       "model_s": 5.326206834055483,
+       "peak_gib": 4.395,
+       "plan_mb": 20.249,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -3510,26 +3539,26 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 7.25668056131326,
-       "uncertainty": 0.006960027483278291,
+       "seconds_per_point": 5.114468020947243,
+       "uncertainty": 0.0,
        "stages": {
-        "inputs": 2.9939766145546876,
-        "numerator": 3.7025727149921877,
-        "scatter": 0.011478835554687499,
-        "ninjars": 0.46141686122656245,
-        "masters": 0.041571641859374994,
-        "glue": 0.0317656490491931,
+        "inputs": 2.3396453732890627,
+        "numerator": 2.2457252147499998,
+        "scatter": 0.010286914695312501,
+        "ninjars": 0.443622891203125,
+        "masters": 0.044693658968749994,
+        "glue": 0.030493968040993025,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['128']",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {
@@ -3587,17 +3616,20 @@
           ],
           "max_rotation": 450.7854064663365,
           "max_estimate": 5054.412933776378,
-          "revision": "71e2041e"
+          "revision": "ca602436"
          },
          "native/lc": {
           "points": [
            0,
            1,
-           2
+           2,
+           31,
+           34,
+           82
           ],
-          "max_rotation": 1.4939423641043645e-08,
-          "max_estimate": 6.114434197485967e-08,
-          "revision": "71e2041e"
+          "max_rotation": 0.002467244329564226,
+          "max_estimate": 0.009747424370791213,
+          "revision": "ca602436"
          }
         },
         "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
@@ -3632,20 +3664,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 4.03014978725696,
+       "seconds_per_point": 4.007002173926594,
        "schedule": "B",
        "families": 4707,
        "inputs": "native",
-       "revision": "71e2041e",
+       "revision": "524e6cfa",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 7.25668056131326,
-       "lc_over_fc": 0.5553709789490325,
+       "fc_seconds_per_point": 5.114468020947243,
+       "lc_over_fc": 0.7834641173852649,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "71e2041e",
+         "revision": "524e6cfa",
          "status": "measured"
         },
         {

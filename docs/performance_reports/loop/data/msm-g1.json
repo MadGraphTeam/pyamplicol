@@ -1,17 +1,18 @@
 {
  "gate_factor": 1.3,
- "host_provider_spread": 0.0,
+ "host_provider_spread": 0.279311172646404,
  "processes": [
   {
    "key": "gg_ttxemepg_ew",
    "label": "g g > t t~ e- e+ g",
    "process_text": "G G > t t~ e- e+ G",
    "outgoing": 5,
-   "gated": false,
+   "gated": true,
    "providers": {
     "openloops": {
      "provider": "openloops",
-     "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+     "protocol": "optimistic",
+     "mode": "most optimistic: truepoles 0, stability system off (expert_mode 1, stability_mode 11: one double-precision evaluation), I-operator poles off (ir_on 0), Collier cache",
      "version": "OpenLoops 2.1.5",
      "library": {
       "name": "ppllttj_ew",
@@ -53,25 +54,54 @@
       "double mass(11) 0",
       "double alpha_s 0.118",
       "int ew_renorm 1",
+      "int expert_mode 1",
+      "int stability_mode 11",
+      "int ir_on 0",
       "register 11 21 21 -> 6 -6 11 -11 21"
      ],
      "install_path": "OpenLoopsPath = the OpenLoops tree",
      "points": 16,
-     "mean_seconds_per_point": 1.431294071875,
-     "median_seconds_per_point": 1.40479684,
-     "min_seconds_per_point": 1.28410283,
-     "max_seconds_per_point": 1.67741488,
+     "mean_seconds_per_point": 1.5472933687500001,
+     "median_seconds_per_point": 1.5213248350000002,
+     "min_seconds_per_point": 1.22170924,
+     "max_seconds_per_point": 2.07347668,
      "setup": {
-      "start_seconds": 0.004768919,
-      "initial_call_seconds": 4.18682914
+      "start_seconds": 0.00520521,
+      "initial_call_seconds": 3.56085291
      },
-     "process_wall_seconds": 27.388138480950147,
-     "harness_wall_seconds": 28.34966255701147,
-     "cpu": 121
+     "process_wall_seconds": 28.831544023938477,
+     "harness_wall_seconds": 30.271534211933613,
+     "production_check": {
+      "points": 16,
+      "max_relative": 0.0,
+      "tolerance": 1e-05,
+      "passed": true
+     },
+     "cpu": 125
     },
     "recola": {
      "provider": "recola",
-     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+     "protocol": "optimistic",
+     "mode": "most optimistic: dynamic_settings 0 (alpha_s and the scales set before the generation, outside the timer), compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+     "build": {
+      "librecola.so": {
+       "build_dir": "builds/recola",
+       "build_type": "(none)",
+       "fortran_flags": "-ffixed-line-length-132 -cpp -fPIC",
+       "source_flags": [
+        "-O2"
+       ]
+      },
+      "libmodelfile.so": {
+       "build_dir": "builds/recola-sm",
+       "build_type": "(none)",
+       "fortran_flags": "-ffixed-line-length-132 -cpp -fPIC",
+       "source_flags": [
+        "-O0",
+        "-Ofast -flto"
+       ]
+      }
+     },
      "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
      "collier_cache": {
       "on": true,
@@ -106,25 +136,42 @@
       "pow_nlo 3",
       "process g g -> t t~ e- e+ g",
       "irpoles 0",
+      "dynamic 0",
       "generate"
      ],
      "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
-     "points": 16,
-     "mean_seconds_per_point": 1.07359147,
-     "median_seconds_per_point": 0.986733744,
-     "min_seconds_per_point": 0.957680389,
-     "max_seconds_per_point": 2.34992101,
+     "points": 6,
+     "mean_seconds_per_point": 2.48133503,
+     "median_seconds_per_point": 2.090148385,
+     "min_seconds_per_point": 2.03077688,
+     "max_seconds_per_point": 4.41832894,
      "setup": {
-      "generation_seconds": 23.5111924,
-      "initial_call_seconds": 1.82314708
+      "generation_seconds": 34.1879348,
+      "initial_call_seconds": 3.32640922
      },
-     "process_wall_seconds": 42.549813074059784,
-     "harness_wall_seconds": 42.85673176613636,
-     "cpu": 121
+     "process_wall_seconds": 52.451738180126995,
+     "stream_points": [
+      0,
+      3,
+      6,
+      9,
+      12,
+      15
+     ],
+     "harness_wall_seconds": 52.95730523066595,
+     "production_check": {
+      "points": 6,
+      "max_relative": 1.7408441752878238e-10,
+      "tolerance": 1e-05,
+      "passed": true
+     },
+     "cpu": 125
     },
     "madloop": {
      "provider": "madloop",
-     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+     "protocol": "optimistic",
+     "loop_induced": false,
+     "mode": "most optimistic: no stability test (CTModeRun 1), MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
      "version": "MadLoop/MG5_aMC 3.7.0",
      "export": "runs/required/gg_ttxemepg_ew/madloop-export-production-flags",
      "collier_cache": {
@@ -136,7 +183,8 @@
       "MLReductionLib": "6|7|1",
       "COLLIERGlobalCache": "0",
       "MLStabThres": "1.000000d-03",
-      "ImprovePSPoint": "2"
+      "ImprovePSPoint": "2",
+      "CTModeRun": "1"
      },
      "fortran_flags": {
       "GLOBAL_FLAG": "-O",
@@ -148,10 +196,10 @@
       "replaced 6 TWOPII pi literals 3.14169258478796109557151794433593750E0_16 by 3.14159265358979323846264338327950288E0_16"
      ],
      "points": 16,
-     "mean_seconds_per_point": 7.426690798125,
-     "median_seconds_per_point": 7.070939095,
-     "min_seconds_per_point": 6.97283802,
-     "max_seconds_per_point": 10.7073313,
+     "mean_seconds_per_point": 11.38412795625,
+     "median_seconds_per_point": 11.32362495,
+     "min_seconds_per_point": 9.62015241,
+     "max_seconds_per_point": 13.3830008,
      "setup": {
       "split_order_indices": [
        1,
@@ -159,12 +207,18 @@
        1,
        1
       ],
-      "initial_call_seconds": 109.903474,
+      "initial_call_seconds": 161.709389,
       "initialization_calls": 5
      },
-     "process_wall_seconds": 228.85579918394797,
-     "harness_wall_seconds": 230.08855842007324,
-     "cpu": 121,
+     "process_wall_seconds": 343.97385940887034,
+     "harness_wall_seconds": 346.15565406112,
+     "production_check": {
+      "points": 16,
+      "max_relative": 4.623475935258631e-09,
+      "tolerance": 1e-05,
+      "passed": true
+     },
+     "cpu": 125,
      "generation": {
       "graph_generation_s": 405.2487154210103,
       "source_export_s": 236.73276926897233,
@@ -174,45 +228,63 @@
      }
     }
    },
-   "provider_cpu": 121,
+   "provider_cpu": 125,
    "provider_repeats": {
     "openloops": [
      {
-      "cpu": 121,
-      "median_seconds_per_point": 1.40479684,
-      "mean_seconds_per_point": 1.431294071875,
+      "cpu": 125,
+      "median_seconds_per_point": 1.555428555,
+      "mean_seconds_per_point": 1.51215869125,
+      "points": 16
+     },
+     {
+      "cpu": 125,
+      "median_seconds_per_point": 1.5213248350000002,
+      "mean_seconds_per_point": 1.5472933687500001,
       "points": 16
      }
     ],
     "recola": [
      {
-      "cpu": 121,
-      "median_seconds_per_point": 0.986733744,
-      "mean_seconds_per_point": 1.07359147,
-      "points": 16
+      "cpu": 125,
+      "median_seconds_per_point": 1.40286934,
+      "mean_seconds_per_point": 2.02721449,
+      "points": 6
+     },
+     {
+      "cpu": 125,
+      "median_seconds_per_point": 2.090148385,
+      "mean_seconds_per_point": 2.48133503,
+      "points": 6
      }
     ],
     "madloop": [
      {
-      "cpu": 121,
-      "median_seconds_per_point": 7.070939095,
-      "mean_seconds_per_point": 7.426690798125,
+      "cpu": 125,
+      "median_seconds_per_point": 10.25700765,
+      "mean_seconds_per_point": 10.384462753125,
+      "points": 16
+     },
+     {
+      "cpu": 125,
+      "median_seconds_per_point": 11.32362495,
+      "mean_seconds_per_point": 11.38412795625,
       "points": 16
      }
     ]
    },
    "provider_uncertainty": {
     "openloops": {
-     "relative": 0.0,
-     "assumed": true
+     "relative": 0.011084320280865876,
+     "assumed": false
     },
     "recola": {
-     "relative": 0.0,
-     "assumed": true
+     "relative": 0.1967579609118645,
+     "assumed": false
     },
     "madloop": {
-     "relative": 0.0,
-     "assumed": true
+     "relative": 0.049424746705525165,
+     "assumed": false
     }
    },
    "stability": [],
@@ -221,16 +293,16 @@
    "schedules": [],
    "pyamplicol": {
     "native/full": {
-     "revision": "71e2041effa7e11c4cb903094f994a784695e527",
-     "branch": "HEAD",
+     "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+     "branch": "work/v2-lit-report",
      "dirty": false,
      "host_cpus": [
-      159
+      125
      ],
      "native": {
-      "directory": "loop-native-v2-slice-71e2041e",
-      "digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
-      "source_revision": "71e2041effa7e11c4cb903094f994a784695e527",
+      "directory": "loop-native-v2-slice-678c4749",
+      "digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+      "source_revision": "678c4749895bc88f847ee7b47bfb6650d9786e77",
       "profile": {
        "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
        "CARGO_PROFILE_RELEASE_LTO": "thin",
@@ -243,17 +315,31 @@
      "lanes": 16,
      "generation": {
       "model": {
-       "seconds": 6.7275361539795995,
-       "peak_gib": 0.359
+       "seconds": 9.375066616106778,
+       "peak_gib": 0.328
       },
       "generate": {
-       "seconds": 233.61281360592693,
-       "peak_gib": 8.572
+       "seconds": 345.99474609596655,
+       "peak_gib": 8.94
       },
       "export": {
-       "seconds": 84.10448341001756,
-       "peak_gib": 8.926,
-       "plan_mb": 4.473
+       "seconds": 106.95026254095137,
+       "peak_gib": 9.399,
+       "plan_mb": 0.445
+      }
+     },
+     "stored": {
+      "directory": "B-gg_ttxemepg_ew-full",
+      "plan_sha256": "0000ee329aeb1cb8d54beabd736b913268d18403111a6102f3a1fbad2906e9db",
+      "point_inputs": "native-v2",
+      "generated_revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+      "generated_dirty": false,
+      "generated_host_cpus": [
+       125
+      ],
+      "load": {
+       "seconds": 0.17835036478936672,
+       "peak_gib": 0.077
       }
      },
      "structure": {
@@ -277,86 +363,86 @@
        2
       ],
       "max_error": 2.017054612122476e-10,
-      "max_error_binary64": 6.802792195720346e-10,
+      "max_error_binary64": 4.744342632962129e-10,
       "passed": true,
       "rows": [
        {
         "index": 0,
         "mu_r": "1000",
-        "born": 6.601782858330776e-17,
-        "finite": -1.3062613751661202e-18,
+        "born": 6.60178285833077e-17,
+        "finite": -1.3062613752109135e-18,
         "errors": {
          "madloop": {
-          "born": 1.8670640808072347e-15,
-          "finite": 6.75811594373222e-11
+          "born": 9.335320404036183e-16,
+          "finite": 3.328995287245329e-11
          },
          "recola": {
-          "born": 1.8670640808072344e-16,
-          "finite": 7.247286831739257e-11
+          "born": 1.1202384484843408e-15,
+          "finite": 3.81816617526914e-11
          },
          "openloops": {
-          "born": 1.6803576727265113e-15,
-          "finite": 6.781779795539289e-11
+          "born": 7.468256323228947e-16,
+          "finite": 3.35265913905321e-11
          }
         },
         "estimate": {
-         "finite": 6.989856366723341e-10
+         "finite": 3.53175466440859e-10
         },
         "asserted": {
          "born": "double",
          "finite": "double"
         },
-        "max_error": 7.247286831739257e-11
+        "max_error": 3.81816617526914e-11
        },
        {
         "index": 1,
         "mu_r": "700",
-        "born": 2.1370685184454344e-16,
-        "finite": -4.270651364550107e-18,
+        "born": 2.1370685184454334e-16,
+        "finite": -4.270651364547543e-18,
         "errors": {
          "madloop": {
-          "born": 1.4188520762305364e-14,
-          "finite": 2.539386513651695e-11
+          "born": 1.4649936071648628e-14,
+          "finite": 2.4793535649735063e-11
          },
          "recola": {
-          "born": 1.5226705208327694e-14,
-          "finite": 1.4537606271165395e-11
+          "born": 1.5688120517670956e-14,
+          "finite": 1.3937276784376994e-11
          },
          "openloops": {
-          "born": 1.568812051767095e-14,
-          "finite": 2.5819399168774633e-11
+          "born": 1.614953582701421e-14,
+          "finite": 2.5219069681993006e-11
          }
         },
         "estimate": {
-         "finite": 1.8909972772822487e-10
+         "finite": 9.98810957326581e-11
         },
         "asserted": {
          "born": "double",
          "finite": "double"
         },
-        "max_error": 2.5819399168774633e-11
+        "max_error": 2.5219069681993006e-11
        },
        {
         "index": 2,
         "mu_r": "1400",
-        "born": 5.70526052021384e-15,
-        "finite": 3.099253099796916e-16,
+        "born": 5.705260520213837e-15,
+        "finite": 3.0992530991589505e-16,
         "errors": {
          "madloop": {
-          "born": 9.678832924425517e-16,
-          "finite": 4.785732812077197e-10
+          "born": 1.5209594595525812e-15,
+          "finite": 2.7272832489037797e-10
          },
          "recola": {
-          "born": 1.7974975431075946e-15,
-          "finite": 6.802792195720346e-10
+          "born": 2.350573710217624e-15,
+          "finite": 4.744342632962129e-10
          },
          "openloops": {
-          "born": 2.3505737102176222e-15,
-          "finite": 4.784274022195422e-10
+          "born": 2.903649877327651e-15,
+          "finite": 2.725824459021703e-10
          }
         },
         "estimate": {
-         "finite": 8.546028055089843e-09
+         "finite": 5.741616573882003e-09
         },
         "asserted": {
          "born": "double",
@@ -386,7 +472,7 @@
      },
      "physical": [],
      "skipped_batches": {},
-     "max_rss_gib": 10.169,
+     "max_rss_gib": 1.509,
      "generation_error": null,
      "failed_points": 0,
      "rescue": "off (no stability check, no escalation)",
@@ -439,39 +525,86 @@
          ]
         }
        }
+      },
+      {
+       "revision": "71e2041effa7e11c4cb903094f994a784695e527",
+       "host_cpus": [
+        159
+       ],
+       "batches": {
+        "128": {
+         "median_seconds_per_point": 0.15284918623547128,
+         "min_seconds_per_point": 0.15172337551484816,
+         "max_seconds_per_point": 0.15382748245247058,
+         "samples_seconds_per_point": [
+          0.15382748245247058,
+          0.15284918623547128,
+          0.15172337551484816
+         ]
+        }
+       }
+      },
+      {
+       "revision": "ca602436d52b97d4bedbfaab44007c6767489342",
+       "host_cpus": [
+        184
+       ],
+       "batches": {
+        "128": {
+         "median_seconds_per_point": 0.13092126721130626,
+         "min_seconds_per_point": 0.12915607297691167,
+         "max_seconds_per_point": 0.13105224096034362,
+         "samples_seconds_per_point": [
+          0.12915607297691167,
+          0.13092126721130626,
+          0.13105224096034362
+         ]
+        }
+       }
       }
      ],
      "gate": {
-      "status": "indicative: not gated (EW, m-sm/PLAN.md [U5]: the gate binds in M-FINAL)"
+      "batch": 128,
+      "status": "pass"
      },
      "batches": {
       "128": {
-       "blocks": 3,
+       "blocks": 12,
        "points_per_block": 128,
-       "median_seconds_per_point": 0.15284918623547128,
-       "min_seconds_per_point": 0.15172337551484816,
-       "max_seconds_per_point": 0.15382748245247058,
+       "median_seconds_per_point": 0.18067203909413365,
+       "min_seconds_per_point": 0.1327907943923492,
+       "max_seconds_per_point": 0.20833802784181898,
        "samples_seconds_per_point": [
-        0.15382748245247058,
-        0.15284918623547128,
-        0.15172337551484816
+        0.20833802784181898,
+        0.1820554499827267,
+        0.1792886282055406,
+        0.15517886307134177,
+        0.17110511135979323,
+        0.1948924489915953,
+        0.19448273514717584,
+        0.2028485031260061,
+        0.19406839985822444,
+        0.1327907943923492,
+        0.1389056100633752,
+        0.13745203480721102
        ],
        "stages_per_point": {
-        "assembly": 0.002282605149957817,
-        "dressing": 0.07798368589843747,
-        "factors": 0.0016869167031249989,
-        "input conversion": 4.004149195679929e-05,
-        "native trees": 0.006658540296875,
-        "other": 0.013547704689848616,
-        "python point parameters": 4.575433558784425e-05,
-        "reduction": 0.04899582446875,
-        "reduction: masters": 0.015747516031250006,
-        "reduction: masters (oneloopmaster)": 0.004863478890624999,
-        "scatter": 0.0019058889140624996,
-        "seeds": 9.42281953125e-05
+        "assembly": 0.0018184343316534068,
+        "dressing": 0.0639951106640625,
+        "factors": 0.002709433078125,
+        "input conversion": 1.9577564671635628e-05,
+        "native trees": 0.012067799148437499,
+        "other": 0.00893363778234757,
+        "python point parameters": 4.2327264964114875e-05,
+        "reduction": 0.07741514946093751,
+        "reduction: masters": 0.0225708298046875,
+        "reduction: masters (oneloopmaster)": 0.0073613143125,
+        "scatter": 0.0026913274375,
+        "seeds": 0.0001961118671875
        },
        "counts_per_block": {
         "binary64 lanes on the exact engine": 0,
+        "closure columns": 14736,
         "dressing work (modelled complex MAC per lane)": 782067344,
         "factors": 16408,
         "families": 12792,
@@ -482,6 +615,8 @@
         "split steps": 47824,
         "steps": 93408,
         "symmetric-group-fft seed jobs": 8,
+        "tree closure rows": 128,
+        "tree interactions": 28604,
         "vertex tensors": 17088
        },
        "reals_per_lane": {
@@ -492,28 +627,84 @@
        "throughput": {
         "work_per_lane_per_chunk": 97758418.0,
         "useful_cmac_per_point": 97758418.0,
-        "kernel_cmac_per_second": 1253575242.9978273,
-        "useful_cmac_per_second": 1253575242.9978273
+        "kernel_cmac_per_second": 1527591982.9746907,
+        "useful_cmac_per_second": 1527591982.9746907
        },
-       "uncertainty": 0.006882951062562231,
+       "uncertainty": 0.05402957545703592,
        "gate": {
-        "status": "indicative: not gated (EW, m-sm/PLAN.md [U5]: the gate binds in M-FINAL)"
+        "status": "pass",
+        "central": "pass",
+        "statistic": "median per point (pyAmpliCol blocks, provider points)",
+        "checks": {
+         "openloops": {
+          "reference": 1.5213248350000002,
+          "limit": 1.9777222855000003,
+          "ratio_to_limit": 0.09135359419204644,
+          "band": [
+           0.08540520578454294,
+           0.09730198259954995
+          ],
+          "uncertainty": 0.0651138957379018,
+          "reference_uncertainty": 0.011084320280865876,
+          "reference_uncertainty_assumed": false,
+          "passed": true,
+          "status": "pass"
+         },
+         "recola": {
+          "reference": 2.090148385,
+          "limit": 2.7171929005,
+          "ratio_to_limit": 0.06649216515356254,
+          "band": [
+           0.04981675886686654,
+           0.08316757144025855
+          ],
+          "uncertainty": 0.25078753636890044,
+          "reference_uncertainty": 0.1967579609118645,
+          "reference_uncertainty_assumed": false,
+          "passed": true,
+          "status": "pass"
+         },
+         "madloop": {
+          "reference": 11.32362495,
+          "limit": 11.32362495,
+          "ratio_to_limit": 0.015955318185819432,
+          "band": [
+           0.014304671558017498,
+           0.017605964813621363
+          ],
+          "uncertainty": 0.10345432216256109,
+          "reference_uncertainty": 0.049424746705525165,
+          "reference_uncertainty_assumed": false,
+          "passed": true,
+          "status": "pass"
+         }
+        },
+        "fastest_provider": "openloops",
+        "ratio_to_fastest": 0.11875967244966039,
+        "binding_provider": "openloops",
+        "binding_limit": 1.9777222855000003,
+        "ratio_to_binding_limit": 0.09135359419204644,
+        "band_to_binding_limit": [
+         0.08540520578454294,
+         0.09730198259954995
+        ],
+        "ratio_to_binding_limit_of_means": 0.08982038856868334
        }
       }
      },
      "values_vs_providers": {
       "openloops": {
        "points": 16,
-       "max_born_deviation": 1.568812051767095e-14,
-       "max_finite_deviation": 1.7848332341339946e-09,
-       "median_finite_deviation": 6.153914661063093e-11,
-       "worst_point": 3
+       "max_born_deviation": 1.614953582701421e-14,
+       "max_finite_deviation": 2.725824459021703e-10,
+       "median_finite_deviation": 2.1784057929708975e-11,
+       "worst_point": 2
       },
       "madloop": {
        "points": 16,
-       "max_born_deviation": 1.6605058890112753e-14,
-       "max_finite_deviation": 2.5964228698210107e-09,
-       "median_finite_deviation": 6.849002681664112e-10,
+       "max_born_deviation": 1.7866202603285873e-14,
+       "max_finite_deviation": 2.7654357816497515e-09,
+       "median_finite_deviation": 7.610870317101895e-10,
        "worst_point": 5
       }
      }
@@ -521,26 +712,35 @@
    }
   }
  ],
+ "host_provider_spread_of_run": 0.1967579609118645,
  "recalibration": [
   {
    "process": "gg_ttxemepg_ew",
    "configuration": "native/full",
    "batch": 128,
-   "total": 0.15284918623547128,
-   "dressing": 0.07967060260156247,
-   "reduction": 0.04899582446875,
-   "masters": 0.015747516031250006,
-   "native_loop_rest": 0.0020001171093750117,
-   "outside_native_loop": 0.022182642055783797,
-   "outer_factor": 1.1879492554179936,
-   "kernel_cmac_per_second": 1253575242.9978273
+   "total": 0.18067203909413365,
+   "dressing": 0.0667045437421875,
+   "reduction": 0.07741514946093751,
+   "masters": 0.0225708298046875,
+   "native_loop_rest": 0.002887439304687489,
+   "outside_native_loop": 0.03366490658632115,
+   "outer_factor": 1.2536249216093673,
+   "kernel_cmac_per_second": 1527591982.9746907
   }
  ],
  "estimates": [],
- "date": "2026-10-31",
- "slice_revision": "71e2041e",
- "measured_revision": "71e2041e",
- "native_build": "loop-native-v2-slice-71e2041e",
- "slice_native_digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
- "ew_model": "reference/models/loop_qcd_qed_sm_Gmu_py3"
+ "date": "2026-11-11",
+ "slice_revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+ "measured_revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+ "slice_lc_revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+ "slice_build": "loop-native-v2-slice-678c4749",
+ "slice_native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+ "host": "AMD EPYC 9754, shared host: the final G1 re-time (lit-report R3) on 2026-11-11 (01:23-04:29 UTC), 10 units on cores 0, 24, 27, 83, 125, 126, 129, 138, 223, 243 (one per idle physical core at launch), concurrent with the Table 2 re-time; host state per step (r3 progress-*.jsonl): load 260-16037, MemAvailable >= 226 GiB, the timed core busy <= 1.00 before a step, its SMT sibling <= 1.00",
+ "timing_protocol": "binary64, finite part only (poles none), no stability check, one thread on one pinned core (taskset, RAYON_NUM_THREADS=1), setup heap frozen, 16-point warm-up excluded, the frozen streams, NativeExecutor of a stored process (tools.loop_benchmark pyamplicol --load); B = 128, 3 blocks per fresh process, 4 fresh processes per arm (3 on the 2->5 rows u u~ > g g g g g and g g > g g g g g leading colour; 1 on g g > g g g g g full colour, cut: one round took 1.8 h per arm on the loaded host), paired with ca602436 + loop-native-v2-slice-ca602436 on the same core in alternating order; the cell is the median over every block of the head's processes (merge_rounds.py); rows whose first rounds were preempted (median CPU share < 0.9) re-timed once on another core (r3 rt1 / rt2: g g > t t~ g g, u u~ > g g g g, u u~ > u u~ g, u u~ > e- e+ g, u u~ > e- e+ g g g); the default reduction (NinjaRS with its own checks): on the 2->3 / 2->4 rows its values are bitwise those of reduction_unchecked = True and its time within 0.92-1.25x (paired, lit-report nck)",
+ "provider_records": "G5 (DECISIONS 2026-11-09 14:12, 19:53): every provider re-timed in its most optimistic settings (m-lit F4; tools.loop_benchmark providers --protocol optimistic) in the row's unit on its core, between the rounds; each value checked against its production record at the timed points (production_check); a provider not re-timed keeps its production record (provider_kept)",
+ "provider_kept": "gg_gggg recola (its optimistic run stopped as hopeless after 88 min under the 45-minute rule (HANDOFF 0.1): still in Recola's generation / first call at ~51 % of its core); uux_ggggg madloop (its recorded generation / initial call 6006 s: beyond the 45-minute rule, HANDOFF 0.1); uux_ggggg recola (its recorded generation / initial call 10220 s: beyond the 45-minute rule, HANDOFF 0.1)",
+ "values_note": "binary64 values of 524e6cfa against ca602436 at every timed point: gg_gg-full 128/128 bitwise, max 0.0e+00; gg_gg-lc 128/128 bitwise, max 0.0e+00; gg_ggg-full 128/128 bitwise, max 0.0e+00; gg_ggg-lc 128/128 bitwise, max 0.0e+00; gg_gggg-full 52/128 bitwise, max 2.4e-13; gg_gggg-lc 70/128 bitwise, max 2.0e-14; gg_ggggg-full 11/128 bitwise, max 2.2e-12; gg_ggggg-lc 36/128 bitwise, max 3.9e-13; gg_ttxemepg_ew-full 2/128 bitwise, max 1.1e-09; gg_ttxemepg_qcd-full 10/128 bitwise, max 1.3e-11; gg_ttxemepg_qcd-lc 128/128 bitwise, max 0.0e+00; gg_ttxgg-full 65/128 bitwise, max 4.2e-14; gg_ttxgg-lc 63/128 bitwise, max 3.0e-13; uux_ddxg-full 128/128 bitwise, max 0.0e+00; uux_ddxg-lc 128/128 bitwise, max 0.0e+00; uux_emepddxg-full 14/128 bitwise, max 7.0e-13; uux_emepddxg-lc 17/128 bitwise, max 4.6e-12; uux_emepg-full 128/128 bitwise, max 0.0e+00; uux_emepg-lc 128/128 bitwise, max 0.0e+00; uux_emepgg-full 47/128 bitwise, max 2.9e-14; uux_emepgg-lc 65/128 bitwise, max 2.0e-14; uux_emepggg-full 21/128 bitwise, max 8.8e-12; uux_emepggg-lc 46/128 bitwise, max 6.8e-14; uux_ggg-full 128/128 bitwise, max 0.0e+00; uux_ggg-lc 128/128 bitwise, max 0.0e+00; uux_gggg-full 26/128 bitwise, max 1.5e-13; uux_gggg-lc 34/128 bitwise, max 6.4e-14; uux_ggggg-full 9/128 bitwise, max 8.9e-13; uux_ggggg-lc 23/128 bitwise, max 8.8e-13; uux_uuxg-full 128/128 bitwise, max 0.0e+00; uux_uuxg-lc 128/128 bitwise, max 0.0e+00",
+ "generation_protocol": "each arm's process generated once per configuration in its storing process (fresh PYAMPLICOL_CACHE_DIR; --store --generate-only), loaded by the timed processes; the generation cell is the head's storing run",
+ "ew_model": "reference/models/loop_qcd_qed_sm_Gmu_py3",
+ "host_provider_spread_source": "data/g1.json host_provider_spread (this campaign's G1 rows, same host)"
 }

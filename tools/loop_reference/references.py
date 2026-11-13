@@ -97,6 +97,15 @@ def _gmu_or_alpha_fixed(scheme, provider):
 
 
 def recola_commands(spec, points, uncached):
+    born, loop = spec["born_orders"]["QCD"], spec["loop_orders"]["QCD"]
+    return [*recola_setup_commands(spec, points, uncached),
+            f"legs {len(spec['pdgs'])}", f"born_gs {born}", f"loop_gs {loop}",
+            f"pow_lo {born}", f"pow_nlo {(born + loop) // 2}",
+            f"process {spec['recola']['process']}", "generate"]
+
+
+def recola_setup_commands(spec, points, uncached):
+    """Recola's scheme, masses, alpha_s and cache commands (no process lines)."""
     scheme = spec["scheme_data"]
     _gmu_or_alpha_fixed(scheme, "Recola")
     derived = derived_parameters(scheme)
@@ -121,26 +130,33 @@ def recola_commands(spec, points, uncached):
     lines.append(f"alphas {value(scheme, 'aS')} {points['mu_r'][0]} {scheme['active_flavours']}")
     if uncached:
         lines.append("cache 0")
-    born, loop = spec["born_orders"]["QCD"], spec["loop_orders"]["QCD"]
-    lines += [f"legs {len(spec['pdgs'])}", f"born_gs {born}", f"loop_gs {loop}",
-              f"pow_lo {born}", f"pow_nlo {(born + loop) // 2}",
-              f"process {spec['recola']['process']}", "generate"]
     return lines
 
 
 # ------------------------------------------------------------- OpenLoops
 
 def openloops_commands(spec):
+    born, loop = spec["born_orders"], spec["loop_orders"]
+    lines = openloops_setup_commands(spec)
+    at = lines.index("int ew_scheme 1")
+    lines[at:at] = [
+        f"int coupling_qcd_0 {born['QCD']}", f"int coupling_qcd_1 {(loop['QCD'] - born['QCD']) // 2}",
+        f"int coupling_ew_0 {born['QED']}", f"int coupling_ew_1 {(loop['QED'] - born['QED']) // 2}"]
+    if spec["correction"] == "EW":
+        lines.append("int ew_renorm 1")
+    lines.append(f"register 11 {spec['openloops']['process']}")
+    return lines
+
+
+def openloops_setup_commands(spec):
+    """OpenLoops' scheme and parameter commands (no coupling orders, no register)."""
     scheme = spec["scheme_data"]
     _gmu_or_alpha_fixed(scheme, "OpenLoops")
     derived = derived_parameters(scheme)
-    born, loop = spec["born_orders"], spec["loop_orders"]
     lines = [
         "int truepoles 1", "int polenorm 0", "int ct_on 1", "int r2_on 1", "int iop_on 0",
         f"int nf {scheme['loop_quark_flavours']}",
         f"int nq_nondecoupled {scheme['active_flavours']}",
-        f"int coupling_qcd_0 {born['QCD']}", f"int coupling_qcd_1 {(loop['QCD'] - born['QCD']) // 2}",
-        f"int coupling_ew_0 {born['QED']}", f"int coupling_ew_1 {(loop['QED'] - born['QED']) // 2}",
         "int ew_scheme 1", "int ew_renorm_scheme 1",
         f"int complex_mass_scheme {1 if scheme.get('complex_mass_scheme') else 0}",
         f"double gmu {value(scheme, 'Gf')}",
@@ -154,9 +170,6 @@ def openloops_commands(spec):
         f"double mass(13) {value(scheme, 'MM') or '0'}", f"double mass(11) {value(scheme, 'Me') or '0'}",
         f"double alpha_s {value(scheme, 'aS')}",
     ]
-    if spec["correction"] == "EW":
-        lines.append("int ew_renorm 1")
-    lines.append(f"register 11 {spec['openloops']['process']}")
     return lines
 
 
@@ -906,6 +919,8 @@ def command_run(args):
     reference_root = provider_paths.reference_root(args.reference_root)
     check_provider_paths(args, reference_root)
     spec = required_spec.load_process(args.spec, args.process, roots)
+    if spec.get("loop_induced"):
+        raise SystemExit(f"{args.process} is loop-induced: run it with li_references.py")
     if args.pdgs:
         spec["pdgs"] = [int(x) for x in args.pdgs.split(",")]  # one subprocess of a multiparticle export
     points = json.loads(args.points.read_text())

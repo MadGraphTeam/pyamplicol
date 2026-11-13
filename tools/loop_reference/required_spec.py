@@ -54,6 +54,8 @@ def load_process(path, name, roots=None):
     if overrides:
         scheme["parameter_overrides"] = dict(overrides)
     process["scheme_data"] = scheme
+    if process.get("loop_induced"):
+        return _loop_induced(process, roots)
     step = CORRECTION_STEP[process["correction"]]
     process["loop_orders"] = {k: process["born_orders"][k] + step[k] for k in ("QCD", "QED")}
     # A joint request ([virt=QCD QED] over several loop sectors) lists every
@@ -72,6 +74,39 @@ def load_process(path, name, roots=None):
     for key, value in (roots or {}).items():
         process["madloop"]["model"] = process["madloop"]["model"].replace("{" + key + "}", str(value))
     return process
+
+
+def _loop_induced(process, roots):
+    """A loop-induced specification (``"loop_induced": true``): no Born, the
+    observable is |A_loop|^2. ``loop_orders`` are the amplitude orders of the
+    one-loop amplitude itself (powers of g_s and e, as ``born_orders`` of an
+    ordinary row), given explicitly; the squared order of the observable is
+    twice them (``squared_orders``). ``correction`` names the loop's
+    perturbed order (MG5's ``[sqrvirt=QCD]`` / ``[sqrvirt=QED]``)."""
+    if "born_orders" in process or "born_orders_all" in process:
+        raise ValueError(f"{process['name']}: a loop-induced specification has no Born orders")
+    orders = process["loop_orders"]
+    if set(orders) != {"QCD", "QED"} or any(not isinstance(v, int) or v < 0 for v in orders.values()):
+        raise ValueError(f"{process['name']}: loop_orders must give non-negative QCD and QED powers")
+    if process["correction"] not in CORRECTION_STEP:
+        raise ValueError(f"{process['name']}: unknown correction {process['correction']!r}")
+    process["born_orders"] = None
+    process["born_orders_all"] = []
+    process["corrections"] = [process["correction"]]
+    process["squared_orders"] = {k: 2 * v for k, v in orders.items()}
+    process.setdefault("madloop", {})
+    process["madloop"].setdefault("model", process["scheme_data"]["madloop_model"])
+    for key, value in (roots or {}).items():
+        process["madloop"]["model"] = process["madloop"]["model"].replace("{" + key + "}", str(value))
+    return process
+
+
+def helicity_states(pdg, mass):
+    """Spin states summed for an external leg (the averaging convention):
+    2 for a fermion or a massless vector, 3 for a massive vector, 1 for a
+    scalar."""
+    info = particle(pdg)
+    return 2 if info["spin"] == "1/2" else (1 if info["spin"] == "0" else (3 if mass else 2))
 
 
 MASS_PARAMETERS = {4: "MC", 5: "MB", 6: "MT", 11: "Me", 13: "MM", 15: "MTA", 23: "MZ", 24: "MW", 25: "MH"}

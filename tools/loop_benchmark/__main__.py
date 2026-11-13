@@ -10,8 +10,9 @@ Subcommands:
 - ``stability``: stability estimates at chosen stream points (or at the
   reference fixture's points, ``--fixture``);
 - ``ward``: the Ward identity at chosen stream points (``pyamplicol_v2.ward``);
-- ``providers``: time MadLoop, Recola and OpenLoops in production mode on the
-  same stream (``providers.py``);
+- ``providers``: time MadLoop, Recola and OpenLoops in production mode, or each
+  in its most optimistic settings (``--protocol optimistic``), on the same
+  stream (``providers.py``);
 - ``gate``: combine the records into the gate table (``gate.py``).
 """
 
@@ -56,6 +57,37 @@ def main(argv: list[str] | None = None) -> int:
         "one chunk of lanes compiles every kernel)",
     )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
+    v2.add_argument(
+        "--reduction",
+        choices=("auto", "ninjars", "tirust"),
+        nargs="+",
+        default=["ninjars"],
+        help="the reduction backend of every evaluation (loops.v2.reduction."
+        "running); a loop-induced row (processes.json loop_induced) takes "
+        "several, each resolved as the runtime resolves a call "
+        "(reduction.resolve: requested, effective, reason) and timed in "
+        "paired blocks on the same points",
+    )
+    v2.add_argument(
+        "--one-helicity",
+        action="store_true",
+        help="loop-induced: also one arm per backend at the largest B on one "
+        "helicity (the plan's first helicity row, the single-helicity row "
+        "selection |A(h)|^2/avg: only its rows are dressed)",
+    )
+    v2.add_argument(
+        "--unchecked",
+        action="store_true",
+        help="loop-induced: every arm with the unchecked reduction setting "
+        "(reduction_unchecked: no backend acceptance or refusal checks; "
+        "m-lit lit-unchecked), recorded as 'unchecked'",
+    )
+    v2.add_argument(
+        "--tir-profile",
+        action="store_true",
+        help="loop-induced: also one TIRust arm with TIRust's own stage "
+        "profile (reduction: TIR masters ...), a stage split, not a timing",
+    )
     v2.add_argument(
         "--scratch",
         type=Path,
@@ -199,6 +231,31 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="also time MadLoop's stages with an instrumented driver",
     )
+    providers.add_argument(
+        "--madloop-one-helicity",
+        action="store_true",
+        help="loop-induced: also time MadLoop one helicity at a time (MadEvent mode)",
+    )
+    providers.add_argument(
+        "--madloop-param",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="MadLoopParams.dat entry for the MadLoop runs (e.g. MLReductionLib=6|7|1)",
+    )
+    providers.add_argument(
+        "--protocol",
+        choices=["production", "optimistic"],
+        default="production",
+        help="the providers' settings: their production settings, or each in "
+        "its most optimistic settings (providers.py)",
+    )
+    providers.add_argument(
+        "--production-json",
+        type=Path,
+        help="a production record of the row: every provider's finite values "
+        "are checked against it at the timed points (production_check)",
+    )
     providers.add_argument("--json", type=Path)
 
     gate = commands.add_parser("gate", help="combine records into the gate table")
@@ -213,6 +270,32 @@ def main(argv: list[str] | None = None) -> int:
         help="provider reference root: every provider file (MadLoop exports "
         "and their generation times) is resolved relative to it, never through "
         "the absolute paths of the records (default: $LOOP_REFERENCE_ROOT)",
+    )
+    gate.add_argument(
+        "--host-spread",
+        type=float,
+        help="another campaign's host provider spread on this host (its gate "
+        "document's host_provider_spread): the assumed uncertainty of a "
+        "provider without repeats where larger than this run's own",
+    )
+    gate.add_argument(
+        "--min-cpu-share",
+        type=float,
+        help="loop-induced blocks below this CPU share of their wall time are "
+        "left out (a shared core or a stopped job; default gate.MIN_CPU_SHARE)",
+    )
+    gate.add_argument(
+        "--li-timing",
+        type=Path,
+        help="also merge the loop-induced records into this li-timing.json "
+        "(the report's data/li-timing.json; the records of a row at the "
+        "same revision are replaced)",
+    )
+    gate.add_argument(
+        "--registry",
+        type=Path,
+        help="the registry of the loop-induced rows (default: the report's "
+        "data/milestone.json)",
     )
     gate.add_argument(
         "--meta",

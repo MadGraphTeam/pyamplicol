@@ -24,6 +24,44 @@ from that campaign, as the addendum asks:
   built with MG5's production Fortran flags, with ``COLLIERGlobalCache`` as
   in production (``collier_cache``); MadLoop always returns its poles.
 
+Loop-induced processes (``"loop_induced": true``, M-LIT) take the toolkit's
+loop-induced drivers (``tools/loop_reference/li_references.py``): OpenLoops'
+``ol_evaluate_loop2`` (amptype 12), Recola's ``loop_induced`` mode and MadLoop's
+Born-less driver on the export's own card (MG5's loop-induced default
+``MLReductionLib 7|6|1`` with the COLLIER poles off; ``--madloop-param
+MLReductionLib=6|7|1`` gives the OPP column, ``--madloop-one-helicity`` the
+one-helicity column ``madloop_one_helicity``), warmed up past MadLoop's
+loop-induced initialisation (at least CheckCycle + 1 calls over the points:
+its zero-test scale is the median of earlier results). The stage split
+then has a fourth bucket, MadLoop's colour-flow projection and squaring.
+
+**Most optimistic settings** (``--protocol optimistic``; m-lit F4, USER
+2026-11-08 ~14:40 / ~15:40: every comparison sets each provider up as a user
+after speed alone would): OpenLoops with its stability system off
+(``expert_mode 1``, ``stability_mode 11``: one double-precision evaluation
+with its first reduction library, where its loop-induced preset, stability
+mode 21, evaluates every point twice with two libraries); MadLoop without
+its stability test (``CTModeRun 1``: one evaluation, where ``-1`` evaluates
+both loop directions); Recola without dynamic settings
+(``set_dynamic_settings_rcl(0)``), so alpha_s and the scales are those set
+before the generation, outside the timer, and with its build recorded
+(``build``: the CMake build type and Fortran flags of the libraries the run
+links; Recola's CMake files optimise every source with -O2 unless the build
+type is Debug, so a build without a build type is its release build). The
+finite part of a loop-induced process does not depend on the scales.
+
+**Born-interfered rows** (m-lit lit-report G5; DECISIONS 2026-11-09 14:12,
+F4 "every comparison"): the same settings, plus OpenLoops without its
+I-operator poles (``ir_on 0``, ``OPTIMISTIC_OPENLOOPS_BORN``); Recola's
+dynamic settings off keep the alpha_s and scale set before its generation
+(the first stream point's mu_R), so Recola times the stream points at that
+mu_R (``same_scale``: the per-point time does not depend on the scale's
+value, and those points' values are production's), recorded as
+``stream_points``. ``--production-json`` compares every provider's finite
+values with a production record of the same tool at the timed points
+(``production_check``, relative to the larger value). The record's
+``protocol`` names the settings of every provider.
+
 Caches are those of production (REQUIREMENTS_ADDENDUM D). The one exception
 is the documented COLLIER global-cache defect at N = 7 of the releases
 ``COLLIER_CACHE_DEFECT`` (the toolkit's ``UNCACHED_LEG_THRESHOLD``): the
@@ -61,6 +99,7 @@ beyond HANDOFF §0.1) is recorded with that reason, never silently dropped.
 Usage:
     python -m tools.loop_benchmark providers gg_gggg --cpu 150 \\
         --work DIR --points 16 [--providers openloops recola madloop] \\
+        [--protocol production|optimistic] \\
         [--reference-root ROOT] [--madloop-export EXPORT] --json OUT.json
 """
 
@@ -113,6 +152,62 @@ class Trees:
 # DESIGN "Provider production columns"; the toolkit's UNCACHED_LEG_THRESHOLD
 # names them). Every other release keeps the production cache.
 COLLIER_CACHE_DEFECT = frozenset({"1.2.9", "1.2.10"})
+
+
+# The most optimistic settings (module docstring; ``--protocol optimistic``).
+OPTIMISTIC_OPENLOOPS = ("int expert_mode 1", "int stability_mode 11")
+# Born-interfered rows: the I-operator poles off as well (lit-report G5).
+OPTIMISTIC_OPENLOOPS_BORN = ("int ir_on 0",)
+OPTIMISTIC_MADLOOP = {"CTModeRun": "1"}
+
+
+def same_scale(points: dict[str, Any]) -> tuple[dict[str, Any], list[int]]:
+    """The points (toolkit format) whose mu_R is the first point's, and
+    their stream indices (0-based): what a provider whose scale is fixed at
+    its generation (Recola without dynamic settings) evaluates as production
+    would."""
+
+    first = points["mu_r"][0]
+    kept = [i for i, mu in enumerate(points["mu_r"]) if mu == first]
+    return {
+        **points,
+        "points": [points["points"][i] for i in kept],
+        "mu_r": [points["mu_r"][i] for i in kept],
+    }, kept
+
+
+def production_check(
+    result: dict[str, Any], production: dict[str, Any], tolerance: float = 1e-5
+) -> dict[str, Any]:
+    """A provider's finite values against a production record of the same
+    tool at the same stream points (``stream_points``, else the first n):
+    the largest relative deviation (to the larger value) and whether it is
+    within ``tolerance`` (the lax precision)."""
+
+    ours = result.get("rows") or []
+    theirs = production.get("rows") or []
+    indices = result.get("stream_points") or list(range(len(ours)))
+    worst, compared = 0.0, 0
+    for row, index in zip(ours, indices, strict=True):
+        if index >= len(theirs):
+            continue
+        a, b = float(row["finite"]), float(theirs[index]["finite"])
+        scale = max(abs(a), abs(b))
+        worst = max(worst, abs(a - b) / scale if scale else 0.0)
+        compared += 1
+    return {
+        "points": compared,
+        "max_relative": worst,
+        "tolerance": tolerance,
+        "passed": compared > 0 and worst <= tolerance,
+    }
+
+
+def optimistic_params(params: dict[str, str] | None) -> dict[str, str]:
+    """MadLoop's most optimistic card entries over ``params`` (an explicit
+    ``--madloop-param`` of the same key wins: it is the caller's choice)."""
+
+    return {**OPTIMISTIC_MADLOOP, **(params or {})}
 
 
 def collier_cache(legs: int, version: str | None) -> dict[str, Any]:
@@ -352,7 +447,12 @@ def _summary(rows: list[dict[str, Any]], extra: dict[str, Any], wall: float) -> 
 
 
 def openloops(
-    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    trees: Trees,
+    protocol: str = "production",
 ) -> dict[str, Any]:
     references = _references()
     openloops_tree = trees.openloops
@@ -378,12 +478,19 @@ def openloops(
             check=True,
             cwd=run,
         )
-    commands = [
-        "int truepoles 0" if c == "int truepoles 1" else c
-        for c in references.openloops_commands(spec)
-    ]
+    built = (
+        _li_references().openloops_commands(spec)
+        if spec.get("loop_induced")
+        else references.openloops_commands(spec)
+    )
+    commands = ["int truepoles 0" if c == "int truepoles 1" else c for c in built]
     if "int truepoles 0" not in commands:
         raise RuntimeError("the toolkit's OpenLoops commands changed")
+    if protocol == "optimistic":
+        at = next(i for i, c in enumerate(commands) if c.startswith("register "))
+        commands[at:at] = OPTIMISTIC_OPENLOOPS + (
+            () if spec.get("loop_induced") else OPTIMISTIC_OPENLOOPS_BORN
+        )
     count = len(points["points"])
     lines = [*commands, f"points {count}", *references.point_lines(points)]
     stdin = "\n".join(lines) + "\n"
@@ -398,8 +505,16 @@ def openloops(
     library = spec["openloops"]["library"]
     return {
         "provider": "openloops",
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, "
-        "default stability)",
+        "protocol": protocol,
+        "mode": (
+            "most optimistic: truepoles 0, stability system off (expert_mode 1, "
+            "stability_mode 11: one double-precision evaluation)"
+            + ("" if spec.get("loop_induced") else ", I-operator poles off (ir_on 0)")
+            + ", Collier cache"
+            if protocol == "optimistic"
+            else "production: truepoles 0 (Collier cache, I-operator poles, "
+            "default stability)"
+        ),
         "version": f"OpenLoops {references.openloops_release(openloops_tree)}",
         "library": {
             "name": library,
@@ -412,7 +527,9 @@ def openloops(
 
 
 def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
-    """The toolkit's Recola driver with an ``irpoles <0|1>`` command, linked
+    """The toolkit's Recola driver with an ``irpoles <0|1>`` command and a
+    ``dynamic <0|1>`` one (0: no dynamic settings, and no per-point alpha_s
+    or scale calls: those set before the generation hold), linked
     with ``link`` (``library_path``) as the linker's search path for the
     libraries Recola's own need (before their RUNPATH)."""
 
@@ -420,16 +537,32 @@ def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
     patches = (
         (
             "  integer :: stored_nf = -1\n",
-            "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n",
+            "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n"
+            "  integer :: dynamic = 1\n",
         ),
         (
             "    case ('cache')",
             "    case ('irpoles')\n      read(line, *) keyword, irpoles\n"
+            "    case ('dynamic')\n      read(line, *) keyword, dynamic\n"
             "    case ('cache')",
         ),
         (
             "      call set_compute_ir_poles_rcl(1)",
             "      call set_compute_ir_poles_rcl(irpoles)",
+        ),
+        (
+            "      call set_dynamic_settings_rcl(1)",
+            "      call set_dynamic_settings_rcl(dynamic)",
+        ),
+        (
+            "    call set_alphas_rcl(stored_alpha_s, scales(i), stored_nf)\n"
+            "    call set_mu_uv_rcl(scales(i))\n"
+            "    call set_mu_ir_rcl(scales(i))\n",
+            "    if (dynamic == 1) then\n"
+            "      call set_alphas_rcl(stored_alpha_s, scales(i), stored_nf)\n"
+            "      call set_mu_uv_rcl(scales(i))\n"
+            "      call set_mu_ir_rcl(scales(i))\n"
+            "    end if\n",
         ),
         (
             "    call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR1', result(3))\n"
@@ -471,8 +604,54 @@ def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
     return binary
 
 
+def cmake_build(tree: Path, root: Path, target: str) -> dict[str, Any] | None:
+    """The CMake build of ``tree`` among the reference root's builds (a
+    ``CMakeCache.txt`` below ``root/builds`` whose source directory is
+    ``tree``): its build type and the Fortran flags of ``target``; None when
+    no such build is found."""
+
+    for cache in sorted(
+        [*root.glob("builds/*/CMakeCache.txt"), *root.glob("builds/*/*/CMakeCache.txt")]
+    ):
+        entries = {}
+        for line in cache.read_text().splitlines():
+            if line.startswith(("//", "#")) or "=" not in line:
+                continue
+            name, value = line.split("=", 1)
+            entries[name.split(":", 1)[0]] = value
+        home = entries.get("CMAKE_HOME_DIRECTORY")
+        if home is None or Path(home).resolve() != tree.resolve():
+            continue
+        flags = sorted(cache.parent.glob(f"**/CMakeFiles/{target}.dir/flags.make"))
+        fortran, per_source = None, set()
+        for line in flags[0].read_text().splitlines() if flags else ():
+            if line.startswith("Fortran_FLAGS"):
+                # Without the module output directory (-J<dir>): a path.
+                fortran = " ".join(
+                    flag
+                    for flag in line.split("=", 1)[1].split()
+                    if not flag.startswith("-J")
+                )
+            elif line.startswith("# Custom flags:") and "=" in line:
+                per_source.add(line.split("=", 1)[1].strip())
+        return {
+            "build_dir": str(cache.parent.relative_to(root)),
+            "build_type": entries.get("CMAKE_BUILD_TYPE") or "(none)",
+            "fortran_flags": fortran,
+            # Recola's and its model file's CMakeLists set the optimisation
+            # per source file (-O2 unless the build type is Debug).
+            "source_flags": sorted(per_source),
+        }
+    return None
+
+
 def recola(
-    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    trees: Trees,
+    protocol: str = "production",
 ) -> dict[str, Any]:
     references = _references()
     recola_tree = trees.recola
@@ -504,8 +683,14 @@ def recola(
         cache = collier_cache(len(spec["pdgs"]), collier[0])
         if cache["on"] is None:
             raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
-        commands = references.recola_commands(spec, points, not cache["on"])
+        commands = (
+            _li_references().recola_commands(spec, points, not cache["on"])
+            if spec.get("loop_induced")
+            else references.recola_commands(spec, points, not cache["on"])
+        )
         commands.insert(commands.index("generate"), "irpoles 0")
+        if protocol == "optimistic":
+            commands.insert(commands.index("generate"), "dynamic 0")
         count = len(points["points"])
         lines = [*commands, f"points {count}", *references.point_lines(points)]
         stdin = "\n".join(lines) + "\n"
@@ -513,11 +698,31 @@ def recola(
             [str(binary)], stdin, run, run / "output.log", cpu
         )
     rows, extra = references.parse_rows(stdout, "recola", count)
+    build = {
+        name: cmake_build(tree, root, target)
+        for name, tree, target in (
+            ("librecola.so", recola_tree, "recola"),
+            (
+                "libmodelfile.so",
+                Path(linked.get("libmodelfile.so", {}).get("path", ".")).parent,
+                "modelfile",
+            ),
+        )
+        if name in linked
+    }
     return {
         "provider": "recola",
-        "mode": "production: compute_ir_poles 0, Collier global cache "
+        "protocol": protocol,
+        "mode": (
+            "most optimistic: dynamic_settings 0 (alpha_s and the scales set "
+            "before the generation, outside the timer), compute_ir_poles 0, "
+            if protocol == "optimistic"
+            else "production: compute_ir_poles 0, "
+        )
+        + "Collier global cache "
         + ("on" if cache["on"] else "off")
         + f" ({cache['reason']})",
+        "build": build,
         "version": "Recola2 (tree "
         + recola_tree.name
         + ") / "
@@ -533,7 +738,11 @@ def recola(
 
 
 def _prepare_madloop(
-    spec: dict, export: Path, run: Path, trees: Trees
+    spec: dict,
+    export: Path,
+    run: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The toolkit's ``prepare_madloop_run`` (it sets ``COLLIERGlobalCache``
     to 0 at seven legs or more) with the export's own production value
@@ -542,7 +751,9 @@ def _prepare_madloop(
 
     references = _references()
     legs = len(spec["pdgs"])
-    settings = references.prepare_madloop_run(spec, export, run, trees.mg5, legs)
+    settings = references.prepare_madloop_run(
+        spec, export, run, trees.mg5, legs, params
+    )
     cache = collier_cache(legs, _madloop_collier(export, trees.root))
     if cache["on"] is None:
         raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
@@ -561,28 +772,51 @@ def _prepare_madloop(
     return settings, cache
 
 
-def madloop(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
-) -> dict[str, Any]:
+def _madloop_production_run(
+    spec: dict,
+    export: Path,
+    run: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> tuple[Path, list[str], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """A MadLoop run directory at the export's production build: the
+    production-flag check, the driver built against the relocated export
+    (Born-less for a loop-induced process) and the prepared card. Returns the
+    driver, its QP model repairs, the build flags, the card settings and the
+    Collier cache decision."""
+
     references = _references()
-    mg5 = trees.mg5
-    run = work / "madloop-run"
     run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, mg5)
+    flags = references.madloop_build_flags(export, trees.mg5)
     if not flags["production_build"]:
         raise RuntimeError(f"{export} is not built with MG5's production flags")
-    with _relocated_madloop_build(trees.root):
-        binary, repairs = references.build_madloop(
-            export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-        )
-    settings, cache = _prepare_madloop(spec, export, run, trees)
-    born, loop = spec["born_orders"], spec["loop_orders"]
-    count = len(points["points"])
-    alpha_s = references.value(spec["scheme_data"], "aS")
-    header = (
-        f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
-        f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
+    build = (
+        _li_references().build_madloop
+        if spec.get("loop_induced")
+        else references.build_madloop
     )
+    with _relocated_madloop_build(trees.root):
+        binary, repairs = build(export, run, flags["export_make_opts"]["GLOBAL_FLAG"])
+    settings, cache = _prepare_madloop(spec, export, run, trees, params)
+    return binary, repairs, flags, settings, cache
+
+
+def madloop(
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    references = _references()
+    run = work / "madloop-run"
+    binary, repairs, flags, settings, cache = _madloop_production_run(
+        spec, export, run, trees, params
+    )
+    count = len(points["points"])
+    header = _madloop_header(spec, run, count)
     stdin = header + "\n".join(references.point_lines(points)) + "\n"
     stdout, wall = references.run_native(
         [str(binary)], stdin, run, run / "output.log", cpu
@@ -590,8 +824,23 @@ def madloop(
     rows, extra = references.parse_rows(stdout, "madloop", count)
     return {
         "provider": "madloop",
-        "mode": "production: MLStabThres and the default stability test, MG5 "
-        "production Fortran flags, COLLIERGlobalCache "
+        "protocol": (
+            "optimistic"
+            if settings["MadLoopParams"].get("CTModeRun") == "1"
+            else "production"
+        ),
+        "loop_induced": bool(spec.get("loop_induced")),
+        "mode": (
+            "loop-induced, the export's card (warm-up past the initialisation), "
+            if spec.get("loop_induced")
+            else ""
+        )
+        + (
+            "most optimistic: no stability test (CTModeRun 1), MG5 "
+            if settings["MadLoopParams"].get("CTModeRun") == "1"
+            else "production: MLStabThres and the default stability test, MG5 "
+        )
+        + "production Fortran flags, COLLIERGlobalCache "
         + ("as in production" if cache["on"] else "0")
         + f" ({cache['reason']})",
         "version": "MadLoop/MG5_aMC 3.7.0",
@@ -604,31 +853,100 @@ def madloop(
     }
 
 
+def madloop_one_helicity(
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """MadLoop's one-helicity column of a loop-induced process (PLAN §5.1,
+    MadEvent mode): the Born-less driver at the production card evaluates,
+    after its warm-up and each point's helicity-summed call, every helicity
+    configuration of the point alone (``SLOOPMATRIXHEL_THRES``). MadLoop
+    clears its reduction caches at every call (``AUTOMATIC_CACHE_CLEARING``),
+    so a one-helicity call never reuses the summed call's integrals. The
+    column is the mean over the stream's points of the calls of the
+    helicities MadLoop keeps (a non-zero value; its helicity filter, level 2
+    in production, returns the filtered ones as zero at once), the
+    configurations MadEvent samples one per event."""
+
+    references = _references()
+    li = _li_references()
+    run = work / "madloop-one-helicity-run"
+    binary, _, _, settings, _ = _madloop_production_run(
+        spec, export, run, trees, params
+    )
+    count = len(points["points"])
+    tuples = references.madloop_helicities(export)
+    stdin = (
+        _madloop_header(spec, run, count)
+        + "\n".join(references.point_lines(points))
+        + f"\n{len(tuples)}\n"
+        + "\n".join(" ".join(map(str, h)) for h in tuples)
+        + "\n"
+    )
+    stdout, wall = references.run_native(
+        [str(binary)], stdin, run, run / "output.log", cpu
+    )
+    helavg, _ = li.helavg_factor(references.madloop_process_dir(export))
+    rows, _ = li.parse_madloop(stdout, count, helavg)
+    kept = [
+        [entry["seconds"] for entry in row["per_helicity"] if entry["value"] != 0]
+        for row in rows
+    ]
+    calls = [s for per_point in kept for s in per_point]
+    if not calls:
+        raise RuntimeError("MadLoop kept no helicity at the stream's points")
+    return {
+        "mean_seconds_per_call": statistics.fmean(calls),
+        "median_seconds_per_call": statistics.median(calls),
+        "min_seconds_per_call": min(calls),
+        "max_seconds_per_call": max(calls),
+        "calls": len(calls),
+        "helicities": len(tuples),
+        "kept_helicities_per_point": [len(per_point) for per_point in kept],
+        "summed_mean_seconds_per_point_same_run": statistics.fmean(
+            row["seconds"] for row in rows
+        ),
+        "madloop_params": settings["MadLoopParams"],
+        "process_wall_seconds": wall,
+        "method": "per point: the helicity-summed call, then each helicity alone "
+        "(SLOOPMATRIXHEL_THRES, caches cleared per call); mean over the calls of "
+        "the helicities MadLoop keeps (non-zero value)",
+    }
+
+
 # MadLoop's per-point call sites, grouped as the live report shows them:
 # 0 loop-numerator coefficients (COEF_CONSTRUCTION), 1 Born, counterterm and
 # shared wavefunction HELAS calls (HELAS_CALLS_AMPB, HELAS_CALLS_UVCT),
 # 2 reduction and masters (LOOP_CT_CALLS: the reducers and their integrals,
 # stability retries included); multiple-precision variants count alike.
 STAGE_CALL = re.compile(
-    r"\s+CALL ML5_\d+_(?:MP_)?(COEF_CONSTRUCTION|HELAS_CALLS_AMPB|HELAS_CALLS_UVCT"
-    r"|LOOP_CT_CALLS)_\d+\(.*\)\s*$"
+    r"\s+CALL ML5_\d+_(?:MP_)?(?:(COEF_CONSTRUCTION|HELAS_CALLS_AMPB|HELAS_CALLS_UVCT"
+    r"|LOOP_CT_CALLS)_\d+|(COMPUTE_COLOR_FLOWS|COMPUTE_RES_FROM_JAMP))\(.*\)\s*$"
 )
 STAGE_BUCKETS = {
     "COEF_CONSTRUCTION": 0,
     "HELAS_CALLS_AMPB": 1,
     "HELAS_CALLS_UVCT": 1,
     "LOOP_CT_CALLS": 2,
+    "COMPUTE_COLOR_FLOWS": 3,
+    "COMPUTE_RES_FROM_JAMP": 3,
 }
 STAGE_NAMES = (
     "loop numerator coefficients",
     "Born and counterterm HELAS",
     "reduction and masters",
+    "colour flows and squaring",
 )
 STAGE_TIMER = r"""
 #include <stdio.h>
 #include <time.h>
-static double total[3], begin[3];
-static unsigned long long calls[3];
+static double total[4], begin[4];
+static unsigned long long calls[4];
 static double now(void) {
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
@@ -642,15 +960,21 @@ void reference_stage_stop_(const int *i) {
 __attribute__((destructor)) static void report(void) {
   FILE *f = fopen("madloop-stages.json", "w");
   if (!f) return;
-  fprintf(f, "{\"seconds\": [%.9e, %.9e, %.9e], \"calls\": [%llu, %llu, %llu]}\n",
-          total[0], total[1], total[2], calls[0], calls[1], calls[2]);
+  fprintf(f, "{\"seconds\": [%.9e, %.9e, %.9e, %.9e], "
+             "\"calls\": [%llu, %llu, %llu, %llu]}\n",
+          total[0], total[1], total[2], total[3],
+          calls[0], calls[1], calls[2], calls[3]);
   fclose(f);
 }
 """
 
 
 def _instrumented_madloop(
-    export: Path, run: Path, global_flag: str, reference_root: Path
+    export: Path,
+    run: Path,
+    global_flag: str,
+    reference_root: Path,
+    loop_induced: bool = False,
 ) -> Path:
     """MadLoop's driver linked with copies of ``loop_matrix.f`` and
     ``mp_compute_loop_coefs.f`` whose stage calls are bracketed by wall-clock
@@ -668,7 +992,7 @@ def _instrumented_madloop(
         for line in (process / name).read_text().splitlines(keepends=True):
             match = STAGE_CALL.match(line)
             if match:
-                bucket = STAGE_BUCKETS[match.group(1)]
+                bucket = STAGE_BUCKETS[match.group(1) or match.group(2)]
                 lines += [
                     f"      CALL REFERENCE_STAGE_START({bucket})\n",
                     line,
@@ -716,11 +1040,16 @@ def _instrumented_madloop(
         cwd=run,
     )
     objects.append(run / "stage_timer.o")
-    driver = run / "madloop_driver.f90"
+    source = "madloop_li_driver.f90" if loop_induced else "madloop_driver.f90"
+    prefix = references.madloop_prefix(process)
+    driver = run / source
     driver.write_text(
-        (streams.REFERENCE / "madloop_driver.f90")
+        (streams.REFERENCE / source)
         .read_text()
-        .replace("ML5_0_", references.madloop_prefix(process))
+        .replace("ML5_0_", prefix)
+        .replace(
+            "HELCONFIGS_FILE", f"SubProcesses/MadLoop5_resources/{prefix}HelConfigs.dat"
+        )
     )
     fixes, _ = references.madloop_model_fix(export, run, global_flag)
     binary = run / "madloop-driver-stages"
@@ -751,7 +1080,13 @@ def _instrumented_madloop(
 
 
 def madloop_stages(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """MadLoop's numerator / Born-and-CT / reduction-and-masters split.
 
@@ -768,14 +1103,15 @@ def madloop_stages(
     run = work / "madloop-stages-run"
     run.mkdir(parents=True, exist_ok=True)
     flags = references.madloop_build_flags(export, mg5)
+    loop_induced = bool(spec.get("loop_induced"))
     binary = _instrumented_madloop(
-        export, run, flags["export_make_opts"]["GLOBAL_FLAG"], trees.root
+        export, run, flags["export_make_opts"]["GLOBAL_FLAG"], trees.root, loop_induced
     )
-    _prepare_madloop(spec, export, run, trees)
-    born, loop = spec["born_orders"], spec["loop_orders"]
-    alpha_s = references.value(spec["scheme_data"], "aS")
+    _prepare_madloop(spec, export, run, trees, params)
     totals = {}
     rows = {}
+    if loop_induced:
+        return _li_madloop_stages(spec, points, run, cpu, binary)
     # MadLoop stores its helicity and loop filters in the resources at the
     # end of its initialisation; the untimed warm-up writes them, so both
     # measured runs load them and initialise identically.
@@ -786,10 +1122,7 @@ def madloop_stages(
             "points": points["points"][:count],
             "mu_r": points["mu_r"][:count],
         }
-        header = (
-            f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
-            f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
-        )
+        header = _madloop_header(spec, run, count)
         stdin = header + "\n".join(references.point_lines(subset)) + "\n"
         stdout, _ = references.run_native(
             [str(binary)], stdin, run, run / f"output-{label}.log", cpu
@@ -817,6 +1150,85 @@ def madloop_stages(
                 totals["all"]["calls"], totals["first"]["calls"], strict=True
             )
         ],
+    }
+
+
+def _li_references() -> Any:
+    _references()
+    import li_references
+
+    return li_references
+
+
+def _madloop_header(spec: dict, run: Path, count: int) -> str:
+    """The driver's first input lines at MadLoop's production setting: the
+    Born and loop squared orders (Born-interfered driver) or the loop squared
+    orders and the warm-up count CheckCycle + 1 (loop-induced driver)."""
+
+    references = _references()
+    alpha_s = references.value(spec["scheme_data"], "aS")
+    if spec.get("loop_induced"):
+        orders = spec["squared_orders"]
+        warmup = _li_references().checkcycle(run) + 1
+        return f"{orders['QCD']} {orders['QED']} {alpha_s} -1 0 {warmup}\n{count}\n"
+    born, loop = spec["born_orders"], spec["loop_orders"]
+    return (
+        f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
+        f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
+    )
+
+
+def _li_madloop_stages(
+    spec: dict, points: dict, run: Path, cpu: int, binary: Path
+) -> dict[str, Any]:
+    """The loop-induced stage split: the instrumented Born-less driver warms
+    up over the points (CheckCycle + 1 calls at least) and then times them;
+    a run over the n points and one over the same n points twice have the
+    same warm-up, so the difference of their stage totals over n is the
+    per-point stage time (the second pass repeats points 1..n, each call
+    still a new point after the previous one)."""
+
+    references = _references()
+    n = len(points["points"])
+    totals, rows = {}, {}
+    runs = (("warm-up", 1), ("once", 1), ("twice", 2))
+    for label, repeat in runs:
+        subset = {
+            **points,
+            "points": points["points"] * repeat,
+            "mu_r": points["mu_r"] * repeat,
+        }
+        count = n * repeat
+        stdin = (
+            _madloop_header(spec, run, count)
+            + "\n".join(references.point_lines(subset))
+            + "\n"
+        )
+        stdout, _ = references.run_native(
+            [str(binary)], stdin, run, run / f"output-{label}.log", cpu
+        )
+        rows[label], _ = references.parse_rows(stdout, "madloop", count)
+        totals[label] = json.loads((run / "madloop-stages.json").read_text())
+    stage = [
+        (a - b) / n
+        for a, b in zip(
+            totals["twice"]["seconds"], totals["once"]["seconds"], strict=True
+        )
+    ]
+    per_point = statistics.fmean(row["seconds"] for row in rows["twice"][n:])
+    return {
+        "stages_seconds_per_point": dict(zip(STAGE_NAMES, stage, strict=True)),
+        "residual_seconds_per_point": per_point - sum(stage),
+        "instrumented_seconds_per_point": per_point,
+        "points": n,
+        "calls_per_point": [
+            (a - b) / n
+            for a, b in zip(
+                totals["twice"]["calls"], totals["once"]["calls"], strict=True
+            )
+        ],
+        "method": "loop-induced: (stage totals of the points twice - once) / n, "
+        "same warm-up",
     }
 
 
@@ -895,6 +1307,7 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
     ]
     out = {
         "provider": provider,
+        "protocol": "production",
         "mode": mode,
         "protocol_mode": protocol,
         "version": data.get("version"),
@@ -921,6 +1334,9 @@ def _modified(path: Path) -> str:
     return stamp.strftime("%Y-%m-%d %H:%M UTC")
 
 
+VALUE_ANNOTATIONS = ("values_excluded", "value_exceptions")
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -939,8 +1355,12 @@ def main(options: Any) -> int:
         "2..n, 1 timed one by one with the driver's own timer",
         "providers": {},
     }
+    protocol = getattr(options, "protocol", "production")
+    production = getattr(options, "production_json", None)
+    production = json.loads(production.read_text()) if production else None
     if options.json and options.json.exists():
         record = json.loads(options.json.read_text())
+    record["protocol"] = protocol
     trees = Trees(options)
     for provider in options.providers:
         start = time.perf_counter()
@@ -953,21 +1373,53 @@ def main(options: Any) -> int:
             elif reason is not None:
                 result = {"provider": provider, "unavailable": reason}
             elif provider == "openloops":
-                result = openloops(spec, points, work, options.cpu, trees)
+                result = openloops(spec, points, work, options.cpu, trees, protocol)
             elif provider == "recola":
-                result = recola(spec, points, work, options.cpu, trees)
+                kept = None
+                timed = points
+                if protocol == "optimistic" and not spec.get("loop_induced"):
+                    # No dynamic settings: the generation's scale holds.
+                    timed, kept = same_scale(points)
+                result = recola(spec, timed, work, options.cpu, trees, protocol)
+                if kept is not None:
+                    result["stream_points"] = kept
             else:
                 export = trees.madloop_export(spec, options.madloop_export)
                 if export is None:
                     raise RuntimeError("no MadLoop export for this process")
-                result = madloop(spec, points, work, options.cpu, export, trees)
+                params = dict(
+                    item.split("=", 1)
+                    for item in getattr(options, "madloop_param", None) or ()
+                )
+                if protocol == "optimistic":
+                    params = optimistic_params(params)
+                result = madloop(
+                    spec, points, work, options.cpu, export, trees, params or None
+                )
                 if options.madloop_stages:
                     result["stages"] = madloop_stages(
-                        spec, points, work, options.cpu, export, trees
+                        spec, points, work, options.cpu, export, trees, params or None
+                    )
+                if getattr(options, "madloop_one_helicity", False):
+                    if not spec.get("loop_induced"):
+                        raise RuntimeError(
+                            "the one-helicity column is loop-induced only"
+                        )
+                    result["one_helicity"] = madloop_one_helicity(
+                        spec, points, work, options.cpu, export, trees, params or None
                     )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
+        # The specification's value annotations travel with the timing: values
+        # excluded as a reference (a different scheme) or recorded exceptions
+        # at stream points (1-based) where the provider is no reference.
+        for field in VALUE_ANNOTATIONS:
+            if field in spec.get(provider, {}) and "error" not in result:
+                result[field] = spec[provider][field]
         result["harness_wall_seconds"] = time.perf_counter() - start
+        reference = (production or {}).get("providers", {}).get(provider)
+        if reference is not None and "rows" in result and "rows" in reference:
+            result["production_check"] = production_check(result, reference)
         record["providers"][provider] = result
         mean = result.get("mean_seconds_per_point")
         if "error" in result:

@@ -9,8 +9,8 @@ and seven gluons against pyAmpliCol's leading colour.
 (n-1)! colour orderings and the non-vanishing helicities: S0 = sum |A0|^2,
 S1 = sum 2 Re(conj(A0) A1) (FDH, unrenormalised, c_Gamma and couplings
 factored out as in NJet's colour sums). pyAmpliCol's leading colour keeps
-the leading N_c degree (n_f of degree 0: no quark loops, beta_0 -> 11 N_c/3;
-research-leading-colour-structure.md §1), at which every ordering enters
+the leading N_c degree (n_f of degree 0: no quark loops, beta_0 -> 11 N_c/3),
+at which every ordering enters
 with N_c^n (Born) and N_c^(n+1) (virtual), so the leading-colour virtual over
 the leading-colour Born is
 
