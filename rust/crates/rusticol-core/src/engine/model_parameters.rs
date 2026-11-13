@@ -494,6 +494,11 @@ fn safe_symbol_path(text: &str) -> String {
 #[cfg(feature = "symbolica-runtime")]
 type DerivedParameterValue = (usize, Option<usize>, Complex<Float>);
 
+/// The binary64 bit patterns of the parameter values and every derived
+/// parameter's value derived from them at one precision.
+#[cfg(feature = "symbolica-runtime")]
+type StoredDerivation = (Vec<u64>, Vec<DerivedParameterValue>);
+
 /// The derived model parameters of one execution runtime at the working
 /// precision, for the double-double and arbitrary-precision paths.
 ///
@@ -510,6 +515,10 @@ pub(super) struct ExactModelParameterDerivation {
     inputs: Vec<(Atom, Option<usize>, Option<usize>)>,
     /// Each derived output's definition with its real and imaginary slots.
     outputs: Vec<(Atom, usize, Option<usize>)>,
+    /// The last derivation at each precision (bits): an integration evaluates
+    /// point after point with the same parameters, often at more than one
+    /// precision, and each derivation costs a symbolic evaluation.
+    last: std::sync::Mutex<BTreeMap<u32, StoredDerivation>>,
 }
 
 #[cfg(feature = "symbolica-runtime")]
@@ -570,11 +579,36 @@ impl ExactModelParameterDerivation {
                 ))
             })
             .collect::<RusticolResult<Vec<_>>>()?;
-        Ok(Self { inputs, outputs })
+        Ok(Self {
+            inputs,
+            outputs,
+            last: std::sync::Mutex::new(BTreeMap::new()),
+        })
     }
 
-    /// (real slot, imaginary slot, value at `bits` bits) of every derived output.
+    /// (real slot, imaginary slot, value at `bits` bits) of every derived
+    /// output; derived once per set of parameter values and precision.
     fn evaluate(&self, values: &[f64], bits: u32) -> RusticolResult<Vec<DerivedParameterValue>> {
+        let key: Vec<u64> = values.iter().map(|value| value.to_bits()).collect();
+        // The map changes only after a derivation succeeded, so a panic
+        // while the lock is held leaves it consistent.
+        let mut last = self
+            .last
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some((cached, derived)) = last.get(&bits)
+            && *cached == key
+        {
+            return Ok(derived.clone());
+        }
+        let derived = self.derive(values, bits)?;
+        last.insert(bits, (key, derived.clone()));
+        Ok(derived)
+    }
+
+    /// The derivation itself: every output's definition at `bits` bits, from
+    /// the external parameters' binary64 values promoted exactly.
+    fn derive(&self, values: &[f64], bits: u32) -> RusticolResult<Vec<DerivedParameterValue>> {
         let _unlock = crate::licence::unlock();
         let component = |index: Option<usize>| -> RusticolResult<Float> {
             let value = match index {
@@ -812,7 +846,65 @@ fn validate_particle_mass_class_stability(
 
 #[cfg(all(test, feature = "symbolica-runtime"))]
 mod exact_parameter_tests {
-    use super::{safe_symbol_part, safe_symbol_path};
+    use super::{
+        BTreeMap, CompiledModelDefinitions, ExactModelParameterDerivation,
+        GenericDerivedParameterOutputManifest, GenericRuntimeModelParameterManifest,
+        safe_symbol_part, safe_symbol_path,
+    };
+
+    /// A stored derivation answers only for the values and the precision it
+    /// was derived at: a new input is derived anew, the old one gives the old
+    /// value again bit for bit, and one precision never answers for another.
+    #[test]
+    fn derived_parameters_follow_the_inputs_and_the_precision() {
+        // UFO `G = 2 sqrt(Pi aS)` as a compiled model writes it; slot 0 holds
+        // aS, slot 1 the binary64 G.
+        let model = CompiledModelDefinitions {
+            namespace: "model_cache_test".into(),
+            definitions: BTreeMap::from([(
+                "G".into(),
+                "2*model_cache_test::{}::aS^(1/2)*𝜋^(1/2)".into(),
+            )]),
+        };
+        let input = GenericRuntimeModelParameterManifest {
+            name: "aS".into(),
+            kind: "external_parameter".into(),
+            parameter_index: 0,
+            default: 0.118,
+            pdg: None,
+            runtime_name: None,
+            complex_component: None,
+        };
+        let output = GenericDerivedParameterOutputManifest {
+            runtime_name: "G".into(),
+            output_index: 0,
+            real_parameter_index: 1,
+            imag_parameter_index: None,
+        };
+        let derivation = ExactModelParameterDerivation::new(&model, &[input], &[output]).unwrap();
+        // G at (aS, bits), checked against a derivation that bypasses the
+        // stored ones: the same value at the same precision.
+        let g = |alpha_s: f64, bits: u32| {
+            let values = [alpha_s, 0.0];
+            let stored = derivation.evaluate(&values, bits).unwrap();
+            let fresh = derivation.derive(&values, bits).unwrap();
+            let ([(1, None, stored)], [(1, None, fresh)]) = (&stored[..], &fresh[..]) else {
+                panic!("G must be one real output in slot 1");
+            };
+            assert_eq!(
+                (stored.re.prec(), stored),
+                (fresh.re.prec(), fresh),
+                "G at aS = {alpha_s}, {bits} bits"
+            );
+            stored.re.clone()
+        };
+        let first = g(0.118, 170);
+        assert_eq!(g(0.118, 170), first);
+        assert_ne!(g(0.13, 170), first);
+        assert_eq!(g(0.118, 170), first);
+        assert_ne!(g(0.118, 324), first);
+        assert_eq!(g(0.118, 170), first);
+    }
 
     #[test]
     fn symbol_names_follow_the_python_model_registry() {
