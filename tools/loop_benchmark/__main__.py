@@ -29,6 +29,12 @@ def main(argv: list[str] | None = None) -> int:
 
     freeze = commands.add_parser("streams", help="write streams/<key>.json")
     freeze.add_argument("keys", nargs="*")
+    freeze.add_argument(
+        "--replace-degenerate",
+        action="store_true",
+        help="replace the degenerate points of the frozen streams in place "
+        "(streams.replace_degenerate) instead of writing new streams",
+    )
 
     v2 = commands.add_parser("pyamplicol", help="time pyAmpliCol v2")
     v2.add_argument("process")
@@ -308,7 +314,10 @@ def main(argv: list[str] | None = None) -> int:
     if options.command == "streams":
         from . import streams
 
-        streams.write(options.keys or streams.keys())
+        if options.replace_degenerate:
+            streams.repair(options.keys or streams.keys())
+        else:
+            streams.write(options.keys or streams.keys())
         return 0
     if options.command == "pyamplicol":
         from . import pyamplicol_v2
