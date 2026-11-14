@@ -3072,50 +3072,16 @@ FIG7_DECADES = range(3, 16)
 
 
 def rambo(masses: list[float], energy: float, rng: Any) -> list[list[str]]:
-    """A massive RAMBO point (Kleiss, Stirling, Ellis) at sqrt(s) =
-    ``energy`` with massless beams along z, as binary64 strings: the
-    calibration tool's massless RAMBO (``loop_v2_stability_calibration.
-    _rambo``) rescaled to the masses by Newton on xi, iterated while the
-    energy residual decreases (it converges monotonically from below; it
-    stops at the binary64 fixed point); a residual beyond the rounding of
-    the n energies (4 n u sqrt(s)) raises (never a silently off-shell
-    point)."""
+    """A flat phase-space point at sqrt(s) = ``energy`` with massless beams
+    along z, as binary64 strings: pyAmpliCol's generator (``generation.
+    phase_space.flat_final_state``, RAMBO on diet with its massive mapping;
+    the weight is not used) from one 64-bit seed of ``rng``."""
 
-    from tools.loop_v2_stability_calibration import _rambo
+    from pyamplicol.generation.phase_space import flat_final_state
 
-    p = _rambo(len(masses), energy, rng)
-
-    def residual(xi: float) -> float:
-        return (
-            sum(
-                math.sqrt(m * m + (xi * v[0]) ** 2)
-                for m, v in zip(masses, p, strict=True)
-            )
-            - energy
-        )
-
-    def slope(xi: float) -> float:
-        return sum(
-            xi * v[0] ** 2 / math.sqrt(m * m + (xi * v[0]) ** 2)
-            for m, v in zip(masses, p, strict=True)
-        )
-
-    xi = math.sqrt(1 - (sum(masses) / energy) ** 2)
-    f = residual(xi)
-    while f:
-        trial = xi - f / slope(xi)
-        g = residual(trial)
-        if abs(g) >= abs(f):
-            break
-        xi, f = trial, g
-    if abs(f) > 4 * len(masses) * 2.0**-53 * energy:
-        raise ValueError(f"RAMBO's massive rescaling left an energy residual {f}")
-    final = [
-        [math.sqrt(m * m + (xi * v[0]) ** 2)] + [xi * c for c in v[1:]]
-        for m, v in zip(masses, p, strict=True)
-    ]
+    final = flat_final_state(masses, sqrt_s=energy, seed=rng).momenta
     beams = [[energy / 2, 0.0, 0.0, energy / 2], [energy / 2, 0.0, 0.0, -energy / 2]]
-    return [[repr(float(c)) for c in v] for v in beams + final]
+    return [[repr(float(c)) for c in v] for v in [*beams, *final]]
 
 
 def anchor_asymmetry(name: str, work: Path, record: dict | None = None) -> dict:

@@ -21,6 +21,14 @@ points per process, with mu_R cycling through 1000, 700 and 1400 GeV:
   from a fixed rotation cycle and one parameter per added particle, so it
   has only 12 points at 2->3 and 144 at 2->4.
 
+A ``supplied_points`` regular stream (mass patterns exact_points cannot
+represent) starts with the campaign fixture's points and continues with
+``supplied_points``' flat points (``generation.phase_space.flat_final_state``
+since 2026-11-14). Its former construction put points in a plane; the frozen
+streams had those replaced in place (``replace_degenerate``, recorded under
+``replaced``; ``tests/unit/test_point_set_policy.py`` keeps every stored point
+set free of unmarked degenerate points).
+
 pyAmpliCol reads the exact rationals (``points``); the Fortran and C++
 provider drivers read decimal text, ``binary64`` (the shortest text of the
 correctly rounded double), as every binary64 caller does. ``write`` freezes
@@ -275,7 +283,11 @@ def _text(x: Fraction) -> str:
 
 
 def _supplied(
-    masses: list[Fraction], count: int, record: dict[str, Any], pdgs: list[int]
+    masses: list[Fraction],
+    count: int,
+    record: dict[str, Any],
+    pdgs: list[int],
+    key: str | None = None,
 ) -> list[list[list[Fraction]]]:
     """``supplied_points.generate`` (regular family) at the specification's
     ``sqrt_s`` values cycled to ``count`` points: the same construction,
@@ -291,6 +303,11 @@ def _supplied(
     import supplied_points
 
     listed = [Fraction(s) for s in record["sqrt_s"]]
+    # The campaign's points first, as the fixture holds them (they were drawn
+    # by the construction of their time; supplied_points now draws flat
+    # points, so the stream continues with those).
+    prefix = _campaign_points(key) if key is not None else []
+    count -= len(prefix)
     length = count
     found = -1
     while True:
@@ -305,7 +322,9 @@ def _supplied(
                 for point, scale in zip(points, scales, strict=True)
             ]
         distinct: list[list[list[Fraction]]] = []
-        seen: set[tuple[Fraction, ...]] = set()
+        seen: set[tuple[Fraction, ...]] = {
+            tuple(x for leg in point for x in leg) for point in prefix
+        }
         for point in printed:
             exact = [[Fraction(supplied_points.text(x)) for x in leg] for leg in point]
             key = tuple(x for leg in exact for x in leg)
@@ -313,7 +332,7 @@ def _supplied(
                 seen.add(key)
                 distinct.append(exact)
         if len(distinct) >= count:
-            return distinct[:count]
+            return prefix + distinct[:count]
         if len(distinct) == found:
             # A doubling of the cycle added no distinct point: the
             # construction repeats (derived from the data, no fixed cap).
@@ -493,7 +512,7 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         # A loop-induced specification whose mass pattern exact_points cannot
         # represent (g g > h h h, g g > z z z, g g > h z g): its listed
         # sqrt(s) values cycled, so the first points are the campaign's.
-        points = _supplied(masses, count, record, pdgs)
+        points = _supplied(masses, count, record, pdgs, key)
         construction = (
             "supplied_points regular family at the specification's sqrt(s) values, "
             "cycled (30 significant digits, exact momentum conservation, mass shells "
@@ -544,6 +563,120 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         "points": [[[_text(x) for x in leg] for leg in point] for point in points],
         "mu_r": list(itertools.islice(itertools.cycle(MU_R), count)),
     }
+
+
+def _campaign_points(key: str) -> list[list[list[Fraction]]]:
+    """The reference campaign's points of ``key`` (its committed fixture,
+    ``campaign_agreement``'s), none without a fixture."""
+
+    sub = "li" if spec(key).get("loop_induced") else ""
+    fixture = FIXTURES / sub / f"{key}.json"
+    if not fixture.exists():
+        return []
+    data = json.loads(fixture.read_text())
+    return [[[Fraction(x) for x in leg] for leg in point] for point in data["points"]]
+
+
+def degenerate_points(stream: dict[str, Any]) -> dict[int, list[str]]:
+    """The stream's degenerate points (``tools/point_degeneracy.classify``:
+    planar, collinear or soft at the precision they are stored at), by index."""
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from tools.point_degeneracy import classify
+
+    found = {}
+    for index, point in enumerate(stream["points"]):
+        kinds = classify(point)
+        if kinds:
+            found[index] = kinds
+    return found
+
+
+def replace_degenerate(key: str) -> dict[str, Any]:
+    """The frozen stream of ``key`` with its degenerate points (``degenerate_
+    points``) replaced in place, each by a new point of the stream's own
+    construction (``supplied_points`` regular family, now flat, at the
+    replaced point's sqrt(s), with the stream's cuts): every other point, the
+    campaign prefix and the indices the provider records and annotations
+    refer to are kept. The replacement is recorded (``replaced``: the
+    indices, why, how). Only for streams of the ``supplied_points`` regular
+    family; a degenerate campaign point is refused (its references belong to
+    it)."""
+
+    from decimal import localcontext
+
+    _toolkit()
+    import supplied_points
+
+    stream = load(key)
+    record = spec(key).get("points", {})
+    if record.get("tool") != "supplied_points.py" or record.get("family") != "regular":
+        raise ValueError(f"{key}: not a supplied_points regular stream")
+    bad = degenerate_points(stream)
+    if not bad:
+        return stream
+    if any(index < stream["campaign_prefix"] for index in bad):
+        raise ValueError(
+            f"{key}: a campaign point is degenerate; it keeps its references"
+        )
+    _, required_spec = _toolkit()
+    masses = [Fraction(m) for m in required_spec.masses(spec(key))]
+    seen = {tuple(Fraction(x) for leg in p for x in leg) for p in stream["points"]}
+    indices = sorted(bad)
+    energies = [
+        Fraction(stream["points"][i][0][0]) + Fraction(stream["points"][i][1][0])
+        for i in indices
+    ]
+    replacements: list[list[list[Fraction]]] = []
+    length = len(indices)
+    while len(replacements) < len(indices):
+        values = [energies[k % len(energies)] for k in range(length)]
+        with localcontext() as context:
+            context.prec = supplied_points.CONSTRUCTION_DIGITS
+            points, scales, _ = supplied_points.generate(
+                masses,
+                "regular",
+                length,
+                (),
+                CUT,
+                (),
+                spec(key)["pdgs"],
+                sqrt_s_values=values,
+            )
+            printed = [
+                supplied_points.quantise(point, scale)
+                for point, scale in zip(points, scales, strict=True)
+            ]
+        replacements = []
+        taken = set(seen)
+        for want in energies:
+            for point, scale in zip(printed, scales, strict=True):
+                text = [[supplied_points.text(x) for x in leg] for leg in point]
+                exact_point = [[Fraction(x) for x in leg] for leg in text]
+                flat = tuple(x for leg in exact_point for x in leg)
+                fresh = flat not in taken
+                if fresh and Fraction(scale) == want and not degenerate_points(
+                    {"points": [text]}
+                ):
+                    taken.add(flat)
+                    replacements.append(exact_point)
+                    break
+        length *= 2
+    for index, point in zip(indices, replacements, strict=True):
+        stream["points"][index] = [[_text(x) for x in leg] for leg in point]
+    stream["replaced"] = {
+        "points": indices,
+        "reason": "degenerate points of the former supplied_points construction "
+        "(sequential two-body decays along a few rational directions: planar, "
+        "collinear or soft at the stored precision, tools/point_degeneracy.py), "
+        "replaced 2026-11-14 (USER ~20:50 UTC)",
+        "construction": "supplied_points regular family (flat: generation."
+        "phase_space.flat_final_state) at the replaced point's sqrt(s), the "
+        "stream's cuts",
+        "former": {str(i): bad[i] for i in indices},
+    }
+    return stream
 
 
 def path(key: str) -> Path:
@@ -626,6 +759,19 @@ def write(keys: list[str], count: int = STREAM_LENGTH) -> None:
             raise AssertionError(f"{key}: the stream does not start with the campaign")
         path(key).write_text(json.dumps(stream, separators=(",", ":")) + "\n")
         print(key, len(stream["points"]), "points; campaign prefix:", agreement)
+
+
+def repair(keys: list[str]) -> None:
+    """``replace_degenerate`` on the frozen streams of ``keys`` that hold a
+    degenerate point (supplied_points regular streams), written back."""
+
+    for key in keys:
+        stream = load(key)
+        if not degenerate_points(stream):
+            continue
+        repaired = replace_degenerate(key)
+        path(key).write_text(json.dumps(repaired, separators=(",", ":")) + "\n")
+        print(key, "replaced", repaired["replaced"]["points"])
 
 
 def keys() -> list[str]:
