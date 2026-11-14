@@ -8,11 +8,19 @@ covers every other pattern: several massive subsystems with different masses
 (t t~ h, t t~ b b~, t w-, z h), massive beams (b b~ > h), irrational masses (a
 W mass derived at tree level) and the limit families of MASTER_PLAN §5.4.
 
-Construction. Every momentum is computed in ``decimal`` arithmetic at
-``CONSTRUCTION_DIGITS`` (60) significant digits: beams along +-z in the
-centre-of-mass frame (massive beams allowed), then sequential two-body decays
-of the final state, each in the rest frame of its parent with a direction
-given by a rational polar cosine and a Pythagorean azimuth, boosted back.
+Construction. Every momentum is computed at ``CONSTRUCTION_DIGITS`` (60)
+significant digits: beams along +-z in the centre-of-mass frame (massive
+beams allowed); the final state (and the generic part of the limit families)
+is drawn flat in phase space by pyAmpliCol's one generator
+(``pyamplicol.generation.phase_space.flat_final_state``: RAMBO on diet,
+arXiv:1308.2922, constructed natively in arbitrary precision at
+``CONSTRUCTION_DIGITS`` digits, one 64-bit seed per candidate from the
+fixed pseudo-random sequence), so no configuration is special: until
+2026-11-14 the final state came from sequential two-body decays with
+directions from a few rational cosines and eight Pythagorean azimuths, which
+put about one 2->3 point in seven exactly in a plane (zero four-dimensional
+Gram determinant); the committed fixtures keep the points of that
+construction.
 Every component is then rounded to a common absolute quantum of
 ``PRINTED_DIGITS`` (30) significant digits of sqrt(s), and the last final-state
 particle absorbs the rounding residual, so momentum conservation holds exactly
@@ -141,6 +149,25 @@ def sequential(sqrt_s, masses, chooser, remainder_masses=None, directions=None):
     return out
 
 
+def flat(sqrt_s, masses, chooser):
+    """A flat final state (``flat_final_state``) at ``sqrt_s`` in the
+    centre-of-mass frame as Decimal momenta at the construction precision,
+    from one 64-bit seed of ``chooser``."""
+    from pyamplicol.generation.phase_space import flat_final_state
+
+    point = flat_final_state([F(D(m)) for m in masses], sqrt_s=F(D(sqrt_s)), seed=chooser.getrandbits(64),
+                             arithmetic="arbitrary", digits=CONSTRUCTION_DIGITS)
+    return [[D(x) for x in leg] for leg in point.momenta]
+
+
+def flat_system(system, masses, chooser):
+    """A flat final state of ``masses`` in the rest frame of the timelike
+    ``system`` momentum, boosted to the frame where ``system`` is given."""
+    if len(masses) == 1:
+        return [system]
+    return [boost(q, system) for q in flat(dot(system, system).sqrt(), masses, chooser)]
+
+
 def sin_cos(theta):
     """sin and cos of a Decimal angle by their Taylor series (small angles)."""
     sin, cos, term, k = Decimal(0), Decimal(0), Decimal(1), 0
@@ -172,23 +199,25 @@ def collinear_pair(sqrt_s, final, theta, chooser, z=F(2, 5)):
         r = low + D(chooser.choice([F(n, 10) for n in range(2, 9)])) * (root_s - low)
     energy = (s - r * r) / (root_s + (s - c * (s - r * r)).sqrt())
     mass = (c * energy * energy).sqrt()
-    n = direction(chooser.choice(_COSINES), chooser.choice(_PYTHAGOREAN))
-    pair, system = two_body(root_s, mass, r, n)
+    # The pair recoils against the rest isotropically (a flat two-body state).
+    pair, system = flat(root_s, [mass, r], chooser)
     momentum = (pair[0] ** 2 - mass * mass).sqrt()
+    n = [x / momentum for x in pair[1:]]
     e4, e5 = D(z) * pair[0], (1 - D(z)) * pair[0]
     sin_a, sin_b = e5 * sin_t / momentum, e4 * sin_t / momentum
     cos_a, cos_b = (1 - sin_a ** 2).sqrt(), (1 - sin_b ** 2).sqrt()
-    # A unit vector orthogonal to n.
-    helper = [Decimal(1), Decimal(0), Decimal(0)] if abs(n[0]) < Decimal("0.9") else [Decimal(0), Decimal(1), Decimal(0)]
-    e = [helper[1] * n[2] - helper[2] * n[1], helper[2] * n[0] - helper[0] * n[2], helper[0] * n[1] - helper[1] * n[0]]
+    # A unit vector orthogonal to n, in an isotropic orientation about n:
+    # the part of an isotropic direction (a flat massless pair's) orthogonal
+    # to n.
+    helper = flat(root_s, [0, 0], chooser)[0]
+    helper = [x / helper[0] for x in helper[1:]]
+    along = sum(a * b for a, b in zip(helper, n, strict=False))
+    e = [a - along * b for a, b in zip(helper, n, strict=False)]
     norm = sum(x * x for x in e).sqrt()
     e = [x / norm for x in e]
     p4 = [e4, *(e4 * (cos_a * a + sin_a * b) for a, b in zip(n, e, strict=False))]
     p5 = [e5, *(e5 * (cos_b * a - sin_b * b) for a, b in zip(n, e, strict=False))]
-    if len(rest) == 1:
-        others = [system]
-    else:
-        others = [boost(q, system) for q in sequential(r, rest, chooser)]
+    others = flat_system(system, rest, chooser)
     return [*others, p4, p5]
 
 
@@ -397,18 +426,18 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
             sqrt_s = sqrt_s_values[index] if sqrt_s_values else chooser.choice(scales_ok)
             try:
                 if family == "soft":
-                    order = [len(final) - 1, *range(len(final) - 1)]
-                    reordered = [final[i] for i in order]
+                    # The soft particle recoils isotropically against the
+                    # rest (a flat two-body state), which decays flat.
                     energy = D(target) * D(sqrt_s)
                     m_rest = (D(sqrt_s) ** 2 - 2 * D(sqrt_s) * energy).sqrt()
-                    momenta = sequential(sqrt_s, reordered, chooser, [m_rest] + [None] * (len(final) - 2))
-                    final_momenta = [None] * len(final)
-                    for slot, p in zip(order, momenta, strict=False):
-                        final_momenta[slot] = p
+                    if m_rest <= sum(D(m) for m in final[:-1]):
+                        raise ValueError("below threshold")
+                    soft, system = flat(sqrt_s, [0, m_rest], chooser)
+                    final_momenta = [*flat_system(system, final[:-1], chooser), soft]
                 elif family == "collinear":
                     final_momenta = collinear_pair(sqrt_s, final, D(target), chooser)
                 else:
-                    final_momenta = sequential(sqrt_s, final, chooser)
+                    final_momenta = flat(sqrt_s, final, chooser)
             except ValueError:
                 continue
             b1, b2 = beams(sqrt_s, *initial)
@@ -488,8 +517,8 @@ def main():
         "pdgs": spec["pdgs"],
         "masses": [decimal_string(m) for m in masses],
         "construction": (
-            f"tools/loop_reference/supplied_points.py: deterministic sequential construction at "
-            f"{CONSTRUCTION_DIGITS} digits, printed on a common quantum of {PRINTED_DIGITS} significant digits "
+            f"tools/loop_reference/supplied_points.py: flat phase-space construction (pyAmpliCol's "
+            f"flat_final_state, RAMBO on diet) at {CONSTRUCTION_DIGITS} digits, printed on a common quantum of {PRINTED_DIGITS} significant digits "
             "of sqrt(s); momentum conservation exact in the printed decimals (the last final particle takes "
             "the rounding residual), mass shells to the recorded defects"),
         "family": args.family,
