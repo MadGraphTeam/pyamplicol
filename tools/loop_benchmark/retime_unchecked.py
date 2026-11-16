@@ -1304,7 +1304,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument(
         "--pythonpath",
-        default=f"{workspace / 'builds' / 'community-release-python-0e2ad04c'}:src",
+        default=f"{workspace / 'builds' / 'community-release-python-d0424f9e'}:src",
     )
     run.add_argument("--dry-run", action="store_true")
 
