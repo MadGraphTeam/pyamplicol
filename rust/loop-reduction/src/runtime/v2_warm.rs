@@ -89,6 +89,42 @@ where
     Ok(())
 }
 
+/// The lane rescue's backends of `backend` (`V2Backends::rescue_backend_mut`),
+/// warmed as [`warm`] warms the evaluation's: its double-double backend when
+/// double-double is a rescue carrier above the carrier of `zero`
+/// (`rescue_carriers`: above binary64), and with `arbitrary` also its
+/// arbitrary-precision one (costly to build and rarely reached: never by
+/// default, so a double-double evaluation warms none), each built as a
+/// rescue builds it, with the backend's current settings, and its engines
+/// (NinjaRS: the generic engine of each class; TIRust: its plans and
+/// workspaces) built for `classes` ([`warm_classes`]), so that the first
+/// rescued lane of a class does not build them. A rescued lane's values do
+/// not depend on it (as for [`warm`]).
+pub fn warm_rescue<T: TypedBatch>(
+    backend: &mut V2Backends,
+    classes: &[(usize, usize)],
+    zero: &T,
+    arbitrary: bool,
+) -> RusticolResult<()> {
+    use super::v2_execution::rescue_carriers;
+    use rusticol_core::loop_execution::v2::RescueCarrier;
+    use symbolica::domains::float::{DoubleFloat, Float};
+
+    for carrier in rescue_carriers(T::bits(zero))
+        .into_iter()
+        .filter(|carrier| arbitrary || *carrier == RescueCarrier::DoubleDouble)
+    {
+        let rescue = backend.rescue_backend_mut(carrier)?;
+        match carrier {
+            RescueCarrier::DoubleDouble => warm(rescue, classes, &DoubleFloat::from(0.0))?,
+            RescueCarrier::Arbitrary(_) => {
+                warm(rescue, classes, &Float::with_val(carrier.bits(), 0))?
+            }
+        }
+    }
+    Ok(())
+}
+
 /// One synthetic reduction lane of `n` propagators and rank `rank` in the
 /// carrier of `zero` ([`warm`]): shifts `q_0 = 0` and `q_k` in general
 /// position (`variant` moves them), distinct positive squared masses, the
@@ -270,6 +306,66 @@ mod warm_tests {
             + statistics.seconds.iter().filter(|(_, s)| *s > 0.0).count();
         let measures = V2Backend::<T>::take_lane_measures(backend).len();
         (masters, recorded, measures)
+    }
+
+    #[test]
+    fn the_rescue_warm_builds_the_first_rescue_carriers_backend() {
+        use rusticol_core::loop_execution::v2::RescueCarrier;
+        let _unlock = pyamplicol::unlock();
+        let classes = [(2, 2), (3, 3)];
+        let mut backends = vec![ninjars(crate::v2_runtime::V2Precision::Double)];
+        #[cfg(feature = "tir")]
+        backends.push(
+            V2Backends::tirust(classes, 53, crate::reduction_policy::DEFAULT_TARGET)
+                .expect("tirust"),
+        );
+        for mut backend in backends {
+            // The evaluation carrier's warm alone builds no rescue backend
+            // (the entry without the lane rescue).
+            warm(&mut backend, &classes, &0.0).expect("warm");
+            assert!(backend.rescue_backends_held().is_empty());
+            // With it: double-double only, warmed (a first rescued lane
+            // then reduces bit-identically to one of a cold rescue backend).
+            warm_rescue(&mut backend, &classes, &0.0, false).expect("warm rescue");
+            assert_eq!(
+                backend.rescue_backends_held(),
+                [RescueCarrier::DoubleDouble]
+            );
+            let lanes: Vec<FamilyLanes<DoubleFloat>> = classes
+                .iter()
+                .map(|&(n, rank)| synthetic_lane(n, rank, &DoubleFloat::from(0.0), 3).unwrap())
+                .collect();
+            let warmed = reduced(
+                backend
+                    .rescue_backend_mut(RescueCarrier::DoubleDouble)
+                    .unwrap(),
+                &lanes,
+            );
+            let mut cold = match &backend {
+                V2Backends::NinjaRs(_) => ninjars(crate::v2_runtime::V2Precision::Double),
+                #[cfg(feature = "tir")]
+                V2Backends::TiRust(_) => {
+                    V2Backends::tirust(classes, 53, crate::reduction_policy::DEFAULT_TARGET)
+                        .unwrap()
+                }
+            };
+            let cold = reduced(
+                cold.rescue_backend_mut(RescueCarrier::DoubleDouble)
+                    .unwrap(),
+                &lanes,
+            );
+            assert_eq!(warmed, cold);
+            // A double-double evaluation's only rescue carrier is arbitrary
+            // precision: warmed only when asked.
+            let mut dd = ninjars(crate::v2_runtime::V2Precision::DoubleDouble);
+            warm_rescue(&mut dd, &classes, &DoubleFloat::from(0.0), false).expect("dd");
+            assert!(dd.rescue_backends_held().is_empty());
+            warm_rescue(&mut dd, &classes[..1], &DoubleFloat::from(0.0), true).expect("arb");
+            assert!(matches!(
+                dd.rescue_backends_held()[..],
+                [RescueCarrier::Arbitrary(_)]
+            ));
+        }
     }
 
     #[test]

@@ -1902,9 +1902,23 @@ impl V2Executor {
     /// The values of every later evaluation are unchanged. Left to the first
     /// call that needs it: NinjaRS's lower class of a lane whose top
     /// coefficients vanish at its point, and the binary64 fast engine's exact
-    /// fallback engine (lanes at its absolute thresholds).
-    #[pyo3(signature = (reduction="ninjars", *, unchecked=None))]
-    fn warm(&mut self, py: Python<'_>, reduction: &str, unchecked: Option<bool>) -> PyResult<()> {
+    /// fallback engine (lanes at its absolute thresholds). With
+    /// `lane_rescue` (the evaluations to come rescue refused lanes, as
+    /// `evaluate`'s `lane_rescue`), also the lane rescue's double-double
+    /// backend (when double-double is above this carrier: binary64) and its
+    /// engines for the same classes (`runtime::warm_rescue`), which the
+    /// first rescued lane would build inside its call; with
+    /// `rescue_arbitrary` also its arbitrary-precision one (costly, rarely
+    /// reached). Without `lane_rescue`, nothing of the rescue.
+    #[pyo3(signature = (reduction="ninjars", *, unchecked=None, lane_rescue=false, rescue_arbitrary=false))]
+    fn warm(
+        &mut self,
+        py: Python<'_>,
+        reduction: &str,
+        unchecked: Option<bool>,
+        lane_rescue: bool,
+        rescue_arbitrary: bool,
+    ) -> PyResult<()> {
         let _unlock = pyamplicol::unlock();
         let reduction = Reduction::parse(reduction).map_err(error)?;
         if matches!(self.carrier, Carriers::Exact | Carriers::Prime) {
@@ -1959,15 +1973,42 @@ impl V2Executor {
         backend.set_unchecked(unchecked);
         let carrier = self.carrier;
         let executor = &self.executor;
+        // The evaluation carrier's backend, then (with the lane rescue) its
+        // rescue backends above it.
+        fn warm_in<T>(
+            backend: &mut V2Backends,
+            classes: &[(usize, usize)],
+            zero: &T,
+            lane_rescue: bool,
+            rescue_arbitrary: bool,
+        ) -> rusticol_core::RusticolResult<()>
+        where
+            T: runtime::TypedBatch + rusticol_core::loop_v2::dress::Carrier,
+            V2Backends: rusticol_core::loop_execution::v2::V2Backend<T>,
+        {
+            runtime::warm_backend(backend, classes, zero)?;
+            if lane_rescue {
+                runtime::warm_rescue(backend, classes, zero, rescue_arbitrary)?;
+            }
+            Ok(())
+        }
         py.detach(|| {
             executor.install(|| match carrier {
-                Carriers::Double => runtime::warm_backend(backend, &classes, &0.0),
-                Carriers::DoubleDouble => {
-                    runtime::warm_backend(backend, &classes, &DoubleFloat::from(0.0))
-                }
-                Carriers::Arbitrary(_) => {
-                    runtime::warm_backend(backend, &classes, &Float::with_val(bits, 0))
-                }
+                Carriers::Double => warm_in(backend, &classes, &0.0, lane_rescue, rescue_arbitrary),
+                Carriers::DoubleDouble => warm_in(
+                    backend,
+                    &classes,
+                    &DoubleFloat::from(0.0),
+                    lane_rescue,
+                    rescue_arbitrary,
+                ),
+                Carriers::Arbitrary(_) => warm_in(
+                    backend,
+                    &classes,
+                    &Float::with_val(bits, 0),
+                    lane_rescue,
+                    rescue_arbitrary,
+                ),
                 Carriers::Exact | Carriers::Prime => unreachable!("refused above"),
             })
         })

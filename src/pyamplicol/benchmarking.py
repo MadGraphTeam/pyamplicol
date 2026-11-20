@@ -3620,6 +3620,8 @@ def _prepared(
             **carrier,
             reduction=backend,
             unchecked=bool(options.get("reduction_unchecked")),
+            # The stream's lane rescue (its rescue backend warmed too).
+            **{k: options[k] for k in ("lane_rescue",) if k in options},
         )
     except Exception:
         return None

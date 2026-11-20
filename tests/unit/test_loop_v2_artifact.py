@@ -922,6 +922,64 @@ def test_the_admitted_program_is_released_by_clear_and_the_companion_not_kept(
 
 
 @pytest.mark.loop_physics
+def test_the_warm_entry_warms_the_lane_rescue_only_when_it_is_on(
+    quark_controls, loop_native, monkeypatch
+):
+    """The warm entry passes the lane rescue of the calls to come to the
+    native warm (``V2Executor.warm(lane_rescue=, rescue_arbitrary=)``: the
+    rescue's double-double backend and engines above binary64, the
+    arbitrary-precision one only when asked): the runtime's setting by
+    default (on), a call's ``lane_rescue`` when given. Values are unchanged
+    with the rescue warmed, its double-double and arbitrary backends
+    included, for both backends."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.cli.flat_points import draw_flat_points
+
+    flat = draw_flat_points(
+        quark_controls, process="uudd", points=2, seed=3, sqrt_s=None
+    )
+    points, scales = flat.as_inputs(exact=False), flat.mu_r2()
+    backends = [
+        name
+        for name in ("ninjars", "tirust")
+        if name in json.loads(loop_native.reduction_backends())
+    ]
+
+    def values(**prepare: object) -> list[str]:
+        runtime = Runtime.load(quark_controls, process="uudd")
+        if prepare:
+            for reduction in backends:
+                runtime._backend.prepare(reduction=reduction, **prepare)
+        return [
+            repr(runtime.evaluate(points, mu_r2=scales, reduction=reduction).values)
+            for reduction in backends
+        ]
+
+    cold = values()
+    assert values(lane_rescue=True) == cold
+    assert values(lane_rescue=True, rescue_arbitrary=True) == cold
+    assert values(lane_rescue=False) == cold
+
+    # What reaches the native warm.
+    backend = Runtime.load(quark_controls, process="uudd")._backend
+    seen: list[dict] = []
+    monkeypatch.setattr(
+        backend._executor,
+        "prepare",
+        lambda setting, reduction, **options: seen.append(options),
+    )
+    backend.prepare(reduction="ninjars")
+    backend.prepare(reduction="ninjars", lane_rescue=False)
+    backend.prepare(reduction="ninjars", rescue_arbitrary=True)
+    assert [(o["lane_rescue"], o["rescue_arbitrary"]) for o in seen] == [
+        (True, False),
+        (False, False),
+        (True, True),
+    ]
+
+
+@pytest.mark.loop_physics
 def test_prepare_auto_warms_only_the_backends_the_native_module_serves(
     quark_controls, loop_native, monkeypatch
 ):

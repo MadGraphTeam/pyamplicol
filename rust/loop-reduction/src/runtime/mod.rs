@@ -42,7 +42,7 @@ pub use v2_reduce::{
 };
 pub use v2_seeds::V2SeedFourier;
 /// The warm entry of a reduction backend (`V2Executor.warm`).
-pub use v2_warm::{warm as warm_backend, warm_classes};
+pub use v2_warm::{warm as warm_backend, warm_classes, warm_rescue};
 
 /// Install immutable source-scalar callbacks before decoding saved programs.
 pub fn register_scalar_primitives() {

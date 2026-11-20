@@ -548,6 +548,29 @@ where
 }
 
 impl V2Backends {
+    /// This backend's rescue backend in `carrier`, built (or brought to
+    /// this backend's current settings) as a rescue would
+    /// ([`Self::rescue_index`]): the warm entry builds its engines ahead
+    /// of the first rescued lane (`warm_rescue`).
+    pub fn rescue_backend_mut(
+        &mut self,
+        carrier: RescueCarrier,
+    ) -> RusticolResult<&mut V2Backends> {
+        let index = self.rescue_index(carrier)?;
+        Ok(&mut self.rescue_store().0[index].1)
+    }
+
+    /// The rescue carriers whose backend this backend holds (built by a
+    /// rescue or the warm entry). A diagnostic.
+    #[doc(hidden)]
+    pub fn rescue_backends_held(&mut self) -> Vec<RescueCarrier> {
+        self.rescue_store()
+            .0
+            .iter()
+            .map(|(carrier, _)| *carrier)
+            .collect()
+    }
+
     /// The index of this backend's rescue backend in `carrier`
     /// ([`RescueBackends`]), built on first use and kept, with this
     /// backend's CURRENT settings (review F1, 2026-11-19): the acceptance

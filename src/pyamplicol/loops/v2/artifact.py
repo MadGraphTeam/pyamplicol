@@ -3208,6 +3208,8 @@ class V2VirtualRuntime:
         reduction: str = "auto",
         unchecked: bool = False,
         poles: str | bool = "all",
+        lane_rescue: bool | None = None,
+        rescue_arbitrary: bool = False,
     ) -> None:
         """Build most of what the first evaluation in a carrier
         (``arithmetic`` and ``precision`` as for ``evaluate``) with
@@ -3228,9 +3230,15 @@ class V2VirtualRuntime:
         ``reduction`` is "ninjars" or "tirust", or "auto": every backend that
         both the artifact admits and the native module serves in the carrier
         (an "auto" call may run either). ``poles`` "uv" or "ir" also prepares
-        the certified-scaleless companion those selections run. Values are
-        unchanged; ``clear`` drops what it built. A backend the native module
-        does not serve in the carrier is ``ReductionUnavailable``."""
+        the certified-scaleless companion those selections run. With the lane
+        rescue on for the calls to come (``lane_rescue``: as a call's,
+        default the runtime's, else on), also the rescue's double-double
+        backend (when double-double is above the carrier: binary64) and its
+        engines, which the first refused lane would build inside its call;
+        ``rescue_arbitrary`` also its arbitrary-precision one (costly, rarely
+        reached). Values are unchanged; ``clear`` drops
+        what it built. A backend the native module does not serve in the
+        carrier is ``ReductionUnavailable``."""
 
         from .reduction import BACKENDS, native_backends
 
@@ -3253,6 +3261,7 @@ class V2VirtualRuntime:
                 f"reduction must be 'auto' or one of {sorted(BACKENDS)}; "
                 f"got {reduction!r}"
             )
+        rescue = self._lane_rescue_of(lane_rescue)
         with self._lock:
             for backend in backends:
                 self._executor.prepare(
@@ -3260,6 +3269,8 @@ class V2VirtualRuntime:
                     backend,
                     unchecked=bool(unchecked),
                     scaleless=poles in ("uv", "ir"),
+                    lane_rescue=rescue,
+                    rescue_arbitrary=bool(rescue_arbitrary),
                 )
 
     def clear(self) -> None:

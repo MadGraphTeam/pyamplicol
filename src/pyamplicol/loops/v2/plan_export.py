@@ -2417,6 +2417,8 @@ class NativeExecutor:
         *,
         unchecked: bool = False,
         scaleless: bool = False,
+        lane_rescue: bool = False,
+        rescue_arbitrary: bool = False,
     ) -> None:
         """Build most of what this executor's first call in ``precision``'s
         carrier with ``reduction`` ("ninjars" or "tirust") would build
@@ -2428,15 +2430,24 @@ class NativeExecutor:
         certified-scaleless companion's (which the "uv" and "ir" pole
         selections run). Left lazy: NinjaRS's lower class of a lane whose top
         coefficients vanish at its point, and the binary64 fast engine's exact
-        fallback (lanes at its absolute thresholds). Kept for the executor's
-        lifetime; later values are unchanged."""
+        fallback (lanes at its absolute thresholds). With ``lane_rescue``
+        (the calls to come rescue refused lanes), also the lane rescue's
+        double-double backend and its engines (when double-double is above
+        this carrier: binary64; with ``rescue_arbitrary`` also its
+        arbitrary-precision one). Kept for the
+        executor's lifetime; later values are unchanged."""
 
         arithmetic, digits = self._arithmetic(precision, False)
         executors = [self]
         if scaleless and self.scaleless is not None:
             executors.append(self.scaleless)
         for executor in executors:
-            executor.native(arithmetic, digits).warm(reduction, unchecked=unchecked)
+            executor.native(arithmetic, digits).warm(
+                reduction,
+                unchecked=unchecked,
+                lane_rescue=lane_rescue,
+                rescue_arbitrary=rescue_arbitrary,
+            )
 
     def lanes_for(self, arithmetic: Arithmetic, points: int | None) -> int:
         """Lanes per chunk: the configured count in every carrier and for
