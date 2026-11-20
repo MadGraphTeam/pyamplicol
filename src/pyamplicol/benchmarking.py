@@ -2851,11 +2851,14 @@ class VirtualProfileResult:
             # No warm entry ran: the document as before it existed.
             out.pop("prepared_seconds")
         reference = self.reference
-        if reference is not None and reference.prepared_seconds is None:
+        if reference is not None:
+            # The reference's fields, its prepared_seconds only where its
+            # warm entry ran (a mapping either way).
             out["reference"] = {
                 item.name: getattr(reference, item.name)
                 for item in fields(reference)
                 if item.name != "prepared_seconds"
+                or reference.prepared_seconds is not None
             }
         if not self.reference_skipped:
             out.pop("reference_skipped")
