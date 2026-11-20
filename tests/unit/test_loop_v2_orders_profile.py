@@ -1090,7 +1090,10 @@ def test_a_second_profile_estimates_the_whole_run_from_its_start(
     """A profile remembers the artifact's costs and its total (the history
     in the pyAmpliCol cache, written with progress only): the next profile
     with the same settings has a whole-run ETA before the artifact is even
-    loaded, near the first one's time; costs as small as 0.1 ms survive."""
+    loaded, near the first one's time; costs as small as 0.1 ms survive.
+    The budget holds both backends' streams, NinjaRS's warm entry included
+    (with the lane rescue on it also builds the rescue's double-double
+    engines: about 1 s here)."""
 
     from pyamplicol.config import resolve_config
     from pyamplicol.loop_profile import GroundTruth, _ProfileHistory, profile_loop
@@ -1101,7 +1104,7 @@ def test_a_second_profile_estimates_the_whole_run_from_its_start(
         {
             "action": "benchmark",
             "evaluation": {"artifact": str(uux_ddx)},
-            "benchmark": {"runtime": True, "target_runtime": 0.5, "n_core": 1},
+            "benchmark": {"runtime": True, "target_runtime": 2.0, "n_core": 1},
         }
     ).effective
 
