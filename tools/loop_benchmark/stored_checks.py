@@ -97,6 +97,52 @@ def _bounds(result: Any) -> dict[Any, list[float]]:
     return uncertified_bounds(result, list(virtual), width)
 
 
+def _uncertified(result: Any) -> tuple[str, ...]:
+    """The reasons a result's lanes were served without accuracy evidence
+    (``virtual_results.uncertified_reasons`` of its lane record), or a
+    generic reason where only its bound record shows such lanes."""
+
+    from pyamplicol.api.virtual_results import uncertified_reasons
+
+    reasons = uncertified_reasons(getattr(result, "lane_rescue", ()))
+    if not reasons and getattr(result, "uncertified_bound", None):
+        return ("a reduction lane was served without accuracy evidence",)
+    return reasons
+
+
+def rescue_level0(
+    results: dict[int, Any], target: float
+) -> tuple[dict[int, float], dict[int, tuple[str, ...]], list[int]]:
+    """The rescue stage's binary64 level (vii): per point its relative
+    estimate and uncertified reasons, and the points sent up: those whose
+    estimate exceeds ``target`` and, as the production policy's guard
+    (``loops.v2.rescue``), those with a lane served without accuracy
+    evidence, whatever their estimate (never met)."""
+
+    estimates = {i: float(r.stability.relative) for i, r in results.items()}
+    unsure = {i: _uncertified(r) for i, r in results.items()}
+    up = [i for i, e in estimates.items() if not e <= target or unsure[i]]
+    return estimates, unsure, up
+
+
+def rescue_level1(result: Any, target: float) -> dict[str, Any]:
+    """The rescue stage's double-double record of one point: its estimate,
+    ``met`` (within ``target`` and no lane served without accuracy
+    evidence: never met with one, the value kept uncertified with its
+    reasons), the reasons and the finite parts."""
+
+    reasons = _uncertified(result)
+    estimate = float(result.stability.relative)
+    return {
+        "estimate": estimate,
+        "met": estimate <= target and not reasons,
+        "uncertified": list(reasons),
+        "finite": [
+            _c(v.coefficients[0]).real for v in result.components["virtual"].values()
+        ],
+    }
+
+
 def _verdicts(verdicts: list[bool | None]) -> tuple[bool, bool]:
     """(passed, inconclusive) of a row's three-way verdicts (``ward.judged``):
     passed iff every one passed; inconclusive iff none failed and one is
@@ -247,10 +293,14 @@ def compare_carriers(
         if poles is not None:
             catani, errors, _within = catani_dd_comparison(exact, poles)
             entry.update(catani=catani, catani_relative=errors)
+            # The absolute deviation itself against the double-double
+            # predicate's tolerance with its zero-denominator convention
+            # (``catani_dd_comparison``: relative to max(|Catani|, 1e-300)):
+            # a vanishing prediction never scales a violation away.
             found = [
                 judged(
-                    errors[k - 1] * abs(catani[k - 1]),
-                    DD_FLOOR * abs(catani[k - 1]),
+                    abs(exact[k] - catani[k - 1]),
+                    DD_FLOOR * max(abs(catani[k - 1]), 1e-300),
                     uncertain_dd[sector][k],
                 )
                 for k in (1, 2)
@@ -486,13 +536,12 @@ def check_process(
             poles="none",
             stability=level0.checks.to_checks(),
         )
-        estimates = {
-            index: float(result.stability.relative)
-            for index, result in zip(rescue_points, results, strict=True)
-        }
-        up = [i for i, e in estimates.items() if not e <= level0.target]
+        estimates, unsure, up = rescue_level0(
+            dict(zip(rescue_points, results, strict=True)), level0.target
+        )
         rescue: dict[str, Any] = {
             "level0_estimates": estimates,
+            "level0_uncertified": {i: list(r) for i, r in unsure.items() if r},
             "sent_up": up,
             "count": len(up),
             "of": len(estimates),
@@ -515,14 +564,7 @@ def check_process(
                 stability=level1.checks.to_checks(),
             )
             rescue["double_double"] = {
-                index: {
-                    "estimate": float(result.stability.relative),
-                    "met": float(result.stability.relative) <= level1.target,
-                    "finite": [
-                        _c(v.coefficients[0]).real
-                        for v in result.components["virtual"].values()
-                    ],
-                }
+                index: rescue_level1(result, level1.target)
                 for index, result in zip(chosen, results, strict=True)
             }
             stage("rescue double-double", begin, points=len(chosen))
