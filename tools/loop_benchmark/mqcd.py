@@ -3536,8 +3536,10 @@ def rule_ward(
                 f"(<= {ward.ESTIMATE_FACTOR}); E_k / scale_k "
                 f"{max(entry['estimate']):.3g} (in scope: {entry['in_scope']})"
             )
-            if not entry["in_scope"]:
-                # Outside the binary64 scope: bracketed tenfold only.
+            if entry.get("scope_excluded", not entry["in_scope"]):
+                # Outside the binary64 scope at every scale the physical
+                # normalization allows (``ward.ward_row``'s
+                # ``scope_excluded``): bracketed tenfold only.
                 asserted = False
                 passed = bracket <= ward.ESTIMATE_FACTOR
                 note += "; outside the binary64 scope"

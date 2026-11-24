@@ -69,13 +69,103 @@ from pyamplicol.loops.v2.checks import (  # noqa: E402
     catani_comparison,
     catani_dd_comparison,
 )
+from pyamplicol.loops.v2.ward import judged, uncertified_bounds  # noqa: E402
 
 # Catani and double-double comparisons: each deviation within ESTIMATES x E
 # plus a relative floor of the compared value (precision is lax); the Catani
 # criterion is ``pyamplicol check``'s (``loops.v2.checks``).
 DOUBLE_POLE_FLOOR = 1e-10
 DD_FLOOR = 1e-12
-_WARD_ROW_KEYS = ("leg", "born", "parts", "estimate", "in_scope", "passed")
+_WARD_ROW_KEYS = (
+    "leg",
+    "born",
+    "parts",
+    "estimate",
+    "in_scope",
+    "passed",
+    "uncertified",
+    "inconclusive",
+    "scope_excluded",
+)
+
+
+def _bounds(result: Any) -> dict[Any, list[float]]:
+    """Per sector and Laurent coefficient the absolute bound of the result's
+    lanes served without accuracy evidence (``ward.uncertified_bounds``)."""
+
+    virtual = result.components["virtual"]
+    width = len(next(iter(virtual.values())).coefficients)
+    return uncertified_bounds(result, list(virtual), width)
+
+
+def _uncertified(result: Any) -> tuple[str, ...]:
+    """The reasons a result's lanes were served without accuracy evidence
+    (``virtual_results.uncertified_reasons`` of its lane record), or a
+    generic reason where only its bound record shows such lanes."""
+
+    from pyamplicol.api.virtual_results import uncertified_reasons
+
+    reasons = uncertified_reasons(getattr(result, "lane_rescue", ()))
+    if not reasons and getattr(result, "uncertified_bound", None):
+        return ("a reduction lane was served without accuracy evidence",)
+    return reasons
+
+
+def rescue_level0(
+    results: dict[int, Any], target: float
+) -> tuple[dict[int, float], dict[int, tuple[str, ...]], list[int]]:
+    """The rescue stage's binary64 level (vii): per point its relative
+    estimate and uncertified reasons, and the points sent up: those whose
+    estimate exceeds ``target`` and, as the production policy's guard
+    (``loops.v2.rescue``), those with a lane served without accuracy
+    evidence, whatever their estimate (never met)."""
+
+    estimates = {i: float(r.stability.relative) for i, r in results.items()}
+    unsure = {i: _uncertified(r) for i, r in results.items()}
+    up = [i for i, e in estimates.items() if not e <= target or unsure[i]]
+    return estimates, unsure, up
+
+
+def rescue_level1(result: Any, target: float) -> dict[str, Any]:
+    """The rescue stage's double-double record of one point: its estimate,
+    ``met`` (within ``target`` and no lane served without accuracy
+    evidence: never met with one, the value kept uncertified with its
+    reasons), the reasons and the finite parts."""
+
+    reasons = _uncertified(result)
+    estimate = float(result.stability.relative)
+    return {
+        "estimate": estimate,
+        "met": estimate <= target and not reasons,
+        "uncertified": list(reasons),
+        "finite": [
+            _c(v.coefficients[0]).real for v in result.components["virtual"].values()
+        ],
+    }
+
+
+def ward_stage(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """The Ward stage's verdict over its point records: the asserted points
+    and whether every one passed (an inconclusive Ward row, ``ward.ward_row``
+    passed None with its reason, is never a pass) and how many carry one."""
+
+    verdicts = [r["passed"] for r in rows if r["asserted"]]
+    return {
+        "asserted": len(verdicts),
+        "passed": bool(verdicts) and all(v is True for v in verdicts),
+        "inconclusive": sum(
+            any(x.get("inconclusive") for x in r["rows"]) for r in rows if r["asserted"]
+        ),
+    }
+
+
+def _verdicts(verdicts: list[bool | None]) -> tuple[bool, bool]:
+    """(passed, inconclusive) of a row's three-way verdicts (``ward.judged``):
+    passed iff every one passed; inconclusive iff none failed and one is
+    undecided (never a pass)."""
+
+    inconclusive = False not in verdicts and None in verdicts
+    return all(v is True for v in verdicts), inconclusive
 
 
 def _peak_gib() -> float:
@@ -102,8 +192,10 @@ def point_row(
     born = sum(_c(v).real for v in result.born.values())
     virtual = result.components["virtual"]
     estimate = result.stability
+    uncertain = _bounds(result)
     sectors = {}
     passed = True
+    verdicts: list[bool | None] = []
     for sector, laurent in virtual.items():
         values = [_c(x).real for x in laurent.coefficients]
         absolute = (
@@ -114,8 +206,20 @@ def point_row(
         entry: dict[str, Any] = {"virtual": values, "estimate": absolute}
         poles = (result.ir_poles or {}).get(sector)
         if poles is not None and len(values) == 3:
-            catani, deviations, _bounds, ok = catani_comparison(values, poles, absolute)
-            entry.update(catani=catani, catani_deviation=deviations, catani_passed=ok)
+            catani, deviations, bounds, _ok = catani_comparison(values, poles, absolute)
+            # The lanes served without accuracy evidence: three-way.
+            found = [
+                judged(deviations[k - 1], bounds[k - 1], uncertain[sector][k])
+                for k in (1, 2)
+            ]
+            ok, open_ = _verdicts(found)
+            entry.update(
+                catani=catani,
+                catani_deviation=deviations,
+                catani_passed=ok,
+                catani_inconclusive=open_,
+            )
+            verdicts.extend(found)
             passed = passed and ok
         sectors[_sector(sector)] = entry
     widths = {len(laurent.coefficients) for laurent in virtual.values()}
@@ -141,14 +245,24 @@ def point_row(
                 * sum(abs(float(b.coefficients[2])) for b in estimate.absolute.values())
                 / abs(born)
             )
+        found = judged(
+            abs(ratio - expected_double),
+            bound,
+            sum(bounds[2] for bounds in uncertain.values()) / abs(born),
+        )
+        verdicts.append(found)
         row["double_pole"] = {
             "over_born": ratio,
             "universal": expected_double,
             "deviation": abs(ratio - expected_double),
-            "passed": abs(ratio - expected_double) <= bound,
+            "passed": found is True,
+            "inconclusive": found is None,
         }
-        passed = passed and row["double_pole"]["passed"]
+        passed = passed and found is True
     row["passed"] = passed
+    row["inconclusive"] = _verdicts(verdicts)[1] and not (
+        require_catani and result.ir_poles is None
+    )
     return row
 
 
@@ -166,6 +280,8 @@ def compare_carriers(
         "passed": not (require_catani and dd.ir_poles is None),
         "catani_formed": dd.ir_poles is not None,
     }
+    uncertain_b64, uncertain_dd = _bounds(binary64), _bounds(dd)
+    inconclusive = False
     for sector, laurent in dd.components["virtual"].items():
         exact = [_c(x).real for x in laurent.coefficients]
         b64 = [_c(x).real for x in binary64.components["virtual"][sector].coefficients]
@@ -173,10 +289,17 @@ def compare_carriers(
             abs(float(x)) for x in binary64.stability.absolute[sector].coefficients
         ]
         deviations = [abs(a - b) for a, b in zip(b64, exact, strict=True)]
-        ok = all(
-            d <= ESTIMATES * e + DD_FLOOR * abs(x)
-            for d, e, x in zip(deviations, absolute, exact, strict=True)
-        )
+        # Both carriers' lanes served without accuracy evidence: three-way.
+        uncertain = [
+            a + b
+            for a, b in zip(uncertain_b64[sector], uncertain_dd[sector], strict=False)
+        ]
+        found = [
+            judged(d, ESTIMATES * e + DD_FLOOR * abs(x), u)
+            for d, e, x, u in zip(deviations, absolute, exact, uncertain, strict=False)
+        ]
+        ok, open_ = _verdicts(found)
+        inconclusive = inconclusive or open_
         entry: dict[str, Any] = {
             "double_double": exact,
             "deviation": deviations,
@@ -184,11 +307,30 @@ def compare_carriers(
         }
         poles = (dd.ir_poles or {}).get(sector)
         if poles is not None:
-            catani, errors, within = catani_dd_comparison(exact, poles)
+            catani, errors, _within = catani_dd_comparison(exact, poles)
             entry.update(catani=catani, catani_relative=errors)
+            # The absolute deviation itself against the double-double
+            # predicate's tolerance with its zero-denominator convention
+            # (``catani_dd_comparison``: relative to max(|Catani|, 1e-300)):
+            # a vanishing prediction never scales a violation away.
+            found = [
+                judged(
+                    abs(exact[k] - catani[k - 1]),
+                    DD_FLOOR * max(abs(catani[k - 1]), 1e-300),
+                    uncertain_dd[sector][k],
+                )
+                for k in (1, 2)
+            ]
+            within, open_ = _verdicts(found)
+            inconclusive = inconclusive or open_
             ok = ok and within
         out["sectors"][_sector(sector)] = entry
         out["passed"] = out["passed"] and ok
+    out["inconclusive"] = (
+        inconclusive
+        and out["passed"] is False
+        and not (require_catani and dd.ir_poles is None)
+    )
     return out
 
 
@@ -287,7 +429,13 @@ def check_process(
             checked[index] = result
             rows.append({"index": index, **point_row(result, expected, require_catani)})
         record["checked"] = rows
-        stage("checked", begin, points=len(rows), passed=all(r["passed"] for r in rows))
+        stage(
+            "checked",
+            begin,
+            points=len(rows),
+            passed=all(r["passed"] for r in rows),
+            inconclusive=sum(bool(r.get("inconclusive")) for r in rows),
+        )
 
     if dd_points:
         begin = time.perf_counter()
@@ -312,6 +460,7 @@ def check_process(
             begin,
             points=len(rows),
             passed=all(r.get("passed", True) for r in rows),
+            inconclusive=sum(bool(r.get("inconclusive")) for r in rows),
         )
 
     if ward_points or ward_dd_points:
@@ -354,8 +503,12 @@ def check_process(
                 # Ward bound is a fixed 1e-25 of the scale (g g > 4g stream
                 # point 1: binary64 E 2.4e-6, double-double residual 1.4e-24
                 # = the binary64 one times the carriers' roundoff ratio).
+                # Skipped only where demonstrably out of scope at every scale
+                # the physical normalization allows (``ward.ward_row``'s
+                # ``scope_excluded``); a normalization-uncertain row stays
+                # asserted (inconclusive, never a pass).
                 scope = (
-                    [r.get("in_scope", True) for r in found["rows"]]
+                    [not r.get("scope_excluded", False) for r in found["rows"]]
                     if carrier == "double"
                     else None
                 )
@@ -376,14 +529,7 @@ def check_process(
                     }
                 )
         record["ward"] = rows
-        verdicts = [r["passed"] for r in rows if r["asserted"]]
-        stage(
-            "ward",
-            begin,
-            rows=len(rows),
-            asserted=len(verdicts),
-            passed=bool(verdicts) and all(verdicts),
-        )
+        stage("ward", begin, rows=len(rows), **ward_stage(rows))
 
     if rescue_points:
         begin = time.perf_counter()
@@ -396,13 +542,12 @@ def check_process(
             poles="none",
             stability=level0.checks.to_checks(),
         )
-        estimates = {
-            index: float(result.stability.relative)
-            for index, result in zip(rescue_points, results, strict=True)
-        }
-        up = [i for i, e in estimates.items() if not e <= level0.target]
+        estimates, unsure, up = rescue_level0(
+            dict(zip(rescue_points, results, strict=True)), level0.target
+        )
         rescue: dict[str, Any] = {
             "level0_estimates": estimates,
+            "level0_uncertified": {i: list(r) for i, r in unsure.items() if r},
             "sent_up": up,
             "count": len(up),
             "of": len(estimates),
@@ -425,14 +570,7 @@ def check_process(
                 stability=level1.checks.to_checks(),
             )
             rescue["double_double"] = {
-                index: {
-                    "estimate": float(result.stability.relative),
-                    "met": float(result.stability.relative) <= level1.target,
-                    "finite": [
-                        _c(v.coefficients[0]).real
-                        for v in result.components["virtual"].values()
-                    ],
-                }
+                index: rescue_level1(result, level1.target)
                 for index, result in zip(chosen, results, strict=True)
             }
             stage("rescue double-double", begin, points=len(chosen))
