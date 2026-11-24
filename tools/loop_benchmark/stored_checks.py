@@ -85,6 +85,7 @@ _WARD_ROW_KEYS = (
     "passed",
     "uncertified",
     "inconclusive",
+    "scope_excluded",
 )
 
 
@@ -140,6 +141,21 @@ def rescue_level1(result: Any, target: float) -> dict[str, Any]:
         "finite": [
             _c(v.coefficients[0]).real for v in result.components["virtual"].values()
         ],
+    }
+
+
+def ward_stage(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """The Ward stage's verdict over its point records: the asserted points
+    and whether every one passed (an inconclusive Ward row, ``ward.ward_row``
+    passed None with its reason, is never a pass) and how many carry one."""
+
+    verdicts = [r["passed"] for r in rows if r["asserted"]]
+    return {
+        "asserted": len(verdicts),
+        "passed": bool(verdicts) and all(v is True for v in verdicts),
+        "inconclusive": sum(
+            any(x.get("inconclusive") for x in r["rows"]) for r in rows if r["asserted"]
+        ),
     }
 
 
@@ -487,8 +503,12 @@ def check_process(
                 # Ward bound is a fixed 1e-25 of the scale (g g > 4g stream
                 # point 1: binary64 E 2.4e-6, double-double residual 1.4e-24
                 # = the binary64 one times the carriers' roundoff ratio).
+                # Skipped only where demonstrably out of scope at every scale
+                # the physical normalization allows (``ward.ward_row``'s
+                # ``scope_excluded``); a normalization-uncertain row stays
+                # asserted (inconclusive, never a pass).
                 scope = (
-                    [r.get("in_scope", True) for r in found["rows"]]
+                    [not r.get("scope_excluded", False) for r in found["rows"]]
                     if carrier == "double"
                     else None
                 )
@@ -509,21 +529,7 @@ def check_process(
                     }
                 )
         record["ward"] = rows
-        verdicts = [r["passed"] for r in rows if r["asserted"]]
-        stage(
-            "ward",
-            begin,
-            rows=len(rows),
-            asserted=len(verdicts),
-            # An inconclusive Ward row (``ward.ward_row``: passed None with
-            # its reason) is never a pass.
-            passed=bool(verdicts) and all(v is True for v in verdicts),
-            inconclusive=sum(
-                any(x.get("inconclusive") for x in r["rows"])
-                for r in rows
-                if r["asserted"]
-            ),
-        )
+        stage("ward", begin, rows=len(rows), **ward_stage(rows))
 
     if rescue_points:
         begin = time.perf_counter()
