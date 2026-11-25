@@ -3707,7 +3707,7 @@ pub mod v2 {
                 let mut tests = lanes.clone();
                 for (_, values) in &mut tests {
                     for z in values.iter_mut() {
-                        *z = *z + value(next()) * Complex::new(1e-9, 0.0);
+                        *z += value(next()) * Complex::new(1e-9, 0.0);
                     }
                 }
                 // Shuffled: the assembly sorts both by key.

@@ -3518,6 +3518,11 @@ class NativeExecutor:
                     evaluation.set_lanes(
                         read(lanes), read(checks), scaleless, scaleless_check
                     )
+        if exported.amplitude is not None:
+            # binary64 loop-induced points: |A|^2 in one native call.
+            induced.native_squares(
+                [e for i, e in enumerate(evaluations) if i not in failed], exported
+            )
         return failed
 
     def _wants_catani(self, evaluation: Any) -> bool:

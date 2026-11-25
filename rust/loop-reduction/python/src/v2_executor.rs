@@ -2937,6 +2937,134 @@ fn square_amplitudes(
     .map_err(error)
 }
 
+/// The counterterm kets of [`induced_squares`]: the loop orders of the
+/// amplitude vectors (the executor's slots first), the ket components per
+/// row and, per kept component in layout order, `(component, basis element,
+/// Laurent index, loop order, 3^(N_c power))`.
+type KetLayout = (usize, usize, Vec<(usize, usize, usize, usize, f64)>);
+
+/// |A|^2 of every binary64 point of a loop-induced batch from the
+/// executor's own outputs (`V2Executor.evaluate`'s `amplitudes` and
+/// `counterterm_kets`), in one call: per point `(slots, kets, average)`.
+/// Per (loop order, row) the amplitude vector is `0 + a_bare`, plus the
+/// counterterm ket `sum_j value_j * 3^nc_j` where the point has kets, each
+/// product `(re p - im 0, re 0 + im p)` and every sum in the order and with
+/// the zeros of the Python assembly (`loops.v2.induced`: `read_native`,
+/// `native_kets`, `add_amplitudes`), then squared on the colour metric by
+/// [`square_amplitudes`]'s routine over the squared loop orders `square`
+/// (each the vector order it reads, or None: zero). Bitwise the Python
+/// assembly's squares.
+#[pyfunction]
+#[pyo3(signature = (points, rows, basis, width, slots, kets, square, metric, sectors))]
+#[allow(clippy::too_many_arguments)]
+fn induced_squares(
+    py: Python<'_>,
+    points: Vec<(Vec<Vec<[f64; 2]>>, Option<Vec<[f64; 2]>>, f64)>,
+    rows: usize,
+    basis: usize,
+    width: usize,
+    slots: usize,
+    kets: KetLayout,
+    square: Vec<Option<usize>>,
+    metric: Vec<[f64; 2]>,
+    sectors: Vec<Vec<(usize, usize)>>,
+) -> PyResult<Vec<Vec<Vec<f64>>>> {
+    let _unlock = pyamplicol::unlock();
+    let (orders, components, entries) = kets;
+    let metric: Vec<Complex<f64>> = metric
+        .iter()
+        .map(|[re, im]| Complex::new(*re, *im))
+        .collect();
+    py.detach(|| {
+        let zero = Complex::new(0.0, 0.0);
+        points
+            .iter()
+            .map(|(cells, values, average)| {
+                if cells.len() != slots * rows * basis {
+                    return Err(error(
+                        "amplitude slots per (loop order, row, basis element)",
+                    ));
+                }
+                // Per (loop order, row): the vector `0 + a_bare` (the executor's
+                // slots), then plus its counterterm ket.
+                let mut total: Vec<Option<Vec<Vec<Complex<f64>>>>> = vec![None; orders * rows];
+                for o in 0..slots {
+                    for r in 0..rows {
+                        let base = (o * rows + r) * basis;
+                        total[o * rows + r] = Some(
+                            cells[base..base + basis]
+                                .iter()
+                                .map(|cell| {
+                                    let n = if width == 1 { 1 } else { width.min(cell.len()) };
+                                    cell[..n]
+                                        .iter()
+                                        .map(|[re, im]| zero + Complex::new(*re, *im))
+                                        .collect()
+                                })
+                                .collect(),
+                        );
+                    }
+                }
+                if let Some(values) = values {
+                    if values.len() != rows * components {
+                        return Err(error("counterterm kets per (row, ket component)"));
+                    }
+                    let mut ket: Vec<Option<Vec<Vec<Complex<f64>>>>> = vec![None; orders * rows];
+                    for r in 0..rows {
+                        for &(j, t, k, o, power) in &entries {
+                            let [re, im] = values[r * components + j];
+                            let vector = ket[o * rows + r]
+                                .get_or_insert_with(|| vec![vec![zero; width]; basis]);
+                            let product =
+                                Complex::new(re * power - im * 0.0, re * 0.0 + im * power);
+                            vector[t][k] += product;
+                        }
+                    }
+                    for (slot, vector) in ket.into_iter().enumerate() {
+                        let Some(vector) = vector else { continue };
+                        let out = total[slot].get_or_insert_with(|| vec![vec![zero; width]; basis]);
+                        for (entries, cell) in out.iter_mut().zip(&vector) {
+                            let n = if width == 1 {
+                                1
+                            } else {
+                                entries.len().min(cell.len())
+                            };
+                            entries.truncate(n);
+                            for (a, b) in entries.iter_mut().zip(cell) {
+                                *a += *b;
+                            }
+                        }
+                    }
+                }
+                let mut amplitudes = Vec::with_capacity(square.len() * rows * basis);
+                for &order in &square {
+                    for r in 0..rows {
+                        match order.and_then(|o| total[o * rows + r].as_ref()) {
+                            Some(vector) => amplitudes.extend(
+                                vector[..basis]
+                                    .iter()
+                                    .map(|cell| cell[..width.min(cell.len())].to_vec()),
+                            ),
+                            None => amplitudes.extend((0..basis).map(|_| vec![zero; width])),
+                        }
+                    }
+                }
+                rusticol_core::loop_v2::interference::square_amplitudes(
+                    &amplitudes,
+                    square.len(),
+                    rows,
+                    basis,
+                    width,
+                    &metric,
+                    &sectors,
+                    average,
+                )
+                .map_err(error)
+            })
+            .collect()
+    })
+}
+
 /// The stored records of a Born-interfered process's resolved set
 /// (`native_observables.StoredObservables`) as the formation reads them.
 fn resolved_records<'a>(
@@ -3135,6 +3263,7 @@ pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(selection_template, module)?)?;
     module.add_function(wrap_pyfunction!(resolved_subset, module)?)?;
     module.add_function(wrap_pyfunction!(square_amplitudes, module)?)?;
+    module.add_function(wrap_pyfunction!(induced_squares, module)?)?;
     module.add_function(wrap_pyfunction!(compile_v2_plane, module)?)?;
     module.add(
         "PlaneMismatchError",

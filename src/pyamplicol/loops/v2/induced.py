@@ -582,9 +582,23 @@ def read_native(
 
     # (An empty amplitude basis, an exact colour zero, has no slot.)
     amplitudes = output.get("amplitudes")
-    evaluation.native_bare = vectors(
-        [] if amplitudes is None else amplitudes[index], carrier
+    slots = [] if amplitudes is None else amplitudes[index]
+    kets = output.get("counterterm_kets")
+    pending = (
+        carrier is _double_pairs
+        and kets is not None
+        and size > 0
+        and len(set(exported.orders)) == len(exported.orders)
     )
+    if pending:
+        # binary64 with counterterm kets: the vectors are formed on first
+        # read, |A|^2 natively from the same outputs (``native_squares``).
+        found = evaluation.__dict__
+        found.pop("native_bare", None)
+        found["_pending_native_bare"] = _formed(lambda: vectors(slots, carrier))
+        found["_native_amplitudes"] = (slots, kets[index])
+    else:
+        evaluation.native_bare = vectors(slots, carrier)
     # Magnitudes: binary64 floats, or exponent-safe in arbitrary precision
     # (``loops.v2.wide``; a 500-digit budget is far below binary64's range).
     size_of = (
@@ -600,16 +614,23 @@ def read_native(
     evaluation.native_terms = None if terms is None else vectors(terms[index], size_of)
     evaluation.native_square = numbers.double
     evaluation.amplitude_rows = rows
-    kets = output.get("counterterm_kets")
     if kets is not None:
-        evaluation.native_kets = native_kets(
-            evaluation.slice,
-            exported,
-            carrier(kets[index]),
-            numbers,
-            width_of(evaluation),
-            rows,
-        )
+
+        def form_kets(values=kets[index]):
+            return native_kets(
+                evaluation.slice,
+                exported,
+                carrier(values),
+                numbers,
+                width_of(evaluation),
+                rows,
+            )
+
+        if pending:
+            evaluation.__dict__.pop("native_kets", None)
+            evaluation.__dict__["_pending_native_kets"] = _formed(form_kets)
+        else:
+            evaluation.native_kets = form_kets()
 
 
 def width_of(evaluation: Any) -> int:
@@ -640,6 +661,81 @@ def ket_map(slice_: Any, trees: Any) -> list[tuple[int, int, Orders, int]]:
     return out
 
 
+def _ket_mapping(slice_: Any, exported: Any) -> Sequence[tuple[int, int, Orders, int]]:
+    """``ket_map`` of a native process (its recorded map, else formed once
+    per exported plan)."""
+
+    mapping = getattr(slice_.amplitude, "ket_map", None)
+    if mapping is None:
+        mapping = exported.__dict__.get("_ket_map")
+    if mapping is None:
+        mapping = exported.__dict__["_ket_map"] = ket_map(slice_, exported.trees)
+    return mapping
+
+
+def _formed(make: Callable[[], Any]) -> Any:
+    from .assemble import _Formed
+
+    return _Formed(make)
+
+
+def native_squares(evaluations: Sequence[Any], exported: Any) -> None:
+    """|A|^2 of the binary64 points of a batch whose amplitude and
+    counterterm-ket vectors are pending (``read_native``), in one native call
+    (``induced_squares``: the vectors ``add_amplitudes`` forms from the same
+    executor outputs, squared as ``native_square`` squares them, bitwise),
+    kept as each point's ``native_squared`` for ``assemble``."""
+
+    points = [e for e in evaluations if "_native_amplitudes" in e.__dict__]
+    if not points:
+        return
+    first = points[0]
+    slice_, numbers = first.slice, first.numbers
+    width = width_of(first)
+    rows = rows_of(first)
+    size = len(slice_.amplitude)
+    mapping = _ket_mapping(slice_, exported)
+    orders = {order: o for o, order in enumerate(exported.orders)}
+    three = numbers.real(3)
+    powers: dict[int, Any] = {}
+    entries = []
+    for j, (t, k, order, nc) in enumerate(mapping):
+        if k >= width:
+            continue
+        power = powers.get(nc)
+        if power is None:
+            power = powers[nc] = three**nc
+        entries.append((j, t, k, orders.setdefault(order, len(orders)), power))
+    squared_orders = sorted(
+        {order for _sector, pairs in slice_.sectors for pair in pairs for order in pair}
+    )
+    slot = {order: k for k, order in enumerate(squared_orders)}
+    gram = metric(slice_, numbers)
+    found = slice_.native.induced_squares(
+        [
+            (amplitudes, kets, float(e.average))
+            for e in points
+            for amplitudes, kets in (e.__dict__.pop("_native_amplitudes"),)
+        ],
+        len(rows),
+        size,
+        width,
+        len(exported.orders),
+        (len(orders), len(mapping), entries),
+        [orders.get(order) for order in squared_orders],
+        [[complex(x).real, complex(x).imag] for line in gram for x in line],
+        [
+            sorted((slot[left], slot[right]) for left, right in pairs)
+            for _sector, pairs in slice_.sectors
+        ],
+    )
+    for evaluation, squares in zip(points, found, strict=True):
+        evaluation.native_squared = {
+            sector: tuple(totals)
+            for (sector, _pairs), totals in zip(slice_.sectors, squares, strict=True)
+        }
+
+
 def native_kets(
     slice_: Any,
     exported: Any,
@@ -654,11 +750,7 @@ def native_kets(
     default) on the amplitude basis at N_c = 3 (``ket_map``, or a stored
     process's recorded map; the native twin of ``counterterm_kets``)."""
 
-    mapping = getattr(slice_.amplitude, "ket_map", None)
-    if mapping is None:
-        mapping = exported.__dict__.get("_ket_map")
-    if mapping is None:
-        mapping = exported.__dict__["_ket_map"] = ket_map(slice_, exported.trees)
+    mapping = _ket_mapping(slice_, exported)
     components = len(mapping)
     size = len(slice_.amplitude)
     zero = numbers.zero
@@ -696,6 +788,10 @@ def assemble(evaluation: Any) -> None:
     width = 3 if evaluation.poles else 1
     size = len(slice_.amplitude)
     rows = rows_of(evaluation)
+    squared_natively = evaluation.__dict__.pop("native_squared", None)
+    if squared_natively is not None:
+        _assemble_pending(evaluation, squared_natively, width)
+        return
     native = getattr(evaluation, "native_bare", None)
     with numbers.scope():
         bare = (
@@ -739,6 +835,55 @@ def assemble(evaluation: Any) -> None:
     evaluation.amplitude_vectors = total
     evaluation.bare_vectors = bare
     evaluation.counterterm_vectors = kets
+    evaluation.gram = gram
+    evaluation.result = PointResult(
+        {},
+        {"virtual": virtual},
+        tuple(totals),
+        dict(evaluation.families),
+        None,
+        colour_contraction=getattr(evaluation, "colour_contraction", "direct"),
+        poles=evaluation.mode,
+        finiteness=point_finiteness(evaluation),
+    )
+    budgets(evaluation)
+
+
+def _assemble_pending(evaluation: Any, squared: Mapping, width: int) -> None:
+    """``assemble`` of a binary64 point squared natively (``native_squares``):
+    the same result, its amplitude, bare and counterterm vectors formed on
+    first read (``add_amplitudes`` of the pending ``native_bare`` and
+    ``native_kets``), as ``assemble`` forms them."""
+
+    from .assemble import Laurent, PointResult
+
+    numbers = evaluation.numbers
+    slice_ = evaluation.slice
+    size = len(slice_.amplitude)
+    found = evaluation.__dict__
+    bare = found.get("native_bare", found.get("_pending_native_bare"))
+    kets = found.get("native_kets", found.get("_pending_native_kets"))
+
+    def value(source: Any) -> Any:
+        return source() if callable(source) and not isinstance(source, dict) else source
+
+    def total() -> dict:
+        return add_amplitudes(
+            value(bare), value(kets), numbers=numbers, size=size, width=width
+        )
+
+    with numbers.scope():
+        gram = metric(slice_, numbers)
+        zero = numbers.real(0)
+        virtual = {sector: Laurent(*values) for sector, values in squared.items()}
+        totals = [zero]
+        for k in range(width):
+            totals.append(sum((values[k] for values in squared.values()), zero))
+    for name in ("amplitude_vectors", "bare_vectors", "counterterm_vectors"):
+        found.pop(name, None)
+    found["_pending_amplitude_vectors"] = _formed(total)
+    found["_pending_bare_vectors"] = _formed(lambda: value(bare))
+    found["_pending_counterterm_vectors"] = _formed(lambda: value(kets))
     evaluation.gram = gram
     evaluation.result = PointResult(
         {},

@@ -4039,6 +4039,12 @@ class _PointEvaluation:
     retest_families = _LaneAttribute("retest_families")
     family_deviations = _LaneAttribute("family_deviations")
     retest_budget = _LaneAttribute("retest_budget")
+    # Loop-induced binary64 points (``induced.read_native``, ``assemble``).
+    native_bare = _LaneAttribute("native_bare")
+    native_kets = _LaneAttribute("native_kets")
+    amplitude_vectors = _LaneAttribute("amplitude_vectors")
+    bare_vectors = _LaneAttribute("bare_vectors")
+    counterterm_vectors = _LaneAttribute("counterterm_vectors")
 
     def __init__(
         self,
