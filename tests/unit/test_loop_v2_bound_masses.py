@@ -1030,3 +1030,41 @@ def test_the_public_benchmark_runner_refuses_ignored_parameters(uux_ttx_free, tm
     )
     with pytest.raises(ConfigurationError, match="own model parameters"):
         BenchmarkRunner(config=config).run(uux_ttx_free)
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("higgs", (None, "130"))
+def test_a_two_to_one_draw_takes_the_bound_final_mass(higgs, tmp_path, monkeypatch):
+    """The shipped g g > h example through `pyamplicol evaluate`: the Higgs
+    at rest at the bound mass (125, or an override 130) and mu_R^2 = MH^2,
+    never the stored point's energy; the point is unmarked."""
+
+    from pyamplicol._internal import selftest_virtual_li as li
+    from pyamplicol.cli import flat_points, parse_cli
+    from pyamplicol.cli.handlers import DefaultCliServices
+    from pyamplicol.reporting import CallbackProgressSink
+
+    drawn = []
+    original = flat_points.draw_flat_points
+
+    def spy(*args, **kwargs):
+        found = original(*args, **kwargs)
+        drawn.append(found)
+        return found
+
+    monkeypatch.setattr(flat_points, "draw_flat_points", spy)
+    arguments = ["evaluate", str(li.fixture_root() / "artifact")]
+    if higgs is not None:
+        path = tmp_path / "parameters.json"
+        path.write_text(json.dumps({"MH": higgs}))
+        arguments += ["--model-parameters", str(path)]
+    config = parse_cli(tuple(arguments)).resolve().effective
+    result = DefaultCliServices().evaluate(config, CallbackProgressSink(lambda _: None))
+    mass = 125.0 if higgs is None else 130.0
+    (flat,) = drawn
+    for point in flat.points:
+        assert point[-1] == (mass, 0.0, 0.0, 0.0)
+        assert point[0][0] + point[1][0] == mass
+    assert flat.mu_r2() == [repr(mass * mass)] * len(flat.points)
+    for lane in result.diagnostics:
+        assert not lane.uncertified, lane.uncertified

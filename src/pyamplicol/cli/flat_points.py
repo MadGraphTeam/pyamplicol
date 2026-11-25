@@ -20,8 +20,9 @@ them (a tree artifact, whose amplitudes bind the model's masses, the
 validation point's) gives the masses of its point, m^2 = E^2 - |p|^2 in
 exact decimal arithmetic on its stored digits; a square below the rounding
 of the stored binary64 components (64 epsilon E^2) is a massless leg. The
-default energy is the validation point's (its initial state's invariant
-mass), so it is above threshold for any process the artifact holds.
+default energy follows the generation's convention on those masses
+(``generation.validation.default_sqrt_s``; a decay at rest, a 2 -> 1
+process at its final mass), so it is above threshold.
 """
 
 from __future__ import annotations
@@ -288,8 +289,9 @@ def draw_flat_points(
 ) -> FlatPoints:
     """``points`` flat phase-space points of the artifact's process
     (``process``: an id or alias, None the default process) from ``seed``
-    at ``sqrt_s`` (None: the validation point's energy; a decay or a 2 -> 1
-    process takes its mass and refuses another value), within ``cuts``
+    at ``sqrt_s`` (None: the generation's default energy at the masses
+    drawn on; a decay or a 2 -> 1 process takes its (bound) mass and refuses
+    another value), within ``cuts``
     (``generation.phase_space_cuts``; None: none). The external masses (of
     the points, the thresholds and the cuts' massless-leg test) are
     ``binding``'s (``runtime_binding``: those the loaded runtime binds, its
@@ -315,17 +317,23 @@ def draw_flat_points(
                 f"the runtime binds {len(masses)} masses for the "
                 f"{len(validation)} legs of {process_id!r}"
             )
+    from pyamplicol.generation.validation import default_sqrt_s
+
     initial = _initial_count_from_point(artifact, process_id, validation)
     final = len(validation) - initial
-    incoming = validation[:initial]
-    with localcontext() as context:
-        context.prec = 60
-        total = [sum(momentum[i] for momentum in incoming) for i in range(4)]
-        invariant = total[0] ** 2 - total[1] ** 2 - total[2] ** 2 - total[3] ** 2
-        own = float(invariant.sqrt())
     fixed_energy = initial == 1 or final == 1
     if sqrt_s is None:
-        energy = masses[0] if initial == 1 else own
+        # The defaults of the generation's convention on THESE masses (the
+        # bound ones; never the stored point's energy): a decay at rest, a
+        # 2 -> 1 process at its final mass, a 2 -> n scattering at
+        # ``validation.default_sqrt_s``.
+        energy = (
+            masses[0]
+            if initial == 1
+            else masses[-1]
+            if final == 1
+            else default_sqrt_s(masses[:initial], masses[initial:])
+        )
     elif fixed_energy:
         expected = masses[0] if initial == 1 else masses[-1]
         if not math.isclose(sqrt_s, expected, rel_tol=1e-12):

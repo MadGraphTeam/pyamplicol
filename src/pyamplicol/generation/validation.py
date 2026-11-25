@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
@@ -319,11 +319,7 @@ def _build_particles(
         final_momenta: tuple[FourMomentum, ...] = ((float(sqrt_s), 0.0, 0.0, 0.0),)
     else:
         if sqrt_s is None:
-            sqrt_s = (
-                max(1000.0, threshold + 100.0)
-                if beams == 0.0
-                else _MASSIVE_BEAM_SCALE * max(threshold, beams)
-            )
+            sqrt_s = default_sqrt_s(initial_masses, final_masses)
         elif not (math.isfinite(sqrt_s) and sqrt_s > max(threshold, beams)):
             raise ValueError(
                 f"no validation point at sqrt(s) = {sqrt_s!r}: it must exceed the "
@@ -349,6 +345,21 @@ def _build_particles(
         *tuple(zip(final_pdgs, final_momenta, strict=True)),
     )
     return _finite(particles)
+
+
+def default_sqrt_s(
+    initial_masses: Sequence[float], final_masses: Sequence[float]
+) -> float:
+    """The default energy of a 2 -> n scattering (n >= 2) at these masses
+    (``_build_particles``' convention, also the flat points' default):
+    massless beams ``max(1000, final threshold + 100)``, massive beams twice
+    the larger of the initial and the final threshold."""
+
+    threshold = sum(final_masses)
+    beams = sum(initial_masses)
+    if beams == 0.0:
+        return max(1000.0, threshold + 100.0)
+    return _MASSIVE_BEAM_SCALE * max(threshold, beams)
 
 
 def _massive_beams(
@@ -394,6 +405,7 @@ __all__ = [
     "bound_external_masses",
     "build_process_validation_point",
     "build_validation_point",
+    "default_sqrt_s",
     "rotate_validation_point",
     "validation_point_map",
 ]
