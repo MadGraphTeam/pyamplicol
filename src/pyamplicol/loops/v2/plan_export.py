@@ -3503,10 +3503,9 @@ class NativeExecutor:
                     )
                 if pending and numbers.double:
                     evaluation.set_native_lanes(
-                        lambda read=read, lanes=lanes: read(lanes),
-                        None
-                        if checks is None
-                        else (lambda read=read, checks=checks: read(checks)),
+                        lanes,
+                        checks,
+                        label,
                         {
                             exported.columns[column]: [
                                 complex(re, im) for re, im in sums
