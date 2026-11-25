@@ -3725,7 +3725,10 @@ pub mod v2 {
             }
             let bits = |z: &Complex<f64>| (z.re.to_bits(), z.im.to_bits());
             let run = |threads: usize, amplitude: bool| {
-                let mut plan = LoopProgramV4::load(PLAN).unwrap();
+                let text = std::str::from_utf8(PLAN)
+                    .unwrap()
+                    .replace("FAMILY,FAMILY", &[FAMILY; 2].join(","));
+                let mut plan = LoopProgramV4::load(text.as_bytes()).unwrap();
                 plan.columns = 3;
                 plan.average = 6;
                 plan.amplitude = amplitude;
