@@ -1801,9 +1801,19 @@ impl TirReductionBackend {
         }
         // The rows of one family group together where the slice size
         // allows (one TIRust call per bin of a slice); the most expensive
-        // slices first.
+        // slices first. A row's cost varies by a large factor between plans
+        // (a bubble and a rank-6 hexagon), so the size is the number of rows
+        // of the typical cost (the cost-weighted mean, Σc²/Σc: where the
+        // work is) that make one `SLICES_PER_WORKER * workers`-th of the
+        // call's cost.
+        let (total, squares) = rows.iter().fold((0usize, 0usize), |(sum, squares), row| {
+            let c = costs[&key(row)];
+            (sum + c, squares + c * c)
+        });
+        let typical = (squares / total.max(1)).max(1);
+        let cap = total.div_ceil(lane_slices::SLICES_PER_WORKER * workers * typical);
         let affinity: Vec<usize> = rows.iter().map(|row| row.group).collect();
-        let size = lane_slices::slice_size(rows.len(), workers, rows.len());
+        let size = lane_slices::slice_size(rows.len(), workers, cap);
         let slices = lane_slices::cut(&affinity, size);
         let cost = |slice: &std::ops::Range<usize>| -> usize {
             rows[slice.clone()].iter().map(|row| costs[&key(row)]).sum()
