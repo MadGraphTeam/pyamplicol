@@ -37,6 +37,40 @@ dependency source patches or unpublished wheels are needed.
 
 ## Changes after 1.0.3
 
+**The one-loop runtime uses its threads.** Until now the reduction, most of
+a one-loop call's time, ran on one thread whatever `threads` allowed: 8
+threads gained x1.0 to x1.1 on loop-induced processes with NinjaRS and at most
+x2.9 elsewhere. Both reductions now run in parallel on the runtime's own pool
+(NinjaRS over slices of lanes, TIRust over slices of kinematic rows, in every
+carrier, the check frames, the cancellation rescue and the lane rescue
+included), and so do the tree programs, the tree interferences and the
+scatter of numerators into lanes. One 16-point call on 8 cores (binary64,
+unchecked) is about 4.3 (NinjaRS) and 5.6 (TIRust) times faster than on one
+on `g g > g g g g`, 4.1 on `g g > h g g` with NinjaRS (1.7 with TIRust), 4.3
+on `g g > z z`, 2.3 on `g g > t t~ g`, 1.6 on `u u~ > e+ e- g g`
+([Configuration](configuration.md#threads): what runs in parallel and what
+does not scale).
+
+Compatibility: results do not depend on the thread count, bit for bit (every
+value, diagnostic, rescue and uncertified record, checked and unchecked, every
+carrier and batch size, both reductions), and one thread gives the values it
+gave before this change, bit for bit; the one-core cost is unchanged with
+NinjaRS and up to about 1.5 % higher with TIRust (lane independence, below).
+TIRust's workspaces are now
+lane-independent: a lane starts from the plan's base variant instead of the
+variant the lane before it selected, which made a nearly degenerate row's
+last bits (and, in the last-resort pass, its value) depend on the rows reduced
+before it in the same workspace; no value of the shipped and profiled
+processes changes. Limits: the Python assembly of the result runs under the
+interpreter lock, the tree programs are bound by memory reads past a few
+threads, the dressing of a small process has few families to share out, and
+a TIRust row refused by its gates has its method choice as one serial
+computation; each worker keeps engines of its own, so memory grows with the
+thread count.
+
+Dependencies: TIRust `780410ce` (huashengshao/TIRust#63 on `1c130a81`:
+lane-independent workspaces); the other pins are unchanged.
+
 **Fixed parameters now define the masses of the generated points.** In 1.0.2
 and 1.0.3 (every one-loop artifact), a card's `[loop.preparation]
 fixed_parameters` were bound by the amplitude but ignored by the kinematics:

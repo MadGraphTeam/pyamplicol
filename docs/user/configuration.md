@@ -1017,8 +1017,43 @@ use (its affinity mask and its cgroup CPU quota,
   `rusticol_virtual_options_json` and `Runtime.inspect()["runtime_options"]`.
   0 and negative counts stay refused.
 
-- Values do not depend on the count: they are bitwise the same at 1, 2, 8 or
-  every core.
+- Results do not depend on the count: every value, every lane diagnostic,
+  every rescue and uncertified record, the statuses and the counts of the
+  executor report (rescued, refined and refused lanes; master requests, and
+  master evaluations unless one fails) are bitwise the same at 1, 2, 8 or
+  every core, checked and unchecked, in every carrier, at every batch size,
+  for both reductions. Work is cut from the call's own work in a fixed order
+  (never from the count) and merged in that order, never in completion order. With one thread the serial
+  code runs unchanged (no slicing, no shared tables, no locks). Only the
+  report's seconds change: they are wall times (TIRust's own optional profile
+  seconds are summed over the workers).
+- What runs on the threads, in one call: the tree stage (the interaction
+  programs over the accumulators of each step at every point, the closures,
+  the interferences over points), the dressing of the families of a bucket
+  chunk, the scatter of the numerators into reduction lanes (over
+  numerators), and the reduction in both backends, in every carrier, in the
+  reduction-direction check frames, NinjaRS's cancellation rescue and the lane
+  rescue: NinjaRS over slices of each (propagators, rank) bucket's lanes, each
+  worker with an engine of its own and one master table shared by the call;
+  TIRust over slices of kinematic rows, each row's whole pipeline (gates,
+  method choice, last resort, acceptance frame) in its slice, every TIRust
+  workspace lane-independent (a lane starts from the plan's base variant
+  whatever was reduced before it), the plans shared by the workers. The
+  slices are about four per worker, the most expensive first. One 16-point
+  call on 8 cores (binary64, unchecked) runs about 4 (NinjaRS) and 5.5
+  (TIRust) times faster than on one for `g g > g g g g`, about 4 for
+  `g g > h g g` and `g g > z z` with NinjaRS, 2.3 for `g g > t t~ g` and
+  1.6 for `u u~ > e+ e- g g`.
+- Memory: each worker keeps engines of its own between calls (on
+  `g g > g g g g` with TIRust about 100 MB per worker), so a runtime's
+  memory grows with its thread count.
+- What does not scale: the Python assembly of the result (labelling and
+  summing every lane under the interpreter lock; on small processes up to a
+  third of a call at 8 threads), the tree programs past a few threads (bound
+  by the memory reads of the per-point states), the dressing of small
+  processes (few families per bucket chunk) and, with TIRust, a row refused by
+  its gates, whose method choice is one serial computation (a call with few
+  rows, e.g. one point of a large process, scales less).
 - Each runtime keeps its own count: two runtimes with different counts in one
   process each use theirs.
 - The bound covers the work of one call at a time (a runtime's calls are
