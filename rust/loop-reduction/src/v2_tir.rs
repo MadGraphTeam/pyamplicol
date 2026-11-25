@@ -198,6 +198,25 @@
 //! **Symbolica.** The binary64 direct engine with its native master kernels
 //! builds and evaluates no Symbolica expression; nothing here takes
 //! pyAmpliCol's library key (test T8 in `tests/unit`).
+//!
+//! **Threads.** A call on a thread of a rayon pool (the executor's own,
+//! installed around its work) with more than one thread cuts its kinematic
+//! rows into contiguous slices of about equal TIRust cost (the plans' term
+//! counts; [`SLICES_PER_THREAD`] per thread) and reduces each slice on the
+//! pool with an engine of its own: workspaces of the backend's plans (an
+//! engine serves one slice at a time and is kept for the next calls).
+//! Every pass of a row (direct, rotation copy, check frame, method choice,
+//! last resort, acceptance frame) stays in its slice, then the lanes are
+//! contracted per slice. A row's moments are a pure function of the row
+//! (T6: no dependence on the rows it is batched with), so every value,
+//! reason, measure and count is that of the one-thread call: outcomes and
+//! measures are concatenated in slice order (row order), counts summed;
+//! the stages' seconds are their wall time. The capability query of every
+//! plan of the call is asked first, in (propagators, rank) order, so a
+//! refusal is the one the serial passes meet first; any other TIRust error
+//! is the first slice's in slice order. With one thread, off a pool thread
+//! and with the tensor store ([`TirOptions::store`], whose counts depend on
+//! which rows meet in it) a call runs as one slice on the calling thread.
 
 use crate::Complex;
 use crate::runtime::frames::{FrameMap, ReductionFrame};
@@ -580,6 +599,16 @@ impl Bin {
         })
     }
 
+    /// The same plan and permutation with workspaces of its own (a parallel
+    /// slice's engine, module docs 'Threads'; the plan is shared).
+    fn sibling(&self) -> Self {
+        Self {
+            plan: self.plan.clone(),
+            workspaces: Workspaces::default(),
+            position: self.position.clone(),
+        }
+    }
+
     /// The carrier's gates (or, with `choice`, method-choice) workspace,
     /// built on first use at the precision of `prototype`; with a `store`,
     /// a `check` pass's own workspace without it ([`Slots`]; without a store
@@ -659,19 +688,7 @@ fn new_workspace<T: TirCarrier>(
 where
     Complex<T>: EvaluationDomain,
 {
-    let bits = prototype.get_precision();
-    let settings = plan.settings();
-    DirectReductionPlan::capabilities(prototype)
-        .admits(settings)
-        .map_err(|e| {
-            RusticolError::unsupported_runtime_capability(
-                "tirust",
-                format!(
-                    "TIRust cannot reduce {} propagators at rank {} at {bits} bits: {e}",
-                    settings.propagators, settings.rank
-                ),
-            )
-        })?;
+    admitted(plan, prototype)?;
     let mut workspace = plan
         .workspace(prototype.clone())
         .map_err(|e| RusticolError::unsupported_runtime_capability("tirust", e.to_string()))?;
@@ -757,6 +774,33 @@ struct Counters {
 }
 
 impl Counters {
+    /// Add the counts of `other` (a slice's, module docs 'Threads'); its
+    /// seconds too (the caller replaces the stage seconds by their wall
+    /// time).
+    fn add(&mut self, other: Counters) {
+        self.moments += other.moments;
+        self.contraction += other.contraction;
+        self.rows += other.rows;
+        self.lanes += other.lanes;
+        self.shared += other.shared;
+        self.gate_refusals += other.gate_refusals;
+        self.choice_rows += other.choice_rows;
+        self.expansion_rows += other.expansion_rows;
+        self.acceptance_rows += other.acceptance_rows;
+        self.unverified += other.unverified;
+        self.resort_unverified += other.resort_unverified;
+        self.last_resort_rows += other.last_resort_rows;
+        self.masters += other.masters;
+        if let Some(profile) = other.profile {
+            let total = self.profile.get_or_insert([0.; 5]);
+            for (t, s) in total.iter_mut().zip(profile) {
+                *t += s;
+            }
+        }
+        // The store and the census run on the calling thread only.
+        debug_assert!(other.store.is_none() && other.census.is_none());
+    }
+
     /// Add the store's counts since its last clear (before clearing it),
     /// and the census's ([`TirOptions::masters_census`]).
     fn store(&mut self, store: &TensorStore, census: Option<&MastersCensus>) {
@@ -899,10 +943,17 @@ impl MasterProvider for MastersCensus {
     }
 }
 
+/// One engine's plans and workspaces, by (propagators, rank).
+type Engine = BTreeMap<(usize, usize), Bin>;
+
 /// The TIR backend (module docs).
 pub struct TirReductionBackend {
     options: TirOptions,
-    bins: BTreeMap<(usize, usize), Bin>,
+    /// The plans of the backend and the calling thread's engine.
+    bins: Engine,
+    /// The engines of the parallel slices (module docs 'Threads'): one per
+    /// worker at a time, their plans shared with `bins`, kept between calls.
+    workers: Vec<Engine>,
     counters: Counters,
     /// [`TirOptions::store`]: the backend's one tensor store.
     store: Option<TensorStore>,
@@ -1096,6 +1147,339 @@ fn resorted<T: Carrier>(
     }
 }
 
+/// What one slice of a call's rows is reduced with (module docs
+/// 'Threads'): the options, an engine, the backend's store (the calling
+/// thread only), the backend's plans for a worker's engine, and the
+/// slice's counters.
+struct Worker<'a> {
+    options: TirOptions,
+    bins: &'a mut Engine,
+    store: Option<&'a TensorStore>,
+    template: Option<&'a Engine>,
+    counters: &'a mut Counters,
+}
+
+impl Worker<'_> {
+    /// The tensor moments of `rows` in `frame` (None: direct): the gates
+    /// first, the method choice on the rows they refuse (when it serves the
+    /// carrier of `prototype`). With `copy`, also those of every row's
+    /// rotation copy by `copy` (the frame relabelled cyclically, module docs
+    /// 'Check frames'), from the same TIRust calls and through the same two
+    /// passes.
+    fn moments<T: TirCarrier>(
+        &mut self,
+        groups: &[FamilyLanes<T>],
+        rows: &[Row],
+        frame: Option<ReductionFrame>,
+        copy: Option<usize>,
+        prototype: &T,
+    ) -> RusticolResult<Pass<T>>
+    where
+        Complex<T>: EvaluationDomain,
+    {
+        let started = Instant::now();
+        let mut out: Vec<FrameRow<T>> = Vec::with_capacity(rows.len());
+        // Per (propagators, rank) the rows' indices and TIRust inputs.
+        let mut bins: BTreeMap<(usize, usize), RowInputs<T>> = BTreeMap::new();
+        let (mut shifts, mut masses, mut invariants) = (Vec::new(), Vec::new(), Vec::new());
+        for (index, row) in rows.iter().enumerate() {
+            let g = &groups[row.group];
+            let n = g.propagators;
+            let lane = row.start;
+            // The frame at the call's working precision (`prototype`), not a
+            // lane's: a rescaled frame's factor and undo (`FrameMap::new`).
+            let map = FrameMap::new(frame, n, prototype);
+            shifts.clear();
+            masses.clear();
+            invariants.clear();
+            let origin = map.shifts(&g.shifts[lane * 4 * n..(lane + 1) * 4 * n], &mut shifts);
+            map.masses(&g.masses[lane * n..(lane + 1) * n], &mut masses);
+            map.s_matrix(
+                &g.s_matrix[lane * n * n..(lane + 1) * n * n],
+                &mut invariants,
+            );
+            let scale = map.squared(&g.scales[lane]);
+            out.push(FrameRow {
+                moments: Err(String::new()),
+                origin,
+                undo: map.undo(),
+                measure: None,
+            });
+            let (members, values) = bins.entry((n, row.rank)).or_default();
+            members.push(index);
+            values.extend(shifts.iter().cloned());
+            // The supplied invariants s_ij, i < j, row-major (TIRust's
+            // `InvariantInput::invariant_index`).
+            for i in 0..n {
+                values.extend(invariants[i * n + i + 1..(i + 1) * n].iter().cloned());
+            }
+            values.extend(masses.iter().cloned());
+            // μ² itself (`ScaleInput::MuSquared`): real and positive.
+            values.push(Complex::new(scale.re, prototype.zero()));
+        }
+        // A relabelled row stays in its row's loop-momentum frame: the same
+        // origin and undo.
+        let mut copies: Option<Vec<FrameRow<T>>> = copy.map(|_| {
+            out.iter()
+                .map(|row| FrameRow {
+                    moments: Err(String::new()),
+                    origin: row.origin.clone(),
+                    undo: row.undo.clone(),
+                    measure: None,
+                })
+                .collect()
+        });
+        let tirust =
+            |e: iregi_rust::ReductionError| RusticolError::evaluation(format!("TIRust: {e}"));
+        let choice = T::method_choice(&self.options);
+        for ((n, rank), (members, values)) in bins {
+            let options = self.options;
+            let bin = bin_of(self.bins, n, rank, self.store, self.template)?;
+            let width = values.len() / members.len();
+            let batch = KinematicsBatch {
+                rows: members.len(),
+                components: 1,
+                values,
+            };
+            // A pass in another frame than the direct one is a check pass
+            // (the call's check, the method-choice acceptance).
+            let check = frame.is_some();
+            let workspace = bin.workspace(false, check, &options, prototype, self.store)?;
+            let (result, copied) = match copy {
+                Some(rotation) => {
+                    let (result, copied) = workspace
+                        .reduce_batch_with_rotation(&batch, rotation)
+                        .map_err(tirust)?;
+                    (result, Some(copied))
+                }
+                None => (workspace.reduce_batch(&batch).map_err(tirust)?, None),
+            };
+            self.counters.call(workspace, options.profile);
+            // TIRust's diagnostics describe the primary.
+            let conditions = conditions_of(&result, workspace);
+            let refused = gated(&result, &members, &bin.position, &conditions, &mut out);
+            let refused_copy = match (&copied, &mut copies) {
+                (Some(copied), Some(copies)) => gated(copied, &members, &bin.position, &[], copies),
+                _ => Vec::new(),
+            };
+            let passes = if copy.is_some() { 2 } else { 1 };
+            self.counters.rows += (passes * members.len()) as u64;
+            self.counters.gate_refusals += (refused.len() + refused_copy.len()) as u64;
+            if refused.is_empty() && refused_copy.is_empty() {
+                continue;
+            }
+            if !choice {
+                if options.unchecked {
+                    // The unchecked mode without the method choice: the
+                    // last resort serves the gates' refusals.
+                    self.last_resort(
+                        (n, rank),
+                        &batch,
+                        &members,
+                        [&refused, &refused_copy],
+                        copy,
+                        (&mut out, copies.as_mut()),
+                        prototype,
+                    )?;
+                    continue;
+                }
+                let closed = |row: &mut FrameRow<T>| {
+                    if let Err(reason) = &mut row.moments {
+                        reason.push_str(
+                            " (refused by the conditioning gates; TIRust's method choice is off \
+                             in this carrier: it serves gate-passed rows only)",
+                        );
+                    }
+                };
+                for &k in &refused {
+                    closed(&mut out[members[k]]);
+                }
+                if let Some(copies) = &mut copies {
+                    for &k in &refused_copy {
+                        closed(&mut copies[members[k]]);
+                    }
+                }
+                continue;
+            }
+            let retry = |ks: &[usize]| KinematicsBatch {
+                rows: ks.len(),
+                components: 1,
+                values: ks
+                    .iter()
+                    .flat_map(|&k| batch.values[k * width..(k + 1) * width].iter().cloned())
+                    .collect(),
+            };
+            let indices = |ks: &[usize]| ks.iter().map(|&k| members[k]).collect::<Vec<_>>();
+            // The method choice: one rotation-copy call for the rows refused
+            // together with their copy, one call for those refused alone.
+            let (both, alone): (Vec<usize>, Vec<usize>) = refused
+                .iter()
+                .partition(|&&k| refused_copy.binary_search(&k).is_ok());
+            let copy_alone: Vec<usize> = refused_copy
+                .iter()
+                .copied()
+                .filter(|k| refused.binary_search(k).is_err())
+                .collect();
+            // The rows the method choice refuses (unchecked mode: its last
+            // resort's), direct and copies, as row indices `k` of the bin.
+            let (mut last, mut last_copy) = (Vec::new(), Vec::new());
+            if let (false, Some(rotation), Some(copies)) = (both.is_empty(), copy, &mut copies) {
+                let workspace = bin.workspace(true, check, &options, prototype, self.store)?;
+                let (result, copied) = workspace
+                    .reduce_batch_with_rotation(&retry(&both), rotation)
+                    .map_err(tirust)?;
+                self.counters.call(workspace, options.profile);
+                // TIRust's diagnostics describe the primary.
+                let flagged = workspace.last_gram_lanes().to_vec();
+                let conditions = conditions_of(&result, workspace);
+                self.counters.rows += 2 * both.len() as u64;
+                let (rows, position, c) = (indices(&both), &bin.position, &mut *self.counters);
+                let diagnostics = (flagged.as_slice(), conditions.as_slice());
+                let refused = retried(&result, &rows, position, diagnostics, &mut out, c);
+                last.extend(refused.into_iter().map(|r| both[r]));
+                let refused = retried(&copied, &rows, position, (&[], &[]), copies, c);
+                last_copy.extend(refused.into_iter().map(|r| both[r]));
+            }
+            if !alone.is_empty() {
+                let workspace = bin.workspace(true, check, &options, prototype, self.store)?;
+                let result = workspace.reduce_batch(&retry(&alone)).map_err(tirust)?;
+                self.counters.call(workspace, options.profile);
+                let flagged = workspace.last_gram_lanes().to_vec();
+                let conditions = conditions_of(&result, workspace);
+                self.counters.rows += alone.len() as u64;
+                let (rows, position, c) = (indices(&alone), &bin.position, &mut *self.counters);
+                let diagnostics = (flagged.as_slice(), conditions.as_slice());
+                let refused = retried(&result, &rows, position, diagnostics, &mut out, c);
+                last.extend(refused.into_iter().map(|r| alone[r]));
+            }
+            if let (false, Some(rotation), Some(copies)) =
+                (copy_alone.is_empty(), copy, &mut copies)
+            {
+                let rotated = bin
+                    .plan
+                    .rotated_batch(&retry(&copy_alone), rotation)
+                    .map_err(tirust)?;
+                // The copy rows refused alone: a check computation of their
+                // own (the check pass's workspace).
+                let workspace = bin.workspace(true, true, &options, prototype, self.store)?;
+                let result = workspace.reduce_batch(&rotated).map_err(tirust)?;
+                self.counters.call(workspace, options.profile);
+                let flagged = workspace.last_gram_lanes().to_vec();
+                let conditions = conditions_of(&result, workspace);
+                self.counters.rows += copy_alone.len() as u64;
+                let (rows, position, c) =
+                    (indices(&copy_alone), &bin.position, &mut *self.counters);
+                let diagnostics = (flagged.as_slice(), conditions.as_slice());
+                let refused = retried(&result, &rows, position, diagnostics, copies, c);
+                last_copy.extend(refused.into_iter().map(|r| copy_alone[r]));
+            }
+            if (options.unchecked || options.verified_last_resort)
+                && !(last.is_empty() && last_copy.is_empty())
+            {
+                last.sort_unstable();
+                last_copy.sort_unstable();
+                self.last_resort(
+                    (n, rank),
+                    &batch,
+                    &members,
+                    [&last, &last_copy],
+                    copy,
+                    (&mut out, copies.as_mut()),
+                    prototype,
+                )?;
+            }
+        }
+        self.counters.moments += started.elapsed().as_secs_f64();
+        Ok((out, copies))
+    }
+
+    /// The unchecked mode's last resort (module docs 'Unchecked mode') in
+    /// the bin `key`: the rows `rows[0]` of its `batch` (row `k` is
+    /// `out[members[k]]`) and the rotation copies (by `copy`) of the rows
+    /// `rows[1]` (into `copies`), by plain PV at gate 0
+    /// ([`Bin::last_resort`]).
+    #[allow(clippy::too_many_arguments)]
+    fn last_resort<T: TirCarrier>(
+        &mut self,
+        key: (usize, usize),
+        batch: &KinematicsBatch<T>,
+        members: &[usize],
+        rows: [&[usize]; 2],
+        copy: Option<usize>,
+        (out, copies): (&mut [FrameRow<T>], Option<&mut Vec<FrameRow<T>>>),
+        prototype: &T,
+    ) -> RusticolResult<()>
+    where
+        Complex<T>: EvaluationDomain,
+    {
+        let tirust =
+            |e: iregi_rust::ReductionError| RusticolError::evaluation(format!("TIRust: {e}"));
+        let options = self.options;
+        let bin = bin_of(self.bins, key.0, key.1, self.store, self.template)?;
+        let width = batch.values.len() / batch.rows;
+        let subset = |ks: &[usize]| KinematicsBatch {
+            rows: ks.len(),
+            components: 1,
+            values: ks
+                .iter()
+                .flat_map(|&k| batch.values[k * width..(k + 1) * width].iter().cloned())
+                .collect(),
+        };
+        let [direct, copied] = rows;
+        // The copies' rows relabelled first (TIRust's rotation copy is bit
+        // for bit a separate call on the relabelled rows).
+        let rotated = match (copied.is_empty(), copy) {
+            (false, Some(rotation)) => Some(
+                bin.plan
+                    .rotated_batch(&subset(copied), rotation)
+                    .map_err(tirust)?,
+            ),
+            _ => None,
+        };
+        let workspace = bin.last_resort(&options, prototype)?;
+        let mut results = [None, None];
+        if !direct.is_empty() {
+            results[0] = Some(workspace.reduce_batch(&subset(direct)).map_err(tirust)?);
+            self.counters.call(workspace, options.profile);
+            self.counters.rows += direct.len() as u64;
+        }
+        if let Some(rotated) = &rotated {
+            results[1] = Some(workspace.reduce_batch(rotated).map_err(tirust)?);
+            self.counters.call(workspace, options.profile);
+            self.counters.rows += copied.len() as u64;
+        }
+        let indices = |ks: &[usize]| ks.iter().map(|&k| members[k]).collect::<Vec<_>>();
+        let [direct_result, copy_result] = results;
+        // The checked mode verifies a last-resort row's lanes (module docs
+        // 'Verified last resort'); the check copies are the call's check
+        // itself and are compared by the caller, as every copy row.
+        let verify = !options.unchecked;
+        if let Some(result) = direct_result {
+            let rows = indices(direct);
+            resorted(
+                &result,
+                &rows,
+                &bin.position,
+                verify,
+                out,
+                &mut *self.counters,
+            );
+        }
+        if let (Some(result), Some(copies)) = (copy_result, copies) {
+            let rows = indices(copied);
+            resorted(
+                &result,
+                &rows,
+                &bin.position,
+                false,
+                copies,
+                &mut *self.counters,
+            );
+        }
+        Ok(())
+    }
+}
+
 impl TirReductionBackend {
     pub fn new(options: TirOptions) -> Self {
         let census = (options.store && options.masters_census)
@@ -1103,6 +1487,7 @@ impl TirReductionBackend {
         Self {
             options,
             bins: BTreeMap::new(),
+            workers: Vec::new(),
             counters: Counters::default(),
             store: options.store.then(|| {
                 TensorStore::with_options(TensorStoreOptions {
@@ -1170,6 +1555,12 @@ impl TirReductionBackend {
         Ok(())
     }
 
+    /// The engines kept for parallel slices (module docs 'Threads'): none
+    /// before a call ran on more than one thread.
+    pub fn parallel_engines(&self) -> usize {
+        self.workers.len()
+    }
+
     /// The (propagators, rank) plans built.
     pub fn plans(&self) -> Vec<(usize, usize)> {
         self.bins.keys().copied().collect()
@@ -1194,7 +1585,7 @@ impl TirReductionBackend {
     }
 
     fn bin(&mut self, n: usize, rank: usize) -> RusticolResult<&mut Bin> {
-        bin_of(&mut self.bins, n, rank, self.store.as_ref())
+        bin_of(&mut self.bins, n, rank, self.store.as_ref(), None)
     }
 
     /// A new chunk of points: the store ([`TirOptions::store`]) forgets the
@@ -1279,328 +1670,6 @@ impl TirReductionBackend {
         }
     }
 
-    /// The tensor moments of `rows` in `frame` (None: direct): the gates
-    /// first, the method choice on the rows they refuse (when it serves the
-    /// carrier of `prototype`). With `copy`, also those of every row's
-    /// rotation copy by `copy` (the frame relabelled cyclically, module docs
-    /// 'Check frames'), from the same TIRust calls and through the same two
-    /// passes.
-    fn moments<T: TirCarrier>(
-        &mut self,
-        groups: &[FamilyLanes<T>],
-        rows: &[Row],
-        frame: Option<ReductionFrame>,
-        copy: Option<usize>,
-        prototype: &T,
-    ) -> RusticolResult<Pass<T>>
-    where
-        Complex<T>: EvaluationDomain,
-    {
-        let started = Instant::now();
-        let mut out: Vec<FrameRow<T>> = Vec::with_capacity(rows.len());
-        // Per (propagators, rank) the rows' indices and TIRust inputs.
-        let mut bins: BTreeMap<(usize, usize), RowInputs<T>> = BTreeMap::new();
-        let (mut shifts, mut masses, mut invariants) = (Vec::new(), Vec::new(), Vec::new());
-        for (index, row) in rows.iter().enumerate() {
-            let g = &groups[row.group];
-            let n = g.propagators;
-            let lane = row.start;
-            // The frame at the call's working precision (`prototype`), not a
-            // lane's: a rescaled frame's factor and undo (`FrameMap::new`).
-            let map = FrameMap::new(frame, n, prototype);
-            shifts.clear();
-            masses.clear();
-            invariants.clear();
-            let origin = map.shifts(&g.shifts[lane * 4 * n..(lane + 1) * 4 * n], &mut shifts);
-            map.masses(&g.masses[lane * n..(lane + 1) * n], &mut masses);
-            map.s_matrix(
-                &g.s_matrix[lane * n * n..(lane + 1) * n * n],
-                &mut invariants,
-            );
-            let scale = map.squared(&g.scales[lane]);
-            out.push(FrameRow {
-                moments: Err(String::new()),
-                origin,
-                undo: map.undo(),
-                measure: None,
-            });
-            let (members, values) = bins.entry((n, row.rank)).or_default();
-            members.push(index);
-            values.extend(shifts.iter().cloned());
-            // The supplied invariants s_ij, i < j, row-major (TIRust's
-            // `InvariantInput::invariant_index`).
-            for i in 0..n {
-                values.extend(invariants[i * n + i + 1..(i + 1) * n].iter().cloned());
-            }
-            values.extend(masses.iter().cloned());
-            // μ² itself (`ScaleInput::MuSquared`): real and positive.
-            values.push(Complex::new(scale.re, prototype.zero()));
-        }
-        // A relabelled row stays in its row's loop-momentum frame: the same
-        // origin and undo.
-        let mut copies: Option<Vec<FrameRow<T>>> = copy.map(|_| {
-            out.iter()
-                .map(|row| FrameRow {
-                    moments: Err(String::new()),
-                    origin: row.origin.clone(),
-                    undo: row.undo.clone(),
-                    measure: None,
-                })
-                .collect()
-        });
-        let tirust =
-            |e: iregi_rust::ReductionError| RusticolError::evaluation(format!("TIRust: {e}"));
-        let choice = T::method_choice(&self.options);
-        for ((n, rank), (members, values)) in bins {
-            let options = self.options;
-            let bin = bin_of(&mut self.bins, n, rank, self.store.as_ref())?;
-            let width = values.len() / members.len();
-            let batch = KinematicsBatch {
-                rows: members.len(),
-                components: 1,
-                values,
-            };
-            // A pass in another frame than the direct one is a check pass
-            // (the call's check, the method-choice acceptance).
-            let check = frame.is_some();
-            let workspace =
-                bin.workspace(false, check, &options, prototype, self.store.as_ref())?;
-            let (result, copied) = match copy {
-                Some(rotation) => {
-                    let (result, copied) = workspace
-                        .reduce_batch_with_rotation(&batch, rotation)
-                        .map_err(tirust)?;
-                    (result, Some(copied))
-                }
-                None => (workspace.reduce_batch(&batch).map_err(tirust)?, None),
-            };
-            self.counters.call(workspace, options.profile);
-            // TIRust's diagnostics describe the primary.
-            let conditions = conditions_of(&result, workspace);
-            let refused = gated(&result, &members, &bin.position, &conditions, &mut out);
-            let refused_copy = match (&copied, &mut copies) {
-                (Some(copied), Some(copies)) => gated(copied, &members, &bin.position, &[], copies),
-                _ => Vec::new(),
-            };
-            let passes = if copy.is_some() { 2 } else { 1 };
-            self.counters.rows += (passes * members.len()) as u64;
-            self.counters.gate_refusals += (refused.len() + refused_copy.len()) as u64;
-            if refused.is_empty() && refused_copy.is_empty() {
-                continue;
-            }
-            if !choice {
-                if options.unchecked {
-                    // The unchecked mode without the method choice: the
-                    // last resort serves the gates' refusals.
-                    self.last_resort(
-                        (n, rank),
-                        &batch,
-                        &members,
-                        [&refused, &refused_copy],
-                        copy,
-                        (&mut out, copies.as_mut()),
-                        prototype,
-                    )?;
-                    continue;
-                }
-                let closed = |row: &mut FrameRow<T>| {
-                    if let Err(reason) = &mut row.moments {
-                        reason.push_str(
-                            " (refused by the conditioning gates; TIRust's method choice is off \
-                             in this carrier: it serves gate-passed rows only)",
-                        );
-                    }
-                };
-                for &k in &refused {
-                    closed(&mut out[members[k]]);
-                }
-                if let Some(copies) = &mut copies {
-                    for &k in &refused_copy {
-                        closed(&mut copies[members[k]]);
-                    }
-                }
-                continue;
-            }
-            let retry = |ks: &[usize]| KinematicsBatch {
-                rows: ks.len(),
-                components: 1,
-                values: ks
-                    .iter()
-                    .flat_map(|&k| batch.values[k * width..(k + 1) * width].iter().cloned())
-                    .collect(),
-            };
-            let indices = |ks: &[usize]| ks.iter().map(|&k| members[k]).collect::<Vec<_>>();
-            // The method choice: one rotation-copy call for the rows refused
-            // together with their copy, one call for those refused alone.
-            let (both, alone): (Vec<usize>, Vec<usize>) = refused
-                .iter()
-                .partition(|&&k| refused_copy.binary_search(&k).is_ok());
-            let copy_alone: Vec<usize> = refused_copy
-                .iter()
-                .copied()
-                .filter(|k| refused.binary_search(k).is_err())
-                .collect();
-            // The rows the method choice refuses (unchecked mode: its last
-            // resort's), direct and copies, as row indices `k` of the bin.
-            let (mut last, mut last_copy) = (Vec::new(), Vec::new());
-            if let (false, Some(rotation), Some(copies)) = (both.is_empty(), copy, &mut copies) {
-                let workspace =
-                    bin.workspace(true, check, &options, prototype, self.store.as_ref())?;
-                let (result, copied) = workspace
-                    .reduce_batch_with_rotation(&retry(&both), rotation)
-                    .map_err(tirust)?;
-                self.counters.call(workspace, options.profile);
-                // TIRust's diagnostics describe the primary.
-                let flagged = workspace.last_gram_lanes().to_vec();
-                let conditions = conditions_of(&result, workspace);
-                self.counters.rows += 2 * both.len() as u64;
-                let (rows, position, c) = (indices(&both), &bin.position, &mut self.counters);
-                let diagnostics = (flagged.as_slice(), conditions.as_slice());
-                let refused = retried(&result, &rows, position, diagnostics, &mut out, c);
-                last.extend(refused.into_iter().map(|r| both[r]));
-                let refused = retried(&copied, &rows, position, (&[], &[]), copies, c);
-                last_copy.extend(refused.into_iter().map(|r| both[r]));
-            }
-            if !alone.is_empty() {
-                let workspace =
-                    bin.workspace(true, check, &options, prototype, self.store.as_ref())?;
-                let result = workspace.reduce_batch(&retry(&alone)).map_err(tirust)?;
-                self.counters.call(workspace, options.profile);
-                let flagged = workspace.last_gram_lanes().to_vec();
-                let conditions = conditions_of(&result, workspace);
-                self.counters.rows += alone.len() as u64;
-                let (rows, position, c) = (indices(&alone), &bin.position, &mut self.counters);
-                let diagnostics = (flagged.as_slice(), conditions.as_slice());
-                let refused = retried(&result, &rows, position, diagnostics, &mut out, c);
-                last.extend(refused.into_iter().map(|r| alone[r]));
-            }
-            if let (false, Some(rotation), Some(copies)) =
-                (copy_alone.is_empty(), copy, &mut copies)
-            {
-                let rotated = bin
-                    .plan
-                    .rotated_batch(&retry(&copy_alone), rotation)
-                    .map_err(tirust)?;
-                // The copy rows refused alone: a check computation of their
-                // own (the check pass's workspace).
-                let workspace =
-                    bin.workspace(true, true, &options, prototype, self.store.as_ref())?;
-                let result = workspace.reduce_batch(&rotated).map_err(tirust)?;
-                self.counters.call(workspace, options.profile);
-                let flagged = workspace.last_gram_lanes().to_vec();
-                let conditions = conditions_of(&result, workspace);
-                self.counters.rows += copy_alone.len() as u64;
-                let (rows, position, c) = (indices(&copy_alone), &bin.position, &mut self.counters);
-                let diagnostics = (flagged.as_slice(), conditions.as_slice());
-                let refused = retried(&result, &rows, position, diagnostics, copies, c);
-                last_copy.extend(refused.into_iter().map(|r| copy_alone[r]));
-            }
-            if (options.unchecked || options.verified_last_resort)
-                && !(last.is_empty() && last_copy.is_empty())
-            {
-                last.sort_unstable();
-                last_copy.sort_unstable();
-                self.last_resort(
-                    (n, rank),
-                    &batch,
-                    &members,
-                    [&last, &last_copy],
-                    copy,
-                    (&mut out, copies.as_mut()),
-                    prototype,
-                )?;
-            }
-        }
-        self.counters.moments += started.elapsed().as_secs_f64();
-        Ok((out, copies))
-    }
-
-    /// The unchecked mode's last resort (module docs 'Unchecked mode') in
-    /// the bin `key`: the rows `rows[0]` of its `batch` (row `k` is
-    /// `out[members[k]]`) and the rotation copies (by `copy`) of the rows
-    /// `rows[1]` (into `copies`), by plain PV at gate 0
-    /// ([`Bin::last_resort`]).
-    #[allow(clippy::too_many_arguments)]
-    fn last_resort<T: TirCarrier>(
-        &mut self,
-        key: (usize, usize),
-        batch: &KinematicsBatch<T>,
-        members: &[usize],
-        rows: [&[usize]; 2],
-        copy: Option<usize>,
-        (out, copies): (&mut [FrameRow<T>], Option<&mut Vec<FrameRow<T>>>),
-        prototype: &T,
-    ) -> RusticolResult<()>
-    where
-        Complex<T>: EvaluationDomain,
-    {
-        let tirust =
-            |e: iregi_rust::ReductionError| RusticolError::evaluation(format!("TIRust: {e}"));
-        let options = self.options;
-        let bin = bin_of(&mut self.bins, key.0, key.1, self.store.as_ref())?;
-        let width = batch.values.len() / batch.rows;
-        let subset = |ks: &[usize]| KinematicsBatch {
-            rows: ks.len(),
-            components: 1,
-            values: ks
-                .iter()
-                .flat_map(|&k| batch.values[k * width..(k + 1) * width].iter().cloned())
-                .collect(),
-        };
-        let [direct, copied] = rows;
-        // The copies' rows relabelled first (TIRust's rotation copy is bit
-        // for bit a separate call on the relabelled rows).
-        let rotated = match (copied.is_empty(), copy) {
-            (false, Some(rotation)) => Some(
-                bin.plan
-                    .rotated_batch(&subset(copied), rotation)
-                    .map_err(tirust)?,
-            ),
-            _ => None,
-        };
-        let workspace = bin.last_resort(&options, prototype)?;
-        let mut results = [None, None];
-        if !direct.is_empty() {
-            results[0] = Some(workspace.reduce_batch(&subset(direct)).map_err(tirust)?);
-            self.counters.call(workspace, options.profile);
-            self.counters.rows += direct.len() as u64;
-        }
-        if let Some(rotated) = &rotated {
-            results[1] = Some(workspace.reduce_batch(rotated).map_err(tirust)?);
-            self.counters.call(workspace, options.profile);
-            self.counters.rows += copied.len() as u64;
-        }
-        let indices = |ks: &[usize]| ks.iter().map(|&k| members[k]).collect::<Vec<_>>();
-        let [direct_result, copy_result] = results;
-        // The checked mode verifies a last-resort row's lanes (module docs
-        // 'Verified last resort'); the check copies are the call's check
-        // itself and are compared by the caller, as every copy row.
-        let verify = !options.unchecked;
-        if let Some(result) = direct_result {
-            let rows = indices(direct);
-            resorted(
-                &result,
-                &rows,
-                &bin.position,
-                verify,
-                out,
-                &mut self.counters,
-            );
-        }
-        if let (Some(result), Some(copies)) = (copy_result, copies) {
-            let rows = indices(copied);
-            resorted(
-                &result,
-                &rows,
-                &bin.position,
-                false,
-                copies,
-                &mut self.counters,
-            );
-        }
-        Ok(())
-    }
-
     /// Reduce every lane of `groups` (module docs), in their carrier.
     pub fn reduce<T: TirCarrier>(
         &mut self,
@@ -1668,13 +1737,208 @@ impl TirReductionBackend {
         let copy = check_frame
             .filter(|_| self.options.rotation_copy)
             .and_then(relabelling);
-        let (direct, copied) = self.moments(groups, &rows, None, copy, &prototype)?;
+        let threads = self.threads();
+        if threads > 1 && rows.len() > 1 {
+            return self.reduce_slices(groups, &rows, threads, (poles, check, copy), &prototype);
+        }
+        let mut worker = Worker {
+            options: self.options,
+            bins: &mut self.bins,
+            store: self.store.as_ref(),
+            template: None,
+            counters: &mut self.counters,
+        };
+        let passes = worker.passes(groups, &rows, check_frame, copy, &prototype)?;
+        let started = Instant::now();
+        let mut out = Contracted {
+            direct: groups
+                .iter()
+                .map(|g| Vec::with_capacity(g.keys.len()))
+                .collect(),
+            check: check.map(|_| {
+                groups
+                    .iter()
+                    .map(|g| Vec::with_capacity(g.keys.len()))
+                    .collect()
+            }),
+            measures: std::mem::take(&mut self.measures),
+        };
+        contract_rows(
+            &self.options,
+            &mut self.counters,
+            groups,
+            &rows,
+            passes,
+            (&prototype, poles, check_frame),
+            &mut out,
+        );
+        self.counters.contraction += started.elapsed().as_secs_f64();
+        self.measures = out.measures;
+        Ok((out.direct, out.check))
+    }
+
+    /// The threads a call's rows are sliced over (module docs 'Threads'):
+    /// the pool the call runs on, one when it runs on no pool's thread (never
+    /// rayon's global pool) and with the tensor store (its counts depend on
+    /// which rows meet in it).
+    fn threads(&self) -> usize {
+        if self.store.is_some() || rayon::current_thread_index().is_none() {
+            1
+        } else {
+            rayon::current_num_threads()
+        }
+    }
+
+    /// [`Self::reduce`] of `rows` over the pool's `threads` (module docs
+    /// 'Threads'): contiguous slices of rows, each reduced by an engine of
+    /// its own, every output merged in slice order.
+    fn reduce_slices<T: TirCarrier>(
+        &mut self,
+        groups: &[FamilyLanes<T>],
+        rows: &[Row],
+        threads: usize,
+        (poles, check, copy): (Poles, Option<ReductionCheck>, Option<usize>),
+        prototype: &T,
+    ) -> RusticolResult<Reduced<T>>
+    where
+        Complex<T>: EvaluationDomain,
+    {
+        use rayon::prelude::*;
+        let check_frame = check.map(tir_frame);
+        // Every plan of the call, built and admitted in the carrier here in
+        // (propagators, rank) order: the refusal the serial passes would
+        // meet first.
+        let keys: std::collections::BTreeSet<(usize, usize)> = rows
+            .iter()
+            .map(|row| (groups[row.group].propagators, row.rank))
+            .collect();
+        let mut costs = BTreeMap::new();
+        for &(n, rank) in &keys {
+            let bin = self.bin(n, rank)?;
+            admitted(&bin.plan, prototype)?;
+            costs.insert((n, rank), bin.plan.instruction_counts().1 + 1);
+        }
+        let slices = slices(rows, threads, |row| {
+            costs[&(groups[row.group].propagators, row.rank)]
+        });
+        let options = self.options;
+        let template = &self.bins;
+        let pool = std::sync::Mutex::new(std::mem::take(&mut self.workers));
+        let started = Instant::now();
+        let passes: Vec<RusticolResult<(Passes<T>, Counters)>> = slices
+            .par_iter()
+            .map(|range| {
+                let mut engine = pool.lock().expect("TIR engines").pop().unwrap_or_default();
+                let mut counters = Counters::default();
+                let passes = Worker {
+                    options,
+                    bins: &mut engine,
+                    store: None,
+                    template: Some(template),
+                    counters: &mut counters,
+                }
+                .passes(groups, &rows[range.clone()], check_frame, copy, prototype);
+                pool.lock().expect("TIR engines").push(engine);
+                passes.map(|passes| (passes, counters))
+            })
+            .collect();
+        self.workers = pool.into_inner().expect("TIR engines");
+        let moments = started.elapsed().as_secs_f64();
+        // The first failure in slice order.
+        let passes = passes.into_iter().collect::<RusticolResult<Vec<_>>>()?;
+        let started = Instant::now();
+        let contracted: Vec<(Contracted<T>, Counters)> = passes
+            .into_par_iter()
+            .zip(slices.par_iter())
+            .map(|((passes, mut counters), range)| {
+                let mut out = Contracted {
+                    direct: groups.iter().map(|_| Vec::new()).collect(),
+                    check: check.map(|_| groups.iter().map(|_| Vec::new()).collect()),
+                    measures: Vec::new(),
+                };
+                contract_rows(
+                    &options,
+                    &mut counters,
+                    groups,
+                    &rows[range.clone()],
+                    passes,
+                    (prototype, poles, check_frame),
+                    &mut out,
+                );
+                (out, counters)
+            })
+            .collect();
+        let contraction = started.elapsed().as_secs_f64();
+        let mut direct: Vec<Vec<LaneOutcome<T>>> = groups
+            .iter()
+            .map(|g| Vec::with_capacity(g.keys.len()))
+            .collect();
+        let mut checked: Option<Vec<Vec<LaneOutcome<T>>>> = check.map(|_| {
+            groups
+                .iter()
+                .map(|g| Vec::with_capacity(g.keys.len()))
+                .collect()
+        });
+        for (out, mut counters) in contracted {
+            for (all, part) in direct.iter_mut().zip(out.direct) {
+                all.extend(part);
+            }
+            if let (Some(checked), Some(part)) = (&mut checked, out.check) {
+                for (all, part) in checked.iter_mut().zip(part) {
+                    all.extend(part);
+                }
+            }
+            self.measures.extend(out.measures);
+            // The stages' seconds are their wall time on the calling thread.
+            (counters.moments, counters.contraction) = (0., 0.);
+            self.counters.add(counters);
+        }
+        self.counters.moments += moments;
+        self.counters.contraction += contraction;
+        Ok((direct, checked))
+    }
+}
+
+/// One slice's moments in every frame (direct, check, acceptance), row
+/// for row.
+struct Passes<T> {
+    direct: Vec<FrameRow<T>>,
+    checked: Option<Vec<FrameRow<T>>>,
+    /// The method-choice rows verified in the acceptance frame, ascending,
+    /// and their acceptance-frame moments (empty when the check row serves).
+    choice_rows: Vec<usize>,
+    own: Vec<FrameRow<T>>,
+}
+
+/// A slice's lane outcomes per group (direct, check) and refused lanes'
+/// measures, in row order.
+struct Contracted<T> {
+    direct: Vec<Vec<LaneOutcome<T>>>,
+    check: Option<Vec<Vec<LaneOutcome<T>>>>,
+    measures: Vec<MeasuredLane>,
+}
+
+impl Worker<'_> {
+    /// The moments of `rows` in every frame the call needs: direct (with
+    /// the rotation copy `copy`), the check frame, and the acceptance frame
+    /// of the method-choice rows.
+    fn passes<T: TirCarrier>(
+        &mut self,
+        groups: &[FamilyLanes<T>],
+        rows: &[Row],
+        check_frame: Option<ReductionFrame>,
+        copy: Option<usize>,
+        prototype: &T,
+    ) -> RusticolResult<Passes<T>>
+    where
+        Complex<T>: EvaluationDomain,
+    {
+        let (direct, copied) = self.moments(groups, rows, None, copy, prototype)?;
         let checked = match (copied, check_frame) {
             (Some(copied), _) => Some(copied),
-            (None, Some(frame)) => Some(
-                self.moments(groups, &rows, Some(frame), None, &prototype)?
-                    .0,
-            ),
+            (None, Some(frame)) => {
+                Some(self.moments(groups, rows, Some(frame), None, prototype)?.0)
+            }
             (None, None) => None,
         };
         let acceptance = self.options.acceptance_frame;
@@ -1690,209 +1954,277 @@ impl TirReductionBackend {
         } else {
             self.counters.acceptance_rows += choice_rows.len() as u64;
             let subset: Vec<Row> = choice_rows.iter().map(|&r| rows[r]).collect();
-            self.moments(groups, &subset, Some(acceptance), None, &prototype)?
+            self.moments(groups, &subset, Some(acceptance), None, prototype)?
                 .0
         };
-        let mut accepted: Vec<Option<&FrameRow<T>>> = vec![None; rows.len()];
-        if check_frame == Some(acceptance) {
-            if let Some(checked) = &checked {
-                for &r in &choice_rows {
-                    accepted[r] = Some(&checked[r]);
-                }
-            }
-        } else {
-            for (&r, row) in choice_rows.iter().zip(&own) {
-                accepted[r] = Some(row);
+        Ok(Passes {
+            direct,
+            checked,
+            choice_rows,
+            own,
+        })
+    }
+}
+
+/// Contiguous slices of `rows` of about equal total `cost` (module docs
+/// 'Threads'): [`SLICES_PER_THREAD`] per thread, at most one per row.
+fn slices(
+    rows: &[Row],
+    threads: usize,
+    cost: impl Fn(&Row) -> usize,
+) -> Vec<std::ops::Range<usize>> {
+    let pieces = (threads * SLICES_PER_THREAD).min(rows.len()).max(1);
+    let total: usize = rows.iter().map(&cost).sum();
+    let mut out = Vec::with_capacity(pieces);
+    let (mut start, mut sum) = (0, 0);
+    for (r, row) in rows.iter().enumerate() {
+        sum += cost(row);
+        // Cut where the running cost reaches the next share of the total.
+        if sum * pieces >= total * (out.len() + 1) && out.len() + 1 < pieces {
+            out.push(start..r + 1);
+            start = r + 1;
+        }
+    }
+    if start < rows.len() {
+        out.push(start..rows.len());
+    }
+    out
+}
+
+/// Slices per thread of a parallel call (module docs 'Threads'): enough for
+/// rows of unequal cost to even out over the pool.
+const SLICES_PER_THREAD: usize = 4;
+
+/// TIRust's capability query of `plan` at the precision of `prototype`, its
+/// refusal typed.
+fn admitted<T: TirCarrier>(plan: &DirectReductionPlan, prototype: &T) -> RusticolResult<()>
+where
+    Complex<T>: EvaluationDomain,
+{
+    let bits = prototype.get_precision();
+    let settings = plan.settings();
+    DirectReductionPlan::capabilities(prototype)
+        .admits(settings)
+        .map_err(|e| {
+            RusticolError::unsupported_runtime_capability(
+                "tirust",
+                format!(
+                    "TIRust cannot reduce {} propagators at rank {} at {bits} bits: {e}",
+                    settings.propagators, settings.rank
+                ),
+            )
+        })
+}
+
+/// The lanes of `rows` contracted with their moments `passes` into `out`
+/// (module docs; the acceptance comparison of the method-choice lanes), in
+/// row order.
+fn contract_rows<T: TirCarrier>(
+    options: &TirOptions,
+    counters: &mut Counters,
+    groups: &[FamilyLanes<T>],
+    rows: &[Row],
+    passes: Passes<T>,
+    (prototype, poles, check_frame): (&T, Poles, Option<ReductionFrame>),
+    out: &mut Contracted<T>,
+) where
+    Complex<T>: EvaluationDomain,
+{
+    let prototype = prototype.clone();
+    let Passes {
+        direct,
+        checked,
+        choice_rows,
+        own,
+    } = passes;
+    let acceptance = options.acceptance_frame;
+    let verify = !options.unchecked;
+    let mut accepted: Vec<Option<&FrameRow<T>>> = vec![None; rows.len()];
+    if check_frame == Some(acceptance) {
+        if let Some(checked) = &checked {
+            for &r in &choice_rows {
+                accepted[r] = Some(&checked[r]);
             }
         }
-        let tolerance = carrier_gate(self.options.acceptance, prototype.get_precision());
-        let started = Instant::now();
-        let width = poles.width();
-        let mut direct_out: Vec<Vec<LaneOutcome<T>>> = groups
-            .iter()
-            .map(|g| Vec::with_capacity(g.keys.len()))
-            .collect();
-        let mut check_out: Option<Vec<Vec<LaneOutcome<T>>>> = check.map(|_| {
-            groups
-                .iter()
-                .map(|g| Vec::with_capacity(g.keys.len()))
-                .collect()
-        });
-        let mut shifted = Vec::new();
-        for (r, row) in rows.iter().enumerate() {
-            let g = &groups[row.group];
-            let declared = ncoeff(g.rank);
-            let monomials = ncoeff(row.rank);
-            // A direct row serving more than one lane (PLAN §2.b.2 item 6).
-            if row.end - row.start > 1 {
-                self.counters.shared += 1;
-            }
-            let first = &direct[r];
-            let frame_map =
-                |frame: ReductionFrame| FrameMap::<T>::new(Some(frame), g.propagators, &prototype);
-            let check_map = checked.as_ref().zip(check_frame).map(|(_, f)| frame_map(f));
-            // A method-choice row's acceptance moments taken back to the
-            // direct frame once per row (`FrameMap::moments`, the transpose
-            // of the lanes' re-expansion, with the frame's undo): each lane
-            // then contracts its own coefficients with them.
-            let acceptance_moments = accepted[r].map(|other| {
-                other
-                    .moments
-                    .as_ref()
-                    .map(|m| {
-                        let mut moments =
-                            frame_map(acceptance).moments(&m.values, row.rank, &other.origin);
-                        if let Some(factor) = &other.undo {
-                            for slot in &mut moments {
-                                for v in slot.iter_mut() {
-                                    *v = v.clone() * factor;
-                                }
-                            }
-                        }
-                        moments
-                    })
-                    .map_err(Clone::clone)
-            });
-            // The magnitudes of a method-choice row's moments per slot, once
-            // per row (the lanes' term scales, `scale_of`); not formed in the
-            // unchecked mode, which has no comparison.
-            let magnitudes: Option<Vec<[f64; SLOTS]>> = match &first.moments {
-                Ok(m) if verify && m.choice => Some(
-                    m.values
-                        .iter()
-                        .map(|slots| std::array::from_fn(|s| norm(&slots[s])))
-                        .collect(),
-                ),
-                _ => None,
-            };
-            for lane in row.start..row.end {
-                let c = &g.coefficients[lane * declared..lane * declared + monomials];
-                // A checked method-choice lane's every slot (its acceptance
-                // compares them all; its value is their first `width`, the
-                // same sums: `contract` forms each slot on its own); any other
-                // lane's `width` slots, also every lane of the unchecked mode.
-                let full = match &first.moments {
-                    Ok(m) if verify && m.choice => Some(contract(&m.values, c, SLOTS)),
-                    _ => None,
-                };
-                let value = first.moments.as_ref().map(|m| match &full {
-                    Some(full) => full[..width].to_vec(),
-                    None => contract(&m.values, c, width),
-                });
-                let mut in_frame = |other: &FrameRow<T>,
-                                    map: &FrameMap<T>,
-                                    width: usize|
-                 -> Result<Vec<Complex<T>>, String> {
-                    let moments = other.moments.as_ref().map_err(Clone::clone)?;
-                    shifted.clear();
-                    map.coefficients(c, row.rank, &other.origin, &mut shifted);
-                    let mut value = contract(&moments.values, &shifted, width);
+    } else {
+        for (&r, row) in choice_rows.iter().zip(&own) {
+            accepted[r] = Some(row);
+        }
+    }
+    let tolerance = carrier_gate(options.acceptance, prototype.get_precision());
+    let width = poles.width();
+    let mut shifted = Vec::new();
+    for (r, row) in rows.iter().enumerate() {
+        let g = &groups[row.group];
+        let declared = ncoeff(g.rank);
+        let monomials = ncoeff(row.rank);
+        // A direct row serving more than one lane (PLAN §2.b.2 item 6).
+        if row.end - row.start > 1 {
+            counters.shared += 1;
+        }
+        let first = &direct[r];
+        let frame_map =
+            |frame: ReductionFrame| FrameMap::<T>::new(Some(frame), g.propagators, &prototype);
+        let check_map = checked.as_ref().zip(check_frame).map(|(_, f)| frame_map(f));
+        // A method-choice row's acceptance moments taken back to the
+        // direct frame once per row (`FrameMap::moments`, the transpose
+        // of the lanes' re-expansion, with the frame's undo): each lane
+        // then contracts its own coefficients with them.
+        let acceptance_moments = accepted[r].map(|other| {
+            other
+                .moments
+                .as_ref()
+                .map(|m| {
+                    let mut moments =
+                        frame_map(acceptance).moments(&m.values, row.rank, &other.origin);
                     if let Some(factor) = &other.undo {
-                        for v in &mut value {
-                            *v = v.clone() * factor;
+                        for slot in &mut moments {
+                            for v in slot.iter_mut() {
+                                *v = v.clone() * factor;
+                            }
                         }
                     }
-                    Ok(value)
-                };
-                let again = checked
-                    .as_ref()
-                    .zip(check_map.as_ref())
-                    .map(|(checked, map)| in_frame(&checked[r], map, width));
-                self.counters.lanes += 1;
-                // The measure of a refused lane: the acceptance's deviation
-                // (below), else the row's conditioning.
-                let mut measure = first.measure;
-                let verified = match (&first.moments, &value) {
-                    (Ok(m), Ok(value)) if verify && m.choice => {
-                        // The acceptance compares every Laurent slot the
-                        // moments carry, whatever the call's pole mode, so
-                        // that a lane is served or refused alike in every
-                        // mode (its finite part identical, ADDENDUM I).
-                        let second = acceptance_moments
-                            .as_ref()
-                            .expect("a method-choice row's acceptance row")
-                            .as_ref()
-                            .map(|moments| contract(moments, c, SLOTS));
-                        let full = full.as_ref().expect("a method-choice lane's slots");
-                        match second {
-                            Ok(second) => {
-                                let scale = scale_of(
-                                    magnitudes
-                                        .as_ref()
-                                        .expect("a method-choice row's magnitudes"),
-                                    c,
-                                );
-                                let deviation = full
-                                    .iter()
-                                    .zip(&second)
-                                    .map(|(a, b)| norm(&(a.clone() - b)))
-                                    .fold(0f64, f64::max);
-                                if deviation <= tolerance * scale {
-                                    Ok(value.clone())
+                    moments
+                })
+                .map_err(Clone::clone)
+        });
+        // The magnitudes of a method-choice row's moments per slot, once
+        // per row (the lanes' term scales, `scale_of`); not formed in the
+        // unchecked mode, which has no comparison.
+        let magnitudes: Option<Vec<[f64; SLOTS]>> = match &first.moments {
+            Ok(m) if verify && m.choice => Some(
+                m.values
+                    .iter()
+                    .map(|slots| std::array::from_fn(|s| norm(&slots[s])))
+                    .collect(),
+            ),
+            _ => None,
+        };
+        for lane in row.start..row.end {
+            let c = &g.coefficients[lane * declared..lane * declared + monomials];
+            // A checked method-choice lane's every slot (its acceptance
+            // compares them all; its value is their first `width`, the
+            // same sums: `contract` forms each slot on its own); any other
+            // lane's `width` slots, also every lane of the unchecked mode.
+            let full = match &first.moments {
+                Ok(m) if verify && m.choice => Some(contract(&m.values, c, SLOTS)),
+                _ => None,
+            };
+            let value = first.moments.as_ref().map(|m| match &full {
+                Some(full) => full[..width].to_vec(),
+                None => contract(&m.values, c, width),
+            });
+            let mut in_frame = |other: &FrameRow<T>,
+                                map: &FrameMap<T>,
+                                width: usize|
+             -> Result<Vec<Complex<T>>, String> {
+                let moments = other.moments.as_ref().map_err(Clone::clone)?;
+                shifted.clear();
+                map.coefficients(c, row.rank, &other.origin, &mut shifted);
+                let mut value = contract(&moments.values, &shifted, width);
+                if let Some(factor) = &other.undo {
+                    for v in &mut value {
+                        *v = v.clone() * factor;
+                    }
+                }
+                Ok(value)
+            };
+            let again = checked
+                .as_ref()
+                .zip(check_map.as_ref())
+                .map(|(checked, map)| in_frame(&checked[r], map, width));
+            counters.lanes += 1;
+            // The measure of a refused lane: the acceptance's deviation
+            // (below), else the row's conditioning.
+            let mut measure = first.measure;
+            let verified = match (&first.moments, &value) {
+                (Ok(m), Ok(value)) if verify && m.choice => {
+                    // The acceptance compares every Laurent slot the
+                    // moments carry, whatever the call's pole mode, so
+                    // that a lane is served or refused alike in every
+                    // mode (its finite part identical, ADDENDUM I).
+                    let second = acceptance_moments
+                        .as_ref()
+                        .expect("a method-choice row's acceptance row")
+                        .as_ref()
+                        .map(|moments| contract(moments, c, SLOTS));
+                    let full = full.as_ref().expect("a method-choice lane's slots");
+                    match second {
+                        Ok(second) => {
+                            let scale = scale_of(
+                                magnitudes
+                                    .as_ref()
+                                    .expect("a method-choice row's magnitudes"),
+                                c,
+                            );
+                            let deviation = full
+                                .iter()
+                                .zip(&second)
+                                .map(|(a, b)| norm(&(a.clone() - b)))
+                                .fold(0f64, f64::max);
+                            if deviation <= tolerance * scale {
+                                Ok(value.clone())
+                            } else {
+                                if m.resort {
+                                    counters.resort_unverified += 1;
                                 } else {
-                                    if m.resort {
-                                        self.counters.resort_unverified += 1;
+                                    counters.unverified += 1;
+                                }
+                                measure = Some(LaneMeasure {
+                                    kind: MeasureKind::MethodChoiceDeviation,
+                                    value: if scale > 0.0 {
+                                        deviation / scale
                                     } else {
-                                        self.counters.unverified += 1;
-                                    }
-                                    measure = Some(LaneMeasure {
-                                        kind: MeasureKind::MethodChoiceDeviation,
-                                        value: if scale > 0.0 {
-                                            deviation / scale
-                                        } else {
-                                            f64::INFINITY
-                                        },
-                                    });
-                                    Err(format!(
-                                        "TIRust {} lane refused by its check: deviation \
+                                        f64::INFINITY
+                                    },
+                                });
+                                Err(format!(
+                                    "TIRust {} lane refused by its check: deviation \
                                          {deviation:e} of term scale {scale:e} between its two frames \
                                          exceeds {tolerance:e}",
-                                        lane_class(m)
-                                    ))
-                                }
-                            }
-                            Err(status) => {
-                                if m.resort {
-                                    self.counters.resort_unverified += 1;
-                                } else {
-                                    self.counters.unverified += 1;
-                                }
-                                Err(format!(
-                                    "TIRust {} lane unverified: its check row failed ({status})",
                                     lane_class(m)
                                 ))
                             }
                         }
+                        Err(status) => {
+                            if m.resort {
+                                counters.resort_unverified += 1;
+                            } else {
+                                counters.unverified += 1;
+                            }
+                            Err(format!(
+                                "TIRust {} lane unverified: its check row failed ({status})",
+                                lane_class(m)
+                            ))
+                        }
                     }
-                    (_, value) => value.clone().map_err(Clone::clone),
-                };
-                if let (Err(_), Some(measure)) = (&verified, measure) {
-                    self.measures.push(MeasuredLane {
+                }
+                (_, value) => value.clone().map_err(Clone::clone),
+            };
+            if let (Err(_), Some(measure)) = (&verified, measure) {
+                out.measures.push(MeasuredLane {
+                    group: row.group,
+                    lane,
+                    check: false,
+                    measure,
+                });
+            }
+            out.direct[row.group].push(verified);
+            if let Some(check_out) = &mut out.check {
+                let again = again.expect("every row is checked");
+                if let (Err(_), Some(checked)) = (&again, &checked)
+                    && let Some(measure) = checked[r].measure
+                {
+                    out.measures.push(MeasuredLane {
                         group: row.group,
                         lane,
-                        check: false,
+                        check: true,
                         measure,
                     });
                 }
-                direct_out[row.group].push(verified);
-                if let Some(check_out) = &mut check_out {
-                    let again = again.expect("every row is checked");
-                    if let (Err(_), Some(checked)) = (&again, &checked)
-                        && let Some(measure) = checked[r].measure
-                    {
-                        self.measures.push(MeasuredLane {
-                            group: row.group,
-                            lane,
-                            check: true,
-                            measure,
-                        });
-                    }
-                    check_out[row.group].push(again);
-                }
+                check_out[row.group].push(again);
             }
         }
-        self.counters.contraction += started.elapsed().as_secs_f64();
-        Ok((direct_out, check_out))
     }
 }
 
@@ -2015,17 +2347,22 @@ impl TirReductionBackend {
     }
 }
 
-/// The bin of (`n`, `rank`), built on first use.
+/// The bin of (`n`, `rank`), built on first use (a parallel slice's
+/// engine: from the backend's plan in `template`).
 fn bin_of<'a>(
-    bins: &'a mut BTreeMap<(usize, usize), Bin>,
+    bins: &'a mut Engine,
     n: usize,
     rank: usize,
     store: Option<&TensorStore>,
+    template: Option<&Engine>,
 ) -> RusticolResult<&'a mut Bin> {
     Ok(match bins.entry((n, rank)) {
         std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
         std::collections::btree_map::Entry::Vacant(entry) => {
-            let bin = Bin::new(n, rank)?;
+            let bin = match template.and_then(|t| t.get(&(n, rank))) {
+                Some(bin) => bin.sibling(),
+                None => Bin::new(n, rank)?,
+            };
             // Registered when built: `prepare` builds every plan of the call
             // before the first reduce, so which moments meet does not depend
             // on the order of the families (TIRust's store docs).
