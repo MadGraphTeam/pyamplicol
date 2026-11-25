@@ -855,10 +855,11 @@ pub mod v2 {
 
     /// A batch size whose evaluations on the pool take at least this long is
     /// never timed on one thread: the pool's fan-out cost measured on the
-    /// smallest calls is at most about a millisecond per call (g g > t t~,
-    /// u u~ > e+ e- g on 8 threads), a few percent of such a call, while a
-    /// one-thread probe of it costs up to the thread count times as long.
-    const SERIAL_PROBE_SECONDS: f64 = 0.02;
+    /// smallest calls is at most about 0.7 ms per call (g g > t t~ and
+    /// u u~ > e+ e- g at one point, 8 threads against one), under a seventh
+    /// of such a call, while a one-thread probe of a call that does gain
+    /// from the pool costs up to the thread count times as long.
+    const SERIAL_PROBE_SECONDS: f64 = 0.005;
 
     macro_rules! with_lanes {
         ($lanes:expr, $f:ident :: <$t:ty>($($arg:expr),*)) => {
@@ -994,7 +995,7 @@ pub mod v2 {
         /// Whether an evaluation of `points` points runs on one thread
         /// instead of this executor's pool: on a pool of more than one
         /// thread, each batch size is timed on both for its first
-        /// [`CALL_PROBES`] evaluations each (pool first), then keeps the
+        /// [`CALL_PROBES`] evaluations each (alternately, pool first), then keeps the
         /// faster, so that a call too small to gain from the pool pays
         /// nothing for it; a size whose pool evaluations take
         /// [`SERIAL_PROBE_SECONDS`] or more stays on the pool untimed. The values do not depend on the choice (they do
@@ -1007,10 +1008,14 @@ pub mod v2 {
                 return false;
             };
             let found = times.get(&points).copied().unwrap_or_default();
-            if found.pool.0 < CALL_PROBES || found.pool.1 >= SERIAL_PROBE_SECONDS {
+            if found.pool.0 == 0 || found.pool.1 >= SERIAL_PROBE_SECONDS {
                 false
             } else if found.serial.0 < CALL_PROBES {
-                true
+                // Interleaved (pool, one thread, pool, one thread): each side
+                // has a first call and a warm one.
+                found.serial.0 < found.pool.0
+            } else if found.pool.0 < CALL_PROBES {
+                false
             } else {
                 found.serial.1 < found.pool.1
             }
@@ -3955,7 +3960,7 @@ pub mod v2 {
                     serial
                 })
                 .collect();
-            assert_eq!(picks, [false, false, true, true]);
+            assert_eq!(picks, [false, true, false, true]);
             assert!(!four.serial_call(3), "the pool was faster (1 ms vs 2 ms)");
             four.record(5, false, 3.0 * ms);
             four.record(5, false, 3.0 * ms);
@@ -3963,8 +3968,8 @@ pub mod v2 {
             four.record(5, true, 1.5 * ms);
             assert!(four.serial_call(5), "one thread was faster for 5 points");
             assert!(!four.serial_call(7), "an untimed size starts on the pool");
-            four.record(9, false, 0.5);
-            four.record(9, false, 0.4);
+            four.record(9, false, 0.02);
+            four.record(9, false, 0.01);
             assert!(
                 !four.serial_call(9),
                 "a long call is never timed on one thread"
