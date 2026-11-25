@@ -16,65 +16,85 @@ PROBE_REDUCTION`` (NinjaRS) at every carrier.
 
 **THE RULE** (USER 2026-11-25: "Just test for R < K * S where K is a
 threshold set as a parameter for the checks, and typically of the order of
-the requested number of stable digits"; ``judge``): every independently
-required row (a point, a sector or loop order and helicity row, a leg and
-factor, a Laurent coefficient) is judged on its own, before any
-aggregation: PASS iff R < K S, FAIL iff R >= K S (equality is a miss),
-INCONCLUSIVE iff R or S cannot be computed (not a finite number, a missing
-operand, a refused run, S not positive), with
+the requested number of stable digits"; ``judge``, ``settle``,
+``ladder_step``): every independently required row (a point, a sector or
+loop order and helicity row, a leg and factor, a Laurent coefficient) is
+judged on its own, before any aggregation, from its residue R, its PHYSICAL
+reference P (the size of the physical quantities whose difference or
+vanishing the identity tests, at the same point, carrier and row or
+sector), the estimate E_P of P's own numerical uncertainty where the
+evaluation forms one, and its term scale T (the size of the terms that
+cancel into it):
 
-    S = max(P, K T):
+1. a required operand missing or not a finite number: INCONCLUSIVE (never
+   vacuous, never dropped);
+2. a complete row with no contributing term (R = 0 and T = 0): VACUOUS,
+   skipped and counted (a check every row of which is vacuous has nothing
+   to test and passes with that warning);
+3. a known-zero reference (an analytic zero: a Catani pole that vanishes
+   exactly; the poles of a loop-induced amplitude on both sides of the
+   Goldstone identity): PASS iff R < K T, labelled term-relative;
+4. R < K P: PASS on the physical scale (equality is a miss);
+5. otherwise a miss: where R < K T would pass and P may be noise (P = 0
+   from cancelling terms, or P <= ``induced.ESTIMATE_FACTOR`` E_P; no
+   estimate: a finite P > 0 is physical) the row is AMBIGUOUS and only it
+   is evaluated at the next carrier at the same point, where P either
+   REPRODUCES (|P_wide - P_narrow| < K P_narrow: a physical miss), or
+   COLLAPSES with the carriers' noise (P_wide / P_narrow at most
+   sqrt(u_wide / u_narrow): R < K T, labelled term-relative), or neither
+   (INCONCLUSIVE: physical normalisation unresolved; also where no wider
+   carrier is available); any other miss climbs the carrier ladder as a
+   miss and fails if the last carrier still misses.
 
-R the row's residue, P its PHYSICAL reference (the size of the physical
-quantities whose difference or vanishing the identity tests, at the same
-point and row or sector) and T its term scale (the size of the terms that
-cancel into it). K T only guards a row whose physical reference is below
-what the computation resolves: there the test is R < K^2 T. A row with no
-term at all (R = 0 exactly and T = 0: a coefficient neither the prediction
-nor any part has, a helicity row that vanishes structurally) is VACUOUS:
-skipped and counted, neither a pass nor an inconclusive; a check all of
-whose rows are vacuous has nothing to test (the amplitude vanishes
-identically) and passes with that warning. R, P and T are linear in the
-amplitude (colour-metric norms, or the interference itself), so K is a
-relative accuracy of the checked quantity. K is the check's tolerance
-(``tolerance``: ``check.tolerance``, else the run's requested relative
-accuracy ``evaluation.reduction_target``, whose default is the native
-policy's target ``reduction.default_target()``). The comparisons are
-ordinary carrier arithmetic: this is a tolerance, not a certificate. Each
-row reports R / S, R, P, T and which of P and K T set S; the evaluation's
-error estimate E over S is reported for information and decides nothing.
+The ladder is per row: a row keeps its first decision, a pending row a
+later carrier lacks is inconclusive, a refused carrier leaves the next one
+to try, and a check's verdict is formed at the end from its rows' final
+verdicts (``aggregate``: FAIL, else INCONCLUSIVE, else PASS, else
+VACUOUS). R, P and T are linear in the amplitude (colour-metric norms, or
+the interference itself), so K is a relative accuracy of the checked
+quantity. K is the check's tolerance (``tolerance``: ``check.tolerance``,
+else the run's requested relative accuracy ``evaluation.reduction_target``,
+whose default is the native policy's target ``reduction.default_target()``).
+The comparisons are ordinary carrier arithmetic: this is a tolerance, not a
+certificate. Each row reports R over the scale that decided, R, P, E_P, T,
+the scale (physical, term-relative or vacuous) and the deciding carrier;
+the evaluation's error estimate E is reported for information and decides
+nothing.
 
-* **Poles, Born-interfered** (``born_interfered_rows``, ``_pole_rows``): per
-  point, squared-order sector and pole coefficient k of the renormalised
-  virtual V (poles "all") against Catani's prediction C of the requested
-  corrections (QCD and QED summed per sector, formed natively,
-  ``NativeExecutor(catani=True)``): R = |Re V_k - Re C_k|, P = max(|Re C_k|,
-  |Re V_k|), T = the largest part (bare, R2, UV) of that sector and
-  coefficient. A sector the operators do not predict is listed with its
-  reason (``poles.UNPREDICTED_REASONS``), never as a pass; a sector they
-  predict without a pole row at a point is "not run" (an applicable check
-  that did not run).
+* **Poles, Born-interfered** (``born_interfered_rows``, ``_pole_measures``):
+  per point, squared-order sector and pole coefficient k of the
+  renormalised virtual V (poles "all") against Catani's prediction C of the
+  requested corrections (QCD and QED summed per sector, formed natively,
+  ``NativeExecutor(catani=True)``): R = |Re V_k - Re C_k|, P = max(|Re
+  C_k|, |Re V_k|) (an analytic reference: a C_k that is exactly zero is a
+  known zero), T = the largest of the virtual and its parts (bare, R2, UV)
+  at that sector and coefficient. A sector the operators do not predict is
+  listed with its reason (``poles.UNPREDICTED_REASONS``), never as a pass; a
+  sector they predict without a pole row at a point is "not run" (an
+  applicable check that did not run).
 * **Ward, Born-interfered** (``_ward_measures``): ``ward.ward_check`` on
   every external gluon and photon leg (``ward.gauge_legs``) and both
   factors (``ward.WARD_FACTORS``): per Born sector R = |loop-side Born|, P =
   T = |physical Born|; per virtual sector and coefficient R = |V_k| of the
   substituted evaluation, P = |V_k| of the physical evaluation at the same
-  point, T = its largest part.
+  point (E_P its estimate where it ran its checks), T = its largest part.
 * **Loop-induced** (``induced.point_probes``): the finiteness probe (R =
   the colour-metric norm of each pole coefficient of each loop order and
   helicity row) and the amplitude-level Ward probe of one leg of every
   gluon and photon species (R = the substituted amplitude's norm at every
   coefficient): P = the norm of the physical finite amplitude of that row
-  (``induced.RowFloors.finite``; for a Ward row the largest over the
+  at the same point and carrier with its estimate E_P
+  (``induced.physical_references``; for a Ward row the largest over the
   substituted leg's helicities), T = the row's term floor S_k(h)
   (``induced.row_scales``, ``induced.ward_floors``).
 * **Goldstone** (``induced.goldstone_point``): k.A(V) = eta M_V A(G) where
   the probe serves the slice (``induced.goldstone_applicability``:
   't Hooft-Feynman gauge, an external massive vector with a Goldstone
   partner, a loop-induced amplitude); R = ||A(V)_k - eta (M/E) A(G)_k||,
-  P = max(||A(V)_k||, ||eta (M/E) A(G)_k||), T = the vector row's floor
-  plus M/E times the Goldstone row's (``goldstone.probe``); otherwise a
-  "not applicable" row with the reason.
+  P = max(||A(V)_k||, ||eta (M/E) A(G)_k||) with that side's estimate
+  (the poles, k >= 1: a known zero), T = the vector row's floor plus M/E
+  times the Goldstone row's, over the union of both sides' rows
+  (``goldstone.probe``); otherwise a "not applicable" row with the reason.
 * **Ward rows not applicable** (``ward_applicability``, USER 2026-11-10
   ~00:17): a request whose corrections include one other than the model's
   strong correction and with an on-shell zero-width external massive quark
@@ -83,18 +103,15 @@ error estimate E over S is reported for information and decides nothing.
   by squared-order sector, so its QCD-loop sectors are not checked either.
 
 Carriers (``induced.probe_carriers``): binary64 first and double-double
-only for a row binary64 does not pass (a failure, an inconclusive row or a
-refused run); an explicit carrier alone otherwise. The verdict is the one of
-the first carrier that passes the row, else of the last carrier that judged
-it; a later carrier's refusal leaves the row inconclusive (never a pass).
-The deciding carrier and the fallback's reason are recorded per row.
+only for a row binary64 does not decide (a failure, an inconclusive or
+ambiguous row, or a refused run); an explicit carrier alone otherwise.
 
 **The arbitrary-precision rung** (``auto`` only, Born-interfered rows): a
-row the ladder's last carrier does not pass is evaluated again in arbitrary
-precision at ``check.arbitrary_digits`` digits, by default twice the last
-carrier's decimal digits (``rung_digits``), the point lifted again at those
-digits; its verdict there is the row's. The loop-induced probes keep their
-ladder (binary64, double-double).
+row double-double does not decide (refused included) is evaluated again in
+arbitrary precision at ``check.arbitrary_digits`` digits, by default twice
+the last carrier's decimal digits (``rung_digits``), the point lifted
+again at those digits. The loop-induced probes keep their ladder (binary64,
+double-double).
 """
 
 from __future__ import annotations
@@ -104,7 +121,7 @@ import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 # The stored-process harness's criteria (``tools/loop_benchmark/
@@ -309,38 +326,322 @@ def combined(verdicts: Sequence[str]) -> str:
 class Measure:
     """One independently required row of a check (module docstring): its
     residue R, its physical reference P, its term scale T (each None where
-    it cannot be computed) and the evaluation's error estimate E (reported
-    only)."""
+    it cannot be computed or is missing), the estimate E of R (reported
+    only), the estimate E_P of P's own numerical uncertainty (where the
+    evaluation forms one: it only flags a possibly unresolved reference),
+    whether the reference is a known zero (an analytic or structural zero,
+    ``zero_reference``: the row uses the labelled term-relative tolerance
+    at once) and whether every operand of the row is present
+    (``complete``)."""
 
     label: str
     residue: float | None
     physical: float | None
     terms: float | None
     estimate: float | None = None
+    physical_error: float | None = None
+    zero_reference: bool = False
+    complete: bool = True
 
 
-def scale_of(
-    physical: float | None, terms: float | None, tolerance_: float
-) -> tuple[float | None, str | None]:
-    """S = max(P, K T) and which of them set it ("P" or "K T"); None where P
-    or T cannot be computed. K T only guards a row whose physical reference
-    is below what the computation resolves: there the test is R < K^2 T."""
+# The rule's name, recorded with K and the explicit verdict wherever a
+# verdict is stored (campaign records, generation records, tools): a record
+# judged under another rule or another K is re-judged, never reused.
+RULE = "threshold-p: per row R < K P (physical); R < K T for a known-zero reference"
 
-    if physical is None or terms is None:
-        return None, None
-    guard = tolerance_ * terms
-    return (physical, "P") if physical >= guard else (guard, "K T")
+# The scale a row was judged against (``Judgement.scale``).
+PHYSICAL = "physical"
+TERM_RELATIVE = "term-relative"
+# A row that misses R < K P, would pass R < K T, and whose P may be noise
+# (``judge``): it needs a wider evaluation at the same point (``settle``);
+# never a final verdict (``finished``: INCONCLUSIVE).
+AMBIGUOUS = "ambiguous"
 
 
-def judge(measure: Measure, tolerance_: float) -> str:
-    """THE RULE for one required row: VACUOUS iff it has no term at all (R =
-    0 exactly and T = 0), else ``threshold`` of R against S = max(P, K T)
-    (``scale_of``)."""
+@dataclass(frozen=True)
+class Judgement:
+    """A row's verdict at one carrier (``judge``, ``settle``): the verdict,
+    the scale that decided (``PHYSICAL`` P, ``TERM_RELATIVE`` T; None for a
+    vacuous or inconclusive row), R over that scale (``ratio``; it passes
+    iff below K), the reason of an inconclusive or ambiguous row, the
+    measure and the carrier."""
 
-    if measure.residue == 0 and measure.terms == 0:
-        return VACUOUS
-    scale, _by = scale_of(measure.physical, measure.terms, tolerance_)
-    return threshold(measure.residue, scale, tolerance_)
+    verdict: str
+    scale: str | None
+    ratio: float | None
+    reason: str | None
+    measure: Measure
+    carrier: str | None = None
+    unit_roundoff: float | None = None
+    # The earlier carriers' outcomes of this row ("carrier: verdict, R /
+    # scale"), oldest first.
+    history: tuple[str, ...] = ()
+
+
+def _summary(cell: Judgement) -> str:
+    """One earlier carrier's outcome of a row, for its history."""
+
+    ratio = "" if cell.ratio is None else f", R / {cell.scale or 'S'} {cell.ratio:.3g}"
+    reason = f" ({cell.reason})" if cell.reason and cell.verdict != PASS else ""
+    return f"{cell.carrier}: {cell.verdict}{ratio}{reason}"
+
+
+def judge(measure: Measure, tolerance_: float) -> Judgement:
+    """THE RULE for one required row at one carrier (module docstring):
+
+    1. an incomplete row, or one whose R, P or T is not a finite
+       non-negative number: INCONCLUSIVE (never vacuous, never dropped);
+    2. a complete row with no contributing term (R = 0 and T = 0): VACUOUS;
+    3. a known-zero reference (``zero_reference``): R < K T, labelled
+       term-relative (PASS / FAIL);
+    4. R < K P: PASS on the physical scale;
+    5. otherwise a miss on K P: AMBIGUOUS when R < K T would pass and P may
+       be noise (P = 0 from cancelling terms, or P <= ``ESTIMATE_FACTOR`` E_P
+       where an estimate exists: the flag only), else FAIL on the physical
+       scale (no estimate: a finite P > 0 is physical)."""
+
+    from .induced import ESTIMATE_FACTOR
+
+    r, p, t = measure.residue, measure.physical, measure.terms
+
+    def bad(x: float | None) -> bool:
+        return x is None or not math.isfinite(x) or x < 0
+
+    if not measure.complete or bad(r) or bad(p) or bad(t):
+        return Judgement(INCONCLUSIVE, None, None, _uncomputed(measure), measure)
+    assert r is not None and p is not None and t is not None
+    if r == 0 and t == 0:
+        return Judgement(VACUOUS, None, None, None, measure)
+    if measure.zero_reference:
+        if not t > 0:
+            return Judgement(
+                INCONCLUSIVE,
+                None,
+                None,
+                "a known-zero reference without a term scale (T = 0, R > 0)",
+                measure,
+            )
+        ratio = r / t
+        return Judgement(
+            PASS if ratio < tolerance_ else FAIL, TERM_RELATIVE, ratio, None, measure
+        )
+    if p > 0 and r / p < tolerance_:
+        return Judgement(PASS, PHYSICAL, r / p, None, measure)
+    passes_on_terms = t > 0 and r / t < tolerance_
+    error = measure.physical_error
+    flagged = p == 0 or (
+        error is not None and math.isfinite(error) and p <= ESTIMATE_FACTOR * error
+    )
+    if passes_on_terms and flagged:
+        return Judgement(
+            AMBIGUOUS,
+            None,
+            r / t,
+            "the physical reference may be noise (P "
+            + (f"{p:.3g} <= {ESTIMATE_FACTOR} E_P" if p else "0 from cancelling terms")
+            + "): a wider evaluation decides",
+            measure,
+        )
+    if p == 0:
+        return Judgement(FAIL, TERM_RELATIVE, r / t if t else math.inf, None, measure)
+    return Judgement(FAIL, PHYSICAL, r / p, None, measure)
+
+
+def settle(now: Judgement, before: Judgement | None, tolerance_: float) -> Judgement:
+    """An AMBIGUOUS row at a wider carrier (``now``) against the same row at
+    a narrower one (``before``): P REPRODUCES (|P_now - P_before| < K
+    P_before) - the physical reference is real, and ``now`` misses it: FAIL
+    on the physical scale; P COLLAPSES with the carriers' noise (P_now /
+    P_before at most sqrt(u_now / u_before), the geometric midpoint between
+    an unchanged P and one that falls with the unit roundoff; or P = 0 in
+    both) - R < K T at the wider carrier, labelled term-relative; anything
+    else, or no narrower measurement: INCONCLUSIVE (physical normalisation
+    unresolved). Any other ``now`` is returned as it is."""
+
+    if now.verdict != AMBIGUOUS:
+        return now
+    m = now.measure
+    if (
+        before is None
+        or before.measure.physical is None
+        or before.unit_roundoff is None
+        or now.unit_roundoff is None
+    ):
+        return replace(
+            now,
+            verdict=INCONCLUSIVE,
+            reason="physical normalisation unresolved: no wider evaluation at "
+            "the same point to tell P from noise",
+        )
+    p_now, p_before = m.physical, before.measure.physical
+    assert p_now is not None and m.residue is not None and m.terms is not None
+    if p_before > 0 and abs(p_now - p_before) < tolerance_ * p_before:
+        return replace(
+            now,
+            verdict=FAIL,
+            scale=PHYSICAL,
+            ratio=m.residue / p_now if p_now else math.inf,
+            reason=f"P reproduces ({p_before:.3g} at {before.carrier}, "
+            f"{p_now:.3g} at {now.carrier}): a physical miss",
+        )
+    collapse = math.sqrt(now.unit_roundoff / before.unit_roundoff)
+    if (p_before == 0 and p_now == 0) or (
+        p_before > 0 and p_now <= collapse * p_before
+    ):
+        ratio = m.residue / m.terms
+        return replace(
+            now,
+            verdict=PASS if ratio < tolerance_ else FAIL,
+            scale=TERM_RELATIVE,
+            ratio=ratio,
+            reason=f"P collapses with the carrier's noise ({p_before:.3g} at "
+            f"{before.carrier}, {p_now:.3g} at {now.carrier}): term-relative "
+            "tolerance",
+        )
+    return replace(
+        now,
+        verdict=INCONCLUSIVE,
+        reason=f"physical normalisation unresolved: P {p_before:.3g} at "
+        f"{before.carrier}, {p_now:.3g} at {now.carrier}, neither reproduced "
+        "nor falling with the carrier's noise",
+    )
+
+
+# A row's final, decided verdicts (a decided row keeps its verdict up the
+# ladder); every other verdict is pending.
+_DECIDED = (PASS, VACUOUS)
+
+
+def ladder_step(
+    cells: dict[Any, Judgement],
+    found: Mapping[Any, Measure] | None,
+    carrier: str,
+    unit_roundoff: float | None,
+    tolerance_: float,
+    keys: Sequence[Any] | None = None,
+) -> list[Any]:
+    """One carrier of the per-row ladder, in place on ``cells`` (row key ->
+    its latest ``Judgement``): every pending row (and, on the first carrier,
+    every row of ``found``; ``keys``: the required rows, every one of which
+    must be measured) is judged at ``carrier`` (``judge``, then ``settle``
+    against its narrower measurement); a decided row keeps its verdict; a
+    pending row absent from ``found`` is INCONCLUSIVE (``found`` None: the
+    carrier refused, with ``refusal`` in the reason by the caller). Returns
+    the keys still pending."""
+
+    wanted = [
+        key
+        for key in dict.fromkeys([*(keys or ()), *cells, *(found or {})])
+        if key not in cells or cells[key].verdict not in _DECIDED
+    ]
+    for key in wanted:
+        before = cells.get(key)
+        measure = None if found is None else found.get(key)
+        if measure is None:
+            label = before.measure.label if before is not None else str(key)
+            missing = Measure(label, None, None, None, complete=False)
+            cells[key] = Judgement(
+                INCONCLUSIVE,
+                None,
+                None,
+                f"{carrier} has no such row",
+                before.measure if before is not None else missing,
+                carrier,
+                unit_roundoff,
+                before.history if before is not None else (),
+            )
+            continue
+        now = replace(
+            judge(measure, tolerance_), carrier=carrier, unit_roundoff=unit_roundoff
+        )
+        if now.verdict == AMBIGUOUS and before is not None:
+            now = settle(now, before, tolerance_)
+        if before is not None and before.carrier is not None:
+            now = replace(now, history=(*before.history, _summary(before)))
+        cells[key] = now
+    return [key for key, cell in cells.items() if cell.verdict not in _DECIDED]
+
+
+def refused_step(cells: dict[Any, Judgement], refusal: str, carrier: str) -> None:
+    """A carrier refused: its pending rows keep their measurement and turn
+    INCONCLUSIVE with the refusal (a later carrier may still decide them)."""
+
+    for key, cell in list(cells.items()):
+        if cell.verdict not in _DECIDED:
+            cells[key] = replace(
+                cell,
+                verdict=INCONCLUSIVE,
+                reason=f"{carrier} refused: {refusal}"
+                + (f"; before: {cell.reason}" if cell.reason else ""),
+            )
+
+
+def finished(cells: Mapping[Any, Judgement]) -> dict[Any, Judgement]:
+    """The rows' final verdicts: an AMBIGUOUS row left after the last
+    carrier is INCONCLUSIVE (physical normalisation unresolved)."""
+
+    return {
+        key: (
+            replace(
+                cell,
+                verdict=INCONCLUSIVE,
+                reason="physical normalisation unresolved: no wider carrier to "
+                "tell P from noise",
+            )
+            if cell.verdict == AMBIGUOUS
+            else cell
+        )
+        for key, cell in cells.items()
+    }
+
+
+def aggregate(cells: Mapping[Any, Judgement]) -> str:
+    """A check's verdict from its rows' final verdicts: FAIL if one fails,
+    else INCONCLUSIVE if one is (or none was compared), else PASS if one
+    passed, else VACUOUS (every row without a term)."""
+
+    found = {cell.verdict for cell in cells.values()}
+    if FAIL in found:
+        return FAIL
+    if found & {INCONCLUSIVE, AMBIGUOUS} or not found:
+        return INCONCLUSIVE
+    if PASS in found:
+        return PASS
+    return VACUOUS
+
+
+def worst_cell(cells: Mapping[Any, Judgement]) -> Judgement | None:
+    """The row that decided the aggregate: the largest ratio among the
+    failing rows, else the first inconclusive one, else the largest ratio
+    among the passing ones."""
+
+    def ratio(cell: Judgement) -> float:
+        return -1.0 if cell.ratio is None else cell.ratio
+
+    for verdicts in ((FAIL,), (INCONCLUSIVE, AMBIGUOUS), (PASS,), (VACUOUS,)):
+        chosen = [cell for cell in cells.values() if cell.verdict in verdicts]
+        if chosen:
+            return max(chosen, key=ratio)
+    return None
+
+
+def cell_record(cell: Judgement) -> dict[str, Any]:
+    """A row's record for the reports: label, verdict, scale, R / scale, R,
+    P, E_P, T, deciding carrier, reason."""
+
+    m = cell.measure
+    return {
+        "label": m.label,
+        "verdict": cell.verdict,
+        "scale": cell.scale or (VACUOUS if cell.verdict == VACUOUS else None),
+        "ratio": _short(cell.ratio),
+        "residue": _short(m.residue),
+        "physical": _short(m.physical),
+        "physical_error": _short(m.physical_error),
+        "terms": _short(m.terms),
+        "carrier": cell.carrier,
+        "reason": cell.reason,
+    }
 
 
 def carrier_digits(roundoff: float) -> float:
@@ -371,46 +672,6 @@ class Rung:
     digits: int | None = None
 
 
-def _rung(
-    decided: dict[Any, CheckRow],
-    final: Any,
-    run_at: Callable[[Any, list[Any]], Any],
-    rung: Rung | None,
-) -> None:
-    """The rung of one point's rows of one kind, in place on ``decided``:
-    the rows the ladder's final carrier ``final`` judged and did not pass
-    (FAIL or INCONCLUSIVE) are re-run in arbitrary precision at the option's
-    digits or ``rung_digits`` by ``run_at(carrier, keys)`` (per key the
-    row judged there; or a refusal text), and take that verdict. Without a
-    rung (an explicit carrier) they keep the final carrier's; a refused run
-    or a row missing there leaves them inconclusive."""
-
-    from .assemble import Precision
-
-    name = _carrier_name(final)
-    open_ = [
-        key
-        for key, row in decided.items()
-        if row.verdict in (FAIL, INCONCLUSIVE) and row.carrier == name
-    ]
-    if not open_ or rung is None:
-        return
-    digits = (
-        rung.digits if rung.digits is not None else rung_digits(final.unit_roundoff)
-    )
-    result = run_at(Precision.arbitrary(digits), open_)
-    if isinstance(result, str):
-        for key in open_:
-            decided[key] = _refused(decided[key], result)
-        return
-    for key in open_:
-        earlier = decided[key]
-        if key not in result:
-            decided[key] = _refused(earlier, f"no such row at {digits} digits")
-            continue
-        decided[key] = _with(result[key], digits=digits, fallback=_not_passed(earlier))
-
-
 # ------------------------------------------------------------------ records
 
 
@@ -419,12 +680,14 @@ class CheckRow:
     """One judged check: ``check`` ("poles", "ward" or "goldstone"),
     ``subject`` (a sector and pole coefficient, a leg and factor, or the
     finiteness of every loop order and row), the point index, the carrier
-    that decided, the verdict (``VERDICTS``), ``deviation`` the measured R /
-    S (``judge``; for a row made of several required rows, of the one with
-    the largest R / S, whose R, P, T and the one of P and K T that set S
-    are ``residue``, ``physical``, ``terms`` and ``scale_by``),
-    ``tolerance`` the K it was judged with and ``ratio`` (R / S) / K (below
-    1 passes), ``vacuous`` the count of its rows without any term (skipped);
+    that decided, the verdict (``VERDICTS``), ``deviation`` R over the scale
+    that decided (``judge``; for a row made of several required rows, of
+    the deciding one, ``worst_cell``, whose R, P, E_P, T and scale -
+    "physical", "term-relative" or "vacuous" - are ``residue``,
+    ``physical``, ``physical_error``, ``terms`` and ``scale_by``), every
+    required row's record (``cells``), ``tolerance`` the K it was judged
+    with and ``ratio`` that over K (below 1 passes), ``vacuous`` the count
+    of its rows without any term (skipped);
     ``estimate`` the evaluation's error estimate E over the same S, for
     information (it decides nothing);
     ``fallback`` why the first carrier did not decide, ``reason`` why a row
@@ -448,6 +711,10 @@ class CheckRow:
     terms: float | None = None
     scale_by: str | None = None
     vacuous: int = 0
+    physical_error: float | None = None
+    # Every independently required row's record (``cell_record``): label,
+    # verdict, scale, R / scale, R, P, E_P, T, deciding carrier, reason.
+    cells: tuple[dict[str, Any], ...] = ()
     # The deciding rung's kinematics improvement of the lifted point (m-lit
     # lit-psimprove (G5)): the variant that produced it, "exact" or
     # "not-improved"; None where none ran (binary64 without the switch).
@@ -661,13 +928,13 @@ def _largest_part(
     components: Mapping[str, Mapping[Any, Any]], sector: Any, k: int
 ) -> float | None:
     """T of a Born-interfered row: the largest magnitude of coefficient k of
-    ``sector`` over the virtual's parts (bare, R2, UV; ``assemble.
-    COMPONENTS`` but the virtual itself), 0 where no part has it, None where
+    ``sector`` over the virtual and its parts (bare, R2, UV; ``assemble.
+    COMPONENTS``), 0 where none has it (no contributing term), None where
     one cannot be computed (``magnitude``)."""
 
     found = 0.0
-    for name, part in components.items():
-        laurent = part.get(sector) if name != "virtual" else None
+    for part in components.values():
+        laurent = part.get(sector)
         if laurent is None or len(laurent.coefficients) <= k:
             continue
         size = magnitude(laurent.coefficients[k])
@@ -687,16 +954,15 @@ def _real_size(value: Any) -> float | None:
     return found if math.isfinite(found) else None
 
 
-def _pole_rows(
-    result: Any, index: int, carrier: str, tolerance_: float
-) -> dict[Any, CheckRow]:
-    """The pole rows of one evaluated point, keyed by (sector, k), each one
-    required row (``judge``): R = |Re V_k - Re C_k|, P = max(|Re C_k|, |Re
-    V_k|), T = the largest part (``_largest_part``); E / S where the
-    evaluation ran its checks."""
+def _pole_measures(result: Any) -> dict[Any, Measure]:
+    """The pole rows of one evaluated point, keyed by (sector, k): R = |Re
+    V_k - Re C_k|, P = max(|Re C_k|, |Re V_k|) (Catani's prediction is an
+    analytic reference: a C_k that is exactly zero is a known-zero reference,
+    judged term-relative), T = the largest part (``_largest_part``), E the
+    evaluation's estimate where it ran its checks."""
 
     estimate = result.stability
-    rows: dict[Any, CheckRow] = {}
+    found: dict[Any, Measure] = {}
     for sector, laurent in result.components["virtual"].items():
         poles = (result.ir_poles or {}).get(sector)
         if poles is None or len(laurent.coefficients) != 3:
@@ -706,41 +972,36 @@ def _pole_rows(
             error = None
             if estimate is not None:
                 error = magnitude(estimate.absolute[sector].coefficients[k])
-            measure = Measure(
+            try:
+                known_zero = complex(poles[k - 1]).real == 0
+            except (ArithmeticError, TypeError, ValueError):
+                known_zero = False
+            found[(sector, k)] = Measure(
                 f"{_sector_name(sector)} {POLE_NAMES[k]}",
                 real_gap(laurent.coefficients[k], poles[k - 1]),
                 None if None in sizes else max(sizes),
                 _largest_part(result.components, sector, k),
                 error,
+                zero_reference=known_zero,
             )
-            rows[(sector, k)] = _judged_row(
-                "poles", measure.label, index, carrier, [measure], tolerance_
-            )
-    return rows
+    return found
 
 
 def _uncomputed(measure: Measure) -> str:
     """Why ``judge`` found a row inconclusive."""
 
-    if measure.residue is None:
-        return "the residue R cannot be computed (not a finite number or missing)"
-    if measure.physical is None or measure.terms is None:
-        return (
-            "the physical reference P or the term scale T cannot be computed "
-            "(not a finite number or missing)"
-        )
-    return (
-        f"S = max(P, K T) is not positive (R {measure.residue:.3g}, P "
-        f"{measure.physical:.3g}, T {measure.terms:.3g})"
-    )
+    def bad(x: float | None) -> bool:
+        return x is None or not math.isfinite(x) or x < 0
 
-
-def _not_passed(row: CheckRow) -> str:
-    """Why a carrier's row did not decide it (the next carrier's fallback)."""
-
-    if row.verdict == INCONCLUSIVE and row.reason:
-        return f"{row.carrier}: {row.reason}"
-    return f"{row.carrier}: R / S {row.deviation} not below K {row.tolerance}"
+    if not measure.complete:
+        return "a required operand is missing (the row is incomplete)"
+    if bad(measure.residue):
+        return "the residue R cannot be computed (not a finite number)"
+    if bad(measure.physical):
+        return "the physical reference P cannot be computed (not a finite number)"
+    if bad(measure.terms):
+        return "the term scale T cannot be computed (not a finite number)"
+    return "R, P and T are finite but give no scale"
 
 
 def _unpredicted_rows(
@@ -852,6 +1113,24 @@ def _legs(labels: Sequence[int]) -> str:
     return ("leg " if len(labels) == 1 else "legs ") + ", ".join(map(str, labels))
 
 
+def _stages(carriers: Sequence[Any], rung: Rung | None) -> list[Any]:
+    """The carriers of a Born-interfered row's ladder: ``carriers``, then the
+    arbitrary-precision rung (``rung``: its digits, else ``rung_digits``
+    after the last carrier)."""
+
+    from .assemble import Precision
+
+    stages = list(carriers)
+    if rung is not None and carriers:
+        digits = (
+            rung.digits
+            if rung.digits is not None
+            else rung_digits(carriers[-1].unit_roundoff)
+        )
+        stages.append(Precision.arbitrary(digits))
+    return stages
+
+
 def born_interfered_rows(
     target: Any,
     points: Sequence[tuple[Any, Any]],
@@ -861,10 +1140,11 @@ def born_interfered_rows(
     out: list[CheckRow] | None = None,
 ) -> list[CheckRow]:
     """The pole and Ward rows of a Born-interfered probe slice (module
-    docstring) at the lifted ``points`` ((point, mu_R^2) pairs), in
-    ``carriers`` in order and, for a row the last one does not pass, the
-    arbitrary-precision ``rung`` (None: none, an explicit carrier), judged
-    with the check's ``tolerance``."""
+    docstring) at the lifted ``points`` ((point, mu_R^2) pairs), per row up
+    the ladder of ``carriers`` and, for a row the last one does not decide,
+    the arbitrary-precision ``rung`` (None: none, an explicit carrier),
+    judged with the check's ``tolerance`` (``ladder_step``: each row keeps
+    its first decision; a carrier's refusal leaves the next one to try)."""
 
     from . import induced, stability, ward
     from .plan_export import FailedPoints, NativeExecutor
@@ -873,78 +1153,66 @@ def born_interfered_rows(
     tolerance_ = tolerance()
     legs = ward.gauge_legs(target)
     excluded = ward_applicability(target) if legs else None
+    stages = _stages(carriers, rung)
     # ``out``: the caller's list, which keeps the rows of an interrupted
     # check.
     rows: list[CheckRow] = [] if out is None else out
     for index, (point, scale) in enumerate(points):
-        # Poles against Catani's operator.
-        decided: dict[Any, CheckRow] = {}
+
+        def at(
+            carrier: Any, index: int = index, point: Any = point, scale: Any = scale
+        ):
+            """The point ``carrier`` evaluates and its kinematics record:
+            the lifted point (again at the rung's digits for an
+            arbitrary-precision carrier), improved in that carrier."""
+
+            lifted, mu = (
+                rung.lift(index, carrier)
+                if rung is not None and _carrier_name(carrier) == "arbitrary"
+                else (point, scale)
+            )
+            moved, improved = _improved(executor, lifted, mu, carrier, kinematics)
+            return moved, mu, improved
+
+        # Poles against Catani's operator, per (sector, k) up the ladder.
+        cells: dict[Any, Judgement] = {}
         sectors: list[Any] = []
         formed = evaluated = False
-        refusal: str | None = None
-        last: tuple[Any, Any, Any] | None = None
-        for carrier in carriers:
-            pending = [
-                key
-                for key, row in decided.items()
-                if row.verdict not in (PASS, VACUOUS)
-            ]
-            if evaluated and not pending:
+        refusals: list[str] = []
+        improvements: dict[str, Any] = {}
+        for carrier in stages:
+            name = _carrier_name(carrier)
+            if evaluated and all(cell.verdict in _DECIDED for cell in cells.values()):
                 break
-            double = _carrier_name(carrier) == "double"
             status(
                 f"{_point_text(index, points)}: poles against Catani's operator "
-                f"({_carrier_name(carrier)})"
+                f"({name})"
             )
-            at, improved = _improved(executor, point, scale, carrier, kinematics)
+            moved, mu, improved = at(carrier)
+            improvements[name] = improved
             try:
                 result = _evaluate(
                     executor,
-                    at,
-                    scale,
+                    moved,
+                    mu,
                     carrier,
-                    stability.RECOMMENDED_CHECKS if double else None,
+                    stability.RECOMMENDED_CHECKS if name == "double" else None,
                 )
             except FailedPoints as error:
-                refusal = f"{_carrier_name(carrier)} refused: {error}"
-                if evaluated:
-                    # The earlier carrier's rows stay (never a pass) and say
-                    # that this carrier was refused.
-                    for key in pending:
-                        decided[key] = _refused(decided[key], refusal)
+                refusals.append(f"{name} refused: {error}")
+                refused_step(cells, str(error), name)
                 continue
-            sectors = list(result.components["virtual"])
-            formed = result.ir_poles is not None
-            found = _pole_rows(result, index, _carrier_name(carrier), tolerance_)
-            if improved is not None:
-                found = {
-                    key: _with(row, kinematics=improved) for key, row in found.items()
-                }
             if not evaluated:
-                decided = {
-                    key: _with(row, fallback=refusal) if refusal else row
-                    for key, row in found.items()
-                }
-            else:
-                for key in pending:
-                    earlier = decided[key]
-                    decided[key] = (
-                        _with(found[key], fallback=_not_passed(earlier))
-                        if key in found
-                        else _refused(
-                            earlier, f"{_carrier_name(carrier)} has no such row"
-                        )
-                    )
-            evaluated = True
-            refusal = None
-            last = (carrier, result, at)
-        if last is not None and last[0] is carriers[-1]:
-            _rung(
-                decided,
-                carriers[-1],
-                _pole_rerun(executor, index, rung, tolerance_, kinematics),
-                rung,
+                sectors = list(result.components["virtual"])
+                formed = result.ir_poles is not None
+            ladder_step(
+                cells,
+                _pole_measures(result),
+                name,
+                getattr(carrier, "unit_roundoff", None),
+                tolerance_,
             )
+            evaluated = True
         if not evaluated:
             rows.append(
                 CheckRow(
@@ -953,32 +1221,29 @@ def born_interfered_rows(
                     index,
                     None,
                     INCONCLUSIVE,
-                    reason=f"inconclusive: {refusal}",
+                    reason="inconclusive: " + "; ".join(refusals),
                     tolerance=tolerance_,
                 )
             )
-        rows.extend(decided.values())
-        rows.extend(
-            _unpredicted_rows(
-                target, sectors, formed, index, {key[0] for key in decided}
+        for key, cell in finished(cells).items():
+            rows.append(
+                row_from_cells(
+                    "poles",
+                    cell.measure.label,
+                    index,
+                    {key: cell},
+                    tolerance_,
+                    improvements,
+                    stages,
+                )
             )
+        rows.extend(
+            _unpredicted_rows(target, sectors, formed, index, {key[0] for key in cells})
         )
         # Ward identities on every gluon and photon leg.
         if legs and excluded is None:
             status(f"{_point_text(index, points)}: Ward identities, {_legs(legs)}")
-            rows.extend(
-                _born_ward_rows(
-                    executor,
-                    point,
-                    scale,
-                    legs,
-                    carriers,
-                    index,
-                    tolerance_,
-                    rung,
-                    kinematics,
-                )
-            )
+            rows.extend(_born_ward_rows(executor, index, stages, at, legs, tolerance_))
     if excluded is not None:
         rows.append(_not_applicable_ward(legs, excluded))
     if not legs:
@@ -1009,197 +1274,162 @@ def born_interfered_rows(
     return rows
 
 
-def _pole_rerun(
-    executor: Any,
-    index: int,
-    rung: Rung | None,
-    tolerance_: float,
-    kinematics: Any = None,
-) -> Any:
-    """The rung's ``run_at`` of a point's pole rows: the point lifted for
-    the arbitrary-precision carrier and improved there like every rung's
-    (``_improved``, m-lit lit-psimprove (G5)), evaluated with
-    ``RECOMMENDED_CHECKS`` (its estimate is reported) and judged by
-    ``_pole_rows``."""
-
-    from . import stability
-    from .plan_export import FailedPoints
-
-    def run_at(carrier: Any, keys: list[Any]) -> Any:
-        assert rung is not None
-        point, scale = rung.lift(index, carrier)
-        point, improved = _improved(executor, point, scale, carrier, kinematics)
-        try:
-            result = _evaluate(
-                executor, point, scale, carrier, stability.RECOMMENDED_CHECKS
-            )
-        except FailedPoints as error:
-            return f"arbitrary ({carrier.digits} digits) refused: {error}"
-        found = _pole_rows(result, index, "arbitrary", tolerance_)
-        return {
-            key: _with(found[key], kinematics=improved) for key in keys if key in found
-        }
-
-    return run_at
-
-
 def _with(row: CheckRow, **changes: Any) -> CheckRow:
-    from dataclasses import replace
-
     return replace(row, **changes)
 
 
-def _refused(row: CheckRow, refusal: str) -> CheckRow:
-    """``row`` (an earlier carrier's row that did not pass) when a later
-    carrier cannot judge it (a refusal, or no such row there): inconclusive
-    (the carrier that would decide computed no R or S; never a pass), with
-    the refusal and the earlier carrier's measurement in its reason."""
-
-    earlier = f"R / S {row.deviation} at {row.carrier}"
-    if row.verdict == INCONCLUSIVE and row.reason:
-        earlier = f"{earlier} ({row.reason})"
-    return _with(
-        row, verdict=INCONCLUSIVE, reason=f"inconclusive: {refusal}; {earlier}"
-    )
-
-
-def _ward_measures(physical: Any, result: Any) -> list[Measure]:
-    """The required rows of one Ward evaluation (module docstring): per Born
-    sector R = |loop-side Born|, P = T = |physical Born| (a tree is its own
-    term); per virtual sector and Laurent coefficient R = |V_k| of the
-    substituted evaluation, P = |V_k| of the physical one, T = the physical
-    evaluation's largest part (``_largest_part``), E the substituted
-    evaluation's estimate where formed. A sector or coefficient only one of
-    the two evaluations has is a missing operand (R None: inconclusive),
-    never skipped."""
-
-    out: list[Measure] = []
-    loop_born = result.loop_born
-    born = physical.born or {}
-    if loop_born is None:
-        out.append(Measure("Born", None, None, None))
-    else:
-        for sector in dict.fromkeys([*born, *loop_born]):
-            size = magnitude(born[sector]) if sector in born else None
-            out.append(
-                Measure(
-                    f"Born {_sector_name(sector)}",
-                    magnitude(loop_born[sector]) if sector in loop_born else None,
-                    size,
-                    size,
-                )
-            )
-    virtual = result.components["virtual"]
-    reference = physical.components["virtual"]
-    estimate = result.stability
-    for sector in dict.fromkeys([*reference, *virtual]):
-        laurent = virtual.get(sector)
-        width = len(reference[sector].coefficients) if sector in reference else None
-        if laurent is None or width is None or len(laurent.coefficients) != width:
-            out.append(
-                Measure(
-                    f"{_sector_name(sector)} (a sector or coefficient only one "
-                    "evaluation has)",
-                    None,
-                    None,
-                    None,
-                )
-            )
-            continue
-        for k in range(width):
-            error = None
-            if estimate is not None and sector in estimate.absolute:
-                error = magnitude(estimate.absolute[sector].coefficients[k])
-            out.append(
-                Measure(
-                    f"{_sector_name(sector)} {COEFFICIENT_NAMES[k]}",
-                    magnitude(laurent.coefficients[k]),
-                    magnitude(reference[sector].coefficients[k]),
-                    _largest_part(physical.components, sector, k),
-                    error,
-                )
-            )
-    return out
-
-
-COEFFICIENT_NAMES = ("finite", "1/eps", "1/eps^2")
-
-
-def _judged_row(
+def row_from_cells(
     check: str,
     subject: str,
-    index: int,
-    carrier: str,
-    measures: Sequence[Measure],
+    index: int | None,
+    cells: Mapping[Any, Judgement],
     tolerance_: float,
+    improvements: Mapping[str, Any] | None = None,
+    stages: Sequence[Any] = (),
 ) -> CheckRow:
-    """One row made of the required rows ``measures``, each judged on its
-    own first (``judge``), then ``combined`` over the rows with a term: the
-    largest R / S is shown with its R, P, T, the one of P and K T that set
-    S and its E / S; an inconclusive part names its label; rows without any
-    term are counted (``vacuous``) and skipped, and a row all of whose parts
-    are vacuous is VACUOUS (nothing to test: the quantity vanishes
-    identically)."""
+    """A check row from its independently required rows' final verdicts
+    (``aggregate``): the deciding row (``worst_cell``) gives the carrier, R
+    over its scale, R, P, E_P, T, the scale that decided and the earlier
+    carriers' outcomes (``fallback``); every row's record is kept
+    (``cells``, ``cell_record``); an inconclusive row names its reason, a
+    vacuous one is counted."""
 
-    verdicts = []
-    reasons = []
-    vacuous = 0
-    worst: tuple[float, Measure, str | None, float | None] | None = None
-    for measure in measures:
-        verdict = judge(measure, tolerance_)
-        if verdict == VACUOUS:
-            vacuous += 1
-            continue
-        verdicts.append(verdict)
-        if verdict == INCONCLUSIVE:
-            reasons.append(f"{measure.label}: {_uncomputed(measure)}")
-            continue
-        scale, by = scale_of(measure.physical, measure.terms, tolerance_)
-        measured = over(measure.residue, scale)
-        if measured is not None and (worst is None or measured >= worst[0]):
-            worst = (measured, measure, by, scale)
-    if not verdicts and vacuous:
-        verdict = VACUOUS
+    verdict = aggregate(cells)
+    worst = worst_cell(cells)
+    vacuous = sum(1 for cell in cells.values() if cell.verdict == VACUOUS)
+    reason = None
+    if verdict == INCONCLUSIVE:
+        open_ = [
+            f"{cell.measure.label}: {cell.reason}"
+            for cell in cells.values()
+            if cell.verdict in (INCONCLUSIVE, AMBIGUOUS)
+        ]
+        more = f" (and {len(open_) - 3} more)" if len(open_) > 3 else ""
+        reason = "inconclusive: " + ("; ".join(open_[:3]) or "nothing compared") + more
+    elif verdict == VACUOUS:
         reason = (
             "nothing to test: the quantity vanishes identically (every row "
             "vacuous: no term)"
         )
-    else:
-        verdict = combined(verdicts)
-        reason = None
-        if verdict == INCONCLUSIVE:
-            reason = "inconclusive: " + ("; ".join(reasons) or "nothing compared")
-        elif vacuous:
-            reason = f"{vacuous} vacuous row(s) (no term) skipped"
+    elif vacuous:
+        reason = f"{vacuous} vacuous row(s) (no term) skipped"
     if worst is None:
         return CheckRow(
             check,
             subject,
             index,
-            carrier,
+            None,
             verdict,
             reason=reason,
             tolerance=tolerance_,
             vacuous=vacuous,
         )
-    measured, measure, by, scale = worst
+    m = worst.measure
+    scale = (
+        m.physical
+        if worst.scale == PHYSICAL
+        else m.terms
+        if worst.scale == TERM_RELATIVE
+        else None
+    )
+    digits = next(
+        (
+            carrier.digits
+            for carrier in stages
+            if _carrier_name(carrier) == "arbitrary" and worst.carrier == "arbitrary"
+        ),
+        None,
+    )
     return CheckRow(
         check,
         subject,
         index,
-        carrier,
+        worst.carrier,
         verdict,
-        _short(measured / tolerance_),
-        _short(measured),
-        _short(over(measure.estimate, scale)),
-        reason=reason,
+        _short(None if worst.ratio is None else worst.ratio / tolerance_),
+        _short(worst.ratio),
+        _short(over(m.estimate, scale)),
+        fallback="; ".join(worst.history) or None,
+        reason=reason if verdict != PASS or vacuous else None,
+        digits=digits,
         tolerance=tolerance_,
-        residue=_short(measure.residue),
-        physical=_short(measure.physical),
-        terms=_short(measure.terms),
-        scale_by=by,
+        residue=_short(m.residue),
+        physical=_short(m.physical),
+        terms=_short(m.terms),
+        scale_by=worst.scale or (VACUOUS if worst.verdict == VACUOUS else None),
         vacuous=vacuous,
+        physical_error=_short(m.physical_error),
+        cells=tuple(cell_record(cell) for cell in cells.values()),
+        kinematics=(improvements or {}).get(worst.carrier or ""),
     )
+
+
+def _ward_measures(physical: Any, result: Any) -> dict[Any, Measure]:
+    """The required rows of one Ward evaluation (module docstring), keyed by
+    label: per Born sector R = |loop-side Born|, P = T = |physical Born| (a
+    tree is its own term); per virtual sector and Laurent coefficient R =
+    |V_k| of the substituted evaluation, P = |V_k| of the physical one (E_P:
+    its estimate where the physical evaluation ran its checks), T = the
+    physical evaluation's largest part (``_largest_part``), E the
+    substituted evaluation's estimate. Every sector and coefficient of
+    either evaluation is required: one only one of them has is a missing
+    operand (incomplete: inconclusive), never skipped or vacuous."""
+
+    out: dict[Any, Measure] = {}
+    loop_born = result.loop_born
+    born = physical.born or {}
+    if loop_born is None:
+        out["Born"] = Measure("Born", None, None, None, complete=False)
+    else:
+        for sector in dict.fromkeys([*born, *loop_born]):
+            size = magnitude(born[sector]) if sector in born else None
+            label = f"Born {_sector_name(sector)}"
+            out[label] = Measure(
+                label,
+                magnitude(loop_born[sector]) if sector in loop_born else None,
+                size,
+                size,
+                complete=sector in born and sector in loop_born,
+            )
+    virtual = result.components["virtual"]
+    reference = physical.components["virtual"]
+    estimate = result.stability
+    physical_estimate = physical.stability
+    widths = [len(laurent.coefficients) for laurent in reference.values()]
+    width = max(widths, default=0)
+    for sector in dict.fromkeys([*reference, *virtual]):
+        laurent = virtual.get(sector)
+        mine = reference.get(sector)
+        for k in range(width):
+            label = f"{_sector_name(sector)} {COEFFICIENT_NAMES[k]}"
+            present = (
+                laurent is not None
+                and mine is not None
+                and len(laurent.coefficients) > k
+                and len(mine.coefficients) > k
+            )
+            if not present:
+                out[label] = Measure(label, None, None, None, complete=False)
+                continue
+            error = physical_error = None
+            if estimate is not None and sector in estimate.absolute:
+                error = magnitude(estimate.absolute[sector].coefficients[k])
+            if physical_estimate is not None and sector in physical_estimate.absolute:
+                physical_error = magnitude(
+                    physical_estimate.absolute[sector].coefficients[k]
+                )
+            out[label] = Measure(
+                label,
+                magnitude(laurent.coefficients[k]),
+                magnitude(mine.coefficients[k]),
+                _largest_part(physical.components, sector, k),
+                error,
+                physical_error,
+            )
+    return out
+
+
+COEFFICIENT_NAMES = ("finite", "1/eps", "1/eps^2")
 
 
 def _ward_subject(leg: int, factor: Any) -> str:
@@ -1228,17 +1458,16 @@ def _ward_found(
     keys: Sequence[Any],
     legs: Sequence[int],
     carrier: Any,
-    index: int,
-    tolerance_: float,
-) -> dict[Any, CheckRow]:
+) -> dict[Any, dict[Any, Measure]]:
     """The Ward rows ``keys`` ((leg, factor)) of one point evaluated in
-    ``carrier`` (``ward.ward_check``, binary64 with its estimate's checks),
-    judged by ``_ward_measures``; a refused run raises ``FailedPoints``."""
+    ``carrier`` (``ward.ward_check``: the physical evaluation runs its
+    reduction-direction check in binary64), per (leg, factor) its required
+    rows (``_ward_measures``); a refused run raises ``FailedPoints``."""
 
     from . import ward
 
     name = _carrier_name(carrier)
-    found: dict[Any, CheckRow] = {}
+    found: dict[Any, dict[Any, Measure]] = {}
     for batch_legs, factors in _ward_batches(keys, legs):
         check = ward.ward_check(
             executor,
@@ -1252,102 +1481,89 @@ def _ward_found(
         )
         for row, result in zip(check["rows"], check["results"], strict=True):
             key = (row["leg"], tuple(row["factor"]))
-            found[key] = _judged_row(
-                "ward",
-                _ward_subject(*key),
-                index,
-                name,
-                _ward_measures(check["physical"], result),
-                tolerance_,
-            )
+            found[key] = _ward_measures(check["physical"], result)
     return found
 
 
 def _born_ward_rows(
     executor: Any,
-    point: Any,
-    scale: Any,
-    legs: Sequence[int],
-    carriers: Sequence[Any],
     index: int,
+    stages: Sequence[Any],
+    at: Callable[[Any], tuple[Any, Any, Any]],
+    legs: Sequence[int],
     tolerance_: float,
-    rung: Rung | None = None,
-    kinematics: Any = None,
 ) -> list[CheckRow]:
+    """The Ward rows of one point, per (leg, factor) and per required row
+    (Born sector, virtual sector and coefficient) up the ladder of
+    ``stages`` (``ladder_step``): each row keeps its first decision, a
+    pending row absent from a later carrier is inconclusive, a refusal
+    leaves the next carrier to try; one check row per (leg, factor) from
+    its rows' final verdicts (``row_from_cells``)."""
+
     from . import ward
     from .plan_export import FailedPoints
 
-    decided: dict[Any, CheckRow] = {}
-    lifted = point
     every = [(leg, factor) for leg in legs for factor in ward.WARD_FACTORS]
-    for carrier in carriers:
+    cells: dict[Any, dict[Any, Judgement]] = {key: {} for key in every}
+    seen: set[Any] = set()
+    refusals: dict[Any, list[str]] = {key: [] for key in every}
+    improvements: dict[str, Any] = {}
+    for carrier in stages:
         name = _carrier_name(carrier)
-        point, improved = _improved(executor, lifted, scale, carrier, kinematics)
         pending = [
             key
             for key in every
-            if key not in decided or decided[key].verdict not in (PASS, VACUOUS)
+            if key not in seen
+            or any(cell.verdict not in _DECIDED for cell in cells[key].values())
         ]
         if not pending:
             break
+        moved, mu, improved = at(carrier)
+        improvements[name] = improved
         try:
-            found = _ward_found(
-                executor, point, scale, pending, legs, carrier, index, tolerance_
-            )
+            found = _ward_found(executor, moved, mu, pending, legs, carrier)
         except FailedPoints as error:
-            refusal = f"{name} refused: {error}"
             for key in pending:
-                earlier = decided.get(key)
-                decided[key] = (
-                    CheckRow(
-                        "ward",
-                        _ward_subject(*key),
-                        index,
-                        name,
-                        INCONCLUSIVE,
-                        reason=f"inconclusive: {refusal}",
-                        tolerance=tolerance_,
-                    )
-                    if earlier is None
-                    else _refused(earlier, refusal)
-                )
+                refusals[key].append(f"{name} refused: {error}")
+                refused_step(cells[key], str(error), name)
             continue
         for key in pending:
-            earlier = decided.get(key)
-            if key not in found:
-                row = CheckRow(
+            if key in found:
+                seen.add(key)
+            ladder_step(
+                cells[key],
+                found.get(key),
+                name,
+                getattr(carrier, "unit_roundoff", None),
+                tolerance_,
+            )
+    rows = []
+    for key in every:
+        if key not in seen:
+            rows.append(
+                CheckRow(
                     "ward",
                     _ward_subject(*key),
                     index,
-                    name,
+                    None,
                     INCONCLUSIVE,
-                    reason=f"inconclusive: {name} has no such row",
+                    reason="inconclusive: " + "; ".join(refusals[key]),
                     tolerance=tolerance_,
                 )
-            else:
-                row = _with(found[key], kinematics=improved)
-            if earlier is not None:
-                row = _with(row, fallback=_not_passed(earlier))
-            decided[key] = row
-
-    def run_at(carrier: Any, keys: list[Any]) -> Any:
-        assert rung is not None
-        relifted, at = rung.lift(index, carrier)
-        relifted, improved = _improved(executor, relifted, at, carrier, kinematics)
-        try:
-            found = _ward_found(
-                executor, relifted, at, keys, legs, carrier, index, tolerance_
             )
-        except FailedPoints as error:
-            return f"arbitrary ({carrier.digits} digits) refused: {error}"
-        return {
-            key: _with(row, carrier="arbitrary", kinematics=improved)
-            for key, row in found.items()
-        }
-
-    if decided and carriers:
-        _rung(decided, carriers[-1], run_at, rung)
-    return list(decided.values())
+            continue
+        rows.append(
+            row_from_cells(
+                "ward",
+                _ward_subject(*key),
+                index,
+                finished(cells[key]),
+                tolerance_,
+                improvements,
+                stages,
+            )
+        )
+    return rows
 
 
 def induced_rows(
@@ -1477,8 +1693,8 @@ def induced_rows(
 
 
 def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
-    """A generation-time probe's decided result as a check row (its verdict
-    the threshold rule's, ``induced.probe_verdict``)."""
+    """A generation-time probe's decided result as a check row, from its
+    required rows' final verdicts (``row_from_cells``)."""
 
     probe = entry["probe"]
     check = {"finiteness": "poles", "ward": "ward", "goldstone": "goldstone"}[probe]
@@ -1511,38 +1727,15 @@ def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
             kinematics=improved,
             tolerance=tolerance(),
         )
-    deviation = estimate = None
-    relative = getattr(result, "relative", None) or {}
-    if relative and result.ratios:
-        key = max(result.ratios, key=lambda k: result.ratios[k])
-        if key in relative:
-            deviation, estimate = relative[key]
-    worst = getattr(result, "worst_row", None) or (None,) * 5
-    verdict = result.verdict
-    reason = result.reason
-    if verdict == INCONCLUSIVE:
-        reason = f"inconclusive: {reason}"
-    elif verdict != VACUOUS and getattr(result, "vacuous", 0):
-        reason = f"{result.vacuous} vacuous row(s) (no term) skipped"
-    return CheckRow(
+    row = row_from_cells(
         check,
         subject,
         index,
-        entry["carrier"],
-        verdict,
-        _short(None if deviation is None else deviation / result.tolerance),
-        _short(deviation),
-        _short(estimate),
-        fallback=fallback_text,
-        reason=reason,
-        kinematics=improved,
-        tolerance=result.tolerance,
-        residue=_short(worst[1]),
-        physical=_short(worst[2]),
-        terms=_short(worst[3]),
-        scale_by=worst[4],
-        vacuous=getattr(result, "vacuous", 0),
+        result.final,
+        result.tolerance,
+        entry.get("kinematics", {}),
     )
+    return _with(row, fallback=row.fallback or fallback_text)
 
 
 def check_request(
@@ -1706,6 +1899,7 @@ __all__ = [
     "NO_PREDICTION",
     "PASS",
     "PASSED",
+    "RULE",
     "UNDECIDED",
     "VACUOUS",
     "VERDICTS",
@@ -1723,9 +1917,10 @@ __all__ = [
     "induced_rows",
     "interrupted_row",
     "judge",
+    "ladder_step",
     "reporting",
     "rung_digits",
-    "scale_of",
+    "settle",
     "status",
     "status_of",
     "threshold",

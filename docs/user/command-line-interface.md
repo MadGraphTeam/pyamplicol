@@ -1543,48 +1543,58 @@ sets a scattering's energy in the model's mass unit, above its threshold),
 lifted to exact momentum conservation, at mu_R^2 = the squared invariant mass
 of the initial state, on NinjaRS at every carrier:
 
-**The rule.** Every row passes iff its residue R is below K times its scale
-S, R < K S, equality a miss, with
+**The rule.** Every row is judged from its residue R, its **physical
+reference** P (the size of the physical quantities whose difference or
+vanishing the identity tests, at the same point, carrier and row or sector),
+the estimate E_P of P's own numerical uncertainty where the evaluation forms
+one, and its **term scale** T (the size of the terms that cancel into it).
+K is `--tolerance K` (`check.tolerance`), by default the requested relative
+accuracy (`--reduction-target`, `evaluation.reduction_target`, default
+1e-5), so K is of the order of the requested number of stable digits.
 
-    S = max(P, K T):
+1. A required operand missing or not a finite number: `inconclusive`.
+2. No contributing term at all (R = 0 and T = 0): `vacuous`, skipped.
+3. A known-zero reference (a Catani pole that vanishes exactly; the poles of
+   a loop-induced amplitude on both sides of the Goldstone identity): passes
+   iff R < K T, labelled term-relative.
+4. R < K P: passes on the physical scale (equality is a miss).
+5. Otherwise a miss. Where R < K T would pass and P may be noise (P = 0 from
+   cancelling terms, or P <= 10 E_P; with no estimate a finite P > 0 is
+   physical), only that row is evaluated at the next carrier at the same
+   point: if P **reproduces** (agrees within K) the row fails on the
+   physical scale; if P **collapses** with the carrier's noise (it falls by
+   at least the square root of the ratio of the two carriers' unit
+   roundoffs) the row is judged R < K T, labelled term-relative; otherwise,
+   or without a wider carrier, it is `inconclusive` (physical normalisation
+   unresolved). Any other miss climbs the carrier ladder and fails if the
+   last carrier still misses.
 
-P the row's **physical reference** (the size of the physical quantities whose
-difference or vanishing the identity tests, at the same point and row or
-sector) and T its **term scale** (the size of the terms that cancel into it).
-K T only guards a row whose physical reference is below what the computation
-resolves: there the test becomes R < K^2 T, which rounding passes and which
-escalates to the next carrier when K is tight. K is `--tolerance K`
-(`check.tolerance`), by default the requested relative accuracy
-(`--reduction-target`, `evaluation.reduction_target`, default 1e-5), so K is
-of the order of the requested number of stable digits. Each independently
-required row (a point, a sector or loop order and helicity row, a leg and
-factor, a Laurent coefficient) is compared on its own before any
-aggregation. R, P and T are linear in the amplitude: an amplitude-level row
-compares colour-metric norms (the square roots of the squared forms), an
-interference-level row the interference itself, so K is a relative accuracy
-of the checked quantity. The comparison uses the carrier's ordinary
-arithmetic: this is a tolerance, not a certificate.
+Each independently required row (a point, a sector or loop order and
+helicity row, a leg and factor, a Laurent coefficient) is decided on its
+own: it keeps its first decision up the ladder, a pending row a later
+carrier lacks is inconclusive, and a check's verdict is formed at the end
+from its rows' verdicts (fail, else inconclusive, else pass, else vacuous).
+R, P and T are linear in the amplitude: an amplitude-level row compares
+colour-metric norms (the square roots of the squared forms, recomputed
+exactly from the carrier values where the form cancels below its terms'
+rounding), an interference-level row the interference itself, so K is a
+relative accuracy of the checked quantity. The comparison uses the
+carrier's ordinary arithmetic: this is a tolerance, not a certificate.
 
 | Check | R | P | T |
 | --- | --- | --- | --- |
-| poles, Born-interfered | \|Re V_k - Re C_k\| per squared-order sector and pole coefficient k (V the renormalised virtual, C Catani's prediction of the requested corrections, QCD; QED where requested, formed natively) | max(\|Re C_k\|, \|Re V_k\|) | the largest part (bare, R2, UV) of that sector and coefficient |
-| poles, loop-induced (finiteness) | the colour-metric norm of each pole coefficient of each loop order and helicity row | the norm of that row's physical finite amplitude | the row's term floor S_k(h) |
-| ward, Born-interfered | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i: per Born sector \|loop-side Born\|; per virtual sector and coefficient \|V_k\| | per Born sector \|physical Born\|; per virtual sector and coefficient \|V_k\| of the physical evaluation | per Born sector \|physical Born\|; per virtual sector and coefficient its largest physical part |
+| poles, Born-interfered | \|Re V_k - Re C_k\| per squared-order sector and pole coefficient k (V the renormalised virtual, C Catani's prediction of the requested corrections, QCD; QED where requested, formed natively) | max(\|Re C_k\|, \|Re V_k\|) (a C_k exactly zero: a known zero) | the largest of the virtual and its parts (bare, R2, UV) of that sector and coefficient |
+| poles, loop-induced (finiteness) | the colour-metric norm of each pole coefficient of each loop order and helicity row | the norm of that row's physical finite amplitude (with its estimate E_P) | the row's term floor S_k(h) |
+| ward, Born-interfered | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i: per Born sector \|loop-side Born\|; per virtual sector and coefficient \|V_k\| | per Born sector \|physical Born\|; per virtual sector and coefficient \|V_k\| of the physical evaluation (E_P its estimate in binary64) | per Born sector \|physical Born\|; per virtual sector and coefficient its largest physical part |
 | ward, loop-induced | epsilon_j -> p_j / E_j on one leg of every gluon and photon species: the norm of the substituted amplitude at every coefficient | the norm of the physical finite amplitude of that row (the largest over the substituted leg's helicities) | the physical row's term floor |
-| goldstone | \|\|A(V)_k - eta (M/E) A(G)_k\|\| on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge (loop-induced) | max(\|\|A(V)_k\|\|, \|\|eta (M/E) A(G)_k\|\|) | the vector row's floor plus M/E times the Goldstone row's |
+| goldstone | \|\|A(V)_k - eta (M/E) A(G)_k\|\| over the rows of both sides, on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge (loop-induced) | max(\|\|A(V)_k\|\|, \|\|eta (M/E) A(G)_k\|\|) (the poles: a known zero) | the vector row's floor plus M/E times the Goldstone row's |
 
-A row with no term at all (R = 0 exactly and T = 0: a coefficient that
-neither the prediction nor any part has, such as the double pole of a process
-with only massive coloured legs, or a helicity row that vanishes
-structurally) is **vacuous**: it is skipped and counted, neither a pass nor
-an inconclusive. A check every row of which is vacuous has nothing to test
-(the amplitude vanishes identically, e.g. a zero coupling): it reads
-`vacuous`, prints a warning line and does not change the exit code. A row
-whose R, P or T cannot be computed (not a finite number, a sector or
-coefficient only one of the compared evaluations has, a refused run, or S not
-positive) is `inconclusive`, never a pass. A row made of several required
-rows (a Ward leg and factor over its sectors and coefficients, a probe over
-its rows) fails if one of them fails, else is inconclusive if one of them is.
+A check every row of which is vacuous has nothing to test (the amplitude
+vanishes identically, e.g. a zero coupling): it reads `vacuous`, prints a
+warning line and does not change the exit code. A row whose R, P or T cannot
+be computed (not a finite number, a sector, row or coefficient only one of
+the compared evaluations has, a refused run) is `inconclusive`, never a
+pass.
 
 `--precision auto` (default) runs binary64 first, double-double only for a
 row binary64 does not pass, and, for a Born-interfered row double-double does
@@ -1619,11 +1629,13 @@ external gluon or photon, no massive vector, a unitary-gauge request) reads
 "not run". None of these is a pass.
 
 Every row names the check, its subject (sector and pole, leg and factor),
-the point, the carrier that decided, `R / S` (the largest over the row's
-parts; `deviation` in JSON) with that part's `R`, `P` and `T` (`residue`,
-`physical`, `terms`) and `S by` (`scale_by`: `P`, or `K T` where the noise
-guard set S), the count of its vacuous parts (`vacuous`), `K` (`tolerance`),
-the evaluation's error
+the point, the carrier that decided, `R / scale` (of the row that decided;
+`deviation` in JSON) with that row's `R`, `P`, `E_P` and `T` (`residue`,
+`physical`, `physical_error`, `terms`) and `scale` (`scale_by`: physical,
+term-relative or vacuous), every required row's record (`cells` in JSON:
+label, verdict, scale, ratio, R, P, E_P, T, deciding carrier, reason), the
+count of its vacuous rows (`vacuous`), `K` (`tolerance`), the evaluation's
+error
 estimate over the same scale (`E / S (info)`, `estimate`: reported, it
 decides nothing), the fallback's reason and the verdict; `ratio` in JSON is
 (R / S) / K (below 1 passes). A process's status is a closed aggregate:

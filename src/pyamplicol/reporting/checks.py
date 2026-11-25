@@ -30,8 +30,9 @@ def _number(value: float | None) -> str:
 def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
     """The header (what was checked and how, the tolerance K), one table per
     process (every row: check, subject, point, deciding carrier, the
-    measured R / S with its R, P and T and which of P and K T set S, the K
-    it was judged with, the estimate E / S for information
+    measured R over the scale that decided (physical P or term-relative T)
+    with its R, P, E_P and T, the K it was judged with, the estimate E over
+    that scale for information
     (``checks.CheckRow``), verdict, fallback or reason), a warning line per
     vacuous row (nothing to test) and the overall verdict with the exit
     code."""
@@ -58,9 +59,9 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
             ),
             (
                 "rule",
-                "a row passes iff R < K S, S = max(P, K T) (R its residue, P its "
-                "physical reference, T its term scale; a tolerance, not a "
-                "certificate)"
+                "per row R < K P (R its residue, P its physical reference); a "
+                "known-zero reference R < K T (T its term scale, term-relative); "
+                "a tolerance, not a certificate"
                 + (
                     ""
                     if getattr(report, "tolerance", None) is None
@@ -78,11 +79,12 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 "subject",
                 "point",
                 "carrier",
-                "R / S",
+                "R / scale",
                 "R",
                 "P",
+                "E_P",
                 "T",
-                "S by",
+                "scale",
                 "K",
                 "E / S (info)",
                 "verdict",
@@ -123,6 +125,7 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                     _number(row.deviation),
                     _number(getattr(row, "residue", None)),
                     _number(getattr(row, "physical", None)),
+                    _number(getattr(row, "physical_error", None)),
                     _number(getattr(row, "terms", None)),
                     getattr(row, "scale_by", None) or "",
                     _number(getattr(row, "tolerance", None)),

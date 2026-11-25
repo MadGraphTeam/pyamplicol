@@ -514,8 +514,9 @@ The walkthrough steps, in order:
    corrections and the Ward identity of every external gluon and photon; the
    loop-induced finiteness and Ward probes; the Goldstone-equivalence probe
    where it applies (otherwise its row reads "not applicable" with the
-   reason). Every row passes iff its residue R < K S, S the row's own scale
-   and K `--tolerance` (default: the requested relative accuracy, 1e-5); a
+   reason). Every row passes iff its residue R < K P, P its physical
+   reference, K `--tolerance` (default: the requested relative accuracy,
+   1e-5; a known-zero reference: R < K T, term-relative); a
    row binary64 does not pass runs in double-double, and a Born-interfered
    row double-double does not pass runs alone in arbitrary precision
    (`--arbitrary-digits` sets the digits), whose verdict is the row's. The

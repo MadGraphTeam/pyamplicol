@@ -712,11 +712,12 @@ def _check(report: Any) -> list[Block]:
                 ),
                 (
                     "rule",
-                    "a row passes iff R < K S with S = max(P, K T): R its "
-                    "residue, P its physical reference, T its term scale, K the "
-                    "check's tolerance (--tolerance; default the requested "
-                    "relative accuracy). A row with no term is vacuous. A "
-                    "tolerance, not a certificate",
+                    "per row R < K P: R its residue, P its physical reference, "
+                    "K the check's tolerance (--tolerance; default the requested "
+                    "relative accuracy); a known-zero reference R < K T (T its "
+                    "term scale, term-relative); a P that may be noise is "
+                    "settled by a wider carrier at the same point. A row with "
+                    "no term is vacuous. A tolerance, not a certificate",
                 ),
                 ("seconds", "the wall time of the whole check"),
                 (None, f"Regeneration: {report.regeneration}."),
@@ -735,12 +736,16 @@ def _check(report: Any) -> list[Block]:
                 ("subject", "the sector, coefficient or leg tested"),
                 ("carrier", "the precision that decided the row"),
                 (
-                    "R / S",
-                    "the residue over S = max(P, K T) (the largest over the "
-                    "row's sectors and coefficients); below K passes",
+                    "R / scale",
+                    "the deciding row's residue over the scale that decided it; "
+                    "below K passes",
                 ),
-                ("R, P, T", "that row's residue, physical reference and term scale"),
-                ("S by", "which of P and K T set S (K T: the noise guard)"),
+                (
+                    "R, P, E_P, T",
+                    "that row's residue, physical reference, the reference's own "
+                    "estimate and term scale",
+                ),
+                ("scale", "physical, term-relative or vacuous"),
                 ("K", "the tolerance the row was judged with"),
                 (
                     "E / S (info)",

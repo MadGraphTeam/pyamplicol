@@ -1398,168 +1398,26 @@ def _default_tolerance() -> float:
     return tolerance()
 
 
-def probe_verdict(
-    ratios: Mapping, undefined: Sequence[str], tolerance: float, vacuous: int = 0
-) -> str:
-    """The verdict of a probe from its required rows (``checks.judge`` each,
-    before any aggregation): FAIL if a measured R / S (``ratios``, per row
-    the largest over its coefficients) is not below ``tolerance``, else
-    INCONCLUSIVE if a row's R, P or T cannot be computed (``undefined``),
-    else PASS; VACUOUS when every row is vacuous (no term: the amplitude
-    vanishes identically), INCONCLUSIVE when nothing was compared."""
+class _Judged:
+    """The verdict properties of a probe result from its rows' judgements
+    (``cells``: row key -> ``checks.Judgement``; ``tolerance``): every
+    independently required row decides on its own, the aggregate is formed
+    from the rows' final verdicts (``checks.aggregate``)."""
 
-    from .checks import FAIL, INCONCLUSIVE, PASS, VACUOUS
-
-    if any(not ratio < tolerance for ratio in ratios.values()):
-        return FAIL
-    if undefined:
-        return INCONCLUSIVE
-    if not ratios:
-        return VACUOUS if vacuous else INCONCLUSIVE
-    return PASS
-
-
-def judged_rows(measures: Sequence[Any], tolerance: float) -> dict[str, Any]:
-    """The threshold rule over a probe's required rows ((key, ``checks.
-    Measure``) pairs, key a (loop order, row)): per key the largest R / S
-    (``ratios``) and its (R / S, E / S) (``relative``), the rows whose R, P
-    or T cannot be computed (``undefined``), the count of vacuous rows and
-    the worst row (label, R, P, T, the one of P and K T that set S)."""
-
-    from .checks import INCONCLUSIVE, VACUOUS, judge, scale_of
-
-    ratios: dict = {}
-    relative: dict = {}
-    undefined: list[str] = []
-    vacuous = 0
-    worst: tuple[float, Any, str | None] | None = None
-    for key, measure in measures:
-        verdict = judge(measure, tolerance)
-        if verdict == VACUOUS:
-            vacuous += 1
-            continue
-        if verdict == INCONCLUSIVE:
-            undefined.append(
-                f"{measure.label}: R {measure.residue}, P {measure.physical}, "
-                f"T {measure.terms}"
-            )
-            continue
-        scale, by = scale_of(measure.physical, measure.terms, tolerance)
-        ratio = measure.residue / scale
-        if key not in ratios or ratio >= ratios[key]:
-            ratios[key] = ratio
-            error = measure.estimate
-            relative[key] = (ratio, None if error is None else error / scale)
-        if worst is None or ratio >= worst[0]:
-            worst = (ratio, measure, by)
-    return {
-        "ratios": ratios,
-        "relative": relative,
-        "undefined": tuple(undefined),
-        "vacuous": vacuous,
-        "worst_row": None
-        if worst is None
-        else (
-            worst[1].label,
-            worst[1].residue,
-            worst[1].physical,
-            worst[1].terms,
-            worst[2],
-        ),
-    }
-
-
-def probe_measures(
-    estimates: Mapping, floors: Mapping, first: int
-) -> list[tuple[Any, Any]]:
-    """The required rows of one probe ((key, ``checks.Measure``) pairs): per
-    (loop order, row) of the evaluation and Laurent coefficient k >=
-    ``first``, R = the colour-metric residue (``amplitude_estimates``), P =
-    the row's physical finite-amplitude norm (``RowFloors.finite``), T = the
-    row's term floor at k, E the estimate (reported); a floor row the
-    evaluation lacks is a missing operand (R None)."""
-
-    from .checks import Measure
-
-    finite = getattr(floors, "finite", None) or {}
-    out: list[tuple[Any, Any]] = []
-    for key, entries in estimates.items():
-        floor = floors.get(key)
-        for k, (residue, estimate) in enumerate(entries):
-            if k < first:
-                continue
-            terms = None if floor is None or k >= len(floor) else _finite(floor[k])
-            out.append(
-                (
-                    key,
-                    Measure(
-                        f"{key} k={k}",
-                        _finite(residue),
-                        finite.get(key),
-                        terms,
-                        _finite(estimate),
-                    ),
-                )
-            )
-    out.extend(
-        (key, Measure(f"{key}: no amplitude row for its floor", None, None, None))
-        for key in floors
-        if key not in estimates
-    )
-    return out
-
-
-def _finite(value: Any) -> float | None:
-    """A non-negative magnitude as a finite binary64 number, else None."""
-
-    try:
-        found = float(value)
-    except (ArithmeticError, TypeError, ValueError):
-        return None
-    return found if math.isfinite(found) else None
-
-
-@dataclass(frozen=True)
-class ProbeResult:
-    """A loop-induced probe of one point (``probe``), judged by the
-    threshold rule (``checks.judge`` per row and coefficient,
-    ``probe_measures``, ``judged_rows``): per (loop order, row) the largest
-    R / S over the probed Laurent coefficients (``ratios``: R the
-    colour-metric residue, S = max(P, K T) with P the row's physical
-    finite-amplitude norm and T its term floor), the rows whose R, P or T
-    cannot be computed (``undefined``), the count of vacuous rows (no term),
-    the worst row (label, R, P, T, the one of P and K T that set S) and the
-    tolerance K; ``scales`` are the physical amplitude's row term floors;
-    ``relative`` holds, per (loop order, row), R / S and the estimate E over
-    S of the coefficient with the largest R / S (E is reported, it decides
-    nothing)."""
-
-    kind: str
-    ratios: Mapping[tuple[Orders, rx.Row], float]
-    scales: Mapping[tuple[Orders, rx.Row], Sequence[float]] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
-    relative: Mapping[tuple[Orders, rx.Row], tuple[float, float | None]] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
-    # Whether a run of the probe (its evaluation or a rotated one) served a
-    # reduction lane without accuracy evidence (``PointResult.
-    # uncertified_bound``): recorded; the verdict is the threshold rule's.
-    uncertified: bool = False
-    undefined: tuple[str, ...] = ()
-    tolerance: float = field(default_factory=_default_tolerance)
-    vacuous: int = 0
-    worst_row: tuple[Any, ...] | None = None
-    # The judged rows ((key, ``checks.Measure``) pairs, ``probe_measures``).
-    measures: tuple[Any, ...] = field(default=(), repr=False, compare=False)
+    cells: Mapping[Any, Any]
+    tolerance: float
 
     @property
-    def worst(self) -> float:
-        return max(self.ratios.values(), default=0.0)
+    def final(self) -> dict[Any, Any]:
+        from .checks import finished
+
+        return finished(self.cells)
 
     @property
     def verdict(self) -> str:
-        return probe_verdict(self.ratios, self.undefined, self.tolerance, self.vacuous)
+        from .checks import aggregate
+
+        return aggregate(self.final)
 
     @property
     def passed(self) -> bool:
@@ -1567,6 +1425,71 @@ class ProbeResult:
         row is vacuous (nothing to test, ``verdict`` "vacuous")."""
 
         return self.verdict in ("pass", "vacuous")
+
+    @property
+    def ratios(self) -> dict[Any, float]:
+        """Per (loop order, row) the largest R over its deciding scale."""
+
+        out: dict[Any, float] = {}
+        for (key, _k), cell in self.final.items():
+            if cell.ratio is not None and cell.verdict in ("pass", "fail"):
+                out[key] = max(out.get(key, 0.0), cell.ratio)
+        return out
+
+    @property
+    def worst(self) -> float:
+        return max(self.ratios.values(), default=0.0)
+
+    @property
+    def relative(self) -> dict[Any, tuple[float, float | None]]:
+        """Per (loop order, row): R / scale and E / scale of its deciding
+        coefficient (E reported only)."""
+
+        out: dict[Any, tuple[float, float | None]] = {}
+        for (key, _k), cell in self.final.items():
+            if cell.ratio is None or cell.verdict not in ("pass", "fail"):
+                continue
+            if key in out and out[key][0] > cell.ratio:
+                continue
+            m = cell.measure
+            scale = m.physical if cell.scale == "physical" else m.terms
+            error = None if m.estimate is None or not scale else m.estimate / scale
+            out[key] = (cell.ratio, error)
+        return out
+
+    @property
+    def undefined(self) -> tuple[str, ...]:
+        return tuple(
+            f"{cell.measure.label}: {cell.reason}"
+            for cell in self.final.values()
+            if cell.verdict == "inconclusive"
+        )
+
+    @property
+    def vacuous(self) -> int:
+        return sum(1 for cell in self.final.values() if cell.verdict == "vacuous")
+
+    @property
+    def deciding(self) -> Any:
+        """The row that decided the aggregate (``checks.worst_cell``)."""
+
+        from .checks import worst_cell
+
+        return worst_cell(self.final)
+
+    @property
+    def worst_row(self) -> tuple[Any, ...] | None:
+        """(label, R, P, T, scale) of the deciding row."""
+
+        cell = self.deciding
+        if cell is None:
+            return None
+        m = cell.measure
+        return (m.label, m.residue, m.physical, m.terms, cell.scale)
+
+    @property
+    def measures(self) -> tuple[tuple[Any, Any], ...]:
+        return tuple((key, cell.measure) for key, cell in self.cells.items())
 
     @property
     def reason(self) -> str | None:
@@ -1581,14 +1504,136 @@ class ProbeResult:
             )
         if verdict != "inconclusive":
             return None
-        if not self.undefined:
+        undefined = self.undefined
+        if not undefined:
             return "nothing compared"
-        more = len(self.undefined) - 1
-        return (
-            "R, P or T cannot be computed: "
-            + self.undefined[0]
-            + (f" (and {more} more)" if more else "")
+        more = len(undefined) - 1
+        return undefined[0] + (f" (and {more} more)" if more else "")
+
+
+def judged_cells(
+    measures: Mapping[Any, Any], tolerance: float, carrier: Any = None
+) -> dict[Any, Any]:
+    """The rows' judgements at one carrier (``checks.judge`` each; the
+    carrier's name and unit roundoff recorded for the ladder)."""
+
+    from dataclasses import replace
+
+    from .checks import judge
+
+    name = None if carrier is None else carrier.arithmetic
+    roundoff = None if carrier is None else carrier.unit_roundoff
+    return {
+        key: replace(judge(measure, tolerance), carrier=name, unit_roundoff=roundoff)
+        for key, measure in measures.items()
+    }
+
+
+def physical_references(estimates: Mapping) -> dict[Any, tuple[Any, Any]]:
+    """Per (loop order, row) of a physical evaluation its finite amplitude's
+    colour-metric norm P and that norm's estimate E_P (``amplitude_
+    estimates``' k = 0 entry): the probes' physical reference."""
+
+    return {
+        key: (_finite(entries[0][0]), _finite(entries[0][1]))
+        for key, entries in estimates.items()
+        if entries
+    }
+
+
+def ward_references(references: Mapping, leg: int) -> dict[Any, tuple[Any, Any]]:
+    """``physical_references`` for a Ward probe of leg ``leg``: per row the
+    largest P and E_P over the rows that differ from it only in that leg's
+    helicity (``ward_floors``); None where one of them is None."""
+
+    def merged(row):
+        return tuple((i, 0 if i == leg - 1 else h) for i, h in row)
+
+    widest: dict[Any, tuple[Any, Any]] = {}
+    for (order, row), (size, error) in references.items():
+        key = (order, merged(row))
+        known = widest.get(key, (0.0, 0.0))
+        widest[key] = (
+            None if size is None or known[0] is None else max(size, known[0]),
+            None if error is None or known[1] is None else max(error, known[1]),
         )
+    return {(order, row): widest[(order, merged(row))] for order, row in references}
+
+
+def probe_measures(
+    estimates: Mapping,
+    floors: Mapping,
+    first: int,
+    references: Mapping | None,
+    width: int,
+) -> dict[Any, Any]:
+    """The required rows of one probe ((loop order, row), k) -> ``checks.
+    Measure``: every row of the evaluation OR of the floors (their union)
+    and every Laurent coefficient k >= ``first`` of ``width``: R the
+    colour-metric residue (``amplitude_estimates``), P and E_P the row's
+    physical reference at the same point and carrier
+    (``physical_references``; None: unavailable), T the row's term floor at
+    k. A row or coefficient one operand lacks is incomplete (inconclusive),
+    never skipped."""
+
+    from .checks import Measure
+
+    references = references or {}
+    out: dict[Any, Any] = {}
+    for key in dict.fromkeys([*estimates, *floors]):
+        entries = estimates.get(key)
+        floor = floors.get(key)
+        size, error = references.get(key, (None, None))
+        for k in range(first, width):
+            present = (
+                entries is not None
+                and len(entries) > k
+                and floor is not None
+                and len(floor) > k
+                and key in references
+            )
+            out[(key, k)] = Measure(
+                f"{key} k={k}",
+                _finite(entries[k][0]) if present else None,
+                size if present else None,
+                _finite(floor[k]) if present else None,
+                _finite(entries[k][1]) if present else None,
+                error if present else None,
+                complete=present,
+            )
+    return out
+
+
+def _finite(value: Any) -> float | None:
+    """A non-negative magnitude as a finite binary64 number, else None."""
+
+    try:
+        found = float(value)
+    except (ArithmeticError, TypeError, ValueError):
+        return None
+    return found if math.isfinite(found) else None
+
+
+@dataclass(frozen=True)
+class ProbeResult(_Judged):
+    """A loop-induced probe of one point (``probe``): per required row
+    ((loop order, row), Laurent coefficient) its judgement (``cells``,
+    ``checks.judge``; R the colour-metric residue, P the norm of the
+    physical finite amplitude of that row at the same point and carrier
+    with its estimate E_P, T the row's term floor); the verdict and the
+    reported figures follow from them (``_Judged``). ``scales`` are the
+    physical amplitude's row term floors."""
+
+    kind: str
+    cells: Mapping[Any, Any]
+    scales: Mapping[tuple[Orders, rx.Row], Sequence[float]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    # Whether a run of the probe (its evaluation or a rotated one) served a
+    # reduction lane without accuracy evidence (``PointResult.
+    # uncertified_bound``): recorded; the verdict is the threshold rule's.
+    uncertified: bool = False
+    tolerance: float = field(default_factory=_default_tolerance)
 
 
 class ProbePointRefused(ArithmeticError):
@@ -1862,12 +1907,16 @@ def probe_results(
     physical: Mapping | None = None,
     tolerance: float | None = None,
 ) -> list[ProbeResult | str]:
-    """``probes``, with a probe whose run (direct or rotated) the backend
-    refuses in the carrier returned as the refusal's text ("the probe point
-    failed: ..."), the other probes' results unchanged (the runs of a batch
-    are independent points). A refused rotated run only drops that rotation
-    from the reported estimate (R and S do not read it). ``tolerance``: K
-    (None: ``checks.tolerance``)."""
+    """``probes``, with a probe whose direct run the backend refuses in the
+    carrier returned as the refusal's text ("the probe point failed: ..."),
+    the other probes' results unchanged (the runs of a batch are
+    independent points). The physical evaluation (Ward value None) is in
+    every batch: its finite amplitude per row is the probes' physical
+    reference P with its estimate E_P (``physical_references``), at the same
+    point and carrier as the residues; refused, the rows have no P
+    (inconclusive). A refused rotated run only drops that rotation from the
+    estimates (R, P and T do not read it). ``tolerance``: K (None:
+    ``checks.tolerance``)."""
 
     from .assemble import Precision, _fraction
     from .stability import RECOMMENDED_CHECKS
@@ -1879,13 +1928,20 @@ def probe_results(
     frame = checks.frame
     if frame is None:
         raise ValueError("a probe needs the reduction re-test")
+    runs_of = list(wards) if None in wards else [*wards, None]
+    reference = runs_of.index(None)
     exact = tuple(tuple(_fraction(x) for x in p) for p in point)
     moved = [rotation.apply(exact) for rotation in checks.rotations]
     stride = len(moved)
     # Two batches: the probes' runs with the re-test, their rotated runs
     # without it (a rotation compares values, ``rotation_errors``).
     carrier, evaluations, failures = _probe_batch(
-        executor, [(point, ward) for ward in wards], scale, parameters, precision, frame
+        executor,
+        [(point, ward) for ward in runs_of],
+        scale,
+        parameters,
+        precision,
+        frame,
     )
     refused: dict[int, str] = {
         index: f"the probe point failed: {failures[index]}" for index in failures
@@ -1897,7 +1953,7 @@ def probe_results(
             executor,
             [
                 (turned, None if ward is None else rotated_ward(rotation, ward))
-                for ward in wards
+                for ward in runs_of
                 for rotation, turned in zip(checks.rotations, moved, strict=True)
             ],
             scale,
@@ -1911,11 +1967,8 @@ def probe_results(
     # probes of the point (``physical``).
     if physical is None:
         physical = physical_floors(executor, point, scale, parameters)
-    out: list[ProbeResult | str] = []
-    for index, ward in enumerate(wards):
-        if index in refused:
-            out.append(refused[index])
-            continue
+
+    def estimates_of(index: int, floors: Mapping) -> tuple[dict, list]:
         evaluation = evaluations[index]
         kept = [
             run
@@ -1925,27 +1978,44 @@ def probe_results(
             if position not in turned_failures
         ]
         turned = [rotation_errors(evaluation, run) for run in kept]
-        floors = physical if ward is None else ward_floors(physical, ward_leg(ward))
-        estimates = amplitude_estimates(
-            evaluation, carrier.unit_roundoff, floors, turned
+        return (
+            amplitude_estimates(evaluation, carrier.unit_roundoff, floors, turned),
+            [evaluation, *kept],
         )
-        measures = probe_measures(estimates, floors, 0 if ward is not None else 1)
-        judged = judged_rows(measures, tolerance)
-        runs = [evaluation, *kept]
+
+    references = None
+    if reference not in refused:
+        references = physical_references(estimates_of(reference, physical)[0])
+    out: list[ProbeResult | str] = []
+    for index, ward in enumerate(wards):
+        if index in refused:
+            out.append(refused[index])
+            continue
+        floors = physical if ward is None else ward_floors(physical, ward_leg(ward))
+        estimates, runs = estimates_of(index, floors)
+        refs = (
+            None
+            if references is None
+            else references
+            if ward is None
+            else ward_references(references, ward_leg(ward))
+        )
+        measures = probe_measures(
+            estimates,
+            floors,
+            0 if ward is not None else 1,
+            refs,
+            width_of(evaluations[index]),
+        )
         out.append(
             ProbeResult(
                 "ward" if ward is not None else "finiteness",
-                judged["ratios"],
+                judged_cells(measures, tolerance, carrier),
                 MappingProxyType(physical),
-                MappingProxyType(judged["relative"]),
                 uncertified=any(
                     getattr(run, "uncertified_bound", None) for run in runs
                 ),
-                undefined=judged["undefined"],
                 tolerance=tolerance,
-                vacuous=judged["vacuous"],
-                worst_row=judged["worst_row"],
-                measures=tuple(measures),
             )
         )
     return out
@@ -2171,8 +2241,9 @@ def probe_lanes(runs: int) -> int:
 
 
 def _fallback(result: Any) -> dict[str, Any]:
-    """Why a probe's run in one carrier did not decide it (the next carrier
-    re-runs it): the backend's refusal, or its verdict and largest R / S."""
+    """An earlier carrier's outcome of a probe (the next carrier re-ran its
+    pending rows): the backend's refusal, or its verdict and largest R over
+    its scale."""
 
     if isinstance(result, str):
         return {"reason": "refused", "detail": result}
@@ -2183,31 +2254,85 @@ def _fallback(result: Any) -> dict[str, Any]:
     }
 
 
+def ladder(
+    cells: dict[Any, Any],
+    result: Any,
+    carrier: Any,
+    tolerance: float,
+) -> None:
+    """One carrier of a probe's per-row ladder (``checks.ladder_step``), in
+    place on ``cells``: a refused run leaves its pending rows inconclusive
+    for the next carrier to decide; a result's rows are judged where still
+    pending (a decided row keeps its first decision, a pending row the
+    carrier lacks is inconclusive)."""
+
+    from .checks import ladder_step, refused_step
+
+    name = carrier.arithmetic
+    if isinstance(result, str):
+        refused_step(cells, result, name)
+        return
+    ladder_step(
+        cells,
+        {key: cell.measure for key, cell in result.cells.items()},
+        name,
+        carrier.unit_roundoff,
+        tolerance,
+    )
+
+
+def pending(cells: Mapping[Any, Any], runs: Sequence[Any]) -> bool:
+    """Whether a probe still has a row to decide (or no measured row yet)."""
+
+    if not cells:
+        return True
+    return any(cell.verdict not in ("pass", "vacuous") for cell in cells.values())
+
+
 def _decided(
     entries: list[dict[str, Any]],
     outcomes: Sequence[Any],
     carriers: Sequence[Any],
+    cells: Sequence[dict[Any, Any]],
+    tolerance: float,
 ) -> list[Any]:
-    """The verdict of each probe: its result in the first carrier that
-    passed it, else in the last carrier that ran it (a refusal text where
-    that carrier refused it: inconclusive, never a pass); ``entries`` gets
-    the record per probe: the carrier, ``passed``, ``verdict``, the largest
-    R / S (``worst``) and K (``tolerance``), the reason of an inconclusive
-    one (``inconclusive``)."""
+    """The verdict of each probe from its rows' final verdicts up the ladder
+    (``cells``; a probe no carrier measured keeps its last refusal text:
+    inconclusive, never a pass); ``entries`` gets the record per probe: the
+    deciding row's carrier, ``passed``, ``verdict``, the largest R over its
+    scale (``worst``) and K (``tolerance``), the reason of an inconclusive
+    or vacuous one, each earlier carrier's outcome (``fallback``)."""
+
+    from dataclasses import replace
 
     out = []
-    for entry, runs in zip(entries, outcomes, strict=True):
-        result = runs[-1]
-        carrier = carriers[len(runs) - 1]
-        entry["carrier"] = carrier.arithmetic
-        if isinstance(result, str):
+    for entry, runs, rows in zip(entries, outcomes, cells, strict=True):
+        measured = [run for run in runs if not isinstance(run, str)]
+        if not rows or not measured:
+            result = runs[-1]
+            carrier = carriers[len(runs) - 1]
+            entry["carrier"] = carrier.arithmetic
             entry["passed"] = False
             entry["verdict"] = "inconclusive"
             entry["refused"] = result
             entry["inconclusive"] = f"refused in {carrier.arithmetic}: {result}"
         else:
+            result = replace(
+                measured[-1],
+                cells=dict(rows),
+                uncertified=any(run.uncertified for run in measured),
+                tolerance=tolerance,
+            )
+            # The last carrier a row needed (every row decided by then).
+            order = [carrier.arithmetic for carrier in carriers]
+            used = [
+                order.index(cell.carrier)
+                for cell in rows.values()
+                if cell.carrier in order
+            ]
+            entry["carrier"] = order[max(used)] if used else order[len(runs) - 1]
             entry["worst"] = _short(result.worst)
-            entry["tolerance"] = result.tolerance
+            entry["tolerance"] = tolerance
             entry["verdict"] = result.verdict
             entry["passed"] = result.passed
             if result.verdict == "inconclusive":
@@ -2273,24 +2398,26 @@ def point_probes(
     entries: list[dict[str, Any]] = [{"probe": "finiteness"}] + [
         {"probe": "ward", "leg": leg} for leg in legs
     ]
+    tolerance = _default_tolerance() if tolerance is None else tolerance
     outcomes: list[list[Any]] = [[] for _ in entries]
-    pending = list(range(len(entries)))
+    cells: list[dict[Any, Any]] = [{} for _ in entries]
+    waiting = list(range(len(entries)))
     for carrier in carriers:
-        if not pending:
+        if not waiting:
             break
         rung, improved = (
             (point, None) if improve is None else improve(point, scale, carrier)
         )
         wards = [None, *(gauge_ward(leg, (1, 0), rung) for leg in legs)]
         if improved is not None:
-            for i in pending:
+            for i in waiting:
                 entries[i].setdefault("kinematics", {})[carrier.arithmetic] = improved
         clock = time.perf_counter()
         found = probe_results(
             executor,
             rung,
             scale,
-            [wards[i] for i in pending],
+            [wards[i] for i in waiting],
             precision=carrier,
             physical=floors,
             tolerance=tolerance,
@@ -2298,16 +2425,13 @@ def point_probes(
         elapsed = time.perf_counter() - clock
         if seconds is not None:
             seconds[carrier.arithmetic] = elapsed
-        for i, result in zip(pending, found, strict=True):
+        for i, result in zip(waiting, found, strict=True):
             outcomes[i].append(result)
+            ladder(cells[i], result, carrier, tolerance)
             # The probes of one pass share its native batches.
             entries[i]["seconds"] = _seconds(entries[i].get("seconds", 0.0) + elapsed)
-        pending = [
-            i
-            for i in pending
-            if isinstance(outcomes[i][-1], str) or not outcomes[i][-1].passed
-        ]
-    return entries, _decided(entries, outcomes, carriers)
+        waiting = [i for i in waiting if pending(cells[i], outcomes[i])]
+    return entries, _decided(entries, outcomes, carriers, cells, tolerance)
 
 
 def generation_probes(
@@ -2402,11 +2526,39 @@ def generation_probes(
         )
         seconds["point"] = time.perf_counter() - clock
         clock = time.perf_counter()
-        floors, floors_record = probe_floors(executor, point, scale)
+        try:
+            floors, floors_record = probe_floors(executor, point, scale)
+        except ProbePointRefused as error:
+            # Every carrier refused the physical evaluation that forms the
+            # row floors T: the probes are inconclusive (recorded, a
+            # warning), generation continues.
+            floors, floors_record = None, {"refused": str(error)}
         seconds["floors"] = time.perf_counter() - clock
-        entries, decided = point_probes(
-            executor, point, scale, legs, carriers, floors, seconds, tolerance=tolerance
-        )
+        if floors is None:
+            text = f"the physical floors (T) were refused: {floors_record['refused']}"
+            entries = [{"probe": "finiteness"}] + [
+                {"probe": "ward", "leg": leg} for leg in legs
+            ]
+            for entry in entries:
+                entry.update(
+                    carrier=carriers[-1].arithmetic,
+                    passed=False,
+                    verdict="inconclusive",
+                    refused=text,
+                    inconclusive=text,
+                )
+            decided = [text] * len(entries)
+        else:
+            entries, decided = point_probes(
+                executor,
+                point,
+                scale,
+                legs,
+                carriers,
+                floors,
+                seconds,
+                tolerance=tolerance,
+            )
         goldstones = _goldstone_probes(
             target,
             compiled,
@@ -2432,6 +2584,7 @@ def generation_probes(
     record: dict[str, Any] = {
         "status": "run",
         "carriers": [carrier.arithmetic for carrier in carriers],
+        "rule": rule_name(),
         "tolerance": tolerance,
         "reduction": {
             "requested": PROBE_REDUCTION,
@@ -2447,12 +2600,20 @@ def generation_probes(
         "finiteness": {
             "worst": _short(worst(decided[0])),
             "passed": passed(decided[0]),
+            "verdict": entries[0].get("verdict"),
             "carrier": entries[0]["carrier"],
         },
         "ward": {
             "legs": list(legs),
             "worst": _short(max((worst(r) for r in decided[1:]), default=0.0)),
             "passed": all(passed(r) for r in decided[1:]),
+            "verdict": combined_verdict(
+                [
+                    entry.get("verdict")
+                    for entry in entries[1:]
+                    if entry["probe"] == "ward"
+                ]
+            ),
             "carriers": {
                 str(entry["leg"]): entry["carrier"]
                 for entry in entries
@@ -2513,6 +2674,29 @@ def generation_probes(
         record["allowed_failure"] = True
     # Strict JSON for the artifact's manifest (an R / S can be inf or nan).
     return _json_safe(record)
+
+
+def rule_name() -> str:
+    """The checks' rule name (``checks.RULE``), recorded with K."""
+
+    from .checks import RULE
+
+    return RULE
+
+
+def combined_verdict(verdicts: Sequence[Any]) -> str:
+    """Several probes' verdicts as one: fail, else inconclusive (also for
+    a missing one), else pass, else vacuous; "nothing tested" for none."""
+
+    found = set(verdicts)
+    if not found:
+        return "nothing tested"
+    for verdict in ("fail", "inconclusive"):
+        if verdict in found:
+            return verdict
+    if None in found or not found <= {"pass", "vacuous"}:
+        return "inconclusive"
+    return "pass" if "pass" in found else "vacuous"
 
 
 def _json_safe(value: Any) -> Any:
@@ -2616,6 +2800,8 @@ def goldstone_point(
                 side, forward=False, inputs="native", lanes=probe_lanes(1)
             )
         runs: list[Any] = []
+        rows: dict[Any, Any] = {}
+        judged_at = _default_tolerance() if tolerance is None else tolerance
         for carrier in carriers:
             try:
                 result = goldstone.probe(
@@ -2626,12 +2812,13 @@ def goldstone_point(
                     leg,
                     precision=carrier,
                     physical=physical,
-                    tolerance=tolerance,
+                    tolerance=judged_at,
                 )
             except ProbePointRefused as error:
                 result = str(error)
             runs.append(result)
-            if not isinstance(result, str) and result.passed:
+            ladder(rows, result, carrier, judged_at)
+            if not pending(rows, runs):
                 break
         probes_seconds[str(leg)] = time.perf_counter() - clock
         entry: dict[str, Any] = {
@@ -2639,7 +2826,7 @@ def goldstone_point(
             "leg": leg,
             "seconds": _seconds(probes_seconds[str(leg)]),
         }
-        (result,) = _decided([entry], [runs], carriers)
+        (result,) = _decided([entry], [runs], carriers, [rows], judged_at)
         entries.append(entry)
         results.append((leg, result))
         if not isinstance(result, str) and result.phase is not None:
@@ -2712,6 +2899,7 @@ def _goldstone_probes(
             )
         ),
         "passed": all(passed(r) for _, r in results),
+        "verdict": combined_verdict([entry.get("verdict") for entry in entries]),
         "carriers": {str(entry["leg"]): entry["carrier"] for entry in entries},
         **({"phases": phases} if phases else {}),
         **({"skipped": skipped} if skipped else {}),

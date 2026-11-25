@@ -404,21 +404,79 @@ def test_the_threshold_rule():
             assert checks.tolerance() == 1e-7
             with checks.tolerating(1e-3):
                 assert checks.tolerance() == 1e-3
-    # S = max(P, K T): P decides a resolved row, K T guards an unresolved
-    # one (there R < K^2 T); a row without any term is vacuous.
-    assert checks.scale_of(2.0, 10.0, 1e-5) == (2.0, "P")
-    assert checks.scale_of(1e-7, 10.0, 1e-5) == (1e-4, "K T")
-    assert checks.scale_of(None, 1.0, 1e-5) == (None, None)
+    # The rule per row (``judge``): incomplete or non-finite is
+    # inconclusive (never vacuous); no term at all is vacuous; a known-zero
+    # reference is judged term-relative; R < K P passes on the physical
+    # scale; a miss that K T would pass is ambiguous only where P may be
+    # noise (P = 0 from cancelling terms, or P <= 10 E_P), else a physical
+    # failure.
     measure = checks.Measure
-    assert checks.judge(measure("x", 1e-6, 1.0, 1e5, None), 1e-5) == checks.PASS
-    assert checks.judge(measure("x", 1e-3, 1.0, 1e5, None), 1e-5) == checks.FAIL
-    assert checks.judge(measure("x", 0.0, 0.0, 0.0, None), 1e-5) == checks.VACUOUS
-    assert checks.judge(measure("x", 1e-30, 0.0, 0.0), 1e-5) == checks.INCONCLUSIVE
-    assert checks.judge(measure("x", 0.0, None, 1.0), 1e-5) == checks.INCONCLUSIVE
-    # A row every part of which is vacuous; a process of vacuous rows passes.
-    row = checks._judged_row(
-        "poles", "x", 0, "double", [measure("x", 0.0, 0.0, 0.0)], 1e-5
+
+    def verdict(*args, **options):
+        found = checks.judge(measure("x", *args, **options), 1e-5)
+        return found.verdict, found.scale
+
+    assert verdict(1e-6, 1.0, 1e5) == (checks.PASS, checks.PHYSICAL)
+    assert verdict(1e-3, 1.0, 1e5) == (checks.FAIL, checks.PHYSICAL)
+    assert verdict(1e-3, 1.0, 1e5, physical_error=0.11) == (checks.AMBIGUOUS, None)
+    assert verdict(1e-3, 1.0, 1e5, physical_error=0.01) == (
+        checks.FAIL,
+        checks.PHYSICAL,
     )
+    assert verdict(1e-3, 0.0, 1e5) == (checks.AMBIGUOUS, None)
+    assert verdict(1e-3, 0.0, 1e5, zero_reference=True) == (
+        checks.PASS,
+        checks.TERM_RELATIVE,
+    )
+    assert verdict(2.0, 0.0, 1e5, zero_reference=True) == (
+        checks.FAIL,
+        checks.TERM_RELATIVE,
+    )
+    assert verdict(0.0, 0.0, 0.0) == (checks.VACUOUS, None)
+    assert verdict(0.0, float("nan"), 0.0)[0] == checks.INCONCLUSIVE
+    assert verdict(0.0, 0.0, 0.0, complete=False)[0] == checks.INCONCLUSIVE
+    assert verdict(0.0, None, 1.0)[0] == checks.INCONCLUSIVE
+    # An ambiguous row against a narrower carrier's measurement (``settle``):
+    # P reproduces (a physical miss), collapses with the carriers' noise
+    # (term-relative), or neither (inconclusive).
+    double, double_double = 2.0**-53, 2.0**-104
+
+    def ambiguous(p_before, p_now, residue=1e-3, terms=1e5):
+        before = checks.Judgement(
+            checks.FAIL,
+            checks.PHYSICAL,
+            None,
+            None,
+            measure("x", 1.0, p_before, terms),
+            "double",
+            double,
+        )
+        now = checks.Judgement(
+            checks.AMBIGUOUS,
+            None,
+            None,
+            None,
+            measure("x", residue, p_now, terms),
+            "double-double",
+            double_double,
+        )
+        found = checks.settle(now, before, 1e-5)
+        return found.verdict, found.scale
+
+    assert ambiguous(1.0, 1.0) == (checks.FAIL, checks.PHYSICAL)
+    assert ambiguous(1e-17, 1e-33) == (checks.PASS, checks.TERM_RELATIVE)
+    assert ambiguous(1e-17, 1e-18)[0] == checks.INCONCLUSIVE
+    assert (
+        checks.settle(
+            checks.Judgement(checks.AMBIGUOUS, None, None, None, measure("x", 1, 1, 1)),
+            None,
+            1e-5,
+        ).verdict
+        == checks.INCONCLUSIVE
+    )
+    # A row every part of which is vacuous; a process of vacuous rows passes.
+    cells = {"x": checks.judge(measure("x", 0.0, 0.0, 0.0), 1e-5)}
+    row = checks.row_from_cells("poles", "x", 0, cells, 1e-5)
     assert row.verdict == checks.VACUOUS and row.vacuous == 1
     assert row.reason.startswith("nothing to test")
     assert checks.status_of([checks.VACUOUS, checks.NOT_APPLICABLE]) == checks.PASSED
@@ -446,6 +504,29 @@ def test_the_catani_criterion_is_the_harness_rule():
     assert not catani_dd_comparison([0.0, 2.0 * (1 + 1e-11), -3.0], poles)[2]
 
 
+def _pole_rows(result, tolerance):
+    """The pole check rows of one evaluation (``checks._pole_measures``,
+    each judged at one carrier)."""
+
+    from pyamplicol.loops.v2 import checks
+
+    return {
+        key: checks.row_from_cells(
+            "poles", m.label, 0, {key: checks.judge(m, tolerance)}, tolerance
+        )
+        for key, m in checks._pole_measures(result).items()
+    }
+
+
+def _ward_row(measures, tolerance):
+    """One Ward check row from its required rows, judged at one carrier."""
+
+    from pyamplicol.loops.v2 import checks
+
+    cells = {label: checks.judge(m, tolerance) for label, m in measures.items()}
+    return checks.row_from_cells("ward", "leg 1, c = 1", 0, cells, tolerance)
+
+
 def _laurent(*values):
     from types import SimpleNamespace as NS
 
@@ -467,12 +548,12 @@ def _pole_result(sector, virtual, poles, parts=None, stability=None):
 
 @pytest.mark.loop_fast
 def test_pole_and_ward_rows_judge_r_against_k_s():
-    """Pole rows: R = |Re V_k - Re C_k| against S = the largest of |C_k| and
-    the sector's coefficient k in the virtual and its parts; a planted
-    violation fails, K changes the verdict, a non-finite coefficient is
-    inconclusive, a vanishing prediction with no part is measured against
-    the next lower coefficient, and a sector without a pole row is listed
-    "no prediction" (or "not run" where predicted), never omitted. Ward
+    """Pole rows: R = |Re V_k - Re C_k| against P = max(|Re C_k|, |Re V_k|)
+    (a known-zero analytic C_k: term-relative against T, the largest part);
+    a planted violation fails whatever the parts' cancellation, K changes
+    the verdict, a non-finite coefficient is inconclusive, a coefficient no
+    part has is vacuous, and a sector without a pole row is listed "no
+    prediction" (or "not run" where predicted), never omitted. Ward
     rows: every Born sector and every virtual sector and coefficient judged
     on its own; a sector or coefficient only one evaluation has is a missing
     operand (inconclusive)."""
@@ -483,49 +564,50 @@ def test_pole_and_ward_rows_judge_r_against_k_s():
 
     first, second = (("QCD", 4),), (("QCD", 2), ("QED", 2))
     exact = _pole_result(first, (0.5, 2.0, -3.0), (2.0, -3.0))
-    rows = checks._pole_rows(exact, 0, "double", 1e-5)
+    rows = _pole_rows(exact, 1e-5)
     assert {row.verdict for row in rows.values()} == {checks.PASS}
     assert all(row.deviation == 0 and row.tolerance == 1e-5 for row in rows.values())
     # A planted violation of 1e-3 relative on the 1/eps pole.
     planted = _pole_result(first, (0.5, 2.002, -3.0), (2.0, -3.0))
-    rows = checks._pole_rows(planted, 0, "double", 1e-5)
+    rows = _pole_rows(planted, 1e-5)
     assert rows[(first, 1)].verdict == checks.FAIL
     # S = max(|C|, |V|) = 2.002.
     assert rows[(first, 1)].deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
     assert rows[(first, 2)].verdict == checks.PASS
     # K changes the verdict.
-    assert checks._pole_rows(planted, 0, "double", 1e-2)[(first, 1)].verdict == (
-        checks.PASS
-    )
-    # S = max(P, K T): P = max(|C|, |V|) decides; a bare part of 20 is T and
-    # only guards (K T = 2e-4 < P); a part of 1e6 sets S (K T = 10 > P).
+    assert _pole_rows(planted, 1e-2)[(first, 1)].verdict == (checks.PASS)
+    # P = max(|C|, |V|) decides, whatever the parts (T): a bare part of 20 or
+    # of 1e6 cancelling against the UV part changes nothing (the reviewer's
+    # case: a per-mille violation never hides behind the term scale).
     parted = _pole_result(
         first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 20.0, -3.0)}
     )
-    row = checks._pole_rows(parted, 0, "double", 1e-5)[(first, 1)]
-    assert (row.scale_by, row.physical, row.terms) == ("P", 2.0, 20.0)
+    row = _pole_rows(parted, 1e-5)[(first, 1)]
+    assert (row.scale_by, row.physical, row.terms) == ("physical", 2.0, 20.0)
     assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
     assert row.verdict == checks.FAIL and row.residue == pytest.approx(2e-3)
     cancelled = _pole_result(
         first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 1e6, -3.0)}
     )
-    row = checks._pole_rows(cancelled, 0, "double", 1e-5)[(first, 1)]
-    assert row.scale_by == "K T" and row.deviation == pytest.approx(2e-4, rel=1e-3)
+    row = _pole_rows(cancelled, 1e-5)[(first, 1)]
+    assert row.scale_by == "physical" and row.verdict == checks.FAIL
+    assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
     # A non-finite coefficient: inconclusive, never a raise or a pass.
     broken = _pole_result(first, (0.5, float("nan"), -3.0), (2.0, -3.0))
-    rows = checks._pole_rows(broken, 0, "double", 1e-5)
+    rows = _pole_rows(broken, 1e-5)
     assert rows[(first, 1)].verdict == checks.INCONCLUSIVE
     assert "cannot be computed" in rows[(first, 1)].reason
     # A double pole neither the prediction nor any part has (only massive
     # coloured legs): vacuous, nothing to test.
     massive = _pole_result(first, (0.5, 2.0, 0.0), (2.0, 0.0))
-    row = checks._pole_rows(massive, 0, "double", 1e-5)[(first, 2)]
+    row = _pole_rows(massive, 1e-5)[(first, 2)]
     assert (row.verdict, row.vacuous) == (checks.VACUOUS, 1)
-    # A spurious double pole: S is its own size (the virtual is a part), so
-    # R / S = 1 and it fails at any K below 1.
+    # A spurious double pole against a vanishing analytic prediction (a
+    # known-zero reference): term-relative, R / T = 1, a failure.
     spurious = _pole_result(first, (0.5, 2.0, 1e-3), (2.0, 0.0))
-    row = checks._pole_rows(spurious, 0, "double", 1e-5)[(first, 2)]
+    row = _pole_rows(spurious, 1e-5)[(first, 2)]
     assert row.verdict == checks.FAIL and row.deviation == pytest.approx(1.0)
+    assert row.scale_by == "term-relative"
     # A sector the operators predict but without a pole row at this point:
     # an applicable check that did not run, "not run" (exit 3), not a neutral
     # "no prediction" (DECISIONS 2026-11-09 14:25, lit-examples re-audit
@@ -551,57 +633,43 @@ def test_pole_and_ward_rows_judge_r_against_k_s():
     physical = evaluation((2.0, 1.0, 0.5), {first: 4.0})
     clean = evaluation((1e-16, 1e-17, 0.0), {first: 4.0}, {first: 1e-16})
     measures = checks._ward_measures(physical, clean)
-    assert [m.label for m in measures] == [
+    assert list(measures) == [
         "Born QCD^4",
         "QCD^4 finite",
         "QCD^4 1/eps",
         "QCD^4 1/eps^2",
     ]
-    row = checks._judged_row("ward", "leg 1, c = 1", 0, "double", measures, 1e-5)
-    # The double pole has no physical term (T = 0) and R = 0: vacuous.
+    row = _ward_row(measures, 1e-5)
     assert row.verdict == checks.PASS and row.deviation == pytest.approx(5e-17)
-    assert row.vacuous == 1 and row.scale_by == "P"
+    assert row.vacuous == 0 and row.scale_by == "physical" and len(row.cells) == 4
     planted = evaluation((1e-16, 1e-3, 0.0), {first: 4.0}, {first: 1e-16})
-    row = checks._judged_row(
-        "ward",
-        "leg 1, c = 1",
-        0,
-        "double",
-        checks._ward_measures(physical, planted),
-        1e-5,
-    )
+    row = _ward_row(checks._ward_measures(physical, planted), 1e-5)
     assert row.verdict == checks.FAIL and row.deviation == pytest.approx(1e-3)
     # A short Laurent tuple, a missing sector, a missing loop-side Born.
     short = evaluation((1e-16, 1e-17), {first: 4.0}, {first: 0.0})
     other = evaluation((0.0, 0.0, 0.0), {first: 4.0}, {first: 0.0}, sectors=(second,))
     none = evaluation((0.0, 0.0, 0.0), {first: 4.0}, None)
     for substituted in (short, other, none):
-        row = checks._judged_row(
-            "ward",
-            "leg 1, c = 1",
-            0,
-            "double",
-            checks._ward_measures(physical, substituted),
-            1e-5,
-        )
+        row = _ward_row(checks._ward_measures(physical, substituted), 1e-5)
         assert row.verdict == checks.INCONCLUSIVE, substituted
     # A Born sector that vanishes at this point (a colour zero) on both sides
-    # is vacuous; a loop-side residue there has no reference (no cross-row
-    # fallback): inconclusive, never a pass.
+    # is vacuous; a loop-side residue where the physical Born has no term
+    # fails (no cross-row fallback).
     zero = evaluation((2.0, 1.0, 0.5), {first: 4.0, second: 0.0})
     measures = checks._ward_measures(
         zero, evaluation((2.0, 1.0, 0.5), {}, {first: 0.0, second: 0.0})
     )
-    assert [checks.judge(m, 1e-5) for m in measures if m.label.startswith("Born")] == [
-        checks.PASS,
-        checks.VACUOUS,
-    ]
+    assert [
+        checks.judge(m, 1e-5).verdict
+        for m in measures.values()
+        if m.label.startswith("Born")
+    ] == [checks.PASS, checks.VACUOUS]
     measures = checks._ward_measures(
         zero, evaluation((0.0, 0.0, 0.0), {}, {first: 0.0, second: 1e-3})
     )
-    (born,) = [m for m in measures if m.label == "Born QCD^2 QED^2"]
+    born = measures["Born QCD^2 QED^2"]
     assert (born.residue, born.physical, born.terms) == (1e-3, 0.0, 0.0)
-    assert checks.judge(born, 1e-5) == checks.INCONCLUSIVE
+    assert checks.judge(born, 1e-5).verdict == checks.FAIL
 
 
 @pytest.mark.loop_fast
@@ -663,7 +731,8 @@ def test_a_refused_double_double_run_leaves_the_binary64_rows_inconclusive(
     for row in [*single, *ward_rows]:
         assert row.verdict == checks.INCONCLUSIVE and row.carrier == "double"
         assert "double-double refused" in row.reason, row
-        assert "at double" in row.reason, row
+        # binary64's measurement stays on the row (R / P, the carrier).
+        assert row.deviation is not None and row.deviation > 1e-5, row
     (double_pole,) = [row for row in rows if row.subject == "QCD^4 1/eps^2"]
     assert double_pole.verdict == checks.PASS
 
@@ -806,7 +875,7 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
     def point_probes(_executor, _point, _scale, legs, _carriers, _floors, **_options):
         probed.append(list(legs))
         return [{"probe": "finiteness", "carrier": "double"}], [
-            induced.ProbeResult("finiteness", {"k": 0.1})
+            induced.ProbeResult("finiteness", {})
         ]
 
     monkeypatch.setattr(induced, "probe_legs", lambda _target: [1, 2])
@@ -895,7 +964,9 @@ def test_the_ladder_takes_a_row_to_arbitrary_precision_until_it_passes(
         "arbitrary",
         64,
     )
-    assert single.fallback.startswith("double-double: R / S 1e-09 not below K")
+    assert single.fallback == (
+        "double: fail, R / physical 1e-06; double-double: fail, R / physical 1e-09"
+    )
     assert single.deviation == pytest.approx(1e-30)
     assert first["QED^4 1/eps^2"].carrier == "double"
     assert first["QED^4 1/eps^2"].verdict == checks.PASS
@@ -903,7 +974,7 @@ def test_the_ladder_takes_a_row_to_arbitrary_precision_until_it_passes(
     assert calls == [
         ("double", None, True),
         ("double-double", None, False),
-        ("arbitrary", 64, True),
+        ("arbitrary", 64, False),
         ("double", None, True),
     ]
     assert {row.carrier for row in second.values()} == {"double"}
@@ -951,7 +1022,7 @@ def test_a_row_still_failing_in_arbitrary_precision_fails_its_process(
     with checks.tolerating(1e-5):
         rows = checks.born_interfered_rows(target, [(None, 1)], carriers, option)
     assert _rung_rows(rows)["QED^4 1/eps"].digits == 60
-    assert ("arbitrary", 60, True) in calls
+    assert ("arbitrary", 60, False) in calls
 
     calls = _scripted_poles(monkeypatch, wrong)
     explicit = (Precision.double_double(),)
@@ -971,29 +1042,31 @@ def test_a_row_still_failing_in_arbitrary_precision_fails_its_process(
         rows = checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
     row = _rung_rows(rows)["QED^4 1/eps"]
     assert row.verdict == checks.INCONCLUSIVE
-    assert "arbitrary (64 digits) refused" in row.reason
-    # A loop-induced probe: its verdict is the threshold rule's.
+    assert "arbitrary refused" in row.reason
+    # A loop-induced probe: its verdict is its rows' (the threshold rule).
     from pyamplicol.loops.v2.induced import ProbeResult
 
+    def probe(residue, physical=1.0, terms=1.0):
+        measure = checks.Measure("k k=0", residue, physical, terms)
+        return ProbeResult(
+            "ward", {("k", 0): checks.judge(measure, 1e-5)}, tolerance=1e-5
+        )
+
     failed = checks._probe_row(
-        {"probe": "ward", "leg": 1, "carrier": "double-double"},
-        ProbeResult("ward", {"k": 1e-3}, tolerance=1e-5),
-        0,
+        {"probe": "ward", "leg": 1, "carrier": "double-double"}, probe(1e-3), 0
     )
-    assert failed.verdict == checks.FAIL
+    assert failed.verdict == checks.FAIL and failed.deviation == pytest.approx(1e-3)
     passed = checks._probe_row(
-        {"probe": "ward", "leg": 1, "carrier": "double"},
-        ProbeResult("ward", {"k": 1e-13}, tolerance=1e-5),
-        0,
+        {"probe": "ward", "leg": 1, "carrier": "double"}, probe(1e-13), 0
     )
-    assert passed.verdict == checks.PASS
+    assert passed.verdict == checks.PASS and passed.scale_by == "physical"
     undefined = checks._probe_row(
         {"probe": "ward", "leg": 1, "carrier": "double-double"},
-        ProbeResult("ward", {"k": 1e-13}, undefined=("k k=0: R nan",), tolerance=1e-5),
+        probe(float("nan")),
         0,
     )
     assert undefined.verdict == checks.INCONCLUSIVE
-    assert "R, P or T cannot be computed" in undefined.reason
+    assert "cannot be computed" in undefined.reason
 
 
 @pytest.mark.loop_fast
@@ -1041,11 +1114,20 @@ def test_ward_rows_take_the_rung_by_the_threshold_rule(monkeypatch):
         lambda index, carrier: lifted.append(carrier.digits) or (None, 1)
     )
     carriers = (Precision.double(), Precision.double_double())
-    rows = checks._born_ward_rows(None, None, 1, [5], carriers, 2, 1e-25, rung)
+    stages = checks._stages(carriers, rung)
+
+    def at(carrier):
+        if carrier.arithmetic == "arbitrary":
+            return (*rung.lift(2, carrier), None)
+        return None, 1, None
+
+    rows = checks._born_ward_rows(None, 2, stages, at, [5], 1e-25)
     assert len(rows) == 2
     for row in rows:
         assert (row.verdict, row.carrier, row.digits) == (checks.PASS, "arbitrary", 64)
-        assert row.fallback.startswith("double-double: R / S 4e-22 not below K")
+        assert row.fallback == (
+            "double: fail, R / physical 1e-06; double-double: fail, R / physical 4e-22"
+        )
         # The 1/eps and 1/eps^2 rows (no physical part) take the finite scale.
         assert row.deviation == pytest.approx(1e-30)
     assert lifted == [64]
@@ -1193,7 +1275,7 @@ def test_a_dropped_r2_vertex_fails_the_ward_check(tmp_path):
         # double-double (m-lit lit-psimprove (G5)); beams along z: MadLoop's
         # z-shift (the default) produces it.
         assert row.kinematics == "z-shift", row
-        assert row.fallback.startswith("double: fail, largest R / S")
+        assert row.fallback.startswith("double: fail, R / physical")
         assert float(row.fallback.split()[-1]) > 10 * row.tolerance
         assert row.deviation > 10 * row.tolerance
     # R2 is finite: the finiteness probe passes.

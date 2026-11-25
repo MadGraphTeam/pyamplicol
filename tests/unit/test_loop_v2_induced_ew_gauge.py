@@ -222,37 +222,34 @@ def test_goldstone_equivalence_holds_on_a_a_to_z_z(probes):
 
 
 def _planted(result, scale_ratio=1e4, coefficient=None):
-    """The judge-level discrimination of one probe (the threshold rule, S =
-    max(P, K T)): of its rows whose terms cancel by at least ``scale_ratio``
-    (T / P; at Laurent coefficient ``coefficient`` only, where given: the
-    Goldstone sides are a physical size at the finite part, their poles
-    vanish), the physically largest (largest P) passes as measured and fails
-    with its residue replaced by 1e-3 of P; returns (T / P, clean R / S,
-    planted R / S). A row whose P is below K^2 T is decided on the noise
-    guard K T: there a violation of 1e-3 of P is below what the computation
-    resolves at K."""
+    """The judge-level discrimination of one probe (the threshold rule): of
+    its rows whose terms cancel by at least ``scale_ratio`` (T / P; at
+    Laurent coefficient ``coefficient`` only, where given) and whose
+    physical reference is measured (not a known zero), the physically
+    largest passes as measured and fails with its residue replaced by 1e-3
+    of its P; returns (T / P, clean R / P, planted R / P)."""
 
     from dataclasses import replace
 
-    from pyamplicol.loops.v2 import checks, induced
+    from pyamplicol.loops.v2 import checks
 
     rows = [
-        (key, measure)
-        for key, measure in result.measures
+        measure
+        for _key, measure in result.measures
         if measure.physical and measure.terms and measure.residue is not None
+        if not measure.zero_reference
         if coefficient is None or measure.label.endswith(f"k={coefficient}")
         if measure.terms >= scale_ratio * measure.physical
     ]
     assert rows, "no row whose terms cancel by the required ratio"
-    key, measure = max(rows, key=lambda row: row[1].physical)
+    measure = max(rows, key=lambda row: row.physical)
     heavy = measure.terms / measure.physical
     tolerance = result.tolerance
-    clean = induced.judged_rows([(key, measure)], tolerance)
-    planted = replace(measure, residue=1e-3 * measure.physical)
-    wrong = induced.judged_rows([(key, planted)], tolerance)
-    assert checks.judge(measure, tolerance) == checks.PASS
-    assert checks.judge(planted, tolerance) == checks.FAIL
-    return heavy, clean["ratios"][key], wrong["ratios"][key]
+    clean = checks.judge(measure, tolerance)
+    wrong = checks.judge(replace(measure, residue=1e-3 * measure.physical), tolerance)
+    assert (clean.verdict, clean.scale) == (checks.PASS, checks.PHYSICAL)
+    assert (wrong.verdict, wrong.scale) == (checks.FAIL, checks.PHYSICAL)
+    return heavy, clean.ratio, wrong.ratio
 
 
 def test_goldstone_probe_discriminates(probes, monkeypatch):
@@ -311,14 +308,41 @@ def test_finiteness_and_ward_probes_discriminate_on_cancelling_rows(probes):
 
 def test_goldstone_equivalence_on_h_to_z_a_vanishes_on_both_sides(probes):
     """h > z a: k_Z . A(h -> Z gamma) vanishes by the photon's
-    transversality, and so does h > G0 a: both sides are below what the
-    computation resolves, so S is K times the rows' floors (the noise guard)
-    and the probe passes, with no phase to read."""
+    transversality, and so does h > G0 a: both sides are the carrier's noise,
+    so binary64 cannot tell its physical reference from noise (ambiguous,
+    never a binary64 pass); in double-double P falls with the carrier's
+    noise and the row passes on the labelled term-relative tolerance, with no
+    phase to read."""
 
-    result = probes.probe("li_h_za")
-    assert result.verdict == "pass" and result.phase is None
-    assert result.worst_row[4] == "K T"
-    assert result.goldstone_ratio <= 10
+    from pyamplicol.loops.v2 import checks, induced
+    from pyamplicol.loops.v2.assemble import Precision
+
+    double = probes.probe("li_h_za")
+    assert double.phase is None
+    # Both sides are binary64 noise: the finite rows miss R < K P but would
+    # pass R < K T, their P flagged by its estimate: ambiguous, never a
+    # binary64 pass; double-double decides (P falls with the carrier's
+    # noise: the term-relative tolerance).
+    assert double.verdict == "inconclusive"
+    assert {cell.verdict for cell in double.cells.values()} <= {
+        checks.AMBIGUOUS,
+        checks.PASS,
+    }
+    cells: dict = {}
+    for carrier, result in (
+        (Precision.double(), double),
+        (
+            Precision.double_double(),
+            probes.probe("li_h_za", precision=Precision.double_double()),
+        ),
+    ):
+        induced.ladder(cells, result, carrier, result.tolerance)
+    final = checks.finished(cells)
+    assert checks.aggregate(final) == checks.PASS
+    finite = [cell for (key, k), cell in final.items() if k == 0]
+    assert {cell.scale for cell in finite} == {checks.TERM_RELATIVE}
+    assert all("collapses" in cell.reason for cell in finite)
+    assert double.goldstone_ratio <= 10
 
 
 def test_goldstone_probe_with_every_side_refused_is_not_run(monkeypatch):

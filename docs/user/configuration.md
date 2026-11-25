@@ -368,16 +368,18 @@ zero (the complex-mass scheme keeps its complex masses):
 - **Goldstone**, for an external massive vector of a 't Hooft-Feynman gauge
   request: the identity k.A(V) = eta M_V A(G) must hold.
 
-Each is judged as `pyamplicol check` judges it: every row and Laurent
-coefficient passes iff its residue R < K S with S = max(P, K T), P the
-row's physical reference (the norm of its physical finite amplitude; for
-Goldstone the larger side of the identity) and T its term scale, K
-`check.tolerance`, by default the requested relative accuracy
-(`evaluation.reduction_target`, default 1e-5); a tolerance, not a
-certificate. A row with no term at all is vacuous (skipped); a probe every
-row of which is vacuous has nothing to test (the amplitude vanishes
-identically): it is recorded with a warning and does not refuse the
-process. Every probe runs in binary64 first. A probe binary64 does not
+Each is judged as `pyamplicol check` judges it, row by row and Laurent
+coefficient by coefficient: a row passes iff its residue R < K P, P its
+physical reference (the norm of its physical finite amplitude; for
+Goldstone the larger side of the identity), K `check.tolerance`, by default
+the requested relative accuracy (`evaluation.reduction_target`, default
+1e-5); a known-zero reference (the poles on both sides of the Goldstone
+identity) passes iff R < K T, T its term scale, labelled term-relative; a
+reference that may be noise is settled by double-double at the same point;
+a tolerance, not a certificate ([command-line guide](command-line-interface.md#check)).
+A row with no term at all is vacuous (skipped); a probe every row of which
+is vacuous has nothing to test (the amplitude vanishes identically): it is
+recorded with a warning and does not refuse the process. Every probe runs in binary64 first. A probe binary64 does not
 pass, or whose point the reduction backend refuses in binary64, runs again in
 double-double on the same point, and the double-double run decides it. A
 failure (R >= K S) refuses the process (`loop-induced-probe`);
@@ -440,7 +442,7 @@ artifact = "artifacts/loop_gg_zgg"   # omit to check the card's own request
 points = 3          # seeded phase-space points per process
 seed = 12345        # default: generation.validation.seed
 precision = "auto"  # binary64, then double-double where it fails; or one carrier
-# tolerance = 1e-5  # K of the rule R < K S; default: evaluation.reduction_target
+# tolerance = 1e-5  # K of the rule R < K P; default: evaluation.reduction_target
 # model = "my_ufo"  # default: model.source (an artifact: the source it records)
 # sqrt_s = 2000.0   # a scattering's energy; default: the validation convention
 # arbitrary_digits = 50  # the auto ladder's arbitrary-precision rung; default: 64

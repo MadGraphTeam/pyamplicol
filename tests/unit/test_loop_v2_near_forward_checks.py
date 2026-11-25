@@ -253,7 +253,7 @@ def test_the_check_rungs_evaluate_the_improved_point(monkeypatch):
     assert [(a, d, c) for a, d, c, _p in calls] == [
         ("double", None, True),
         ("double-double", None, False),
-        ("arbitrary", 64, True),
+        ("arbitrary", 64, False),
     ]
     for arithmetic, digits, _checked, point in calls:
         if arithmetic == "double":

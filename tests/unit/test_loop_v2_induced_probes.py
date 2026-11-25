@@ -237,9 +237,16 @@ def test_default_generation_runs_no_probe_and_equals_the_opt_in_artifact(
     assert off_filters["loop_induced_probes"] == {"status": "off"}
     probes = on_filters["loop_induced_probes"]
     assert probes["status"] == "run" and "failed" not in probes
-    assert probes["fallbacks"] == 0 and probes["finiteness"]["passed"]
+    # g g > h keeps the helicity rows that vanish by angular momentum (no
+    # screening: counterterm kets): their physical reference is an exact
+    # computed zero from cancelling terms, which double-double settles (the
+    # finiteness probe's one fallback).
+    zero_rows = not screened
+    assert probes["fallbacks"] == int(zero_rows) and probes["finiteness"]["passed"]
     assert probes["ward"]["passed"] and probes["ward"]["legs"] == [1]
-    assert {entry["carrier"] for entry in probes["probes"]} == {"double"}
+    assert probes["finiteness"]["carrier"] == (
+        "double-double" if zero_rows else "double"
+    )
     assert probes["reduction"] == {
         "requested": "ninjars",
         "effective": "ninjars",
@@ -344,26 +351,29 @@ def test_only_the_probe_refused_in_binary64_runs_in_double_double(gg_h, monkeypa
     record = induced.generation_probes(
         gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
     )
+    # The finiteness probe's rows that vanish by angular momentum (an exact
+    # computed zero P) are settled in double-double too, with the Ward probe.
     assert passes == [
         ("double", ["finiteness", "ward"]),
-        ("double-double", ["ward"]),
+        ("double-double", ["finiteness", "ward"]),
     ]
     assert record["finiteness"] == {
         "worst": record["finiteness"]["worst"],
         "passed": True,
-        "carrier": "double",
+        "verdict": "pass",
+        "carrier": "double-double",
     }
     assert record["ward"]["passed"] and record["ward"]["carriers"] == {
         "1": "double-double"
     }
     finiteness, ward = record["probes"]
-    assert "fallback" not in finiteness
+    assert finiteness["fallback"]["verdict"] == "inconclusive"
     assert ward["fallback"] == {
         "carrier": "double",
         "reason": "refused",
         "detail": "the probe point failed: forced refusal (test seam)",
     }
-    assert record["fallbacks"] == 1 and "failed" not in record
+    assert record["fallbacks"] == 2 and "failed" not in record
     assert set(record["seconds"]) >= {"double", "double-double", "total"}
 
 
@@ -373,17 +383,21 @@ def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypa
     re-run in double-double, where it passes, which decides it; the Ward
     probe keeps its binary64 verdict."""
 
-    from types import MappingProxyType
+    from dataclasses import replace
 
-    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2 import checks, induced
 
     def force(carrier, ward, result):
         if carrier == "double" and ward is None:
-            return induced.ProbeResult(
-                "finiteness",
-                MappingProxyType(dict.fromkeys(result.ratios, 1e3)),
-                result.scales,
-            )
+            # Every row's residue 1e3 times its physical reference.
+            cells = {
+                key: checks.judge(
+                    replace(cell.measure, residue=1e3 * cell.measure.physical),
+                    result.tolerance,
+                )
+                for key, cell in result.cells.items()
+            }
+            return replace(result, cells=cells)
         return result
 
     passes = _seam(monkeypatch, force)
@@ -436,74 +450,65 @@ def test_a_probe_refused_in_every_carrier_is_recorded_inconclusive(
     assert ward["fallback"]["reason"] == "refused"
     (line,) = record["inconclusive"]
     assert line.startswith("ward probe (leg 1): inconclusive, refused in")
-    assert record["finiteness"]["passed"] and record["finiteness"]["carrier"] == (
-        "double"
-    )
+    assert record["finiteness"]["passed"]
     json.dumps(record, allow_nan=False)
 
 
 @pytest.mark.loop_fast
 def test_a_probe_verdict_is_the_threshold_rule():
-    """A probe fails iff a measured R / S is not below K (whatever else is
-    inconclusive), is inconclusive iff a row's R or S cannot be computed or
-    nothing was compared, and passes otherwise; its failure is the keyed
-    ``loop-induced-probe`` refusal (the dropped-R2 test below runs it)."""
+    """A probe's verdict is its rows' (``checks.judge`` per (loop order,
+    row) and Laurent coefficient, then ``checks.aggregate``): R the
+    colour-metric residue, P the row's physical finite-amplitude norm at the
+    same carrier (with E_P), T its term floor. The required rows are the
+    union of the evaluation's and the floors' rows at every coefficient of
+    the required width: a row or coefficient one operand lacks, or a
+    non-finite residue, is inconclusive, never skipped; a row without any
+    term is vacuous; a probe every row of which is vacuous has nothing to
+    test. Its failure is the keyed ``loop-induced-probe`` refusal."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.refusals import LoopEngineRefusal, keyed_error
 
-    assert induced.probe_verdict({"k": 7.1e-4}, (), 1e-5) == "fail"
-    assert induced.probe_verdict({"k": 7.1e-4}, ("x",), 1e-5) == "fail"
-    assert induced.probe_verdict({"k": 1e-5}, (), 1e-5) == "fail"
-    assert induced.probe_verdict({"k": 1e-13}, ("x",), 1e-5) == "inconclusive"
-    assert induced.probe_verdict({}, (), 1e-5) == "inconclusive"
-    assert induced.probe_verdict({"k": 1e-13}, (), 1e-5) == "pass"
-    assert induced.probe_verdict({"k": 1e-13}, (), 1e-14) == "fail"
     typed = keyed_error(induced.ProbeFailure("'g g > a a': ward probe failed"))
     assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
-    # R, P and T per row and coefficient (S = max(P, K T)): a missing floor,
-    # a non-finite residue and a floor row the evaluation lacks are
-    # inconclusive rows; a row without any term is vacuous.
-    floors = induced.RowFloors(
-        {"a": [1e5, 1e5, 1e5], "b": [1.0, 1.0, 1.0], "d": [1.0, 1.0, 1.0]}
-    )
-    floors.finite = {"a": 1.0, "b": 1.0, "d": 1.0}
+
+    def probe(estimates, floors, references, width=3, first=1):
+        measures = induced.probe_measures(estimates, floors, first, references, width)
+        return induced.ProbeResult(
+            "finiteness", induced.judged_cells(measures, 1e-5), tolerance=1e-5
+        )
+
+    references = {"a": (1.0, 1e-14), "b": (1.0, 1e-14), "d": (1.0, 1e-14)}
+    floors = {"a": [1e5] * 3, "b": [1.0] * 3, "d": [1.0] * 3}
     estimates = {
         "a": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
         "b": ((1.0, 0.1), (float("nan"), 0.1), (0.0, 0.1)),
         "c": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
     }
-    judged = induced.judged_rows(induced.probe_measures(estimates, floors, 1), 1e-5)
-    assert judged["ratios"] == {"a": 1e-15, "b": 0.0}
-    assert judged["relative"]["a"] == (1e-15, 0.1)
-    assert len(judged["undefined"]) == 4  # b k=1, c k=1, c k=2, d (no row)
-    assert any(text.startswith("d:") for text in judged["undefined"])
-    assert judged["worst_row"][4] == "P" and judged["vacuous"] == 0
-    # A row whose physical finite amplitude is unresolved (P below K T):
-    # S = K T, the noise guard, so the test is R < K^2 T.
-    floors = induced.RowFloors({"a": [1e8, 1e8]})
-    floors.finite = {"a": 1.0}
-    judged = induced.judged_rows(
-        induced.probe_measures({"a": ((1.0, 0.0), (1e-3, 0.0))}, floors, 1), 1e-5
+    result = probe(estimates, floors, references)
+    assert result.verdict == "inconclusive"
+    assert result.ratios == {"a": 1e-15, "b": 0.0}
+    # b k=1 (NaN), c k=1, c k=2 (no floor), d k=1, d k=2 (no amplitude row).
+    assert len(result.undefined) == 5
+    assert any(text.startswith("d k=1") for text in result.undefined)
+    # A coefficient the evaluation does not supply (width 3, two given).
+    short = probe({"a": ((1.0, 0.1), (1e-15, 0.1))}, {"a": [1.0] * 3}, references)
+    assert short.verdict == "inconclusive"
+    # A resolved row with T / P 1e7 and a 1e-3 violation fails (the reviewer's
+    # case: the term scale never hides a physical miss).
+    heavy = probe(
+        {"a": ((1.0, 0.1), (1e-3, 0.1))},
+        {"a": [1e7, 1e7]},
+        {"a": (1.0, 1e-12)},
+        width=2,
     )
-    assert judged["worst_row"][4] == "K T" and judged["ratios"]["a"] == 1e-6
-    assert induced.probe_verdict(judged["ratios"], judged["undefined"], 1e-5) == "pass"
-    judged = induced.judged_rows(
-        induced.probe_measures({"a": ((1.0, 0.0), (1e-1, 0.0))}, floors, 1), 1e-5
-    )
-    assert induced.probe_verdict(judged["ratios"], judged["undefined"], 1e-5) == "fail"
+    assert heavy.verdict == "fail" and heavy.worst == pytest.approx(1e-3)
     # Every row vacuous (no term: the amplitude vanishes identically).
-    floors = induced.RowFloors({"z": [0.0, 0.0]})
-    floors.finite = {"z": 0.0}
-    judged = induced.judged_rows(
-        induced.probe_measures({"z": ((0.0, 0.0), (0.0, 0.0))}, floors, 1), 1e-5
+    empty = probe(
+        {"z": ((0.0, 0.0), (0.0, 0.0))}, {"z": [0.0, 0.0]}, {"z": (0.0, 0.0)}, width=2
     )
-    assert judged["vacuous"] == 1 and not judged["ratios"]
-    result = induced.ProbeResult(
-        "finiteness", judged["ratios"], vacuous=judged["vacuous"], tolerance=1e-5
-    )
-    assert result.verdict == "vacuous" and result.passed
-    assert result.reason.startswith("nothing to test")
+    assert empty.verdict == "vacuous" and empty.passed and empty.vacuous == 1
+    assert empty.reason.startswith("nothing to test")
 
 
 @pytest.mark.loop_fast
@@ -518,11 +523,16 @@ def test_a_goldstone_probe_refused_in_binary64_runs_in_double_double(monkeypatch
 
     calls: list[tuple[int, str]] = []
 
+    from pyamplicol.loops.v2.checks import Measure
+
     def probe(vector, partner, point, scale, leg, *, precision, physical, tolerance):
         calls.append((leg, precision.arithmetic))
         if leg == 3 and precision.arithmetic == "double":
             raise induced.ProbePointRefused("the probe point failed: forced (seam)")
-        return GoldstoneResult(leg, {("o", "r"): 1e-13}, None, 0.1, tolerance=1e-5)
+        cells = induced.judged_cells(
+            {(("o", "r"), 0): Measure("x", 1e-13, 1.0, 1.0)}, 1e-5, precision
+        )
+        return GoldstoneResult(leg, cells, None, 0.1, tolerance=1e-5)
 
     monkeypatch.setattr(
         goldstone, "massive_vector_legs", lambda target: {3: 250, 4: 251}
@@ -649,6 +659,7 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     assert dropped_record["finiteness"] == {
         "worst": dropped_record["finiteness"]["worst"],
         "passed": True,
+        "verdict": "pass",
         "carrier": "double",
     }
     wards = [e for e in dropped_record["probes"] if e["probe"] == "ward"]
