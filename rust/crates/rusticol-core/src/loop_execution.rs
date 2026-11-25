@@ -2683,118 +2683,32 @@ pub mod v2 {
             zero.clone(),
             zero.one() / (zero.from_usize(16) * &pi * &pi * zero.from_usize(plan.average as usize)),
         );
-        let mut results = Vec::with_capacity(points);
-        let failed = |failures: Vec<String>, measures: Vec<LaneMeasure>| PointResult {
-            families: Vec::new(),
-            check: None,
-            bare: Vec::new(),
-            budget: None,
-            amplitudes: Vec::new(),
-            amplitude_check: None,
-            amplitude_budget: None,
-            amplitude_scale: Vec::new(),
-            failures,
-            measures,
-            rescued: Vec::new(),
-            rescued_moments: Vec::new(),
-            local_rescued: Vec::new(),
-            uncertified: Vec::new(),
-            uncertified_bounds: Vec::new(),
+        let started = Instant::now();
+        let lanes_total: usize = families.iter().map(Vec::len).sum::<usize>()
+            + checks.iter().map(Vec::len).sum::<usize>();
+        let assembly = Assembly {
+            plan,
+            zero: &zero,
+            factor: &factor,
+            width,
+            check: options.check.is_some(),
+            term_scale: options.term_scale,
+            raw_lanes: options.raw_lanes,
         };
-        if plan.amplitude {
-            // Amplitude-mode plans (decided once per call): the native
-            // amplitude sum per (loop order, column).
-            for point in 0..points {
-                if !failures[point].is_empty() {
-                    results.push(failed(
-                        std::mem::take(&mut failures[point]),
-                        std::mem::take(&mut measures[point]),
-                    ));
-                    continue;
-                }
-                let mut lanes = std::mem::take(&mut families[point]);
-                lanes.sort_by_key(|(key, _)| *key);
-                let tests = options.check.map(|_| {
-                    let mut tests = std::mem::take(&mut checks[point]);
-                    tests.sort_by_key(|(key, _)| *key);
-                    tests
-                });
-                let terms = options
-                    .term_scale
-                    .then(|| std::mem::take(&mut terms[point]));
-                let mut result =
-                    amplitude_result(plan, &zero, width, lanes, tests, terms, options.raw_lanes);
-                result.rescued = std::mem::take(&mut rescued[point]);
-                result.local_rescued = std::mem::take(&mut local[point]);
-                result.uncertified = std::mem::take(&mut uncertified[point]);
-                result.uncertified_bounds = std::mem::take(&mut uncertified_bounds[point]);
-                result.rescued_moments = std::mem::take(&mut rescued_moments[point]);
-                results.push(result);
-            }
-            report.count("points", points as u64);
-            return Ok((results, report));
-        }
-        for point in 0..points {
-            if !failures[point].is_empty() {
-                results.push(failed(
-                    std::mem::take(&mut failures[point]),
-                    std::mem::take(&mut measures[point]),
-                ));
-                continue;
-            }
-            let mut sums =
-                vec![vec![Complex::new(zero.clone(), zero.clone()); width]; plan.columns];
-            let mut lanes = std::mem::take(&mut families[point]);
-            lanes.sort_by_key(|(key, _)| *key);
-            for (key, value) in &lanes {
-                for (s, z) in sums[key.column].iter_mut().zip(value) {
-                    *s += z;
-                }
-            }
-            let two = zero.from_usize(2);
-            let bare = sums
-                .iter()
-                .map(|column| {
-                    column
-                        .iter()
-                        .map(|z| two.clone() * (factor.clone() * z).re)
-                        .collect()
-                })
-                .collect();
-            let (check, budget) = if options.check.is_some() {
-                let mut tests = std::mem::take(&mut checks[point]);
-                tests.sort_by_key(|(key, _)| *key);
-                let mut budget = vec![vec![zero.clone(); width]; plan.columns];
-                for ((key, direct), (other, test)) in lanes.iter().zip(&tests) {
-                    debug_assert_eq!(key, other);
-                    add_to_budget(
-                        &mut budget[key.column],
-                        &deviation(direct, test),
-                        plan.average,
-                    );
-                }
-                (Some(tests), Some(budget))
-            } else {
-                (None, None)
-            };
-            results.push(PointResult {
-                families: lanes,
-                check,
-                bare,
-                budget,
-                amplitudes: Vec::new(),
-                amplitude_check: None,
-                amplitude_budget: None,
-                amplitude_scale: Vec::new(),
-                failures: Vec::new(),
-                measures: Vec::new(),
-                rescued: std::mem::take(&mut rescued[point]),
-                rescued_moments: std::mem::take(&mut rescued_moments[point]),
-                local_rescued: std::mem::take(&mut local[point]),
-                uncertified: std::mem::take(&mut uncertified[point]),
-                uncertified_bounds: std::mem::take(&mut uncertified_bounds[point]),
-            });
-        }
+        let take = |point: usize| PointParts {
+            failures: std::mem::take(&mut failures[point]),
+            measures: std::mem::take(&mut measures[point]),
+            lanes: std::mem::take(&mut families[point]),
+            tests: std::mem::take(&mut checks[point]),
+            terms: std::mem::take(&mut terms[point]),
+            rescued: std::mem::take(&mut rescued[point]),
+            local_rescued: std::mem::take(&mut local[point]),
+            uncertified: std::mem::take(&mut uncertified[point]),
+            uncertified_bounds: std::mem::take(&mut uncertified_bounds[point]),
+            rescued_moments: std::mem::take(&mut rescued_moments[point]),
+        };
+        let results = assembly.points(points, lanes_total, ASSEMBLY_LANES_PER_TASK, take);
+        report.time(ASSEMBLY, started);
         report.count("points", points as u64);
         Ok((results, report))
     }
@@ -3271,6 +3185,182 @@ pub mod v2 {
     /// check ran, the term scale `Σ_f Σ_α |N_α| |I_α| / (16π²)` when asked
     /// (`terms`, [`V2Options::term_scale`]); the raw lanes kept only when
     /// asked (`raw_lanes`).
+    /// The stage of the per-point assembly at the end of an evaluation
+    /// (the lanes sorted, summed and budgeted into each point's result).
+    const ASSEMBLY: &str = "assembly";
+
+    /// Lanes (direct and re-test) whose per-point assembly outweighs one
+    /// parallel task on the executor's pool: below twice this many in a
+    /// call, its points are assembled one after another. Measured on the
+    /// production build (binary64, 8 threads): a lane costs about 20 ns to
+    /// sort, sum and budget, a fan-out over the pool about 20 us, so a task
+    /// pays from about a thousand lanes.
+    const ASSEMBLY_LANES_PER_TASK: usize = 1024;
+
+    /// One point's inputs to its result (`Assembly::point`), taken from the
+    /// call's per-point sinks.
+    struct PointParts<T> {
+        failures: Vec<String>,
+        measures: Vec<LaneMeasure>,
+        lanes: Vec<(LaneKey, Vec<Complex<T>>)>,
+        tests: Vec<(LaneKey, Vec<Complex<T>>)>,
+        terms: Vec<Vec<T>>,
+        rescued: Vec<(LaneKey, RescueCarrier)>,
+        local_rescued: Vec<(LaneKey, RescueCarrier, f64)>,
+        uncertified: Vec<(LaneKey, &'static str)>,
+        uncertified_bounds: Vec<(LaneKey, [f64; 3])>,
+        rescued_moments: Vec<(usize, usize, RescueCarrier)>,
+    }
+
+    /// The per-call settings of the per-point assembly at the end of
+    /// `evaluate_lanes`: a point's result depends on its own inputs only.
+    struct Assembly<'a, T> {
+        plan: &'a LoopProgramV4,
+        zero: &'a T,
+        factor: &'a Complex<T>,
+        width: usize,
+        check: bool,
+        term_scale: bool,
+        raw_lanes: bool,
+    }
+
+    impl<T: Real + Send + Sync> Assembly<'_, T> {
+        /// Every point's result, in point order, from `take(point)`. Points
+        /// are independent: on a pool of more than one thread, a call with
+        /// at least `2 * lanes_per_task` lanes (direct and re-test) assembles
+        /// them in parallel, about `lanes_per_task` lanes per task; else one
+        /// after another, as on one thread.
+        fn points(
+            &self,
+            points: usize,
+            lanes: usize,
+            lanes_per_task: usize,
+            mut take: impl FnMut(usize) -> PointParts<T>,
+        ) -> Vec<PointResult<T>> {
+            let lanes_per_task = lanes_per_task.max(1);
+            if points > 1 && rayon::current_num_threads() > 1 && lanes >= 2 * lanes_per_task {
+                let parts: Vec<PointParts<T>> = (0..points).map(take).collect();
+                let tasks = lanes / lanes_per_task;
+                return parts
+                    .into_par_iter()
+                    .with_min_len(points.div_ceil(tasks).max(1))
+                    .map(|part| self.point(part))
+                    .collect();
+            }
+            let mut results = Vec::with_capacity(points);
+            for point in 0..points {
+                results.push(self.point(take(point)));
+            }
+            results
+        }
+
+        /// One point's result: its failures, else (amplitude-mode plans) the
+        /// native amplitude sum per (loop order, column), else its lanes in
+        /// key order, the bare virtual per column and the re-test budget.
+        fn point(&self, part: PointParts<T>) -> PointResult<T> {
+            let PointParts {
+                failures,
+                measures,
+                mut lanes,
+                tests,
+                terms,
+                rescued,
+                local_rescued,
+                uncertified,
+                uncertified_bounds,
+                rescued_moments,
+            } = part;
+            let (plan, zero, width) = (self.plan, self.zero, self.width);
+            if !failures.is_empty() {
+                return PointResult {
+                    families: Vec::new(),
+                    check: None,
+                    bare: Vec::new(),
+                    budget: None,
+                    amplitudes: Vec::new(),
+                    amplitude_check: None,
+                    amplitude_budget: None,
+                    amplitude_scale: Vec::new(),
+                    failures,
+                    measures,
+                    rescued: Vec::new(),
+                    rescued_moments: Vec::new(),
+                    local_rescued: Vec::new(),
+                    uncertified: Vec::new(),
+                    uncertified_bounds: Vec::new(),
+                };
+            }
+            lanes.sort_by_key(|(key, _)| *key);
+            let tests = self.check.then(|| {
+                let mut tests = tests;
+                tests.sort_by_key(|(key, _)| *key);
+                tests
+            });
+            if plan.amplitude {
+                // Amplitude-mode plans: the native amplitude sum per (loop
+                // order, column).
+                let terms = self.term_scale.then_some(terms);
+                let mut result =
+                    amplitude_result(plan, zero, width, lanes, tests, terms, self.raw_lanes);
+                result.rescued = rescued;
+                result.local_rescued = local_rescued;
+                result.uncertified = uncertified;
+                result.uncertified_bounds = uncertified_bounds;
+                result.rescued_moments = rescued_moments;
+                return result;
+            }
+            let mut sums =
+                vec![vec![Complex::new(zero.clone(), zero.clone()); width]; plan.columns];
+            for (key, value) in &lanes {
+                for (s, z) in sums[key.column].iter_mut().zip(value) {
+                    *s += z;
+                }
+            }
+            let two = zero.from_usize(2);
+            let bare = sums
+                .iter()
+                .map(|column| {
+                    column
+                        .iter()
+                        .map(|z| two.clone() * (self.factor.clone() * z).re)
+                        .collect()
+                })
+                .collect();
+            let (check, budget) = match tests {
+                Some(tests) => {
+                    let mut budget = vec![vec![zero.clone(); width]; plan.columns];
+                    for ((key, direct), (other, test)) in lanes.iter().zip(&tests) {
+                        debug_assert_eq!(key, other);
+                        add_to_budget(
+                            &mut budget[key.column],
+                            &deviation(direct, test),
+                            plan.average,
+                        );
+                    }
+                    (Some(tests), Some(budget))
+                }
+                None => (None, None),
+            };
+            PointResult {
+                families: lanes,
+                check,
+                bare,
+                budget,
+                amplitudes: Vec::new(),
+                amplitude_check: None,
+                amplitude_budget: None,
+                amplitude_scale: Vec::new(),
+                failures: Vec::new(),
+                measures: Vec::new(),
+                rescued,
+                rescued_moments,
+                local_rescued,
+                uncertified,
+                uncertified_bounds,
+            }
+        }
+    }
+
     fn amplitude_result<T: Real>(
         plan: &LoopProgramV4,
         zero: &T,
@@ -3578,6 +3668,143 @@ pub mod v2 {
             assert_eq!(expected.2, 18);
             for threads in [2, 4, 8] {
                 assert_eq!(run(threads), expected, "{threads} threads");
+            }
+        }
+
+        /// The per-point assembly at the end of an evaluation (lanes sorted,
+        /// summed per column, re-test budget; amplitude sums in amplitude
+        /// mode) on several threads, one task per few lanes, is bitwise the
+        /// serial one: seven points of shuffled lanes over three columns
+        /// with values of very different sizes (the sums depend on their
+        /// order), a re-test in its own order, a failed point.
+        #[test]
+        fn the_point_assembly_on_several_threads_is_bitwise_the_serial_one() {
+            let mut seed = 0x2545_f491_4f6c_dd1d_u64;
+            let mut next = move || {
+                seed ^= seed << 13;
+                seed ^= seed >> 7;
+                seed ^= seed << 17;
+                seed
+            };
+            let value = |r: u64| {
+                let size = 10f64.powi((r % 31) as i32 - 15);
+                let x = ((r >> 8) % 1_000_003) as f64 / 7.0 - 70_000.0;
+                Complex::new(x * size, (x - 3.25) * size / 3.0)
+            };
+            let points = 7;
+            let mut inputs = Vec::new();
+            for point in 0..points {
+                let count = 40 + (next() % 60) as usize;
+                let mut lanes = Vec::new();
+                for i in 0..count {
+                    let key = LaneKey {
+                        family: i / 3,
+                        order: (i / 2) % 2,
+                        column: i % 3,
+                    };
+                    lanes.push((key, (0..3).map(|_| value(next())).collect::<Vec<_>>()));
+                }
+                let mut tests = lanes.clone();
+                for (_, values) in &mut tests {
+                    for z in values.iter_mut() {
+                        *z = *z + value(next()) * Complex::new(1e-9, 0.0);
+                    }
+                }
+                // Shuffled: the assembly sorts both by key.
+                for k in (1..lanes.len()).rev() {
+                    lanes.swap(k, (next() % (k as u64 + 1)) as usize);
+                    let j = (next() % (k as u64 + 1)) as usize;
+                    tests.swap(k, j);
+                }
+                let failures = if point == 4 {
+                    vec!["a failed point".to_string()]
+                } else {
+                    Vec::new()
+                };
+                inputs.push((failures, lanes, tests));
+            }
+            let bits = |z: &Complex<f64>| (z.re.to_bits(), z.im.to_bits());
+            let run = |threads: usize, amplitude: bool| {
+                let mut plan = LoopProgramV4::load(PLAN).unwrap();
+                plan.columns = 3;
+                plan.average = 6;
+                plan.amplitude = amplitude;
+                plan.order_count = 2;
+                let pool = rayon::ThreadPoolBuilder::new()
+                    .num_threads(threads)
+                    .build()
+                    .unwrap();
+                let zero = 0.0;
+                let pi = zero.pi();
+                let factor = Complex::new(0.0, 1.0 / (16.0 * pi * pi * plan.average as f64));
+                let assembly = Assembly {
+                    plan: &plan,
+                    zero: &zero,
+                    factor: &factor,
+                    width: 3,
+                    check: true,
+                    term_scale: false,
+                    raw_lanes: true,
+                };
+                let lanes: usize = inputs.iter().map(|(_, l, t)| l.len() + t.len()).sum();
+                let results = pool.install(|| {
+                    assembly.points(points, lanes, 1, |point| {
+                        let (failures, lanes, tests) = inputs[point].clone();
+                        PointParts {
+                            failures,
+                            measures: Vec::new(),
+                            lanes,
+                            tests,
+                            terms: Vec::new(),
+                            rescued: Vec::new(),
+                            local_rescued: Vec::new(),
+                            uncertified: Vec::new(),
+                            uncertified_bounds: Vec::new(),
+                            rescued_moments: Vec::new(),
+                        }
+                    })
+                });
+                results
+                    .iter()
+                    .map(|r| {
+                        let lanes = |lanes: &[(LaneKey, Vec<Complex<f64>>)]| {
+                            lanes
+                                .iter()
+                                .map(|(key, v)| (*key, v.iter().map(bits).collect::<Vec<_>>()))
+                                .collect::<Vec<_>>()
+                        };
+                        let reals = |rows: &[Vec<f64>]| {
+                            rows.iter()
+                                .map(|row| row.iter().map(|x| x.to_bits()).collect::<Vec<_>>())
+                                .collect::<Vec<_>>()
+                        };
+                        let slots = |rows: &[Vec<Complex<f64>>]| {
+                            rows.iter()
+                                .map(|row| row.iter().map(bits).collect::<Vec<_>>())
+                                .collect::<Vec<_>>()
+                        };
+                        (
+                            lanes(&r.families),
+                            r.check.as_deref().map(lanes),
+                            reals(&r.bare),
+                            r.budget.as_deref().map(reals),
+                            slots(&r.amplitudes),
+                            r.amplitude_check.as_deref().map(slots),
+                            r.amplitude_budget.as_deref().map(reals),
+                            r.failures.clone(),
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            };
+            for amplitude in [false, true] {
+                let expected = run(1, amplitude);
+                assert_eq!(expected.len(), points);
+                assert_eq!(expected[4].7, ["a failed point"]);
+                assert!(expected[4].0.is_empty() && expected[0].0.len() >= 40);
+                assert_eq!(expected[0].2.len(), if amplitude { 0 } else { 3 });
+                for threads in [2, 4, 8] {
+                    assert_eq!(run(threads, amplitude), expected, "{threads} threads");
+                }
             }
         }
 
