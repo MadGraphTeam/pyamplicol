@@ -4699,8 +4699,9 @@ where
                 continue;
             }
             let Some(kernel) = propagator else {
-                states[start * points..(start + dimension) * points]
-                    .clone_from_slice(&sums[accumulator * points..(accumulator + dimension) * points]);
+                states[start * points..(start + dimension) * points].clone_from_slice(
+                    &sums[accumulator * points..(accumulator + dimension) * points],
+                );
                 continue;
             };
             let values = propagator_rows(
@@ -5059,7 +5060,15 @@ where
         Kernel::Plane(plane) => {
             let (inputs, width) = (plane.input_len(), plane.output_len());
             let (planes, stride) = plane.planes(rows);
-            fill_planes(planes, stride, layout, models, chunk, (states, points), inputs)?;
+            fill_planes(
+                planes,
+                stride,
+                layout,
+                models,
+                chunk,
+                (states, points),
+                inputs,
+            )?;
             let planes = plane
                 .run(rows)
                 .map_err(|e| invalid(format!("interaction kernel: {}", e.message())))?;
@@ -5115,7 +5124,10 @@ where
         .input_len()
         .checked_sub(4 + models.len())
         .ok_or_else(|| invalid("propagator kernel inputs"))?;
-    require(dimension <= kernel.output_len(), "propagator kernel outputs")?;
+    require(
+        dimension <= kernel.output_len(),
+        "propagator kernel outputs",
+    )?;
     // The kernel's inputs: its sum's components, then the momentum and the
     // model parameters (each a run of `points` values).
     let sum = |k: usize| &sums[(accumulator + k) * points..(accumulator + k + 1) * points];
@@ -5252,7 +5264,15 @@ where
     for chunk in active.chunks((PLANE_ROWS / points).max(1)) {
         let rows = chunk.len() * points;
         let (planes, stride) = plane.planes(rows);
-        fill_planes(planes, stride, layout, models, chunk, (states, points), inputs)?;
+        fill_planes(
+            planes,
+            stride,
+            layout,
+            models,
+            chunk,
+            (states, points),
+            inputs,
+        )?;
         let planes = plane
             .run(rows)
             .map_err(|e| invalid(format!("interaction kernel: {}", e.message())))?;
