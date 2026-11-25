@@ -1687,42 +1687,27 @@ impl TirReductionBackend {
             let empty = || groups.iter().map(|_| Vec::new()).collect();
             return Ok((empty(), check.map(|_| empty())));
         };
-        // The kinematic rows and their moment ranks.
+        // The kinematic rows and their moment ranks (on several workers per
+        // group, concatenated in group order: the first refusal in group
+        // order).
+        let workers = self.workers();
         let mut rows = Vec::new();
-        for (index, g) in groups.iter().enumerate() {
-            let declared = ncoeff(g.rank);
-            if g.coefficients.len() != g.keys.len() * declared {
-                return Err(RusticolError::internal(
-                    "TIR: family coefficients are not binomial(rank + 4, 4) per lane",
-                ));
+        if workers > 1 {
+            use rayon::prelude::*;
+            let parts: Vec<RusticolResult<Vec<Row>>> = groups
+                .par_iter()
+                .enumerate()
+                .map(|(index, g)| {
+                    let mut rows = Vec::new();
+                    push_rows(index, g, &mut rows).map(|()| rows)
+                })
+                .collect();
+            for part in parts {
+                rows.extend(part?);
             }
-            let mut start = 0;
-            while start < g.keys.len() {
-                let point = g.points[start];
-                let end = (start..g.keys.len())
-                    .find(|&k| g.points[k] != point)
-                    .unwrap_or(g.keys.len());
-                let rank = (start..end)
-                    .map(|lane| {
-                        crate::runtime::true_rank(
-                            &g.coefficients[lane * declared..(lane + 1) * declared],
-                            g.rank,
-                        )
-                    })
-                    .max()
-                    .unwrap_or(0);
-                if let Some(refusal) = rank_refusal(Reducer::TiRust, g.propagators, rank) {
-                    return Err(RusticolError::unsupported_runtime_capability(
-                        "tirust", refusal,
-                    ));
-                }
-                rows.push(Row {
-                    group: index,
-                    start,
-                    end,
-                    rank,
-                });
-                start = end;
+        } else {
+            for (index, g) in groups.iter().enumerate() {
+                push_rows(index, g, &mut rows)?;
             }
         }
         // The call's check of every row: TIRust's rotation copy from the
@@ -1734,7 +1719,6 @@ impl TirReductionBackend {
         let copy = check_frame
             .filter(|_| self.options.rotation_copy)
             .and_then(relabelling);
-        let workers = self.workers();
         if workers > 1 && rows.len() > 1 {
             return self.reduce_slices(groups, &rows, workers, (poles, check, copy), &prototype);
         }
@@ -1906,6 +1890,50 @@ impl TirReductionBackend {
         self.counters.contraction += contraction;
         Ok((direct, checked))
     }
+}
+
+/// The kinematic rows of group `index` (`g`) and their moment ranks
+/// (module docs 'Rows'), appended to `rows`.
+fn push_rows<T: Carrier>(
+    index: usize,
+    g: &FamilyLanes<T>,
+    rows: &mut Vec<Row>,
+) -> RusticolResult<()> {
+    let declared = ncoeff(g.rank);
+    if g.coefficients.len() != g.keys.len() * declared {
+        return Err(RusticolError::internal(
+            "TIR: family coefficients are not binomial(rank + 4, 4) per lane",
+        ));
+    }
+    let mut start = 0;
+    while start < g.keys.len() {
+        let point = g.points[start];
+        let end = (start..g.keys.len())
+            .find(|&k| g.points[k] != point)
+            .unwrap_or(g.keys.len());
+        let rank = (start..end)
+            .map(|lane| {
+                crate::runtime::true_rank(
+                    &g.coefficients[lane * declared..(lane + 1) * declared],
+                    g.rank,
+                )
+            })
+            .max()
+            .unwrap_or(0);
+        if let Some(refusal) = rank_refusal(Reducer::TiRust, g.propagators, rank) {
+            return Err(RusticolError::unsupported_runtime_capability(
+                "tirust", refusal,
+            ));
+        }
+        rows.push(Row {
+            group: index,
+            start,
+            end,
+            rank,
+        });
+        start = end;
+    }
+    Ok(())
 }
 
 /// One slice's moments in every frame (direct, check, acceptance), row
