@@ -1602,20 +1602,20 @@ def _require_bound_validation_point(
     manifest: Any, process_id: str, runtime: V2VirtualRuntime
 ) -> None:
     """Refuse a stored process whose validation point is off the mass shells
-    its amplitude binds at the artifact's own parameters (the slice's fixed
-    parameters, no caller's): an artifact generated before the kinematics
-    took the bound masses (pyAmpliCol 1.0.3 and older drew the validation
-    point, and so the flat phase-space points of ``evaluate`` and
-    ``profile``, on the model's masses although ``[loop.preparation]
-    fixed_parameters`` changed an external mass). Its records contradict its
-    binding (the point, ``model/parameters.json``, an API bundle's
-    validation points), and every reader of them would evaluate off shell:
-    it is refused, to be regenerated, rather than re-derived here, which
-    would mend this runtime's readers only. The measure is the mass-shell
-    guard's (``kinematics.shell_defects``, exact on the stored digits,
-    against ``shell_bound``), against the binary64 binding of the runtime
-    (``_kinematics_masses`` at the artifact's own parameters). A process
-    without a readable, available point is not checked."""
+    its amplitude binds at the artifact's own parameters (the fixed ones, no
+    caller's): an artifact generated before the kinematics took the bound
+    masses (pyAmpliCol 1.0.3 and older drew the validation point, and so the
+    flat phase-space points of ``evaluate`` and ``profile``, on the model's
+    masses although ``[loop.preparation] fixed_parameters`` changed an
+    external mass). Its records contradict its binding (the point,
+    ``model/parameters.json``, an API bundle's validation points), and every
+    reader of them would evaluate off shell: it is refused, to be
+    regenerated, rather than re-derived here, which would mend this
+    runtime's readers only. The measure is the mass-shell guard's
+    (``kinematics.shell_defects``, exact on the stored digits, against
+    ``shell_bound``; the masses ``V2VirtualRuntime._bound_leg_masses``, no
+    executor built). A process without a readable, available point is not
+    checked."""
 
     from pyamplicol.kinematics import initial_count, shell_bound, shell_defects
 
@@ -1635,12 +1635,12 @@ def _require_bound_validation_point(
     incoming = [[Fraction(str(x)) for x in leg] for leg in point[:initial]]
     total = [sum(leg[mu] for leg in incoming) for mu in range(4)]
     scale = total[0] ** 2 - total[1] ** 2 - total[2] ** 2 - total[3] ** 2
-    if scale <= 0:
-        scale = Fraction(1)
-    masses = runtime._kinematics_masses(
-        Precision.double(), point, scale, 1, parameters={}
+    masses = runtime._bound_leg_masses(
+        Precision.double(), {}, scale if scale > 0 else Fraction(1)
     )
     (defects,) = shell_defects([point], [masses], binary64=False)
+    if any(math.isnan(value) for value in defects):
+        return
     bound = shell_bound(len(point))
     worst = max(range(len(point)), key=lambda leg: defects[leg])
     if not defects[worst] > bound:
@@ -1799,8 +1799,8 @@ class V2VirtualRuntime:
         physics = _json_payload(manifest, str(selected["physics_path"]))
         model_payload = _json_payload(manifest, "model/compiled-model.json")
         self._lock = RLock()
-        # The legs' bound squared masses by carrier and parameters
-        # (``_kinematics_masses``).
+        # The legs' bound squared masses by carrier digits and parameters
+        # (``_bound_leg_masses``).
         self._bound_masses: dict[tuple[Any, ...], list[Any]] = {}
         self._native = native
         self._plan_sha256 = str(admission["plan_sha256"])
@@ -1818,9 +1818,7 @@ class V2VirtualRuntime:
             for record in compiled.ir.parameters
             if record.nature == "external"
         }
-        # The compiled model's payload is read here only: not kept (~60 k
-        # tracked objects that every full pass of the cyclic collector walks).
-        del compiled, model_payload
+        del model_payload
         if execution["point_inputs"] != LOOP_V2_NATIVE_POINT_INPUTS:
             # The native admission refuses every other declaration first.
             raise ArtifactError(
@@ -1887,6 +1885,20 @@ class V2VirtualRuntime:
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
         self._scale_parameter = record["scale_parameter"]
+        # The mass-shell guard's mass evaluator (``_bound_leg_masses``): the
+        # model's parameter records and each leg's mass parameter (the
+        # representative's legs); the rest of the compiled model is read
+        # here only, not kept (~60 k tracked objects that every full pass of
+        # the cyclic collector walks).
+        from types import SimpleNamespace
+
+        self._mass_names = {int(p.pdg_code): str(p.mass) for p in compiled.ir.particles}
+        self._mass_model = SimpleNamespace(
+            name=compiled.name,
+            parameter_defaults=dict(compiled.parameter_defaults),
+            ir=SimpleNamespace(parameters=tuple(compiled.ir.parameters)),
+        )
+        del compiled
         self._executor = self._native_process.executor(
             native, externals=self._externals, **self._thread_options()
         )
@@ -2040,41 +2052,95 @@ class V2VirtualRuntime:
         point: Any,
         scale: Any,
         count: int,
-        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The squared masses the evaluation binds for each leg of a
         caller-order ``point`` (``NativeExecutor.leg_masses`` of the
         representative's executor, on the caller's legs): the improvement's
         targets."""
 
-        from .native_trees import scale_dependent_shared
-
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
-            # The runtime's parameters (``parameters``: others, e.g. none of
-            # the caller's for the load's check of the stored point).
-            parameters = dict(self._parameters if parameters is None else parameters)
-            # The binding depends on the carrier, the parameters and, for a
-            # program whose masses run with the scale, the scale (never on
-            # the point): bound once per carrier and parameters (the
-            # improvement and the shell guard ask per batch), per call for a
-            # running program.
-            key = (
-                precision.arithmetic,
-                precision.working_digits,
-                tuple(sorted(parameters.items())),
+            parameters = dict(self._parameters)
+            masses = self._executor.leg_masses(
+                representative, scale, parameters, precision, count
             )
-            masses = self._bound_masses.get(key)
-            if masses is None:
-                masses = self._executor.leg_masses(
-                    representative, scale, parameters, precision, count
-                )
-                if not scale_dependent_shared(self._native_process.trees):
-                    self._bound_masses[key] = masses
         if member is None:
-            return list(masses)
+            return masses
         return [masses[leg] for leg in member.legs]
+
+    def _shell_masses(
+        self, precision: Any, point: Any, scale: Any, count: int
+    ) -> list[Any]:
+        """The squared masses the mass-shell guard measures each caller leg
+        against (``kinematics.shell_check``'s provider): those the evaluation
+        binds at the runtime's parameters (``_bound_leg_masses``)."""
+
+        del point, count
+        with self._lock:
+            parameters = dict(self._parameters)
+        return self._bound_leg_masses(precision, parameters, scale)
+
+    def _bound_leg_masses(
+        self, precision: Any, parameters: Mapping[str, str], scale: Any
+    ) -> list[Fraction | None]:
+        """Each caller leg's bound squared mass at ``parameters`` (the
+        caller's) and the fixed parameters, by the slice's mass evaluator
+        (``assemble._model_masses`` on the stored model's parameters: an
+        external mass exactly, a derived one at the carrier's working
+        digits, the value the executor binds to its rounding), with no
+        executor built; at the point's scale only for a program whose masses
+        run with it. Cached per carrier digits and parameters."""
+
+        from .assemble import _decimal_string, _model_masses, _sqrt_fraction
+        from .native_trees import scale_dependent_shared
+
+        digits = int(precision.working_digits)
+        values = {**dict(parameters), **self._fixed}
+        running = scale_dependent_shared(self._native_process.trees)
+        if running and self._scale_parameter is not None:
+            values[self._scale_parameter] = _decimal_string(
+                _sqrt_fraction(Fraction(str(scale)), digits), digits
+            )
+        key = (digits, tuple(sorted(values.items())))
+        with self._lock:
+            found = self._bound_masses.get(key)
+        if found is None:
+            mass_of = _model_masses(self._mass_model, values, digits)
+            legs = sorted(
+                self._executor.slice.blocks.process.legs,
+                key=lambda leg: int(leg.label),
+            )
+            names = [self._mass_names[int(leg.pdg)] for leg in legs]
+            # A structurally zero mass (ZERO, or a derived mass whose
+            # resolved definition is 0, a restriction's) is massless, as the
+            # slice's legs take it.
+            zero = {
+                record.name
+                for record in self._mass_model.ir.parameters
+                if record.nature == "internal"
+                and str(record.resolved_expression).strip() == "0"
+            }
+
+            def square(name: str) -> Fraction | None:
+                if name.upper() == "ZERO" or name in zero:
+                    return Fraction(0)
+                try:
+                    return mass_of(name) ** 2
+                except (ArithmeticError, KeyError, ValueError):
+                    # No mass this evaluator binds (e.g. a derived mass that
+                    # vanishes at the parameters): the leg is not measured
+                    # (its own p^2), the evaluation decides.
+                    return None
+
+            found = [square(name) for name in names]
+            if not running:
+                with self._lock:
+                    self._bound_masses[key] = found
+        member = self._member
+        if member is None:
+            return list(found)
+        return [found[leg] for leg in member.legs]
 
     def improved_points(
         self,
@@ -2203,6 +2269,8 @@ class V2VirtualRuntime:
                 # The kinematics improvement's targets: the masses this
                 # runtime's executor binds (m-lit lit-psimprove).
                 runtime.kinematics_masses = self._kinematics_masses
+                # The mass-shell guard's (no executor built).
+                runtime.shell_masses = self._shell_masses
                 self._observables = runtime
             return self._observables
 
@@ -2604,7 +2672,7 @@ class V2VirtualRuntime:
                 points, records = improver.level(caller, scales, setting)
                 # The mass-shell guard on the points this carrier evaluates
                 # (``kinematics``, "the shell guard"), in the caller's legs.
-                shell = shell_check(points, scales, setting, self._kinematics_masses)
+                shell = shell_check(points, scales, setting, self._shell_masses)
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
@@ -2632,9 +2700,7 @@ class V2VirtualRuntime:
                     [caller[i] for i in indices], [scales[i] for i in indices], setting
                 )
                 level_scales = [scales[i] for i in indices]
-                shell = shell_check(
-                    points, level_scales, setting, self._kinematics_masses
-                )
+                shell = shell_check(points, level_scales, setting, self._shell_masses)
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),

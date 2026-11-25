@@ -615,6 +615,10 @@ class V2ObservablesRuntime:
     # bound masses; None: the masses the slice's native column executors
     # bind from their Python inputs (``assemble._leg_masses``).
     kinematics_masses: Any = None
+    # The mass-shell guard's masses (``kinematics.shell_check``'s provider;
+    # an artifact runtime's ``_shell_masses``, which builds no executor):
+    # None, the slice's (``_slice_masses``).
+    shell_masses: Any = None
 
     def __init__(
         self,
@@ -979,7 +983,7 @@ class V2ObservablesRuntime:
 
         from pyamplicol.kinematics import shell_check
 
-        provider = self.kinematics_masses or self._slice_masses
+        provider = self.shell_masses or self._slice_masses
         return shell_check(points, scales, precision, provider)
 
     def _slice_masses(
