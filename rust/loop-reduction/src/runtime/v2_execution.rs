@@ -8,10 +8,10 @@
 //! integrals; or into the TIR backend (`crate::v2_tir`, feature `tir`).
 //! [`V2Backends`] is the one choice per evaluation ([`Reduction`]).
 
-use super::batch::{Batch, BatchCarrier, Data};
+use super::batch::{BatchCarrier, Data};
 use super::v2_reduce::{
-    FamilyGroup, GroupRefinementSource, PoleSelection, Poles, ReduceOptions, ReductionFrame,
-    V2Reducer,
+    FamilyGroup, GroupRefinementSource, LaneViews, PoleSelection, Poles, ReduceOptions,
+    ReductionFrame, V2Reducer, ViewCarrier,
 };
 use crate::Complex;
 use rusticol_core::loop_execution::v2::{
@@ -26,7 +26,7 @@ use symbolica::domains::float::{DoubleFloat, Float};
 
 /// Typed access to the values of a [`Batch`], and the carrier's TIR
 /// reduction (every carrier, m-lit lit-tir-mp).
-pub trait TypedBatch: BatchCarrier + Carrier {
+pub trait TypedBatch: BatchCarrier + Carrier + ViewCarrier {
     fn values(data: &Data) -> Option<&[Complex<Self>]>;
 
     /// The carrier's bits (its precision).
@@ -959,38 +959,18 @@ impl V2ReductionBackend {
         poles: Poles,
         check: Option<ReductionCheck>,
     ) -> RusticolResult<Reduced<T>> {
-        let bits = self.reducer.precision_bits();
-        let batches = groups
+        // The executor's lanes as they are (no copy into batches).
+        let views: Vec<LaneViews<'_, T>> = groups
             .iter()
-            .map(|g| {
-                let rows = g.keys.len();
-                let ids: Vec<u64> = (0..rows as u64).collect();
-                let n = g.propagators;
-                let typed = |values: &[Complex<T>], columns: usize| {
-                    Batch::typed(values.to_vec(), ids.clone(), columns, bits).map_err(failure)
-                };
-                Ok([
-                    typed(&g.shifts, 4 * n)?,
-                    typed(&g.masses, n)?,
-                    typed(&g.scales, 1)?,
-                    typed(&g.s_matrix, n * n)?,
-                    typed(&g.coefficients, g.coefficients.len() / rows.max(1))?,
-                ])
+            .map(|g| LaneViews {
+                propagators: g.propagators,
+                rows: g.keys.len(),
+                shifts: &g.shifts,
+                masses_squared: &g.masses,
+                scales_squared: &g.scales,
+                s_matrix: &g.s_matrix,
+                coefficients: &g.coefficients,
             })
-            .collect::<RusticolResult<Vec<_>>>()?;
-        let family_groups: Vec<FamilyGroup<'_>> = groups
-            .iter()
-            .zip(&batches)
-            .map(
-                |(g, [shifts, masses, scales, s_matrix, coefficients])| FamilyGroup {
-                    propagators: g.propagators,
-                    shifts,
-                    masses_squared: masses,
-                    scales_squared: scales,
-                    s_matrix,
-                    coefficients,
-                },
-            )
             .collect();
         let adapter = source.map(|source| SourceAdapter { source });
         // The lanes' points cut a parallel reduction's slices (none needed
@@ -999,8 +979,8 @@ impl V2ReductionBackend {
             .then(|| groups.iter().map(|g| g.points.as_slice()).collect());
         let output = self
             .reducer
-            .reduce_at(
-                &family_groups,
+            .reduce_views(
+                &views,
                 points.as_deref(),
                 adapter.as_ref().map(|a| a as &dyn GroupRefinementSource),
                 ReduceOptions {

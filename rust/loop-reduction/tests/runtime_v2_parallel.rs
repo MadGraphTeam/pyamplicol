@@ -7,7 +7,8 @@
 //! without the check's frame and the lanes' points), double-double and
 //! arbitrary precision, over several calls of one reducer.
 use rusticol_loop_reduction::runtime::{
-    Batch, FamilyGroup, Poles, ReduceOptions, ReductionFrame, V2Output, V2Reducer, tensor_monomials,
+    Batch, Data, FamilyGroup, LaneViews, Poles, ReduceOptions, ReductionFrame, V2Output, V2Reducer,
+    tensor_monomials,
 };
 
 const TOP: f64 = 90000.0;
@@ -302,4 +303,56 @@ fn double_double_reductions_do_not_depend_on_the_threads() {
 #[test]
 fn arbitrary_precision_reductions_do_not_depend_on_the_threads() {
     check_invariance("arbitrary", Some(40), "generic", 2, 1, &[1, 3]);
+}
+
+/// The executor's path (typed slices, `reduce_views`) reduces as the batch
+/// path (`reduce_at`), bit for bit, serially and on a pool.
+#[test]
+fn lane_views_reduce_as_batches() {
+    let _unlock = pyamplicol::unlock();
+    let all = all_lanes(6, 3, "double", None);
+    let groups: Vec<_> = all.iter().map(group).collect();
+    fn slice(b: &Batch) -> &[rusticol_loop_reduction::Complex<f64>] {
+        match b.data() {
+            Data::Double(values) => values.as_slice(),
+            _ => panic!("binary64 lanes"),
+        }
+    }
+    let views: Vec<LaneViews<'_, f64>> = all
+        .iter()
+        .map(|l| LaneViews {
+            propagators: l.n,
+            rows: l.points.len(),
+            shifts: slice(&l.shifts),
+            masses_squared: slice(&l.masses),
+            scales_squared: slice(&l.scales),
+            s_matrix: slice(&l.matrix),
+            coefficients: slice(&l.coefficients),
+        })
+        .collect();
+    let options = ReduceOptions {
+        poles: Poles::Split,
+        check: Some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .start_handler(|_| pyamplicol::unlock_thread())
+        .build()
+        .unwrap();
+    let reduce = |with_views: bool| {
+        let mut reducer = reducer("double", None, "fast", false);
+        let output = if with_views {
+            reducer.reduce_views(&views, None, None, options)
+        } else {
+            reducer.reduce_at(&groups, None, None, options)
+        };
+        fingerprint(&output.unwrap(), &mut reducer)
+    };
+    let serial = reduce(false);
+    assert_eq!(serial, reduce(true));
+    pool.install(|| {
+        assert_eq!(serial, reduce(false));
+        assert_eq!(serial, reduce(true));
+    });
 }

@@ -2060,36 +2060,77 @@ impl V2Reducer {
         source: Option<&dyn GroupRefinementSource>,
         options: ReduceOptions,
     ) -> ExecutionResult<V2Output> {
+        let rows: Vec<usize> = groups.iter().map(|g| g.coefficients.rows()).collect();
+        let bits = self.precision_bits;
+        self.dispatch(
+            &rows,
+            points,
+            source,
+            options,
+            || {
+                batch_lanes(groups, bits, |data| match data {
+                    Data::Double(values) => Some(values.as_slice()),
+                    _ => None,
+                })
+            },
+            || {
+                batch_lanes(groups, bits, |data| match data {
+                    Data::DoubleDouble(values) => Some(values.as_slice()),
+                    _ => None,
+                })
+            },
+            || {
+                batch_lanes(groups, bits, |data| match data {
+                    Data::Arbitrary(values) => Some(values.as_slice()),
+                    _ => None,
+                })
+            },
+        )
+    }
+
+    /// [`Self::reduce_at`] on the lanes as typed slices ([`LaneViews`]):
+    /// the same reduction without copying the lanes into batches first.
+    pub fn reduce_views<T: ViewCarrier>(
+        &mut self,
+        groups: &[LaneViews<'_, T>],
+        points: Option<&[&[usize]]>,
+        source: Option<&dyn GroupRefinementSource>,
+        options: ReduceOptions,
+    ) -> ExecutionResult<V2Output> {
+        let rows: Vec<usize> = groups.iter().map(|g| g.rows).collect();
+        let ids: Vec<u64> = (0..rows.iter().copied().max().unwrap_or(0) as u64).collect();
+        let ids = ids.as_slice();
+        self.dispatch(
+            &rows,
+            points,
+            source,
+            options,
+            || view_lanes(groups, ids, T::double),
+            || view_lanes(groups, ids, T::double_double),
+            || view_lanes(groups, ids, T::arbitrary),
+        )
+    }
+
+    /// The reduction of a call's lanes on the reducer's engine, the lanes
+    /// typed in its carrier by `double`, `double_double` or `arbitrary`
+    /// (rows per group `rows`).
+    #[allow(clippy::too_many_arguments)]
+    fn dispatch<'a>(
+        &mut self,
+        rows: &[usize],
+        points: Option<&[&[usize]]>,
+        source: Option<&dyn GroupRefinementSource>,
+        options: ReduceOptions,
+        double: impl FnOnce() -> ExecutionResult<Vec<Lanes<'a, f64>>>,
+        double_double: impl FnOnce() -> ExecutionResult<Vec<Lanes<'a, DoubleFloat>>>,
+        arbitrary: impl FnOnce() -> ExecutionResult<Vec<Lanes<'a, Float>>>,
+    ) -> ExecutionResult<V2Output> {
         if let Some(points) = points
-            && (points.len() != groups.len()
-                || groups
-                    .iter()
-                    .zip(points)
-                    .any(|(g, p)| p.len() != g.coefficients.rows()))
+            && (points.len() != rows.len() || rows.iter().zip(points).any(|(&r, p)| p.len() != r))
         {
             return Err(error("the lanes' points do not match the groups"));
         }
-        macro_rules! run {
-            ($engine:expr, $variant:ident) => {{
-                let groups = groups
-                    .iter()
-                    .map(|g| {
-                        lanes(g, self.precision_bits, |b| match b.data() {
-                            Data::$variant(values) => Some(values.as_slice()),
-                            _ => None,
-                        })
-                    })
-                    .collect::<ExecutionResult<Vec<_>>>()?;
-                run(
-                    $engine,
-                    &groups,
-                    options,
-                    self.precision_bits,
-                    source,
-                    points,
-                )
-            }};
-        }
+        let bits = self.precision_bits;
         match &mut self.engines {
             Engines::Fast(_) if options.masters != PoleSelection::BOTH => Err(error(
                 "the fast engine keeps every master pole (it drops scaleless bubbles); \
@@ -2097,22 +2138,127 @@ impl V2Reducer {
             )),
             Engines::Fast(engine) => {
                 engine.share_masters(lane_slices::workers());
-                run!(engine.as_mut(), Double)
+                run(engine.as_mut(), &double()?, options, bits, source, points)
             }
             Engines::Double(engine) => {
                 engine.select(options.masters);
-                run!(engine, Double)
+                run(engine, &double()?, options, bits, source, points)
             }
             Engines::DoubleDouble(engine) => {
                 engine.select(options.masters);
-                run!(engine, DoubleDouble)
+                run(engine, &double_double()?, options, bits, source, points)
             }
             Engines::Arbitrary(engine) => {
                 engine.select(options.masters);
-                run!(engine, Arbitrary)
+                run(engine, &arbitrary()?, options, bits, source, points)
             }
         }
     }
+}
+
+/// One family's lanes as typed lane-major slices, as [`FamilyGroup`]'s
+/// batches hold them (`shifts` `4n` per lane, `masses_squared` `n`,
+/// `scales_squared` one, `s_matrix` `n²`, `coefficients`
+/// `binomial(R+4, 4)`): what [`V2Reducer::reduce_views`] reduces without
+/// copying (the executor's `FamilyLanes`).
+pub struct LaneViews<'a, T> {
+    pub propagators: usize,
+    pub rows: usize,
+    pub shifts: &'a [Complex<T>],
+    pub masses_squared: &'a [Complex<T>],
+    pub scales_squared: &'a [Complex<T>],
+    pub s_matrix: &'a [Complex<T>],
+    pub coefficients: &'a [Complex<T>],
+}
+
+/// A carrier of [`LaneViews`]: its slices as the reducer's carrier's, when
+/// they are the same (else `None`: the call's carrier differs).
+pub trait ViewCarrier: Sized {
+    fn double(values: &[Complex<Self>]) -> Option<&[Complex<f64>]> {
+        let _ = values;
+        None
+    }
+    fn double_double(values: &[Complex<Self>]) -> Option<&[Complex<DoubleFloat>]> {
+        let _ = values;
+        None
+    }
+    fn arbitrary(values: &[Complex<Self>]) -> Option<&[Complex<Float>]> {
+        let _ = values;
+        None
+    }
+}
+
+impl ViewCarrier for f64 {
+    fn double(values: &[Complex<f64>]) -> Option<&[Complex<f64>]> {
+        Some(values)
+    }
+}
+
+impl ViewCarrier for DoubleFloat {
+    fn double_double(values: &[Complex<DoubleFloat>]) -> Option<&[Complex<DoubleFloat>]> {
+        Some(values)
+    }
+}
+
+impl ViewCarrier for Float {
+    fn arbitrary(values: &[Complex<Float>]) -> Option<&[Complex<Float>]> {
+        Some(values)
+    }
+}
+
+/// The typed lanes of `groups` in the carrier `cast` reads (the checks of
+/// [`lanes`] on batches: one shape per group, the reducer's carrier).
+fn view_lanes<'a, T, U>(
+    groups: &[LaneViews<'a, T>],
+    ids: &'a [u64],
+    cast: impl Fn(&'a [Complex<T>]) -> Option<&'a [Complex<U>]>,
+) -> ExecutionResult<Vec<Lanes<'a, U>>> {
+    groups
+        .iter()
+        .map(|g| {
+            let (n, rows) = (g.propagators, g.rows);
+            if n == 0 {
+                return Err(error("a family needs at least one propagator"));
+            }
+            let columns = g.coefficients.len() / rows.max(1);
+            for (values, width) in [
+                (g.shifts, 4 * n),
+                (g.masses_squared, n),
+                (g.scales_squared, 1),
+                (g.s_matrix, n * n),
+                (g.coefficients, columns),
+            ] {
+                if values.len() != shape(rows, width)? {
+                    return Err(error("batch values do not match dimensions"));
+                }
+            }
+            let typed =
+                |values| cast(values).ok_or_else(|| error("batch arithmetic or precision differs"));
+            Ok(Lanes {
+                n,
+                rank: tensor_rank(columns)?,
+                ids: &ids[..rows],
+                shifts: typed(g.shifts)?,
+                masses: typed(g.masses_squared)?,
+                scales: typed(g.scales_squared)?,
+                s_matrix: typed(g.s_matrix)?,
+                coefficients: typed(g.coefficients)?,
+            })
+        })
+        .collect()
+}
+
+/// The typed lanes of batch groups (`values`: the batch's slice in the
+/// reducer's carrier).
+fn batch_lanes<'a, T>(
+    groups: &[FamilyGroup<'a>],
+    bits: u32,
+    values: impl Fn(&'a Data) -> Option<&'a [Complex<T>]>,
+) -> ExecutionResult<Vec<Lanes<'a, T>>> {
+    groups
+        .iter()
+        .map(|g| lanes(g, bits, |b| values(b.data())))
+        .collect()
 }
 
 fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
