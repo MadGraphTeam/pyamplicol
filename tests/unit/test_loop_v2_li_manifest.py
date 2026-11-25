@@ -17,6 +17,23 @@ from tools.loop_benchmark import li_manifest as lm
 pytestmark = pytest.mark.loop_fast
 
 
+def _row(worst, passed=True, verdict=None):
+    """A stored probe row judged under the current rule and K."""
+
+    return {
+        "worst": worst,
+        "passed": passed,
+        "verdict": verdict or ("pass" if passed else "fail"),
+        **lm._provenance(),
+    }
+
+
+def _generation(probes):
+    """A generation-time probe record judged under the current rule and K."""
+
+    return {**probes, **lm._provenance()}
+
+
 @pytest.fixture(scope="module")
 def entries():
     return lm.runs()
@@ -184,12 +201,14 @@ def _record(name):
     return {
         "fixture": name,
         "generation": {
-            "probes": {
-                "finiteness": {"passed": True, "worst": 0.1},
-                "ward": {"legs": [1], "passed": True, "worst": 0.2},
-                "precision": "double-double",
-                "widths": "zero",
-            }
+            "probes": _generation(
+                {
+                    "finiteness": {"passed": True, "worst": 0.1},
+                    "ward": {"legs": [1], "passed": True, "worst": 0.2},
+                    "precision": "double-double",
+                    "widths": "zero",
+                }
+            )
         },
         "digits": None,
         "arms": {
@@ -203,9 +222,9 @@ def _record(name):
             "identity/ninjars/double-double": dd,
         },
         "l3_probes": {
-            "ninjars/double": [{"worst": 0.1, "passed": True}] * count,
-            "ninjars/double-double": [{"worst": 0.05, "passed": True}] * count,
-            "tirust/double": [{"worst": 0.2, "passed": True}]
+            "ninjars/double": [_row(0.1, True)] * count,
+            "ninjars/double-double": [_row(0.05, True)] * count,
+            "tirust/double": [_row(0.2, True)]
             + [{"error": "FailedPoints: box [0, 1, 2, 3] refused"}] * (count - 1),
         },
         "complete": True,
@@ -228,16 +247,18 @@ def test_campaign_cards_enable_the_probes_and_l4_reads_off_as_not_run(entries):
     assert judged["generation"]["status"] == "not run"
     record["generation"]["probes"] = None
     assert lm.judge(record, entry)["L4"]["generation"]["status"] == "not run"
-    record["generation"]["probes"] = {
-        "status": "run",
-        "finiteness": {"passed": True, "worst": 0.1, "carrier": "double"},
-        "ward": {"legs": [1], "passed": True, "worst": 0.2},
-        "probes": [
-            {"probe": "finiteness", "carrier": "double"},
-            {"probe": "ward", "leg": 1, "carrier": "double-double"},
-        ],
-        "widths": "zero",
-    }
+    record["generation"]["probes"] = _generation(
+        {
+            "status": "run",
+            "finiteness": {"passed": True, "worst": 0.1, "carrier": "double"},
+            "ward": {"legs": [1], "passed": True, "worst": 0.2},
+            "probes": [
+                {"probe": "finiteness", "carrier": "double"},
+                {"probe": "ward", "leg": 1, "carrier": "double-double"},
+            ],
+            "widths": "zero",
+        }
+    )
     judged = lm.judge(record, entry)["L4"]["generation"]
     assert judged["status"] == "pass"
     assert judged["carrier"] == {
@@ -290,7 +311,7 @@ def test_judge_records_partial_waits_and_passes(entries):
     assert "double-double" in l6["double-double"]["tirust"]
     # A probe residue beyond ten times its own estimate fails L3.
     record = _record("li_gg_hh")
-    record["l3_probes"]["ninjars/double"] = [{"worst": 12.0, "passed": False}] * 3
+    record["l3_probes"]["ninjars/double"] = [_row(12.0, False)] * 3
     assert lm.judge(record, entry)["L3"]["ninjars/double"]["status"] == "fail"
     # A zero row's providers are recorded absolutely (L8 is its rule).
     zero = {e["fixture"]: e for e in entries}["li_gg_ha"]
@@ -364,7 +385,7 @@ def test_arms_not_run_keep_their_reason(entries):
     entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
     record = _after_tir_mp(_record("li_gg_hh"))
     for carrier in ("double", "double-double"):
-        record["l3_probes"][f"tirust/{carrier}"] = [{"worst": 0.2, "passed": True}] * 3
+        record["l3_probes"][f"tirust/{carrier}"] = [_row(0.2, True)] * 3
     assert lm.judge(record, entry)["L3"]["status"] == "pass"
     reason = "the AP arm extrapolates to hours"
     record["arms"][f"ninjars/{lm.ARBITRARY}/plain"] = {"not_run": reason}
@@ -544,7 +565,7 @@ def test_a_failing_high_precision_arm_fails_the_row(entries):
 
     entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
     record = _after_tir_mp(_record("li_gg_hh"))
-    record["l3_probes"]["tirust/double"] = [{"worst": 0.2, "passed": True}] * 3
+    record["l3_probes"]["tirust/double"] = [_row(0.2, True)] * 3
     record["arms"]["tirust/double/plain"] = json.loads(
         json.dumps(record["arms"]["ninjars/double/plain"])
     )
@@ -597,7 +618,7 @@ def test_tirust_arms_before_lit_tir_mp_wait_and_after_it_are_judged(
         stale["arms"][label] = json.loads(
             json.dumps(stale["arms"]["ninjars/double/plain"])
         )
-    stale["l3_probes"]["tirust/double"] = [{"worst": 0.2, "passed": True}] * 3
+    stale["l3_probes"]["tirust/double"] = [_row(0.2, True)] * 3
     judged = lm.judge(stale, entry)
     assert judged["L6"]["double"]["status"] == "pass"
     assert judged["L6"]["status"] == f"waits: {lm.TIR_MP}"
@@ -612,7 +633,7 @@ def test_tirust_arms_before_lit_tir_mp_wait_and_after_it_are_judged(
     # the double-double refusal is a coverage gap with its typed reason.
     fresh = json.loads(json.dumps(stale))
     fresh["refreshed"] = [{"backend": "tirust", "reduction_backends": AFTER_TIR_MP}]
-    fresh["l3_probes"]["tirust/double-double"] = [{"worst": 0.3, "passed": True}] * 3
+    fresh["l3_probes"]["tirust/double-double"] = [_row(0.3, True)] * 3
     judged = lm.judge(fresh, entry)
     assert "waits_on" not in judged["L6"] and "waits_on" not in judged["L3"]
     assert judged["L6"]["double-double"]["status"] == "partial"
@@ -647,7 +668,7 @@ def test_ward_probes_at_the_fixture_points_judge_l4(entries):
 
     entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
     record = _after_tir_mp(_record("li_gg_hh"))
-    ok = [{"worst": {"1": 0.1, "2": 0.2}, "passed": True}] * 3
+    ok = [_row({"1": 0.1, "2": 0.2}, True)] * 3
     record["ward_probes"] = {
         "legs": [1, 2],
         "zeroed_widths": [],
@@ -660,7 +681,7 @@ def test_ward_probes_at_the_fixture_points_judge_l4(entries):
     assert judged["ninjars/double"]["worst_ratio"] == 0.2
     bad = json.loads(json.dumps(record))
     bad["ward_probes"]["arms"]["ninjars/double-double"] = [
-        {"worst": {"1": 0.1, "2": 14.0}, "passed": False}
+        _row({"1": 0.1, "2": 14.0}, False)
     ] * 3
     assert lm.judge(bad, entry)["L4"]["status"] == "fail"
     gap = json.loads(json.dumps(record))
@@ -1370,3 +1391,68 @@ def test_fabc_check_needs_the_run_within_and_the_control_beyond(monkeypatch, tmp
     assert lm.fabc_check(tmp_path, check)["status"] == "fail"
     assert "lambda_hhh scan" in lm.NOT_APPLICABLE["LI-24"]
     assert "LI-24" not in lm.UNRUN
+
+
+def test_a_record_judged_under_another_rule_or_k_is_never_reused_as_a_pass(entries):
+    """A probe arm stored under the old rule (no rule or K: R / P 1e-3 with E
+    / P 1e-3 passed ten times its estimate) or at another K is stale, never
+    a pass; a vacuous arm stays vacuous and an inconclusive generation probe
+    stays inconclusive (neither is a pass, neither a failure)."""
+
+    entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
+    record = _record("li_gg_hh")
+    record["l3_probes"]["ninjars/double"] = [{"worst": 1e-3 / 1e-3, "passed": True}] * 3
+    status = lm.judge(record, entry)["L3"]["ninjars/double"]["status"]
+    assert status.startswith("stale"), status
+    other = {**_row(1e-7), "tolerance": 1e-3}
+    record["l3_probes"]["ninjars/double"] = [other] * 3
+    assert lm.judge(record, entry)["L3"]["ninjars/double"]["status"].startswith("stale")
+    record["l3_probes"]["ninjars/double"] = [_row(0.0, True, "vacuous")] * 3
+    assert lm.judge(record, entry)["L3"]["ninjars/double"]["status"] == "vacuous"
+    record["l3_probes"]["ninjars/double"] = [_row(0.0, False, "inconclusive")] * 3
+    status = lm.judge(record, entry)["L3"]["ninjars/double"]["status"]
+    assert status == "inconclusive"
+    record = _record("li_gg_hh")
+    probes = record["generation"]["probes"]
+    probes["ward"] = {"legs": [1], "passed": False, "verdict": "inconclusive"}
+    assert lm.judge(record, entry)["L4"]["generation"]["status"] == "inconclusive"
+    record = _record("li_gg_hh")
+    del record["generation"]["probes"]["rule"]
+    status = lm.judge(record, entry)["L4"]["generation"]["status"]
+    assert status.startswith("stale"), status
+
+
+def test_a_resumed_probe_arm_without_the_current_provenance_is_re_evaluated(
+    monkeypatch,
+):
+    """``finiteness_probes`` keeps a resumed arm only when it was judged under
+    the current rule and K: an old arm is evaluated again, and every new row
+    records the rule, K and the explicit verdict."""
+
+    from types import SimpleNamespace as NS
+
+    from pyamplicol.loops.v2 import checks, induced
+
+    calls = []
+
+    def probe(*_args, **_options):
+        calls.append(1)
+        measure = checks.Measure("x", 1e-12, 1.0, 1.0)
+        return induced.ProbeResult(
+            "finiteness", {("x", 1): checks.judge(measure, 1e-5)}, tolerance=1e-5
+        )
+
+    monkeypatch.setattr(induced, "probe", probe)
+    runtime = NS(_backend=NS(_executor=None))
+    data = {"points": [[["1", "0", "0", "1"]]], "mu_r": ["1"]}
+    old = {"ninjars/double": [{"worst": 0.5, "passed": True}]}
+    with checks.tolerating(1e-5):
+        out = lm.finiteness_probes(runtime, data, {}, ("double",), previous=old)
+        # Every binary64 arm (both backends): the old one evaluated again.
+        evaluated = len(calls)
+        assert evaluated == len([1 for _b, c in lm.PROBES if c == "double"])
+        (row,) = out["ninjars/double"]
+        assert row["verdict"] == "pass" and row["rule"] == checks.RULE
+        assert row["tolerance"] == 1e-5
+        again = lm.finiteness_probes(runtime, data, {}, ("double",), previous=out)
+    assert len(calls) == evaluated and again["ninjars/double"] == out["ninjars/double"]

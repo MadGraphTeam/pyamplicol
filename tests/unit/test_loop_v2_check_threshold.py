@@ -607,3 +607,67 @@ def test_a_refused_estimate_only_rotation_never_vetoes_the_goldstone_comparison(
         tolerance=K,
     )
     assert result.verdict == "pass", result.final
+
+
+# ------------------------------------------ 6. stored verdicts and tools
+
+
+def test_the_ward_tool_reports_an_empty_leg_set_as_nothing_tested(
+    monkeypatch, tmp_path
+):
+    """``tools/loop_v2_ward.py`` on a process with no applicable leg (H -> b
+    b~: no external massless gauge boson): "nothing tested" (exit code 3),
+    never a pass and never a crash."""
+
+    import json
+
+    from pyamplicol.loops.v2 import plan_export, ward
+    from tools import loop_v2_operation_counts, loop_v2_ward
+    from tools.developer import prepare_source_runtime
+    from tools.loop_benchmark import pyamplicol_v2, streams
+
+    target = NS(
+        normalisation=NS(average=1), blocks=NS(process=NS(legs=[])), process="h > b b~"
+    )
+    monkeypatch.setattr(loop_v2_ward, "_git", lambda *a: "")
+    monkeypatch.setattr(
+        prepare_source_runtime, "_native_build_inputs_digest", lambda root: "x"
+    )
+    monkeypatch.setattr(loop_v2_operation_counts, "compile_loop_sm", lambda *a: None)
+    monkeypatch.setattr(
+        pyamplicol_v2,
+        "_request",
+        lambda *a: NS(process="h > b b~", particle_veto=()),
+    )
+    monkeypatch.setattr(pyamplicol_v2, "_parameters", lambda name: {})
+    monkeypatch.setattr(ward, "ward_slice", lambda *a: target)
+    monkeypatch.setattr(ward, "gauge_legs", lambda slice_: ())
+    monkeypatch.setattr(
+        ward,
+        "ward_check",
+        lambda *a, **k: {
+            "physical": NS(born={}, components={"virtual": {}}, stability=None),
+            "results": [],
+            "rows": [],
+        },
+    )
+    monkeypatch.setattr(plan_export, "NativeExecutor", lambda *a, **k: None)
+    monkeypatch.setattr(streams, "load", lambda name: {"mu_r": ["1"]})
+    monkeypatch.setattr(streams, "exact", lambda stream, index: _POINT)
+    output = tmp_path / "w.json"
+    status = loop_v2_ward.main(
+        [
+            "h_bbx",
+            "--points",
+            "0",
+            "--tolerance",
+            "1e-5",
+            "--scratch",
+            str(tmp_path),
+            "--json",
+            str(output),
+        ]
+    )
+    record = json.loads(output.read_text())
+    assert status == 3 and record["status"] == "nothing tested"
+    assert record["passed"] is False and record["legs"] == []

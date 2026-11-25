@@ -17,14 +17,17 @@ criterion reads (``ward.WARD_CHECKS``); double-double runs without checks
 unless ``--dd-checks``.
 
 Each row is judged by ``pyamplicol check``'s rule (``loops.v2.checks.
-threshold``): every Born sector and every virtual sector and Laurent
-coefficient passes iff R < K S against the physical evaluation at the same
-point (``checks._ward_measures``), K ``--tolerance`` (default: the
-requested relative accuracy, ``checks.tolerance``); the row keeps
+judge`` per Born sector and per virtual sector and Laurent coefficient,
+against the physical evaluation at the same point, ``checks._ward_measures``;
+K ``--tolerance``, default the requested relative accuracy,
+``checks.tolerance``; the rule and K recorded): its verdict is pass, fail,
+inconclusive or vacuous (``checks.row_from_cells``); the row keeps
 ``ward.ward_row``'s figures (recorded, not judged) and the lanes' absolute
-sum over the scale (the conditioning of the cancellation,
-``ward.lane_scales``). The record is written after every batch (``--json``);
-the exit status is 0 when every row passed in every carrier.
+sum over the physical scale (the conditioning of the cancellation,
+``ward.lane_scales``; None for a zero scale). The record is written after
+every batch (``--json``); the exit status is 0 when the record passes (or
+is vacuous), 1 on a failure, 4 when inconclusive, 3 when nothing was tested
+(no applicable leg).
 
 Usage:
     python tools/loop_v2_ward.py gg_ggggg --points 0 --legs 1 4 7 \\
@@ -81,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     from pyamplicol.loops.native import load_loop_native
     from pyamplicol.loops.v2 import checks as threshold_checks
     from pyamplicol.loops.v2 import ward
+    from pyamplicol.loops.v2.induced import combined_verdict
     from pyamplicol.loops.v2.plan_export import NativeExecutor
     from tools.developer.prepare_source_runtime import _native_build_inputs_digest
     from tools.loop_benchmark import pyamplicol_v2, streams
@@ -100,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         "lanes": options.lanes,
         "process": options.process,
         "criterion": {
-            "rule": "R < K S per Born sector and virtual sector and coefficient",
+            "rule": threshold_checks.RULE,
             "tolerance": tolerance,
             "born": ward.BORN_BOUNDS,
             "virtual": ward.VIRTUAL_BOUNDS,
@@ -148,6 +152,14 @@ def main(argv: list[str] | None = None) -> int:
     legs = tuple(options.legs or ward.gauge_legs(slice_))
     record["legs"] = list(legs)
     write()
+    if not legs:
+        # No applicable leg (no external massless gauge boson, e.g. H -> b
+        # b~): nothing tested, which is no pass.
+        record["status"] = "nothing tested"
+        record["passed"] = False
+        write()
+        print(options.process, "DONE nothing tested (no applicable leg)", flush=True)
+        return 3
     parameters = pyamplicol_v2._parameters(options.process)
     stream = streams.load(options.process)
     average = slice_.normalisation.average
@@ -176,21 +188,27 @@ def main(argv: list[str] | None = None) -> int:
             rows = []
             for row, result in zip(check["rows"], check["results"], strict=True):
                 lanes = ward.lane_scales(result, average)
-                judged = threshold_checks._judged_row(
-                    "ward",
-                    f"leg {row['leg']}",
-                    index,
-                    carrier,
-                    threshold_checks._ward_measures(physical, result),
-                    tolerance,
+                cells = {
+                    label: threshold_checks.judge(measure, tolerance)
+                    for label, measure in threshold_checks._ward_measures(
+                        physical, result
+                    ).items()
+                }
+                judged = threshold_checks.row_from_cells(
+                    "ward", f"leg {row['leg']}", index, cells, tolerance
                 )
                 row.update(
                     factor=names[row["factor"]],
-                    lanes=[v / s for v, s in zip(lanes, scales, strict=True)],
+                    # The lanes' conditioning over the physical scale (a
+                    # zero scale: no ratio, never a division by zero).
+                    lanes=[
+                        v / s if s else None for v, s in zip(lanes, scales, strict=True)
+                    ],
                     ward_row_passed=row["passed"],
                     passed=judged.verdict == threshold_checks.PASS,
                     verdict=judged.verdict,
                     r_over_s=judged.deviation,
+                    cells=list(judged.cells),
                 )
                 rows.append(row)
             width = len(scales)
@@ -214,7 +232,9 @@ def main(argv: list[str] | None = None) -> int:
                     else list(physical.stability.coefficients)
                 ),
                 "rows": rows,
-                "passed": bool(rows) and all(row["passed"] for row in rows),
+                "verdict": combined_verdict([row["verdict"] for row in rows]),
+                "passed": combined_verdict([row["verdict"] for row in rows])
+                in ("pass", "vacuous"),
                 "max_born": max(row["born"] for row in rows),
                 "max_virtual": [
                     max(row["parts"]["virtual"][k] for row in rows)
@@ -227,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
                 index,
                 carrier,
                 f"{seconds:.1f}s",
-                "passed" if summary["passed"] else "FAILED",
+                summary["verdict"],
                 "max R/S",
                 f"{max((row['r_over_s'] or 0.0) for row in rows):.1e}",
                 "max |V|/scale",
@@ -238,15 +258,19 @@ def main(argv: list[str] | None = None) -> int:
             )
             write()
     record["max_rss_gib"] = _peak_gib()
-    record["passed"] = all(
-        carrier["passed"]
-        for entry in record["points"]
-        for carrier in entry["carriers"].values()
+    record["status"] = combined_verdict(
+        [
+            carrier["verdict"]
+            for entry in record["points"]
+            for carrier in entry["carriers"].values()
+        ]
     )
+    record["passed"] = record["status"] in ("pass", "vacuous")
     write()
-    status = "passed" if record["passed"] else "FAILED"
-    print(options.process, "DONE", status, flush=True)
-    return 0 if record["passed"] else 1
+    print(options.process, "DONE", record["status"], flush=True)
+    return {"pass": 0, "vacuous": 0, "fail": 1, "inconclusive": 4}.get(
+        record["status"], 3
+    )
 
 
 if __name__ == "__main__":

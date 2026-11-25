@@ -857,7 +857,7 @@ def finiteness_probes(
         if carrier.replace("_", "-") not in carriers:
             continue
         label = f"{backend}/{carrier.replace('_', '-')}"
-        if previous and label in previous:
+        if previous and label in previous and _current(previous[label]):
             out[label] = previous[label]
             continue
         if f"l3/{label}" in (skip or {}):
@@ -874,7 +874,14 @@ def finiteness_probes(
                         parameters=parameters,
                         precision=getattr(Precision, carrier)(),
                     )
-                rows.append({"worst": result.worst, "passed": result.passed})
+                rows.append(
+                    {
+                        "worst": result.worst,
+                        "passed": result.passed,
+                        "verdict": result.verdict,
+                        **_provenance(),
+                    }
+                )
             except Exception as error:  # a typed failure of the arm, recorded
                 rows.append(
                     {"error": compact_detail(f"{type(error).__name__}: {error}")}
@@ -932,8 +939,11 @@ def ward_probes(
         for backend, carrier in PROBES
         if carrier.replace("_", "-") in carriers
     ]
-    if all(label in previous.get("arms", {}) for label in labels):
-        return previous
+    kept = {
+        label: arm for label, arm in previous.get("arms", {}).items() if _current(arm)
+    }
+    if all(label in kept for label in labels):
+        return {**previous, "arms": kept}
     start = time.perf_counter()
     target = ward_slice(
         compiled, replace(request, fixed_parameters=fixed), load_loop_native()
@@ -944,7 +954,7 @@ def ward_probes(
         "zeroed_widths": list(zeroed),
         "slice_seconds": time.perf_counter() - start,
         "native": _native(),
-        "arms": dict(previous.get("arms", {})),
+        "arms": dict(kept),
     }
     if not legs:
         return out
@@ -969,6 +979,8 @@ def ward_probes(
                         parameters=values,
                         precision=getattr(Precision, carrier)(),
                     )
+                from pyamplicol.loops.v2.induced import combined_verdict
+
                 rows.append(
                     {
                         "worst": {
@@ -976,6 +988,8 @@ def ward_probes(
                             for leg, r in zip(legs, found, strict=True)
                         },
                         "passed": all(r.passed for r in found),
+                        "verdict": combined_verdict([r.verdict for r in found]),
+                        **_provenance(),
                     }
                 )
             except Exception as error:  # a typed failure of the arm, recorded
@@ -1199,9 +1213,12 @@ def _worst(statuses: list[str]) -> str:
         "fail",
         "estimate miss",
         "reference defect",
+        "inconclusive",
+        "stale",
         "partial",
         "waits",
         "not run",
+        "vacuous",
         "recorded",
         "pass (lax)",
         "pass",
@@ -1211,6 +1228,55 @@ def _worst(statuses: list[str]) -> str:
             if status.split(":")[0] == s:
                 return status
     return "not run"
+
+
+def _provenance() -> dict[str, Any]:
+    """The rule and K every probe verdict of a record is judged at
+    (``checks.RULE``, ``checks.tolerance``: the campaign's ``--tolerance``,
+    else the requested relative accuracy)."""
+
+    from pyamplicol.loops.v2.checks import RULE, tolerance
+
+    return {"rule": RULE, "tolerance": tolerance()}
+
+
+def _current(rows: Any) -> bool:
+    """Whether a stored probe arm was judged under the current rule and K
+    (an arm recorded as not run is current: it holds no verdict); a stale
+    arm is re-evaluated, never reused."""
+
+    if isinstance(rows, dict):
+        return "not_run" in rows
+    want = _provenance()
+    return all(
+        "error" in row
+        or (
+            row.get("rule") == want["rule"]
+            and row.get("tolerance") == want["tolerance"]
+        )
+        for row in rows
+    )
+
+
+def _arm_status(rows: list, count: int, label: str) -> str:
+    """An L3 / L4 probe arm's status from its rows' explicit verdicts: a row
+    judged under another rule or K is stale (never a pass); fail, else
+    inconclusive, else partial (rows not served), else pass, else vacuous
+    (nothing to test)."""
+
+    measured = [row for row in rows if "worst" in row]
+    if not measured:
+        return "partial" if label.startswith("tirust") else "not run"
+    if not _current(measured):
+        return "stale: judged under another rule or K"
+    verdicts = {row.get("verdict") for row in measured}
+    if "fail" in verdicts:
+        return "fail"
+    if "inconclusive" in verdicts or not verdicts <= {"pass", "vacuous"}:
+        return "inconclusive"
+    if len(measured) != count:
+        return "partial"
+    return "pass" if "pass" in verdicts else "vacuous"
 
 
 def _served(arm: dict | None) -> list[bool]:
@@ -1539,14 +1605,9 @@ def judge(record: dict, entry: dict) -> dict:
             continue
         worst = [x["worst"] for x in probe if "worst" in x]
         served = len(worst)
-        if not worst:
-            status = "partial" if label.startswith("tirust") else "not run"
-        elif all(x.get("passed") is True for x in probe if "worst" in x):
-            # The probe's own verdict (R < K S per row, ``checks.threshold``);
-            # ``worst`` is its largest R / S.
-            status = "pass" if served == count else "partial"
-        else:
-            status = "fail"
+        # The probe's own explicit verdict (``checks.judge`` per row) at
+        # the recorded rule and K; ``worst`` is its largest R over its scale.
+        status = _arm_status(probe, count, label)
         l3[label] = {
             "status": status,
             "worst_ratio": max(worst, default=None),
@@ -1628,11 +1689,32 @@ def judge(record: dict, entry: dict) -> dict:
             for k, v in generation.items()
             if k != "finiteness" and (v.get("legs") or not v.get("passed", True))
         ]
-        passed = all(v.get("passed") for v in generation.values())
+        want = _provenance()
+        if (probes.get("rule"), probes.get("tolerance")) != (
+            want["rule"],
+            want["tolerance"],
+        ):
+            # Judged under another rule or K: never reused as a pass.
+            verdict = "stale: judged under another rule or K"
+        else:
+            verdicts = {
+                v.get("verdict", "pass" if v.get("passed") else "fail")
+                for v in generation.values()
+            }
+            verdict = (
+                "fail"
+                if "fail" in verdicts
+                else "inconclusive"
+                if "inconclusive" in verdicts or not verdicts <= {"pass", "vacuous"}
+                else "pass"
+                if "pass" in verdicts
+                else "vacuous"
+            )
+        passed = verdict == "pass"
         if gauge or not passed:
-            statuses.append("pass" if passed else "fail")
+            statuses.append(verdict)
         l4["generation"] = {
-            "status": "pass" if passed else "fail",
+            "status": verdict,
             "probes": generation,
             "carrier": _probe_carriers(probes),
             "widths": probes.get("widths"),
@@ -1670,13 +1752,8 @@ def judge(record: dict, entry: dict) -> dict:
                 l4[label] = {"status": "not run", "reason": arm["not_run"]}
                 statuses.append("partial")
                 continue
-            worst = [max(x["worst"].values()) for x in arm if "worst" in x]
-            if not worst:
-                status = "partial" if label.startswith("tirust") else "not run"
-            elif all(x.get("passed") is True for x in arm if "worst" in x):
-                status = "pass" if len(worst) == count else "partial"
-            else:
-                status = "fail"
+            worst = [max(x["worst"].values(), default=0.0) for x in arm if "worst" in x]
+            status = _arm_status(arm, count, label)
             if label.startswith("tirust") and stale:
                 status = _worst([status, f"waits: {TIR_MP}"])
                 l4["waits_on"] = TIR_MP
@@ -4740,6 +4817,14 @@ def main(argv: list[str] | None = None) -> int:
         help="recompute this backend's arms of complete records of another native "
         "(after lit-tir-mp: tirust), the others kept if NinjaRS binary64 is bitwise",
     )
+    run.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        metavar="K",
+        help="the checks' K (pyamplicol check --tolerance; default: the requested "
+        "relative accuracy); recorded with every probe verdict",
+    )
     run.add_argument("fixtures", nargs="*", help="default: every campaign run")
     ident = sub.add_parser(
         "identity-tirust",
@@ -4869,16 +4954,19 @@ def main(argv: list[str] | None = None) -> int:
                 print(name, "complete", flush=True)
                 continue
             own, plain = run_skips(name)
-            record = evaluate(
-                name,
-                args.work_dir,
-                ap=bool(entry["ap"]),
-                digits=args.digits,
-                write=write,
-                previous=previous,
-                skip={**own, **skip},
-                high_checked=not (args.high_plain or plain),
-            )
+            from pyamplicol.loops.v2.checks import tolerating
+
+            with tolerating(args.tolerance):
+                record = evaluate(
+                    name,
+                    args.work_dir,
+                    ap=bool(entry["ap"]),
+                    digits=args.digits,
+                    write=write,
+                    previous=previous,
+                    skip={**own, **skip},
+                    high_checked=not (args.high_plain or plain),
+                )
             print(
                 name,
                 json.dumps(
