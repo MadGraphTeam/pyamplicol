@@ -1574,6 +1574,21 @@ accuracy (`--reduction-target`, `evaluation.reduction_target`, default
    or without a wider carrier, it is `inconclusive` (physical normalisation
    unresolved). Any other miss climbs the carrier ladder and fails if the
    last carrier still misses.
+6. A loop-induced row (finiteness, Ward) that would fail is deferred when
+   every operand is at the numerical resolution of its comparable
+   helicities: R, P, T and E_P finite, P <= 10 E_P, and max(R, P, T) <=
+   10 min(u_floor, u_work) T_max, with T_max the largest term floor of the
+   same probe, point, loop order and Laurent coefficient over the
+   helicities, u_floor the unit roundoff of the carrier that produced the
+   term floors and u_work the current carrier's. The row is evaluated
+   again at the next carrier, where the rules above judge its actual
+   measurements (a resolved P or a significant R decides); at the last
+   carrier it is `inconclusive` ("helicity row below numerical
+   resolution", its operands and carrier recorded). This never passes a
+   row, never makes it term-relative and never makes it vacuous; it can
+   defer a genuine tiny violation to inconclusive (an angular-momentum
+   forbidden helicity of g g > Z, whose term floor is 1e-30 against 23.5
+   for the allowed ones, reads inconclusive, not failed).
 
 Each independently required row (a point, a sector or loop order and
 helicity row, a leg and factor, a Laurent coefficient) is decided on its

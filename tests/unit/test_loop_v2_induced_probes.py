@@ -704,3 +704,61 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     assert probes["allowed_failure"] and not probes["ward"]["passed"]
     assert probes["ward"]["carriers"] == {"1": "double-double", "3": "double-double"}
     assert all("in double-double" in failure for failure in probes["failed"])
+
+
+@pytest.mark.loop_physics
+def test_g_g_to_z_generates_with_its_rows_below_resolution_inconclusive(
+    tmp_path, caplog
+):
+    """g g > Z (a Landau-Yang zero) at the generator's probe point: the
+    helicity rows (-,+,-) and (+,-,+) that angular momentum forbids have a
+    term floor of 1e-30 against the k = 1 maximum 23.5 of the same order, and
+    R, P of 1e-31 in both carriers. Their otherwise failing miss is deferred
+    ("helicity row below numerical resolution"): generation succeeds with
+    the finiteness probe recorded inconclusive and a warning, never a pass;
+    ``pyamplicol check`` on the artifact is inconclusive (exit 4) with the
+    same rows, their operands and T_max recorded."""
+
+    import logging
+
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+    from pyamplicol.api.services import check
+    from pyamplicol.config import resolve_config
+    from pyamplicol.loops.v2 import checks, induced
+    from tools.loop_benchmark import li_manifest as lm
+
+    data = lm.fixture("li_gg_z")
+    compiled = lm.compile_model(data, tmp_path / "model-cache")
+    output = tmp_path / "artifact"
+    process = lm.expression(data, compiled)
+    card = tmp_path / "card.toml"
+    card.write_text(lm.card(data, output, set(compiled.parameter_defaults), process))
+    with caplog.at_level(logging.WARNING):
+        Generator(resolve_config(card)).generate(
+            ProcessSet((ProcessRequest.parse(process, name="p"),)), output
+        )
+    record = lm._artifact_probes(output)
+    (finiteness,) = [p for p in record["probes"] if p["probe"] == "finiteness"]
+    assert finiteness["verdict"] == "inconclusive" and not finiteness["passed"]
+    assert finiteness["below_resolution"] == 2 and record["rule"] == checks.RULE
+    assert "failed" not in record
+    assert any(
+        "finiteness probe: inconclusive" in m and "generation continues" in m
+        for m in caplog.messages
+    )
+    report = check(output, points=1, seed=12345)
+    assert report.exit_code == checks.EXIT_INCONCLUSIVE, report
+    (poles,) = [r for r in report.processes[0].rows if r.check == "poles"]
+    assert poles.verdict == checks.INCONCLUSIVE
+    deferred = [
+        c
+        for c in poles.cells
+        if (c["reason"] or "").startswith(induced.BELOW_RESOLUTION)
+    ]
+    assert len(deferred) == 2
+    for cell in deferred:
+        assert cell["carrier"] == "double-double" and cell["terms"] < 1e-29
+        assert max(cell["residue"], cell["physical"]) < 1e-30
+        # the comparable coefficient's maximum, verified: (-,-,0) at k = 1
+        assert "T_max 23.5 over the helicities of" in cell["reason"]
+        assert "k=1" in cell["reason"]

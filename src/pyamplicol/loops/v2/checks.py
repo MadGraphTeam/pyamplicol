@@ -347,7 +347,10 @@ class Measure:
 # The rule's name, recorded with K and the explicit verdict wherever a
 # verdict is stored (campaign records, generation records, tools): a record
 # judged under another rule or another K is re-judged, never reused.
-RULE = "threshold-p: per row R < K P (physical); R < K T for a known-zero reference"
+RULE = (
+    "threshold-p: per row R < K P (physical); R < K T for a known-zero "
+    "reference; a loop-induced miss below numerical resolution deferred"
+)
 
 # The scale a row was judged against (``Judgement.scale``).
 PHYSICAL = "physical"

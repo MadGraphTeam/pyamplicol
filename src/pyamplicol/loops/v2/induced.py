@@ -1634,6 +1634,10 @@ class ProbeResult(_Judged):
     # uncertified_bound``): recorded; the verdict is the threshold rule's.
     uncertified: bool = False
     tolerance: float = field(default_factory=_default_tolerance)
+    # The unit roundoff of the carrier that produced the term floors T
+    # (``RowFloors.unit_roundoff``; None: not recorded): the resolution
+    # bound of ``withhold`` reads it.
+    floor_roundoff: float | None = None
 
 
 class ProbePointRefused(ArithmeticError):
@@ -1711,16 +1715,20 @@ def physical_floors(
         None,
         True,
     )
-    return row_floors(evaluation)
+    floors = row_floors(evaluation)
+    floors.unit_roundoff = _carrier.unit_roundoff
+    return floors
 
 
 class RowFloors(dict):
     """Per (loop order, row) the term floor T_k of each Laurent coefficient
     (``row_scales``), with ``finite``: per row the colour-metric norm of the
     physical finite amplitude ||a_0(h)||, the probes' physical reference P
-    (None where it cannot be computed)."""
+    (None where it cannot be computed), and ``unit_roundoff``: that of the
+    carrier that produced them (None: not recorded)."""
 
     finite: dict
+    unit_roundoff: float | None = None
 
 
 def row_floors(evaluation: Any) -> RowFloors:
@@ -1797,6 +1805,7 @@ def ward_floors(physical: Mapping, leg: int) -> RowFloors:
     floors.finite = {
         (order, row): widest[(order, merged(row))] for order, row in finite
     }
+    floors.unit_roundoff = getattr(physical, "unit_roundoff", None)
     return floors
 
 
@@ -2016,6 +2025,7 @@ def probe_results(
                     getattr(run, "uncertified_bound", None) for run in runs
                 ),
                 tolerance=tolerance,
+                floor_roundoff=getattr(floors, "unit_roundoff", None),
             )
         )
     return out
@@ -2279,6 +2289,106 @@ def ladder(
         carrier.unit_roundoff,
         tolerance,
     )
+    withhold(cells, result, carrier)
+
+
+# The reason of a loop-induced row whose miss is deferred (``withhold``).
+BELOW_RESOLUTION = "helicity row below numerical resolution"
+
+
+def withhold(cells: dict[Any, Any], result: Any, carrier: Any) -> list[Any]:
+    """Defer an otherwise failing loop-induced row whose operands are all at
+    the numerical resolution of its comparable helicities (the reviewer's
+    ruling on g g > Z), in place on ``cells``; returns the deferred keys.
+
+    A row that FAILs at ``carrier`` (the ordinary per-row test, ``checks.
+    ladder_step``; a physical reference that reproduced between carriers
+    keeps its decision) is deferred only when all of the following hold at
+    this carrier:
+
+    * its comparison is complete: R, P, T and E_P finite and nonnegative,
+      P measured (not a known-zero reference) and P <= ESTIMATE_FACTOR E_P;
+    * T_max, the largest term floor of the rows of the same probe at this
+      point with the same loop order and Laurent coefficient (the comparable
+      helicities; no other sector, coefficient, point or backend), is finite
+      and positive;
+    * max(R, P, T) <= ESTIMATE_FACTOR min(u_floor, u_work) T_max, u_floor
+      the unit roundoff of the carrier that produced the term floors
+      (``ProbeResult.floor_roundoff``; not recorded: nothing is deferred),
+      u_work this carrier's.
+
+    A deferred row is INCONCLUSIVE ("helicity row below numerical
+    resolution"), with its operands and carrier kept: it is pending, so the
+    next carrier evaluates it again and the ordinary rule judges its actual
+    measurements there (a resolved physical reference or a significant
+    residue decides; a row ambiguous on its own row at that carrier is
+    settled by the existing rule); at the last carrier it stays
+    INCONCLUSIVE. The deferral never passes a row, never settles it
+    term-relative and never makes it vacuous."""
+
+    from dataclasses import replace
+
+    from .checks import FAIL, INCONCLUSIVE
+
+    floor = getattr(result, "floor_roundoff", None)
+    work = getattr(carrier, "unit_roundoff", None)
+    cells_of = getattr(result, "cells", None)
+    if floor is None or work is None or not cells_of:
+        return []
+    u = min(floor, work)
+
+    def group(key: Any) -> Any:
+        try:
+            (order, _row), k = key
+        except (TypeError, ValueError):
+            return None
+        return (order, k)
+
+    largest: dict[Any, float] = {}
+    for key, cell in cells_of.items():
+        t = cell.measure.terms
+        g = group(key)
+        if g is None or t is None or not math.isfinite(t) or t < 0:
+            continue
+        largest[g] = max(largest.get(g, 0.0), t)
+    deferred = []
+    for key, cell in list(cells.items()):
+        if cell.verdict != FAIL or cell.carrier != carrier.arithmetic:
+            continue
+        if (cell.reason or "").startswith("P reproduces"):
+            continue
+        m = cell.measure
+        operands = (m.residue, m.physical, m.terms, m.physical_error)
+        if (
+            m.zero_reference
+            or not m.complete
+            or any(x is None or not math.isfinite(x) or x < 0 for x in operands)
+            or m.physical > ESTIMATE_FACTOR * m.physical_error
+        ):
+            continue
+        t_max = largest.get(group(key))
+        if t_max is None or not math.isfinite(t_max) or t_max <= 0:
+            continue
+        bound = ESTIMATE_FACTOR * u * t_max
+        size = max(m.residue, m.physical, m.terms)
+        if size > bound:
+            continue
+        order, k = group(key)
+        cells[key] = replace(
+            cell,
+            verdict=INCONCLUSIVE,
+            reason=(
+                f"{BELOW_RESOLUTION}: max(R, P, T) {size:.3g} <= "
+                f"{ESTIMATE_FACTOR} min(u_floor, u_work) T_max {bound:.3g} "
+                f"(T_max {t_max:.3g} over the helicities of {order} k={k}; "
+                f"floors at u {floor:.3g}, {carrier.arithmetic} at u {work:.3g}; "
+                f"R {m.residue:.3g}, P {m.physical:.3g} <= {ESTIMATE_FACTOR} E_P "
+                f"{m.physical_error:.3g}, T {m.terms:.3g}): an otherwise failing "
+                "miss deferred to a wider carrier, inconclusive at the last"
+            ),
+        )
+        deferred.append(key)
+    return deferred
 
 
 def pending(cells: Mapping[Any, Any], runs: Sequence[Any]) -> bool:
@@ -2339,6 +2449,15 @@ def _decided(
                 entry["inconclusive"] = result.reason
             elif result.verdict == "vacuous":
                 entry["vacuous"] = result.reason
+            deferred = sum(
+                1
+                for cell in result.final.values()
+                if (cell.reason or "").startswith(BELOW_RESOLUTION)
+            )
+            if deferred:
+                # Rows whose miss ``withhold`` deferred: inconclusive, the
+                # operands at the resolution of their helicities.
+                entry["below_resolution"] = deferred
             if result.uncertified:
                 entry["uncertified"] = True
         fallbacks = [

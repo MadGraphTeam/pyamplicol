@@ -32,6 +32,8 @@ from types import SimpleNamespace as NS
 
 import pytest
 
+from pyamplicol.loops.v2 import checks
+
 pytestmark = pytest.mark.loop_fast
 
 K = 1e-5
@@ -671,3 +673,163 @@ def test_the_ward_tool_reports_an_empty_leg_set_as_nothing_tested(
     record = json.loads(output.read_text())
     assert status == 3 and record["status"] == "nothing tested"
     assert record["passed"] is False and record["legs"] == []
+
+
+# ------------------------------------------- a helicity row below resolution
+
+
+def _laddered(rows_by_carrier, floor_roundoff="binary64"):
+    """``induced.ladder`` over binary64 then double-double for one probe whose
+    rows' measures per carrier are ``rows_by_carrier[carrier name]`` (key ->
+    (R, P, E_P, T) or a ``checks.Measure``), the term floors produced in
+    binary64 (``floor_roundoff``: "binary64", or None for not recorded);
+    returns the final rows (``ProbeResult.final``)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.assemble import Precision
+
+    k = 1e-5
+    floors = None if floor_roundoff is None else Precision.double().unit_roundoff
+    cells: dict = {}
+    for carrier in (Precision.double(), Precision.double_double()):
+        rows = rows_by_carrier.get(carrier.arithmetic)
+        if rows is None:
+            continue
+        measures = {
+            key: (
+                value
+                if isinstance(value, checks.Measure)
+                else checks.Measure(
+                    str(key), value[0], value[1], value[3], physical_error=value[2]
+                )
+            )
+            for key, value in rows.items()
+        }
+        result = induced.ProbeResult(
+            "finiteness",
+            induced.judged_cells(measures, k, carrier),
+            tolerance=k,
+            **(
+                {"floor_roundoff": floors}
+                if floors is not None
+                and "floor_roundoff" in induced.ProbeResult.__dataclass_fields__
+                else {}
+            ),
+        )
+        induced.ladder(cells, result, carrier, k)
+        if not induced.pending(cells, [result]):
+            break
+    return induced.ProbeResult("finiteness", cells, tolerance=k).final
+
+
+# g g > Z at the generator's probe point (h9): order (QCD 2, QED 1), k = 1.
+_ORDER = (("QCD", 2), ("QED", 1))
+_LARGE = ((_ORDER, "(-,-,0)"), 1)  # T = 23.5, P at binary64 noise
+_FORBIDDEN = ((_ORDER, "(-,+,-)"), 1)  # angular momentum: T = 1.03e-30
+_GG_Z = {
+    "double": {
+        _LARGE: (1.04e-15, 2.59e-15, 4.9e-14, 23.5),
+        _FORBIDDEN: (1.73e-31, 2.19e-31, 3.3e-15, 1.03e-30),
+    },
+    "double-double": {
+        _LARGE: (3.13e-32, 3.02e-31, 1.91e-29, 23.5),
+        _FORBIDDEN: (3.34e-31, 1.76e-31, 3.86e-30, 1.03e-30),
+    },
+}
+
+
+def test_a_helicity_row_below_numerical_resolution_is_deferred_never_passed():
+    """g g > Z's angular-momentum-forbidden row at the generator's probe point
+    misses R < K P in both carriers, P within ten times its estimate and
+    max(R, P, T) far below 10 min(u_floor, u_work) T_max (T_max = 23.5, the
+    same order's k = 1 maximum): deferred in binary64, deferred again in
+    double-double, INCONCLUSIVE at the last carrier ("helicity row below
+    numerical resolution"), never a pass, never term-relative, never
+    vacuous. Its large neighbour settles as before (P collapses)."""
+
+    from pyamplicol.loops.v2 import induced
+
+    final = _laddered(_GG_Z)
+    row = final[_FORBIDDEN]
+    assert row.verdict == checks.INCONCLUSIVE and row.carrier == "double-double"
+    assert row.reason.startswith(induced.BELOW_RESOLUTION), row.reason
+    assert "T_max 23.5" in row.reason and row.scale != checks.TERM_RELATIVE
+    assert row.measure.residue == 3.34e-31 and row.measure.terms == 1.03e-30
+    assert final[_LARGE].verdict == checks.PASS
+    assert final[_LARGE].scale == checks.TERM_RELATIVE
+    assert checks.aggregate(final) == checks.INCONCLUSIVE
+    # Without the recorded producer precision of the floors nothing is
+    # deferred: the ordinary failure stands.
+    final = _laddered(_GG_Z, floor_roundoff=None)
+    assert final[_FORBIDDEN].verdict == checks.FAIL
+
+
+def test_a_wider_rung_that_resolves_the_reference_decides_a_deferred_row():
+    """A row deferred in binary64 is judged by the ordinary rule on its
+    double-double measurement: a resolved P with R < K P passes there; a
+    resolved P with a significant R fails there."""
+
+    resolved = {_FORBIDDEN: (1e-12, 1e-3, 1e-35, 1.03e-30), _LARGE: (0, 1, 1e-17, 23.5)}
+    final = _laddered({"double": _GG_Z["double"], "double-double": resolved})
+    assert final[_FORBIDDEN].verdict == checks.PASS
+    assert final[_FORBIDDEN].scale == checks.PHYSICAL
+    missed = {**resolved, _FORBIDDEN: (1e-6, 1e-3, 1e-35, 1.03e-30)}
+    final = _laddered({"double": _GG_Z["double"], "double-double": missed})
+    assert final[_FORBIDDEN].verdict == checks.FAIL
+
+
+def test_resolved_or_significant_misses_are_never_deferred():
+    """The deferral needs every operand at the resolution of the comparable
+    helicities: a tiny but well-resolved nonzero helicity with a per-mille
+    defect beside a large one fails; a flagged tiny P with an appreciable R
+    fails; a row whose only large neighbour is in another loop order or
+    Laurent coefficient fails; C = 1, V = 1.001 under a 2e7 term scale
+    fails (P far above u T); a complete termless row stays vacuous."""
+
+    small = ((_ORDER, "(+,-,+)"), 1)
+    per_mille = {
+        "double": {_LARGE: (0, 1, 1e-17, 23.5), small: (1e-16, 1e-13, 1e-29, 1e-13)},
+        "double-double": {
+            _LARGE: (0, 1, 1e-33, 23.5),
+            small: (1e-16, 1e-13, 1e-45, 1e-13),
+        },
+    }
+    assert _laddered(per_mille)[small].verdict == checks.FAIL
+    large_r = {
+        c: {_LARGE: rows[_LARGE], small: (1e-13, 1e-31, 1e-15, 1e-30)}
+        for c, rows in _GG_Z.items()
+    }
+    assert _laddered(large_r)[small].verdict == checks.FAIL
+    other = (("QCD", 4), ("QED", 0))
+    spectators = {
+        c: {
+            ((other, "(-,-,0)"), 1): rows[_LARGE],
+            ((_ORDER, "(-,-,0)"), 2): rows[_LARGE],
+            _FORBIDDEN: rows[_FORBIDDEN],
+        }
+        for c, rows in _GG_Z.items()
+    }
+    assert _laddered(spectators)[_FORBIDDEN].verdict == checks.FAIL
+    catani = ((_ORDER, "(-,-,-)"), 1)
+    per_mille_pole = {c: {catani: (1e-3, 1.0, 1.0, 2e7)} for c in _GG_Z}
+    assert _laddered(per_mille_pole)[catani].verdict == checks.FAIL
+    termless = ((_ORDER, "(-,+,+)"), 1)
+    final = _laddered(
+        {c: {**rows, termless: (0.0, 0.0, 1e-15, 0.0)} for c, rows in _GG_Z.items()}
+    )
+    assert final[termless].verdict == checks.VACUOUS
+    assert final[_FORBIDDEN].verdict == checks.INCONCLUSIVE
+
+
+def test_a_known_zero_reference_or_incomplete_row_is_never_deferred():
+    """The deferral applies only to a measured reference with complete
+    operands: a known-zero reference keeps its term-relative failure, a row
+    without E_P keeps its failure."""
+
+    zero = checks.Measure(
+        "zero", 1.73e-31, 0.0, 1.03e-30, physical_error=3.3e-15, zero_reference=True
+    )
+    no_estimate = checks.Measure("open", 1.73e-31, 2.19e-31, 1.03e-30)
+    for row in (zero, no_estimate):
+        rows = {c: {_LARGE: r[_LARGE], _FORBIDDEN: row} for c, r in _GG_Z.items()}
+        assert _laddered(rows)[_FORBIDDEN].verdict == checks.FAIL

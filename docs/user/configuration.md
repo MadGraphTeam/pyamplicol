@@ -385,9 +385,11 @@ double-double on the same point, and the double-double run decides it. A
 failure (R >= K S) refuses the process (`loop-induced-probe`);
 `[generation] allow_failed_probes = true` (CLI `--allow-failed-probes`)
 stores it anyway, with the failure recorded. A probe whose R or S cannot be
-computed (a non-finite value, or a point every carrier refuses) is recorded
-as inconclusive, never a pass, and logged as a warning; generation
-continues. `allow_failed_probes` does nothing while the probes are off.
+computed (a non-finite value, or a point every carrier refuses), or whose
+only misses are helicity rows below numerical resolution (rule 6 of the
+[command-line guide](command-line-interface.md#check); their count is
+recorded as `below_resolution`), is recorded as inconclusive, never a pass,
+and logged as a warning; generation continues. `allow_failed_probes` does nothing while the probes are off.
 
 The outcome is recorded in the artifact's generation filters
 (`loop_induced_probes`): K (`tolerance`), per probe the carrier that decided
