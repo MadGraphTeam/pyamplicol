@@ -34,6 +34,8 @@ import pytest
 
 from tools.loop_benchmark import li_manifest as lm
 
+from .li_campaign_known import GG_Z, GG_Z_REASON, KnownBelowResolution, check_gg_z
+
 pytestmark = [pytest.mark.loop_physics, pytest.mark.loop_nightly]
 
 ENTRIES = {e["fixture"]: e for e in lm.runs()}
@@ -44,7 +46,20 @@ def _work(tmp_path_factory) -> Path:
     return Path(configured) if configured else tmp_path_factory.mktemp("li-campaign")
 
 
-@pytest.mark.parametrize("name", sorted(ENTRIES))
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=pytest.mark.xfail(
+                strict=True, raises=KnownBelowResolution, reason=GG_Z_REASON
+            ),
+        )
+        if name == GG_Z
+        else name
+        for name in sorted(ENTRIES)
+    ],
+)
 def test_campaign_run_passes_its_rules(name, tmp_path_factory, loop_native):
     entry = ENTRIES[name]
     work = _work(tmp_path_factory)
@@ -60,15 +75,22 @@ def test_campaign_run_passes_its_rules(name, tmp_path_factory, loop_native):
     judged = lm.judge(record, entry)
     statuses = {c: judged[c]["status"] for c in lm.CHECKS if c in judged}
     assert "fail" not in statuses.values(), statuses
-    # An inconclusive check fails the run unless its record accepts it: the
-    # amplitude has no physical normalisation, or is an exact fold zero.
-    assert not lm.unaccepted(statuses.values()), statuses
     assert "effective_backend_switched" not in judged["L6"]["double"], judged["L6"]
     if record.get("transformed_points"):
         assert judged["L5"]["tirust"]["status"] != "not run", judged["L5"]
     for check in entry["checks"]:
         if check in lm.CHECKS and check != "L9":
             assert check in statuses, (check, statuses)
+    if name == GG_Z and lm.unaccepted(statuses.values()):
+        # The known outcome, exactly, after every other assertion
+        # (``check_gg_z``: otherwise an ordinary failure).
+        from pyamplicol.api.services import check
+
+        report = check(work / name / "artifact", points=1, seed=12345)
+        check_gg_z(statuses, judged, record, report)
+    # An inconclusive check fails the run unless its record accepts it: the
+    # amplitude has no physical normalisation, or is an exact fold zero.
+    assert not lm.unaccepted(statuses.values()), statuses
 
 
 @pytest.mark.parametrize(

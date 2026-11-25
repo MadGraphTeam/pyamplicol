@@ -1969,3 +1969,146 @@ def test_a_refused_ward_leg_never_hides_another_legs_failure(
         l4 = judged(wards)
         assert {l4[a]["status"] for a in wards["arms"]} == {"inconclusive"}
         assert lm.unaccepted([l4["status"]])
+
+
+def _gg_z_outcome():
+    """The known g g > Z campaign outcome, as the run records it: statuses,
+    judged L4, generation record and the ``pyamplicol check`` report."""
+
+    from types import SimpleNamespace as NS
+
+    from .li_campaign_known import BELOW_RESOLUTION, UNRESOLVED
+
+    order = "((('QCD', 2), ('QED', 1)), "
+    accepted = f"{lm.ACCEPTED}: {lm.NO_NORMALISATION}"
+    statuses = {"L1": "recorded", "L3": accepted, "L4": "inconclusive", "E": "pass"}
+    judged = {
+        "L4": {
+            "status": "inconclusive",
+            "generation": {"status": "inconclusive"},
+            "ninjars/double": {"status": "pass"},
+            "ninjars/double-double": {"status": accepted},
+        }
+    }
+    record = {
+        "generation": {
+            "probes": {
+                "status": "run",
+                "probes": [
+                    {
+                        "probe": "finiteness",
+                        "verdict": "inconclusive",
+                        "carrier": "double-double",
+                        "below_resolution": 2,
+                    },
+                    {"probe": "ward", "leg": 1, "verdict": "inconclusive"},
+                ],
+            }
+        }
+    }
+
+    def cell(label, verdict="pass", reason=None, carrier="double-double"):
+        return {
+            "label": order + label,
+            "verdict": verdict,
+            "reason": reason,
+            "carrier": carrier,
+            "residue": 1e-31,
+            "physical": 1e-31,
+            "terms": 1e-30,
+        }
+
+    below = f"{BELOW_RESOLUTION}: max(R, P, T) 1.03e-30 <= ..."
+    poles = NS(
+        check="poles",
+        subject="finiteness (every loop order and row)",
+        verdict="inconclusive",
+        cells=[
+            cell("((0, -1), (1, -1), (2, 0))) k=1"),
+            cell("((0, -1), (1, 1), (2, -1))) k=1", "inconclusive", below),
+            cell("((0, 1), (1, -1), (2, 1))) k=1", "inconclusive", below),
+            *(
+                cell(row, "inconclusive", f"{UNRESOLVED}: P ...")
+                for row in (
+                    "((0, -1), (1, -1), (2, -1))) k=1",
+                    "((0, -1), (1, -1), (2, 1))) k=1",
+                    "((0, 1), (1, 1), (2, -1))) k=1",
+                    "((0, 1), (1, 1), (2, 1))) k=1",
+                )
+            ),
+        ],
+    )
+    ward = NS(
+        check="ward",
+        subject="leg 1",
+        verdict="inconclusive",
+        cells=[
+            cell(
+                "((0, -1), (1, -1), (2, 1))) k=0", "inconclusive", f"{UNRESOLVED}: ..."
+            )
+        ],
+    )
+    goldstone = NS(
+        check="goldstone",
+        subject="external massive vectors",
+        verdict="not applicable",
+        cells=[],
+    )
+    report = NS(exit_code=4, processes=[NS(rows=[poles, ward, goldstone])])
+    return statuses, judged, record, report
+
+
+def test_the_known_g_g_to_z_outcome_is_recognised_exactly():
+    """The campaign's strict expected failure of li_gg_z raises its dedicated
+    exception for the known signature only: an extra open row, a failing
+    row anywhere, a missing operand or a failed generation is an ordinary
+    assertion failure."""
+
+    import copy
+
+    from .li_campaign_known import KnownBelowResolution, check_gg_z
+
+    with pytest.raises(KnownBelowResolution):
+        check_gg_z(*_gg_z_outcome())
+
+    def broken(change):
+        outcome = copy.deepcopy(_gg_z_outcome())
+        change(*outcome)
+        with pytest.raises(AssertionError):
+            check_gg_z(*outcome)
+
+    def extra_row(statuses, judged, record, report):
+        cells = report.processes[0].rows[0].cells
+        cells.append(
+            {**cells[0], "label": cells[0]["label"] + "x", "verdict": "inconclusive"}
+        )
+
+    def failing_row(statuses, judged, record, report):
+        report.processes[0].rows[1].cells[0]["verdict"] = "fail"
+
+    def missing_operand(statuses, judged, record, report):
+        report.processes[0].rows[1].cells[0]["physical"] = None
+
+    def unresolved_turned_deferred(statuses, judged, record, report):
+        cells = report.processes[0].rows[0].cells
+        cells[3]["reason"] = cells[1]["reason"]
+
+    def failed_generation(statuses, judged, record, report):
+        record["generation"]["probes"]["failed"] = ["finiteness probe: ..."]
+
+    def another_open_check(statuses, judged, record, report):
+        statuses["L6"] = "inconclusive"
+
+    def a_failure(statuses, judged, record, report):
+        statuses["L7"] = "fail"
+
+    for change in (
+        extra_row,
+        failing_row,
+        missing_operand,
+        unresolved_turned_deferred,
+        failed_generation,
+        another_open_check,
+        a_failure,
+    ):
+        broken(change)
