@@ -33,8 +33,11 @@
 //! on its own), and the statistics do not depend on the scheduling: a row
 //! counts as evaluated when its value is the first stored under its key (or
 //! when it fails), else as a hit; two engines that miss the same key at once
-//! both evaluate it, and the second counts it as a hit. The serial reduction
-//! uses no shared tier.
+//! both evaluate it, and the second counts it as a hit. Each engine keeps
+//! the rows it found in the tier or evaluated in its own values in front of
+//! the tier, so that a row it has seen takes no lock (most requests are
+//! repeats: about 150 per evaluated row on loop-induced plans). The serial
+//! reduction uses no shared tier.
 
 use ninjars::Result;
 use ninjars::fast::{C64, FastMaster, FastMasters};
@@ -509,8 +512,9 @@ impl<M: FastMasters> MasterCache<M> {
 
 impl<M: FastMasters> MasterCache<M> {
     /// [`Self::evaluate_rows`] on the shared tier, the canonical rows in
-    /// `self.canonical` (module docs, 'Shared tier'): `self.values` holds
-    /// the rows found in the tier for this request only.
+    /// `self.canonical` (module docs, 'Shared tier'): the cache's own values
+    /// stay in front of the tier (a row this engine has seen takes no lock),
+    /// and keep every row it found there or evaluated.
     fn evaluate_shared(
         &mut self,
         shared: &SharedMasters,
@@ -525,15 +529,18 @@ impl<M: FastMasters> MasterCache<M> {
         self.pending.clear();
         self.pending_keys.clear();
         self.miss_args.clear();
-        self.values.clear();
         for row in self.canonical.chunks_exact(arity) {
             let key = Key::new(family, row);
-            let source = if let Some(&miss) = self.pending.get(&key) {
+            let source = if let Some(&offset) = self.entries.get(&key) {
+                Source::Cached(offset)
+            } else if let Some(&miss) = self.pending.get(&key) {
                 Source::Evaluated(miss)
             } else if let Some(found) = shared.shard(&key).read().expect("shared masters").get(&key)
             {
+                let offset = self.values.len();
+                self.entries.insert(key, offset);
                 self.values.extend_from_slice(&found[..width]);
-                Source::Cached(self.values.len() - width)
+                Source::Cached(offset)
             } else {
                 let miss = self.pending_keys.len();
                 self.pending.insert(key, miss);
@@ -566,8 +573,11 @@ impl<M: FastMasters> MasterCache<M> {
                 evaluated += 1;
                 continue;
             }
+            let outputs = &self.miss_out[miss * width..(miss + 1) * width];
+            self.entries.insert(*key, self.values.len());
+            self.values.extend_from_slice(outputs);
             let mut value = [[C64::ZERO; 3]; MAX_OUTPUTS];
-            value[..width].copy_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
+            value[..width].copy_from_slice(outputs);
             if let std::collections::hash_map::Entry::Vacant(entry) = shared
                 .shard(key)
                 .write()
