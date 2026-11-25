@@ -852,14 +852,21 @@ impl<T: TypedBatch> V2Backend<T> for V2ReductionBackend {
         };
         let exact = self.reducer.take_exact_lanes();
         let rescued = self.reducer.take_rescued_lanes();
+        let mut seconds = vec![
+            ("reduction: masters", masters.nanoseconds as f64 * 1e-9),
+            (
+                "reduction: masters (oneloopmaster)",
+                masters.provider_nanoseconds as f64 * 1e-9,
+            ),
+        ];
+        // A parallel reduction's parallel region (wall; the masters'
+        // seconds are then summed over the workers).
+        let sliced = self.reducer.take_sliced_seconds();
+        if sliced > 0.0 {
+            seconds.push(("reduction: lane slices", sliced));
+        }
         BackendStatistics {
-            seconds: vec![
-                ("reduction: masters", masters.nanoseconds as f64 * 1e-9),
-                (
-                    "reduction: masters (oneloopmaster)",
-                    masters.provider_nanoseconds as f64 * 1e-9,
-                ),
-            ],
+            seconds,
             counts: vec![
                 ("master requests", masters.total_requests()),
                 ("master evaluations", masters.total_evaluated()),
@@ -1002,34 +1009,41 @@ impl V2ReductionBackend {
                 estimate,
             })
             .collect();
-        let read = |batches: Vec<super::reduction::ReductionBatch>| {
-            batches
-                .into_iter()
-                .map(|batch| {
-                    let values = T::values(batch.values.data())
-                        .ok_or_else(|| failure("reduction carrier differs"))?;
-                    let columns = batch.values.columns();
-                    let mut successes = batch.values.ids().iter().zip(values.chunks_exact(columns));
-                    let mut next = successes.next();
-                    batch
-                        .statuses
-                        .iter()
-                        .map(|(id, status)| -> RusticolResult<LaneOutcome<T>> {
-                            let value = match next {
-                                Some((&row, value)) if row == *id => {
-                                    next = successes.next();
-                                    Some(value.to_vec())
-                                }
-                                _ => None,
-                            };
-                            Ok(match value {
-                                Some(value) if status == "success" => Ok(value),
-                                _ => Err(status.clone()),
-                            })
-                        })
-                        .collect::<RusticolResult<Vec<_>>>()
+        let read_one = |batch: super::reduction::ReductionBatch| {
+            let values = T::values(batch.values.data())
+                .ok_or_else(|| failure("reduction carrier differs"))?;
+            let columns = batch.values.columns();
+            let mut successes = batch.values.ids().iter().zip(values.chunks_exact(columns));
+            let mut next = successes.next();
+            batch
+                .statuses
+                .iter()
+                .map(|(id, status)| -> RusticolResult<LaneOutcome<T>> {
+                    let value = match next {
+                        Some((&row, value)) if row == *id => {
+                            next = successes.next();
+                            Some(value.to_vec())
+                        }
+                        _ => None,
+                    };
+                    Ok(match value {
+                        Some(value) if status == "success" => Ok(value),
+                        _ => Err(status.clone()),
+                    })
                 })
                 .collect::<RusticolResult<Vec<_>>>()
+        };
+        // A parallel reduction reads its groups in parallel too (the first
+        // group's failure either way).
+        let parallel = crate::lane_slices::workers() > 1;
+        let read = |batches: Vec<super::reduction::ReductionBatch>| {
+            if parallel {
+                use rayon::prelude::*;
+                let read: Vec<_> = batches.into_par_iter().map(read_one).collect();
+                read.into_iter().collect::<RusticolResult<Vec<_>>>()
+            } else {
+                batches.into_iter().map(read_one).collect()
+            }
         };
         Ok((read(output.direct)?, output.check.map(read).transpose()?))
     }

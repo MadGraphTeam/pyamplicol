@@ -642,6 +642,29 @@ struct Slice {
     members: Vec<(usize, usize)>,
 }
 
+/// `members` stably ordered by their point (a counting sort: points are
+/// the indices of a call's points), with each one's point.
+fn by_point(members: &[(usize, usize)], points: &[&[usize]]) -> (Vec<(usize, usize)>, Vec<usize>) {
+    let point = |&(group, row): &(usize, usize)| points[group][row];
+    let last = members.iter().map(point).max().unwrap_or(0);
+    let mut next = vec![0usize; last + 2];
+    for member in members {
+        next[point(member) + 1] += 1;
+    }
+    for k in 1..next.len() {
+        next[k] += next[k - 1];
+    }
+    let mut ordered = vec![(0, 0); members.len()];
+    let mut affinity = vec![0; members.len()];
+    for member in members {
+        let p = point(member);
+        ordered[next[p]] = *member;
+        affinity[next[p]] = p;
+        next[p] += 1;
+    }
+    (ordered, affinity)
+}
+
 /// Every lane of `groups` in every frame of `frames` (the direct frame
 /// first), in slices reduced in parallel on `workers` engines
 /// (`crate::lane_slices`): the outcomes per frame as [`reduce_groups`]'s, bit
@@ -669,16 +692,9 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     let mut slices = Vec::new();
     for frame in 0..frames.len() {
         for (&(n, rank), members) in buckets {
-            let mut ordered = members.clone();
-            let affinity: Vec<usize> = match points {
-                Some(points) => {
-                    ordered.sort_by_key(|&(group, row)| points[group][row]);
-                    ordered
-                        .iter()
-                        .map(|&(group, row)| points[group][row])
-                        .collect()
-                }
-                None => vec![0; ordered.len()],
+            let (ordered, affinity) = match points {
+                Some(points) => by_point(members, points),
+                None => (members.clone(), vec![0; members.len()]),
             };
             for range in lane_slices::cut(&affinity, size) {
                 slices.push(Slice {
@@ -758,6 +774,66 @@ fn buckets<T: Carrier>(groups: &[Lanes<'_, T>]) -> ExecutionResult<Buckets> {
         }
     }
     Ok(buckets)
+}
+
+/// [`buckets`] with every group's true ranks found in parallel on the
+/// current pool (a parallel reduction): the same buckets, and the refusal
+/// of the first refused lane in (group, row) order.
+fn buckets_in_parallel<T: Carrier + Sync>(groups: &[Lanes<'_, T>]) -> ExecutionResult<Buckets> {
+    use rayon::prelude::*;
+    let ranks: Vec<ExecutionResult<Vec<usize>>> = groups
+        .par_iter()
+        .map(|lanes| {
+            let width = ncoeff(lanes.rank);
+            (0..lanes.ids.len())
+                .map(|row| {
+                    let rank = true_rank(
+                        &lanes.coefficients[row * width..(row + 1) * width],
+                        lanes.rank,
+                    );
+                    match rusticol_core::loop_v2::bounds::rank_refusal(
+                        rusticol_core::loop_v2::bounds::Reducer::NinjaRs,
+                        lanes.n,
+                        rank,
+                    ) {
+                        Some(refusal) => Err(error(refusal)),
+                        None => Ok(rank),
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    let mut buckets = BTreeMap::<_, Vec<_>>::new();
+    for (index, (lanes, ranks)) in groups.iter().zip(ranks).enumerate() {
+        for (row, rank) in ranks?.into_iter().enumerate() {
+            buckets
+                .entry((lanes.n, rank))
+                .or_default()
+                .push((index, row));
+        }
+    }
+    Ok(buckets)
+}
+
+/// [`output_batches`] of the frames' outcomes, the groups in parallel on
+/// the current pool (a parallel reduction); a failure is the first group's.
+fn output_batches_in_parallel<T: BatchCarrier + Send + Sync>(
+    groups: &[Lanes<'_, T>],
+    outcomes: Vec<Vec<Option<Outcome<T>>>>,
+    poles: Poles,
+    bits: u32,
+) -> ExecutionResult<Vec<ReductionBatch>> {
+    use rayon::prelude::*;
+    let batches: Vec<ExecutionResult<Vec<ReductionBatch>>> = groups
+        .par_iter()
+        .zip(outcomes.into_par_iter())
+        .map(|(lanes, rows)| output_batches(std::slice::from_ref(lanes), vec![rows], poles, bits))
+        .collect();
+    let mut out = Vec::with_capacity(batches.len());
+    for batch in batches {
+        out.extend(batch?);
+    }
+    Ok(out)
 }
 
 fn output_batches<T: BatchCarrier>(
@@ -1764,6 +1840,9 @@ pub struct V2Reducer {
     unchecked: bool,
     /// [`Self::set_target`].
     target: f64,
+    /// Seconds in the parallel region of a parallel reduction since the
+    /// last [`Self::take_sliced_seconds`].
+    sliced: f64,
 }
 
 impl V2Reducer {
@@ -1796,7 +1875,15 @@ impl V2Reducer {
             precision_bits: bits,
             unchecked: crate::reduction_policy::DEFAULT_UNCHECKED,
             target: crate::reduction_policy::DEFAULT_TARGET,
+            sliced: 0.0,
         })
+    }
+
+    /// Wall seconds of the parallel regions of the parallel reductions since
+    /// the last call (0 for serial reductions): the rest of a reduction
+    /// call (bucketing, assembling its outputs) runs on one thread.
+    pub fn take_sliced_seconds(&mut self) -> f64 {
+        std::mem::take(&mut self.sliced)
     }
 
     /// The call's target accuracy (the user's `reduction_target`,
@@ -2138,19 +2225,51 @@ impl V2Reducer {
             )),
             Engines::Fast(engine) => {
                 engine.share_masters(lane_slices::workers());
-                run(engine.as_mut(), &double()?, options, bits, source, points)
+                run(
+                    engine.as_mut(),
+                    &double()?,
+                    options,
+                    bits,
+                    source,
+                    points,
+                    &mut self.sliced,
+                )
             }
             Engines::Double(engine) => {
                 engine.select(options.masters);
-                run(engine, &double()?, options, bits, source, points)
+                run(
+                    engine,
+                    &double()?,
+                    options,
+                    bits,
+                    source,
+                    points,
+                    &mut self.sliced,
+                )
             }
             Engines::DoubleDouble(engine) => {
                 engine.select(options.masters);
-                run(engine, &double_double()?, options, bits, source, points)
+                run(
+                    engine,
+                    &double_double()?,
+                    options,
+                    bits,
+                    source,
+                    points,
+                    &mut self.sliced,
+                )
             }
             Engines::Arbitrary(engine) => {
                 engine.select(options.masters);
-                run(engine, &arbitrary()?, options, bits, source, points)
+                run(
+                    engine,
+                    &arbitrary()?,
+                    options,
+                    bits,
+                    source,
+                    points,
+                    &mut self.sliced,
+                )
             }
         }
     }
@@ -2268,9 +2387,14 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
     bits: u32,
     source: Option<&dyn GroupRefinementSource>,
     points: Option<&[&[usize]]>,
+    sliced: &mut f64,
 ) -> ExecutionResult<V2Output> {
-    let buckets = buckets(groups)?;
     let workers = lane_slices::workers();
+    let buckets = if workers > 1 {
+        buckets_in_parallel(groups)?
+    } else {
+        buckets(groups)?
+    };
     let lanes =
         buckets.values().map(Vec::len).sum::<usize>() * (1 + usize::from(options.check.is_some()));
     let (direct, check) = if workers > 1 && lanes > 1 {
@@ -2278,7 +2402,8 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
         let frames: Vec<Option<ReductionFrame>> = std::iter::once(None)
             .chain(options.check.map(Some))
             .collect();
-        let mut reduced = reduce_sliced(
+        let start = std::time::Instant::now();
+        let reduced = reduce_sliced(
             engine,
             groups,
             &buckets,
@@ -2287,8 +2412,9 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
             source,
             points,
             workers,
-        )?
-        .into_iter();
+        );
+        *sliced += start.elapsed().as_secs_f64();
+        let mut reduced = reduced?.into_iter();
         let direct = reduced
             .next()
             .ok_or_else(|| error("the direct frame was not reduced"))?;
@@ -2341,11 +2467,16 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
         .into_iter()
         .filter_map(|((group, row), bound)| bound.map(|b| (group, row, b)))
         .collect();
+    let output = |outcomes| {
+        if workers > 1 {
+            output_batches_in_parallel(groups, outcomes, options.poles, bits)
+        } else {
+            output_batches(groups, outcomes, options.poles, bits)
+        }
+    };
     Ok(V2Output {
-        direct: output_batches(groups, direct, options.poles, bits)?,
-        check: check
-            .map(|outcomes| output_batches(groups, outcomes, options.poles, bits))
-            .transpose()?,
+        direct: output(direct)?,
+        check: check.map(output).transpose()?,
         rescued,
         uncertified,
         uncertified_bounds,
