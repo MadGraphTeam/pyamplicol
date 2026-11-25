@@ -1456,3 +1456,186 @@ def test_a_resumed_probe_arm_without_the_current_provenance_is_re_evaluated(
         assert row["tolerance"] == 1e-5
         again = lm.finiteness_probes(runtime, data, {}, ("double",), previous=out)
     assert len(calls) == evaluated and again["ninjars/double"] == out["ninjars/double"]
+
+
+def test_one_k_through_run_resume_and_publication(tmp_path, monkeypatch, capsys):
+    """End to end through ``li_manifest.main``: a run at the default K (1e-5)
+    whose probes sit at R / P = 5e-6 passes and is complete; run again at the
+    default K it is reported complete without evaluating; run again with
+    ``--tolerance 1e-7`` it is never reported complete: the artifact is
+    generated again with K in its card, every probe is judged again at 1e-7
+    (and fails), the value arms are kept; ``lit --tolerance 1e-7`` publishes
+    the new verdict at that K, and ``lit`` at the default K reads the record
+    as stale, never as a pass. The native evaluation and generation are
+    stand-ins: everything between them and the command line is the
+    campaign's own."""
+
+    from types import SimpleNamespace as NS
+
+    import pyamplicol
+    import pyamplicol.api
+    from pyamplicol.generation.loop_service import _probe_tolerance
+    from pyamplicol.loops.v2 import checks, induced
+
+    name = "li_gg_hh"
+    stored = _record(name)["arms"]
+    calls = {"generate": [], "probe": [], "ward": [], "call": 0}
+
+    def judged(kind):
+        k = checks.tolerance()
+        cell = checks.judge(checks.Measure("x", 5e-6, 1.0, 1.0), k)
+        return induced.ProbeResult(kind, {("x", 1): cell}, tolerance=k)
+
+    class Generator:
+        def __init__(self, config):
+            self.k = _probe_tolerance(config.effective)
+
+        def generate(self, processes, output):
+            calls["generate"].append(self.k)
+            result = judged("ward")
+            probes = {
+                "finiteness": {"passed": True, "worst": 0.0, "verdict": "pass"},
+                "ward": {
+                    "legs": [1],
+                    "passed": result.passed,
+                    "worst": result.worst,
+                    "verdict": result.verdict,
+                },
+                "precision": "double",
+                "widths": "zero",
+                "rule": induced.rule_name(),
+                "tolerance": self.k,
+            }
+            output.mkdir(parents=True, exist_ok=True)
+            manifest = {
+                "extensions": {
+                    "generation": {
+                        "concrete_processes": [
+                            {"id": "p", "filters": {"loop_induced_probes": probes}}
+                        ]
+                    }
+                }
+            }
+            (output / "artifact.json").write_text(json.dumps(manifest))
+
+    def call(_runtime, inputs, _scales, *, backend, arithmetic, **_options):
+        # every backend serves the stored NinjaRS values (no backend
+        # difference): the run's verdict is its probes'
+        calls["call"] += 1
+        return stored.get(
+            f"ninjars/{arithmetic}/checked", stored["ninjars/double/plain"]
+        )
+
+    def probe(*_args, **_options):
+        calls["probe"].append(checks.tolerance())
+        return judged("finiteness")
+
+    def ward_probes(name, work, data, *_args, previous=None, **_options):
+        # the fixture-point Ward probes (their own reuse is tested above):
+        # an arm judged at another K is judged again
+        labels = [f"{b}/{c.replace('_', '-')}" for b, c in lm.PROBES]
+        arms = {}
+        for label in labels:
+            arm = (previous or {}).get("arms", {}).get(label)
+            if arm is None or not lm._current(arm):
+                calls["ward"].append(checks.tolerance())
+                r = judged("ward")
+                arm = [
+                    {
+                        "worst": {"1": r.worst},
+                        "passed": r.passed,
+                        "verdict": r.verdict,
+                        **lm._provenance(),
+                    }
+                ] * len(data["points"])
+            arms[label] = arm
+        return {"legs": [1], "zeroed_widths": [], "arms": arms}
+
+    monkeypatch.setattr(pyamplicol.api, "Generator", Generator)
+    monkeypatch.setattr(
+        pyamplicol,
+        "Runtime",
+        NS(load=lambda *a, **k: NS(_backend=NS(_executor=None))),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        lm, "compile_model", lambda data, cache: NS(parameter_defaults={})
+    )
+    monkeypatch.setattr(lm, "expression", lambda data, compiled: "g g > h h")
+    monkeypatch.setattr(lm, "run_parameters", lambda data, compiled: {})
+    monkeypatch.setattr(lm, "_call", call)
+    monkeypatch.setattr(induced, "probe", probe)
+    monkeypatch.setattr(lm, "ward_probes", ward_probes)
+    monkeypatch.setattr(lm, "_same_native", lambda record, backend=None: True)
+    for helper, value in (
+        ("_native", {"extension_sha256": "x"}),
+        ("_revision", "r"),
+        ("_symbolica", None),
+        ("_capability", AFTER_TIR_MP),
+    ):
+        monkeypatch.setattr(lm, helper, lambda value=value: value)
+    work = tmp_path / "work"
+    record_path = work / name / "record.json"
+
+    def run(*extra):
+        capsys.readouterr()
+        assert lm.main(["run", "--work-dir", str(work), *extra, name]) == 0
+        return capsys.readouterr().out
+
+    def l3(record):
+        return {row["tolerance"] for arm in record["l3_probes"].values() for row in arm}
+
+    # 1. A fresh run at the default K: generated, evaluated and judged at it.
+    default = checks.tolerance()
+    assert default > 5e-6
+    out = run()
+    line = json.loads(out.split(name, 1)[1])
+    assert line["tolerance"] == default and line["L3"] == "pass", line
+    assert calls["generate"] == [default]
+    assert set(calls["probe"]) == {default} and set(calls["ward"]) == {default}
+    values = calls["call"]
+    record = json.loads(record_path.read_text())
+    assert record["complete"] and l3(record) == {default}
+    assert record["generation"]["probes"]["tolerance"] == default
+
+    # 2. Again at the default K: complete, nothing evaluated or generated.
+    probes = len(calls["probe"])
+    out = run()
+    assert out.startswith(f"{name} complete")
+    assert json.loads(out.split("complete", 1)[1])["tolerance"] == default
+    assert len(calls["probe"]) == probes and len(calls["generate"]) == 1
+
+    # 3. Again at K = 1e-7: never complete; generated at 1e-7, every probe
+    # judged again at 1e-7 (R / P 5e-6 fails), the value arms kept.
+    out = run("--tolerance", "1e-7")
+    assert f"{name} complete" not in out and "judging again" in out
+    line = json.loads(out.strip().splitlines()[-1].split(name, 1)[1])
+    assert line["tolerance"] == 1e-7 and line["L3"] == "fail", line
+    assert line["L4"] == "fail", line
+    assert calls["generate"] == [default, 1e-7]
+    assert set(calls["probe"][probes:]) == {1e-7} and calls["ward"][-1] == 1e-7
+    assert calls["call"] == values
+    record = json.loads(record_path.read_text())
+    assert record["complete"] and l3(record) == {1e-7}
+    assert record["generation"]["probes"]["tolerance"] == 1e-7
+    assert {row["verdict"] for arm in record["l3_probes"].values() for row in arm} == {
+        "fail"
+    }
+
+    # 4. Publication at the run's K reads the new verdict; at the default K
+    # the record is stale, never a pass.
+    def publish(*extra):
+        output = tmp_path / "lit.json"
+        argv = ["lit", "--records", str(work), "--output", str(output)]
+        assert lm.main([*argv, "--source", "test", *extra]) == 0
+        lit = json.loads(output.read_text())
+        return lit["checks"]["tolerance"], lit["rows"]["gg_hh"]["status"]
+
+    assert publish("--tolerance", "1e-7") == (1e-7, "fail")
+    k, status = publish()
+    assert k == default and status not in ("pass", "fail"), status
+    entry = {e["fixture"]: e for e in lm.runs()}[name]
+    with checks.tolerating(None):
+        assert lm.judge(record, entry)["L3"]["ninjars/double"]["status"].startswith(
+            "stale"
+        )

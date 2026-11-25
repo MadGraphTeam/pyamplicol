@@ -37,6 +37,15 @@ generic rotations and the rescaled re-test). Each run writes one record;
 LI_VALIDATION schema of ``scripts/build_summary.py`` (rows keyed by the
 registry keys) plus the validation-only ids.
 
+One K per invocation (``--tolerance`` of ``run`` and ``lit``, default the
+requested relative accuracy): ``run`` writes it into the generation cards
+(the generation-time probes), judges every probe at it, validates a complete
+record against it before reporting it complete (a probe record judged under
+another rule or K is judged again, the value arms kept; an artifact whose
+generation-time probes are stale is generated again) and states it in its
+summary line; ``lit`` judges and publishes at it (``checks`` in
+data/lit.json), a probe judged at another K reading as stale.
+
 Rules (§4.0 with the rulings of the brief, m-lit DECISIONS): L1 binary64 vs
 each designated provider <= 1e-5 relative (lax; digits recorded; a fixture
 point marked ``l1_caution`` whose provider deviates beyond it is left out of
@@ -405,8 +414,9 @@ def card(
 ) -> str:
     """The generation card of a fixture: its model, correction (MadLoop's
     ``[sqrvirt=...]``), order limits (``X=n`` tokens), particle veto (``/
-    x``), fixed parameters the model declares (``known``) and mass scheme
-    (``complex_mass_scheme``)."""
+    x``), fixed parameters the model declares (``known``), mass scheme
+    (``complex_mass_scheme``) and the checks' K in effect (``check.tolerance``:
+    the generation-time probes are judged at the campaign's K)."""
 
     madloop = data["madloop_process"]
     correction = re.search(r"\[\s*sqrvirt\s*=\s*(\w+)\s*\]", madloop).group(1)
@@ -437,6 +447,7 @@ def card(
             "loop_induced_probes": True,
         },
         "generation.validation": {"post_build_validation": False},
+        "check": {"tolerance": _provenance()["tolerance"]},
     }
     if restriction is not None:
         sections["model"]["restriction"] = restriction
@@ -461,12 +472,20 @@ def card(
 
 
 def generate(
-    name: str, work: Path, compiled: Any, data: dict | None = None
+    name: str,
+    work: Path,
+    compiled: Any,
+    data: dict | None = None,
+    probes: bool = False,
 ) -> tuple[Path, dict]:
     """The fixture's loop-induced artifact through the public ``Generator``
     (kept in ``work / name / "artifact"`` and re-used), with its generation
     record: seconds and the artifact's generation-time probe record
-    (``data``: a fixture-shaped record instead of the fixture ``name``)."""
+    (``data``: a fixture-shaped record instead of the fixture ``name``).
+    With ``probes`` (the campaign run, which judges them) an artifact whose
+    generation-time probes were judged under another rule or K
+    (``_probes_current``) is generated again at the current ones, never
+    reused as it is."""
 
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
@@ -475,6 +494,14 @@ def generate(
     root = work / name
     output = root / "artifact"
     seconds = None
+    if (
+        probes
+        and (output / "artifact.json").is_file()
+        and not _probes_current(_artifact_probes(output))
+    ):
+        import shutil
+
+        shutil.rmtree(output)
     if not (output / "artifact.json").is_file():
         root.mkdir(parents=True, exist_ok=True)
         path = root / "card.toml"
@@ -486,18 +513,31 @@ def generate(
             output,
         )
         seconds = time.perf_counter() - start
-    manifest = _load(output / "artifact.json")
-    (filters,) = (
-        record["filters"]
-        for record in manifest["extensions"]["generation"]["concrete_processes"]
-        if record["id"] == "p"
-    )
+    filters = _filters(output)
     return output, {
         "seconds": seconds,
         "peak_gib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20,
         "probes": filters.get("loop_induced_probes"),
         "width_policy": filters.get("conventions", {}).get("width_policy"),
     }
+
+
+def _filters(output: Path) -> dict:
+    """The generation filters record of an artifact's process ``p``."""
+
+    manifest = _load(output / "artifact.json")
+    (filters,) = (
+        record["filters"]
+        for record in manifest["extensions"]["generation"]["concrete_processes"]
+        if record["id"] == "p"
+    )
+    return filters
+
+
+def _artifact_probes(output: Path) -> Any:
+    """An artifact's generation-time probe record (``loop_induced_probes``)."""
+
+    return _filters(output).get("loop_induced_probes")
 
 
 # ------------------------------------------------------------- evaluation
@@ -691,7 +731,7 @@ def evaluate(
 
     data = fixture(name)
     compiled = compile_model(data, work / "model-cache")
-    artifact, generation = generate(name, work, compiled)
+    artifact, generation = generate(name, work, compiled, probes=True)
     parameters = run_parameters(data, compiled)
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
@@ -719,9 +759,14 @@ def evaluate(
         # predates the field: never the staged native's by default).
         for key in RECORD_PROVENANCE:
             record[key] = previous.get(key)
-        for key in ("generation", "revision", "refreshed", "native_digest"):
+        for key in ("revision", "refreshed", "native_digest"):
             if key in previous:
                 record[key] = previous[key]
+        # The previous generation record (its timing) only for the same
+        # artifact probes: an artifact generated again at the current rule
+        # and K (``generate``) carries its own.
+        if (previous.get("generation") or {}).get("probes") == generation["probes"]:
+            record["generation"] = previous["generation"]
         record["arms"] = dict(previous["arms"])
         record["resumed_at"] = _revision()
     plan: list[tuple[str, str, str, bool, list]] = []
@@ -1258,6 +1303,59 @@ def _current(rows: Any) -> bool:
     )
 
 
+def _probes_current(probes: Any) -> bool:
+    """Whether an artifact's generation-time probe record was judged under
+    the current rule and K (a record holding no verdict, probes off or an
+    exact zero, is current)."""
+
+    if not isinstance(probes, dict):
+        return True
+    if "rule" not in probes and (
+        probes.get("status") == "off"
+        or probes.get("exact_colour_zero")
+        or probes.get("exact_fold_zero")
+    ):
+        return True
+    want = _provenance()
+    return (probes.get("rule"), probes.get("tolerance")) == (
+        want["rule"],
+        want["tolerance"],
+    )
+
+
+def stale_parts(record: dict) -> list[str]:
+    """The probe records of a run record judged under another rule or K than
+    the current ones (``_current``, ``_probes_current``): its L3 and L4 probe
+    arms and its generation-time probes. A complete record with any is
+    judged again (``main``: its value arms kept), never reported complete."""
+
+    stale = [
+        f"l3/{label}"
+        for label, arm in (record.get("l3_probes") or {}).items()
+        if not _current(arm)
+    ]
+    stale += [
+        f"ward/{label}"
+        for label, arm in ((record.get("ward_probes") or {}).get("arms") or {}).items()
+        if not _current(arm)
+    ]
+    if not _probes_current((record.get("generation") or {}).get("probes")):
+        stale.append("generation")
+    return stale
+
+
+def summary(record: dict, entry: dict) -> str:
+    """A run's line: the K and rule its checks were judged at and each
+    check's status (``judge``)."""
+
+    statuses = {
+        c: v.get("status")
+        for c, v in judge(record, entry).items()
+        if isinstance(v, dict) and "status" in v
+    }
+    return json.dumps({**_provenance(), **statuses})
+
+
 def _arm_status(rows: list, count: int, label: str) -> str:
     """An L3 / L4 probe arm's status from its rows' explicit verdicts: a row
     judged under another rule or K is stale (never a pass); fail, else
@@ -1689,11 +1787,7 @@ def judge(record: dict, entry: dict) -> dict:
             for k, v in generation.items()
             if k != "finiteness" and (v.get("legs") or not v.get("passed", True))
         ]
-        want = _provenance()
-        if (probes.get("rule"), probes.get("tolerance")) != (
-            want["rule"],
-            want["tolerance"],
-        ):
+        if not _probes_current(probes):
             # Judged under another rule or K: never reused as a pass.
             verdict = "stale: judged under another rule or K"
         else:
@@ -4529,6 +4623,7 @@ def lit(
         "(read by scripts/build_summary.py build_loop_induced), per §4.1 id under "
         "'ids'; written by tools/loop_benchmark/li_manifest.py lit",
         "rules": _load(CAMPAIGN)["rules"],
+        "checks": _provenance(),
         "source": source,
         "provenance": provenance(records),
         "rows": rows,
@@ -4840,6 +4935,14 @@ def main(argv: list[str] | None = None) -> int:
     out.add_argument("--output", type=Path, default=LIT)
     out.add_argument("--source", required=True)
     out.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        metavar="K",
+        help="the checks' K the records are judged at (run --tolerance; default: "
+        "the requested relative accuracy); a probe judged at another K is stale",
+    )
+    out.add_argument(
         "--limits", type=Path, default=None, help="the limits command's output"
     )
     out.add_argument(
@@ -4938,25 +5041,40 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "rows":
         print(json.dumps(entries, indent=1))
         return 0
+    from pyamplicol.loops.v2.checks import tolerating
+
     if args.command == "run":
         by_fixture = {e["fixture"]: e for e in entries}
         skip = skip_arms(args.skip_arm)
-        for name in args.fixtures or list(by_fixture):
-            entry = by_fixture[name]
-            path = args.work_dir / name / "record.json"
+        # One K for the whole invocation: the validation of complete
+        # records, the generation cards and artifact reuse, the evaluation
+        # and the run summary.
+        with tolerating(args.tolerance):
+            for name in args.fixtures or list(by_fixture):
+                entry = by_fixture[name]
+                path = args.work_dir / name / "record.json"
 
-            def write(record: dict, path: Path = path) -> None:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps(record, indent=1) + "\n")
+                def write(record: dict, path: Path = path) -> None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps(record, indent=1) + "\n")
 
-            previous = _resumable(path, args.refresh_backend, name, args.work_dir)
-            if previous is not None and previous.get("complete"):
-                print(name, "complete", flush=True)
-                continue
-            own, plain = run_skips(name)
-            from pyamplicol.loops.v2.checks import tolerating
-
-            with tolerating(args.tolerance):
+                previous = _resumable(path, args.refresh_backend, name, args.work_dir)
+                if previous is not None and previous.get("complete"):
+                    stale = stale_parts(previous)
+                    if not stale:
+                        print(name, "complete", summary(previous, entry), flush=True)
+                        continue
+                    # Judged under another rule or K: its probes are judged
+                    # again (the value arms kept), never reported complete.
+                    print(
+                        name,
+                        "judging again at",
+                        json.dumps(_provenance()),
+                        "(stale: " + ", ".join(stale) + ")",
+                        flush=True,
+                    )
+                    previous = {**previous, "complete": False}
+                own, plain = run_skips(name)
                 record = evaluate(
                     name,
                     args.work_dir,
@@ -4967,17 +5085,7 @@ def main(argv: list[str] | None = None) -> int:
                     skip={**own, **skip},
                     high_checked=not (args.high_plain or plain),
                 )
-            print(
-                name,
-                json.dumps(
-                    {
-                        c: v.get("status")
-                        for c, v in judge(record, entry).items()
-                        if isinstance(v, dict) and "status" in v
-                    }
-                ),
-                flush=True,
-            )
+                print(name, summary(record, entry), flush=True)
         return 0
     if args.command == "limits":
         result = {}
@@ -5092,6 +5200,16 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(result, indent=1) + "\n"
         )
         return 0
+    with tolerating(args.tolerance):
+        published = _publish(args, entries)
+    args.output.write_text(json.dumps(published, indent=1, sort_keys=True) + "\n")
+    return 0
+
+
+def _publish(args: argparse.Namespace, entries: list[dict]) -> dict:
+    """data/lit.json from the ``lit`` command's records (``lit``), judged
+    at the K in effect."""
+
     records = {
         path.parent.name: record
         for path in sorted(args.records.glob("*/record.json"))
@@ -5109,25 +5227,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.born_l6
         else None
     )
-    args.output.write_text(
-        json.dumps(
-            lit(
-                records,
-                entries,
-                args.source,
-                limit_results,
-                crossing_result=crossing_result,
-                madloop=madloop,
-                fig7_result=fig7_result,
-                born=born,
-                fabc=_load(args.fabc) if args.fabc else None,
-            ),
-            indent=1,
-            sort_keys=True,
-        )
-        + "\n"
+    return lit(
+        records,
+        entries,
+        args.source,
+        limit_results,
+        crossing_result=crossing_result,
+        madloop=madloop,
+        fig7_result=fig7_result,
+        born=born,
+        fabc=_load(args.fabc) if args.fabc else None,
     )
-    return 0
 
 
 if __name__ == "__main__":
