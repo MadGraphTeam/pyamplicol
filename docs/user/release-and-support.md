@@ -42,28 +42,39 @@ and 1.0.3 (every one-loop artifact), a card's `[loop.preparation]
 fixed_parameters` were bound by the amplitude but ignored by the kinematics:
 the artifact's validation point, the points of `check` and of the
 generation's probes and, in 1.0.3, the flat phase-space points of `evaluate`
-and `profile` (which take their masses from the validation point) were drawn
+and `profile` (which took their masses from the validation point) were drawn
 on the model's own masses, and `model/parameters.json` stated the model's
-values.
-Where a fixed parameter changes an external mass, every such point was off
-the shells the amplitude binds and its value was returned as `success`
+values. Where a fixed parameter changes an external mass, every such point was
+off the shells the amplitude binds and its value was returned as `success`
 although it is no amplitude: `g g > t t~ h` with `MT = ymt = 173`, `MH = 125`
 on `loop_qcd_qed_sm_Gmu` / `with_b_mass_no_width` (174.3 / 120) was profiled
 with tops 1.5 % and the Higgs 7.8 % off shell in p^2, its double pole up to
 0.2 off -2 C_A (alpha_s / 2 pi) Born and the two reduction backends up to an
 order apart (on shell: Catani's pole to 1e-10, the backends to 1e-24,
 MadLoop and Recola agree). `check` was not affected (it re-shells its points
-on the masses it binds). Now one function gives the bound external masses
-(the model's with the fixed parameters, stable widths and preparation
-constants applied) to every generated point, the validation record states
-them, `model/parameters.json` states the bound values, and a virtual
-evaluation refuses a point off the bound shells beyond binary64 rounding
-(stage `external-mass-shell`, [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
-"The mass-shell guard"). Processes whose fixed parameters move no external
-mass keep their validation points and values bit for bit. **Artifacts with an
-external mass fixed to another value than the model's must be regenerated:**
-loading one is refused with that request (its stored validation point is
-measured against the masses it binds).
+on the masses it binds). Now one evaluator gives the bound external masses
+(from the exact parameter texts, on the effective binding, a derived mass
+rounded once) to every generated point; the flat points of `evaluate` follow
+the parameters given at evaluation (`--model-parameters`), `profile` and the
+benchmark runner refuse such parameters; the validation record states the
+bound masses and `model/parameters.json` the bound values. In the checked
+mode a shell-consistency screen marks a point off the bound shells beyond the
+call's target as `uncertified` (its value still served; [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
+"The shell-consistency screen"); the unchecked mode is unchanged.
+
+Compatibility: the stored validation points and the values at given points
+are bit for bit those of 1.0.3 for every process whose fixed parameters move
+no external mass. The flat phase-space SAMPLE drawn for a given seed changes
+at rounding level for every process with a massive external leg (the masses
+are now the exact bound ones, no longer re-derived from the stored point:
+173.00000000000003 became 173): a profile's points before and after this
+change are not the same bits, so the shards of one profiled row must all be
+drawn by the same version. **Artifacts with an external mass fixed to another
+value than the model's must be regenerated**: the Python runtime refuses to
+load one (its stored validation point is measured against the masses it
+binds) and the standalone flat-point drawer refuses its record; the native
+SDKs' open does not check (a known gap, to follow), and stream files of the
+stored benchmark tool keep their own momenta and parameters.
 
 **NinjaRS no longer loses a lane's digits silently.** At ordinary phase-space
 points a few NinjaRS reduction lanes lost most of their binary64 digits to

@@ -36,7 +36,14 @@ CA, CF = 3.0, 4.0 / 3.0
 POLE_TOLERANCE = 1e-9
 
 
-def _card(root: Path, model: str, restriction: str, expression: str, fixed: dict):
+def _card(
+    root: Path,
+    model: str,
+    restriction: str,
+    expression: str,
+    fixed: dict,
+    extra: str = "",
+):
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
 
@@ -55,6 +62,7 @@ entries = [{{expression = {json.dumps(expression)}, name = "p"}}]
 loop_coupling_orders = ["QCD"]
 [loop]
 external_widths = "zero"
+{extra}
 [loop.preparation]
 fixed_parameters = {{{entries}}}
 [generation]
@@ -241,6 +249,25 @@ def test_the_campaign_gg_ttxh_card_is_on_its_bound_shells(tmp_path):
             artifact, flat.as_inputs(exact=False), flat.mu_r2(), backend
         ):
             assert abs(ratio / expected - 1) <= POLE_TOLERANCE, (backend, ratio)
+    # The points the profile drew before the bound masses (on the
+    # restriction's 174.3 / 120): every one is served marked uncertified.
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli.flat_points import FlatBinding
+    from pyamplicol.kinematics import is_shell_reason
+
+    stale = draw_flat_points(
+        artifact,
+        process=None,
+        points=4,
+        seed=1,
+        sqrt_s=None,
+        binding=FlatBinding("p", (0.0, 0.0, 174.3, 174.3, 120.0)),
+    )
+    result = Runtime.load(artifact).evaluate(
+        stale.as_inputs(exact=False), mu_r2=stale.mu_r2()
+    )
+    for lane in result.diagnostics:
+        assert lane.has_value and any(is_shell_reason(r) for r in lane.uncertified)
 
 
 # ------------------------------------------- the shell-consistency screen
@@ -528,3 +555,293 @@ def test_an_artifact_with_a_stale_validation_point_is_refused(uux_ttx, tmp_path)
         draw_flat_points(copy, process=None, points=1, seed=1, sqrt_s=None)
     # The artifact as generated loads.
     Runtime.load(uux_ttx)
+
+
+# ------------------------------------------- one binding for every draw
+
+
+@pytest.fixture(scope="module")
+def uux_ttz(tmp_path_factory):
+    """u u~ > t t~ z (QCD) on loop_sm with MT fixed to 160: two external
+    masses on one side."""
+
+    return _card(
+        tmp_path_factory.mktemp("bound-masses-ttz"),
+        "loop_sm",
+        "no_b_mass",
+        "u u~ > t t~ z",
+        {"MT": "160", "ymt": "160"},
+    )
+
+
+@pytest.mark.loop_physics
+def test_a_permuted_selector_loads_draws_and_evaluates_on_its_shells(uux_ttz):
+    """The stored u u~ > t t~ z requested as u u~ > z t t~ (a permutation
+    within the final state): it loads (the stored point is measured in the
+    stored order), its flat points come in the requested order on each
+    leg's shell, and their double pole is Catani's, unmarked."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
+
+    selector = "u u~ > z t t~"
+    runtime = Runtime.load(uux_ttz, process=selector)
+    assert [leg.pdg_id for leg in runtime.physics.external_particles] == [
+        2,
+        -2,
+        23,
+        6,
+        -6,
+    ]
+    binding = runtime_binding(runtime)
+    flat = draw_flat_points(
+        uux_ttz, process=None, points=2, seed=3, sqrt_s=None, binding=binding
+    )
+    assert flat.masses[2] == pytest.approx(91.188) and flat.masses[3:] == (160.0,) * 2
+    for point in flat.points:
+        _assert_on_shell(point, flat.masses)
+    expected = -ALPHA_S / (2 * math.pi) * 2 * CF
+    for ratio in _double_poles(
+        uux_ttz, flat.as_inputs(exact=False), flat.mu_r2(), "ninjars", process=selector
+    ):
+        assert abs(ratio / expected - 1) <= POLE_TOLERANCE, ratio
+
+
+@pytest.mark.loop_physics
+def test_a_stale_permuted_record_is_refused(uux_ttz, tmp_path):
+    import shutil
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.errors import ArtifactError
+    from pyamplicol.generation.phase_space import massive_rambo_final_state
+
+    copy = tmp_path / "stale"
+    shutil.copytree(uux_ttz, copy)
+    path = copy / "processes" / "p" / "validation-momenta.json"
+    record = json.loads(path.read_text())
+    # The stored order's point drawn on the model's top mass (173).
+    finals = massive_rambo_final_state(
+        3, sqrt_s=1000.0, masses=(173.0, 173.0, 91.188), seed=1
+    )
+    legs = [(500.0, 0.0, 0.0, 500.0), (500.0, 0.0, 0.0, -500.0), *finals]
+    record["points"] = [
+        [
+            {"pdg": entry["pdg"], "momentum": [repr(float(x)) for x in leg]}
+            for entry, leg in zip(record["points"][0], legs, strict=True)
+        ]
+    ]
+    del record["masses"]
+    path.write_text(json.dumps(record))
+    for selector in (None, "u u~ > z t t~"):
+        with pytest.raises(ArtifactError, match="regenerate the artifact"):
+            Runtime.load(copy, process=selector)
+
+
+@pytest.fixture(scope="module")
+def uux_ttx_free(tmp_path_factory):
+    """u u~ > t t~ (QCD) on loop_sm with the top mass adjustable (173)."""
+
+    return _card(
+        tmp_path_factory.mktemp("bound-masses-free"),
+        "loop_sm",
+        "no_b_mass",
+        "u u~ > t t~",
+        {},
+    )
+
+
+@pytest.mark.loop_physics
+def test_an_evaluation_time_mass_override_drives_the_flat_points(
+    uux_ttx_free, tmp_path, monkeypatch
+):
+    """MT adjustable at generation (173) and set to 160 at evaluation: the
+    CLI's flat points are on the 160 shell, their double pole is Catani's;
+    an override of no external mass leaves the points bit for bit."""
+
+    from pyamplicol.cli import flat_points, parse_cli
+    from pyamplicol.cli.handlers import DefaultCliServices
+    from pyamplicol.reporting import CallbackProgressSink
+
+    drawn = []
+    original = flat_points.draw_flat_points
+
+    def spy(*args, **kwargs):
+        found = original(*args, **kwargs)
+        drawn.append(found)
+        return found
+
+    monkeypatch.setattr(flat_points, "draw_flat_points", spy)
+
+    def evaluate(parameters):
+        path = tmp_path / "parameters.json"
+        path.write_text(json.dumps(parameters))
+        config = (
+            parse_cli(("evaluate", str(uux_ttx_free), "--model-parameters", str(path)))
+            .resolve()
+            .effective
+        )
+        return DefaultCliServices().evaluate(
+            config, CallbackProgressSink(lambda _: None)
+        )
+
+    result = evaluate({"MT": "160"})
+    flat = drawn[-1]
+    assert flat.masses == (0.0, 0.0, 160.0, 160.0)
+    for point in flat.points:
+        _assert_on_shell(point, flat.masses)
+    expected = -ALPHA_S / (2 * math.pi) * 2 * CF
+    for index in range(len(flat.points)):
+        assert str(result.statuses[index]) == "success"
+        assert not result.diagnostics[index].uncertified
+        born = sum(complex(value).real for value in result.born_values[index])
+        pole = sum(complex(v.double_pole).real for v in result.values[index])
+        assert abs(pole / born / expected - 1) <= POLE_TOLERANCE
+    evaluate({"aS": "0.118"})
+    plain = original(
+        uux_ttx_free, process=None, points=len(flat.points), seed=1, sqrt_s=None
+    )
+    assert drawn[-1].points == plain.points and drawn[-1].masses == plain.masses
+
+
+@pytest.mark.loop_physics
+def test_an_override_moves_the_thresholds_and_profile_refuses_overrides(
+    uux_ttx_free, tmp_path
+):
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli import parse_cli
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
+    from pyamplicol.cli.handlers import DefaultCliServices
+    from pyamplicol.config import ConfigurationError
+    from pyamplicol.reporting import CallbackProgressSink
+
+    heavy = runtime_binding(Runtime.load(uux_ttx_free, model_parameters={"MT": "600"}))
+    assert heavy.masses[2:] == (600.0, 600.0)
+    with pytest.raises(ConfigurationError, match="below the threshold"):
+        draw_flat_points(
+            uux_ttx_free, process=None, points=1, seed=1, sqrt_s=None, binding=heavy
+        )
+    from dataclasses import replace
+
+    parameters = tmp_path / "parameters.json"
+    parameters.write_text('{"MT": "160"}')
+    config = parse_cli(("profile", str(uux_ttx_free))).resolve().effective
+    config = replace(
+        config, evaluation=replace(config.evaluation, model_parameters=parameters)
+    )
+    with pytest.raises(ConfigurationError, match="own model parameters"):
+        DefaultCliServices().benchmark(config, CallbackProgressSink(lambda _: None))
+
+
+@pytest.mark.loop_fast
+def test_a_scale_dependent_external_mass_is_not_drawn_automatically():
+    from types import SimpleNamespace
+
+    from pyamplicol.loops.v2.assemble import (
+        RunningExternalMass,
+        bound_leg_masses,
+        effective_fixed_parameters,
+        scale_dependent_legs,
+    )
+
+    model = SimpleNamespace(
+        name="toy",
+        parameter_defaults={"MU_R": (91.188, 0.0)},
+        ir=SimpleNamespace(
+            particles=(SimpleNamespace(pdg_code=24, mass="MW"),),
+            parameters=(
+                SimpleNamespace(
+                    name="MW",
+                    nature="internal",
+                    resolved_expression="10+model_toy::{}::MU_R/10",
+                    parameter_type="real",
+                ),
+            ),
+        ),
+    )
+    assert scale_dependent_legs(model, [24], "MU_R")
+    with pytest.raises(RunningExternalMass, match="give the points' momenta"):
+        bound_leg_masses(model, [24], {}, 16, scale_parameter="MU_R")
+    # The effective binding: the request's texts first, the preparation's
+    # external constants besides, real.
+    assert effective_fixed_parameters(
+        {"MT": "160"}, {"MT": "1", "CA": ("3", "0"), "X": "1"}, {"MT", "CA"}
+    ) == {"MT": "160", "CA": "3"}
+    with pytest.raises(ValueError, match="complex"):
+        effective_fixed_parameters({}, {"CA": ("3", "1")}, {"CA"})
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize(
+    ("model", "restriction", "fixed"),
+    (
+        (
+            "loop_sm",
+            "no_b_mass",
+            {
+                "MZ": "91",
+                "aEWM1": "132",
+                "Gf": (
+                    "0.0000081290192191662013368412952866239325828"
+                    "46681333890791203855282746298838"
+                ),
+            },
+        ),
+        ("loop_qcd_qed_sm_Gmu", "default", {"MZ": "91"}),
+    ),
+    ids=("loop_sm", "Gmu"),
+)
+def test_a_derived_external_mass_is_bound_once(tmp_path, model, restriction, fixed):
+    """A W mass derived from fixed inputs: the validation record's mass is
+    the runtime's binding (one evaluator, the exact texts), the point is on
+    that shell and the artifact loads; its flat points are unmarked."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
+    from pyamplicol.kinematics import is_shell_reason
+
+    artifact = _card(tmp_path, model, restriction, "u u~ > w+ w-", fixed)
+    record = _record(artifact)
+    recorded = float(record["masses"][2])
+    runtime = Runtime.load(artifact)
+    binding = runtime_binding(runtime)
+    assert binding.masses[2] == binding.masses[3] == recorded
+    if model == "loop_sm":
+        assert recorded == 64.34672030531159
+    (point,) = record["points"]
+    _assert_on_shell([entry["momentum"] for entry in point], binding.masses)
+    flat = draw_flat_points(artifact, process=None, points=2, seed=3, sqrt_s=None)
+    result = runtime.evaluate(flat.as_inputs(exact=False), mu_r2=flat.mu_r2())
+    for lane in result.diagnostics:
+        assert not any(is_shell_reason(r) for r in lane.uncertified)
+
+
+@pytest.mark.loop_physics
+def test_a_complex_mass_scheme_leg_takes_its_real_mass(tmp_path):
+    """Under the complex-mass scheme an external state is stable: its shell
+    is its real mass parameter squared (the top's complex pole mass is a
+    propagator's only). The stable W of u d~ > w+ b b~ (its own width fixed
+    to zero by external_widths) is drawn and screened on MW^2."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
+    from pyamplicol.kinematics import is_shell_reason
+
+    artifact = _card(
+        tmp_path,
+        "loop_sm",
+        "no_b_mass",
+        "u d~ > w+ b b~",
+        {"WZ": "0", "WH": "0"},
+        extra='[loop.model.scheme]\nmass_scheme = "complex-mass"',
+    )
+    runtime = Runtime.load(artifact)
+    binding = runtime_binding(runtime)
+    record = _record(artifact)
+    assert float(record["masses"][2]) == binding.masses[2] > 0
+    assert binding.masses[3:] == (0.0, 0.0)
+    flat = draw_flat_points(artifact, process=None, points=2, seed=3, sqrt_s=None)
+    for point in flat.points:
+        _assert_on_shell(point, binding.masses)
+    result = runtime.evaluate(flat.as_inputs(exact=False), mu_r2=flat.mu_r2())
+    for lane in result.diagnostics:
+        assert not any(is_shell_reason(r) for r in lane.uncertified)
