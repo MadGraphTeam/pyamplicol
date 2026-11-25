@@ -2425,6 +2425,7 @@ dependencies = [
  "ninjars-symbolica",
  "oneloop",
  "pyamplicol",
+ "rayon",
  "rusticol-core",
  "serde",
  "serde_json",

@@ -23,10 +23,27 @@
 //! provider evaluates each row independently of the other rows of its batch.
 //! Only successful rows are cached; keys are exact, so entries never go stale,
 //! and [`MasterCache::clear`] only bounds memory.
+//!
+//! **Shared tier (parallel reduction).** The engines of one parallel
+//! reduction (`crate::lane_slices`) share one [`SharedMasters`]
+//! ([`MasterCache::share`]): a cache of the same exact keys that every
+//! engine reads and fills, so that a master that several slices need is
+//! evaluated about once per call instead of once per worker. A value does
+//! not depend on which engine evaluated it (the provider evaluates each row
+//! on its own), and the statistics do not depend on the scheduling: a row
+//! counts as evaluated when its value is the first stored under its key (or
+//! when it fails), else as a hit; two engines that miss the same key at once
+//! both evaluate it, and the second counts it as a hit. Each engine keeps
+//! the rows it found in the tier or evaluated in its own values in front of
+//! the tier, so that a row it has seen takes no lock (most requests are
+//! repeats: about 150 per evaluated row on loop-induced plans). The serial
+//! reduction uses no shared tier.
 
 use ninjars::Result;
 use ninjars::fast::{C64, FastMaster, FastMasters};
 use std::collections::HashMap;
+use std::hash::BuildHasher;
+use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 const FAMILIES: [FastMaster; 6] = [
@@ -38,6 +55,18 @@ const FAMILIES: [FastMaster; 6] = [
     FastMaster::D0,
 ];
 const MAX_ARITY: usize = 11;
+/// The most Laurent triples a master row has (`FastMaster::outputs`).
+const MAX_OUTPUTS: usize = {
+    let mut most = 0;
+    let mut k = 0;
+    while k < FAMILIES.len() {
+        if FAMILIES[k].outputs() > most {
+            most = FAMILIES[k].outputs();
+        }
+        k += 1;
+    }
+    most
+};
 
 fn family_index(family: FastMaster) -> usize {
     FAMILIES.iter().position(|f| *f == family).unwrap()
@@ -58,6 +87,24 @@ pub struct MasterStatistics {
     pub nanoseconds: u64,
     /// Wall time inside the provider's `evaluate` calls, nanoseconds.
     pub provider_nanoseconds: u64,
+}
+
+impl std::ops::AddAssign for MasterStatistics {
+    /// The statistics of several engines (the workers of a parallel
+    /// reduction): every count and time summed.
+    fn add_assign(&mut self, other: Self) {
+        for (a, b) in [
+            (&mut self.requests, other.requests),
+            (&mut self.hits, other.hits),
+            (&mut self.evaluated, other.evaluated),
+        ] {
+            for (x, y) in a.iter_mut().zip(b) {
+                *x += y;
+            }
+        }
+        self.nanoseconds += other.nanoseconds;
+        self.provider_nanoseconds += other.provider_nanoseconds;
+    }
 }
 
 impl MasterStatistics {
@@ -162,6 +209,50 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
     out.copy_from_slice(&best[..arity]);
 }
 
+/// The master values the engines of one parallel reduction share
+/// ([`MasterCache::share`]; module docs): successful rows by their exact
+/// canonical key, in shards (each a reader-writer lock) so that the workers
+/// rarely wait for one another.
+pub struct SharedMasters {
+    shards: Vec<RwLock<HashMap<Key, [[C64; 3]; MAX_OUTPUTS]>>>,
+    hasher: std::hash::RandomState,
+}
+
+impl SharedMasters {
+    /// A shared tier for `workers` engines.
+    pub fn new(workers: usize) -> Self {
+        // A few shards per worker: two workers rarely want one at once.
+        let shards = (4 * workers.max(1)).next_power_of_two();
+        Self {
+            shards: (0..shards).map(|_| RwLock::new(HashMap::new())).collect(),
+            hasher: std::hash::RandomState::new(),
+        }
+    }
+
+    fn shard(&self, key: &Key) -> &RwLock<HashMap<Key, [[C64; 3]; MAX_OUTPUTS]>> {
+        &self.shards[(self.hasher.hash_one(key) as usize) & (self.shards.len() - 1)]
+    }
+
+    /// Drop every value (a new chunk of points).
+    pub fn clear(&self) {
+        for shard in &self.shards {
+            shard.write().expect("shared masters").clear();
+        }
+    }
+
+    /// Number of distinct stored rows.
+    pub fn len(&self) -> usize {
+        self.shards
+            .iter()
+            .map(|shard| shard.read().expect("shared masters").len())
+            .sum()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+}
+
 /// Where a request row's outputs come from.
 #[derive(Clone, Copy)]
 enum Source {
@@ -183,6 +274,8 @@ pub struct MasterCache<M> {
     miss_args: Vec<C64>,
     miss_out: Vec<[C64; 3]>,
     miss_ok: Vec<bool>,
+    /// The shared tier of a parallel reduction ([`Self::share`]).
+    shared: Option<Arc<SharedMasters>>,
 }
 
 impl<M: FastMasters> MasterCache<M> {
@@ -200,26 +293,55 @@ impl<M: FastMasters> MasterCache<M> {
             miss_args: Vec::new(),
             miss_out: Vec::new(),
             miss_ok: Vec::new(),
+            shared: None,
         }
+    }
+
+    /// Use `shared` as this cache's values (module docs, 'Shared tier'), or
+    /// none: the cache's own. The cache's own values are dropped either way
+    /// when the tier changes (they would be counted again), so that the
+    /// statistics follow the keys of the reduction alone.
+    pub fn share(&mut self, shared: Option<Arc<SharedMasters>>) {
+        let same = match (&self.shared, &shared) {
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            (None, None) => true,
+            _ => false,
+        };
+        if !same {
+            self.entries.clear();
+            self.values.clear();
+            self.shared = shared;
+        }
+    }
+
+    /// The shared tier in use ([`Self::share`]).
+    pub fn shared(&self) -> Option<&Arc<SharedMasters>> {
+        self.shared.as_ref()
     }
 
     pub fn enabled(&self) -> bool {
         self.enabled
     }
 
-    /// Drop every cached value (statistics are kept).
+    /// Drop every cached value (statistics are kept), the shared tier's too.
     pub fn clear(&mut self) {
         self.entries.clear();
         self.values.clear();
+        if let Some(shared) = &self.shared {
+            shared.clear();
+        }
     }
 
-    /// Number of distinct cached rows.
+    /// Number of distinct cached rows (the shared tier's when in use).
     pub fn len(&self) -> usize {
-        self.entries.len()
+        match &self.shared {
+            Some(shared) => shared.len(),
+            None => self.entries.len(),
+        }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.entries.is_empty()
+        self.len() == 0
     }
 
     pub fn statistics(&self) -> MasterStatistics {
@@ -321,6 +443,9 @@ impl<M: FastMasters> MasterCache<M> {
             self.canonical = canonical;
             return result;
         }
+        if let Some(shared) = self.shared.clone() {
+            return self.evaluate_shared(&shared, family, out, ok);
+        }
         self.sources.clear();
         self.pending.clear();
         self.pending_keys.clear();
@@ -364,6 +489,107 @@ impl<M: FastMasters> MasterCache<M> {
                     .extend_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
             }
         }
+        for ((source, target), status) in self
+            .sources
+            .iter()
+            .zip(out.chunks_exact_mut(width))
+            .zip(ok.iter_mut())
+        {
+            match *source {
+                Source::Cached(offset) => {
+                    target.copy_from_slice(&self.values[offset..offset + width]);
+                    *status = true;
+                }
+                Source::Evaluated(miss) => {
+                    target.copy_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
+                    *status = self.miss_ok[miss];
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<M: FastMasters> MasterCache<M> {
+    /// [`Self::evaluate_rows`] on the shared tier, the canonical rows in
+    /// `self.canonical` (module docs, 'Shared tier'): the cache's own values
+    /// stay in front of the tier (a row this engine has seen takes no lock),
+    /// and keep every row it found there or evaluated.
+    fn evaluate_shared(
+        &mut self,
+        shared: &SharedMasters,
+        family: FastMaster,
+        out: &mut [[C64; 3]],
+        ok: &mut [bool],
+    ) -> Result<()> {
+        let (arity, width) = (family.arity(), family.outputs());
+        let index = family_index(family);
+        let rows = ok.len();
+        self.sources.clear();
+        self.pending.clear();
+        self.pending_keys.clear();
+        self.miss_args.clear();
+        for row in self.canonical.chunks_exact(arity) {
+            let key = Key::new(family, row);
+            let source = if let Some(&offset) = self.entries.get(&key) {
+                Source::Cached(offset)
+            } else if let Some(&miss) = self.pending.get(&key) {
+                Source::Evaluated(miss)
+            } else if let Some(found) = shared.shard(&key).read().expect("shared masters").get(&key)
+            {
+                let offset = self.values.len();
+                self.entries.insert(key, offset);
+                self.values.extend_from_slice(&found[..width]);
+                Source::Cached(offset)
+            } else {
+                let miss = self.pending_keys.len();
+                self.pending.insert(key, miss);
+                self.pending_keys.push(key);
+                self.miss_args.extend_from_slice(row);
+                Source::Evaluated(miss)
+            };
+            self.sources.push(source);
+        }
+        let misses = self.pending_keys.len();
+        self.miss_out.clear();
+        self.miss_out.resize(misses * width, [C64::ZERO; 3]);
+        self.miss_ok.clear();
+        self.miss_ok.resize(misses, false);
+        if misses > 0 {
+            let (miss_args, mut miss_out, mut miss_ok) = (
+                std::mem::take(&mut self.miss_args),
+                std::mem::take(&mut self.miss_out),
+                std::mem::take(&mut self.miss_ok),
+            );
+            let result = self.provider(family, &miss_args, &mut miss_out, &mut miss_ok);
+            (self.miss_args, self.miss_out, self.miss_ok) = (miss_args, miss_out, miss_ok);
+            result?;
+        }
+        // A successful row is evaluated when its value is the first stored
+        // under its key; a failed row always (as the serial cache counts it).
+        let mut evaluated = 0;
+        for (miss, key) in self.pending_keys.iter().enumerate() {
+            if !self.miss_ok[miss] {
+                evaluated += 1;
+                continue;
+            }
+            let outputs = &self.miss_out[miss * width..(miss + 1) * width];
+            self.entries.insert(*key, self.values.len());
+            self.values.extend_from_slice(outputs);
+            let mut value = [[C64::ZERO; 3]; MAX_OUTPUTS];
+            value[..width].copy_from_slice(outputs);
+            if let std::collections::hash_map::Entry::Vacant(entry) = shared
+                .shard(key)
+                .write()
+                .expect("shared masters")
+                .entry(*key)
+            {
+                entry.insert(value);
+                evaluated += 1;
+            }
+        }
+        self.statistics.evaluated[index] += evaluated as u64;
+        self.statistics.hits[index] += (rows - evaluated) as u64;
         for ((source, target), status) in self
             .sources
             .iter()

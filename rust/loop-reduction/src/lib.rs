@@ -10,6 +10,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod lane_slices;
 pub mod reduction_policy;
 pub mod runtime;
 pub mod runtime_options;
