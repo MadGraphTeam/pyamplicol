@@ -821,20 +821,6 @@ pub mod v2 {
             let entry = self.reals_per_lane.entry(name).or_default();
             *entry = (*entry).max(value);
         }
-
-        /// Add a part's stages and counts (peaks: the larger).
-        fn merge(&mut self, part: Report) {
-            for (stage, seconds) in part.seconds {
-                *self.seconds.entry(stage).or_default() += seconds;
-            }
-            for (name, value) in part.counts {
-                self.count(name, value);
-            }
-            for (name, value) in part.reals_per_lane {
-                let entry = self.reals_per_lane.entry(name).or_default();
-                *entry = (*entry).max(value);
-            }
-        }
     }
 
     /// A loaded plan with its lane count, thread pool and, optionally, the
@@ -2400,7 +2386,7 @@ pub mod v2 {
     impl<T: Carrier + Real> ChunkCall<'_, T> {
         /// Dress and reduce the chunk of `points` (at most `W`) on `W`
         /// lanes, its lanes and failures into `sink`.
-        fn run<const W: usize, B: V2Backend<T> + Send>(
+        fn run<const W: usize, B: V2Backend<T>>(
             &self,
             points: &[usize],
             backend: &mut B,
@@ -2476,52 +2462,19 @@ pub mod v2 {
                 cures,
                 lows: Lows::default(),
             };
-            // On several threads the next bucket chunk is dressed while
-            // this one is reduced (`rayon::join`, one pool): the chunks are
-            // reduced in order and each is dressed as alone, so nothing
-            // depends on the overlap; two chunks' numerators are held.
-            let overlap = rayon::current_num_threads() > 1 && buckets.len() > 1;
-            let mut next = None;
             for (k, part) in buckets.iter().enumerate() {
-                let numerators = match next.take() {
-                    Some(numerators) => numerators,
-                    None => dress_families(
-                        plan,
-                        part,
-                        &mut inputs,
-                        &seeds,
-                        &data,
-                        report,
-                        Some((k, read_chunks, input_budget)),
-                        live,
-                        workspaces,
-                    )?,
-                };
-                match buckets.get(k + 1).filter(|_| overlap) {
-                    Some(following) => {
-                        let mut dressed = Report::default();
-                        let (reduced, following) = rayon::join(
-                            || reduction.reduce(&numerators, report),
-                            || {
-                                dress_families(
-                                    plan,
-                                    following,
-                                    &mut inputs,
-                                    &seeds,
-                                    &data,
-                                    &mut dressed,
-                                    Some((k + 1, read_chunks, input_budget)),
-                                    live,
-                                    workspaces,
-                                )
-                            },
-                        );
-                        reduced?;
-                        next = Some(following?);
-                        report.merge(dressed);
-                    }
-                    None => reduction.reduce(&numerators, report)?,
-                }
+                let numerators = dress_families(
+                    plan,
+                    part,
+                    &mut inputs,
+                    &seeds,
+                    &data,
+                    report,
+                    Some((k, read_chunks, input_budget)),
+                    live,
+                    workspaces,
+                )?;
+                reduction.reduce(&numerators, report)?;
                 let mut pool = workspaces
                     .numerators
                     .lock()
@@ -3616,67 +3569,6 @@ pub mod v2 {
             );
             assert!(expected.1[1].1[0].contains("non-finite numerator"));
             assert_eq!(expected.2, 18);
-            for threads in [2, 4, 8] {
-                assert_eq!(run(threads), expected, "{threads} threads");
-            }
-        }
-
-        /// Three bucket chunks of two families: on several threads the next
-        /// chunk is dressed while one is reduced; the backend receives the
-        /// same groups in the same order and the results are bitwise those of
-        /// one thread.
-        #[test]
-        fn overlapped_bucket_chunks_are_bitwise_the_serial_ones() {
-            let families = [FAMILY; 6].join(",");
-            let text = std::str::from_utf8(PLAN)
-                .unwrap()
-                .replace("FAMILY,FAMILY", &families);
-            let plan = Arc::new(LoopProgramV4::load(text.as_bytes()).unwrap());
-            let momentum = |e: i64| -> Vec<Rational> {
-                [e, 0, 0, e, e, 0, 0, -e].map(Rational::from).to_vec()
-            };
-            let batch = V2Batch {
-                momenta: (1..=3).map(momentum).collect(),
-                scales: vec![Rational::from(1); 3],
-                masses: vec![Rational::from(0)],
-                masses_imaginary: Vec::new(),
-                leg_masses: Vec::new(),
-                constants: vec![Complex::new(2.0, 0.0)],
-                block_rows: vec![Vec::new(); 3],
-                born: vec![
-                    vec![Complex::new(1.0, 1.0)],
-                    vec![Complex::new(-2.0, 0.5)],
-                    vec![Complex::new(0.25, 2.0)],
-                ],
-            };
-            let options = V2Options {
-                chunk_families: 2,
-                ..V2Options::default()
-            };
-            let run = |threads: usize| {
-                let executor = V2Executor::new(plan.clone(), DEFAULT_LANES, Some(threads)).unwrap();
-                let mut backend = Recording::default();
-                let (results, report) = executor
-                    .evaluate(&batch, &0.0, &mut backend, options)
-                    .unwrap();
-                let bits: Vec<Vec<(LaneKey, Vec<(u64, u64)>)>> = results
-                    .iter()
-                    .map(|result| {
-                        result
-                            .families
-                            .iter()
-                            .map(|(key, value)| {
-                                let value = value.iter().map(|z| (z.re.to_bits(), z.im.to_bits()));
-                                (*key, value.collect())
-                            })
-                            .collect()
-                    })
-                    .collect();
-                (backend.groups, bits, report.counts)
-            };
-            let expected = run(1);
-            assert_eq!(expected.0.len(), 6);
-            assert_eq!(expected.2["families"], 6);
             for threads in [2, 4, 8] {
                 assert_eq!(run(threads), expected, "{threads} threads");
             }
