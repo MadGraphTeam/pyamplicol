@@ -1637,12 +1637,9 @@ def _require_bound_validation_point(
     scale = total[0] ** 2 - total[1] ** 2 - total[2] ** 2 - total[3] ** 2
     if scale <= 0:
         scale = Fraction(1)
-    own = runtime._parameters
-    runtime._parameters = {}
-    try:
-        masses = runtime._kinematics_masses(Precision.double(), point, scale, 1)
-    finally:
-        runtime._parameters = own
+    masses = runtime._kinematics_masses(
+        Precision.double(), point, scale, 1, parameters={}
+    )
     (defects,) = shell_defects([point], [masses], binary64=False)
     bound = shell_bound(len(point))
     worst = max(range(len(point)), key=lambda leg: defects[leg])
@@ -2038,7 +2035,12 @@ class V2VirtualRuntime:
         )
 
     def _kinematics_masses(
-        self, precision: Any, point: Any, scale: Any, count: int
+        self,
+        precision: Any,
+        point: Any,
+        scale: Any,
+        count: int,
+        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The squared masses the evaluation binds for each leg of a
         caller-order ``point`` (``NativeExecutor.leg_masses`` of the
@@ -2050,7 +2052,9 @@ class V2VirtualRuntime:
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
-            parameters = dict(self._parameters)
+            # The runtime's parameters (``parameters``: others, e.g. none of
+            # the caller's for the load's check of the stored point).
+            parameters = dict(self._parameters if parameters is None else parameters)
             # The binding depends on the carrier, the parameters and, for a
             # program whose masses run with the scale, the scale (never on
             # the point): bound once per carrier and parameters (the

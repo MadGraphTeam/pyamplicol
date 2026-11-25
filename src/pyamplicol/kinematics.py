@@ -590,9 +590,11 @@ def shell_check(
     the improvement asks it)."""
 
     masses2: list[Sequence[Fraction | None]] = [()] * len(points)
-    groups: dict[Fraction, list[int]] = {}
+    # (By text: equal values of other texts ask the provider again, which
+    # binds the same masses.)
+    groups: dict[str, list[int]] = {}
     for index, scale in enumerate(scales):
-        groups.setdefault(Fraction(str(scale)), []).append(index)
+        groups.setdefault(str(scale), []).append(index)
     for indices in groups.values():
         first = indices[0]
         bound = masses(precision, points[first], scales[first], len(points))
