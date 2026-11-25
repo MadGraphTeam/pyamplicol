@@ -2166,8 +2166,15 @@ class BenchmarkRunner:
         per-stage split of the timed calls (trees, dressing, scatter,
         reduction, rest) from the native executor's own stage report."""
 
-        from pyamplicol.benchmarking import is_virtual_target, profile_virtual
+        from pyamplicol.benchmarking import (
+            is_virtual_target,
+            profile_virtual,
+            require_artifact_parameters,
+        )
 
+        # Model parameters are not applied by a profile: refused, never
+        # silently ignored (the CLI's check, here for every caller).
+        require_artifact_parameters(self._config)
         if is_virtual_target(target):
             return profile_virtual(
                 target,

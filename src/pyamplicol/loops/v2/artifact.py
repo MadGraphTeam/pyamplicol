@@ -1597,6 +1597,64 @@ def _json_payload(manifest: Any, path: str) -> dict[str, Any]:
         ) from error
 
 
+def _require_bound_validation_point(
+    manifest: Any, process_id: str, runtime: V2VirtualRuntime
+) -> None:
+    """Refuse a stored process whose validation point is off the mass shells
+    its amplitude binds at the artifact's own parameters (the fixed ones, no
+    caller's): an artifact generated before the kinematics took the bound
+    masses (pyAmpliCol 1.0.3 and older drew the validation point, and so the
+    flat phase-space points of ``evaluate`` and ``profile``, on the model's
+    masses although ``[loop.preparation] fixed_parameters`` changed an
+    external mass). Its records contradict its binding (the point,
+    ``model/parameters.json``, an API bundle's validation points), and every
+    reader of them would evaluate off shell: it is refused, to be
+    regenerated, rather than re-derived here, which would mend this
+    runtime's readers only. The stored record is the representative's, in
+    its leg order: it is measured against the representative's bound masses
+    (``_bound_leg_masses(caller=False)``, no executor built) by the
+    shell-consistency screen at the default target (``kinematics.
+    shell_check``). A process without a readable, available point, or with
+    an external mass that runs with the scale, is not checked."""
+
+    from pyamplicol.kinematics import input_roundoff, shell_check
+
+    from .assemble import Precision, RunningExternalMass
+    from .reduction import default_target
+
+    path = manifest.root / "processes" / process_id / "validation-momenta.json"
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    if not record.get("available") or not record.get("points"):
+        return
+    point = [entry["momentum"] for entry in record["points"][0]]
+    if len(point) != runtime.external_count:
+        return
+    try:
+        masses = runtime._bound_leg_masses(Precision.double(), {}, None, caller=False)
+    except RunningExternalMass:
+        return
+    shell = shell_check(
+        [point],
+        ["1"],
+        Precision.double(),
+        lambda *_: masses,
+        default_target(),
+        input_roundoff([point]),
+    )
+    if 0 not in shell.reasons:
+        return
+    raise ArtifactError(
+        f"{process_id}: the stored validation point is off the mass shells the "
+        f"amplitude binds ({shell.reasons[0]}): the artifact was generated "
+        "before the kinematics took the parameters it fixes "
+        "([loop.preparation] fixed_parameters) and its validation records and "
+        "flat phase-space points are on other masses; regenerate the artifact"
+    )
+
+
 def _real_parameters(mapping: ModelParameters | None) -> dict[str, str]:
     from pyamplicol.runtime.virtual import _parameters
 
@@ -1738,6 +1796,9 @@ class V2VirtualRuntime:
         physics = _json_payload(manifest, str(selected["physics_path"]))
         model_payload = _json_payload(manifest, "model/compiled-model.json")
         self._lock = RLock()
+        # The legs' bound squared masses by carrier digits and parameters
+        # (``_bound_leg_masses``).
+        self._bound_masses: dict[tuple[Any, ...], list[Any]] = {}
         self._native = native
         self._plan_sha256 = str(admission["plan_sha256"])
         self._scaleless_plan_sha256 = admission["scaleless_plan_sha256"]
@@ -1754,9 +1815,7 @@ class V2VirtualRuntime:
             for record in compiled.ir.parameters
             if record.nature == "external"
         }
-        # The compiled model's payload is read here only: not kept (~60 k
-        # tracked objects that every full pass of the cyclic collector walks).
-        del compiled, model_payload
+        del model_payload
         if execution["point_inputs"] != LOOP_V2_NATIVE_POINT_INPUTS:
             # The native admission refuses every other declaration first.
             raise ArtifactError(
@@ -1823,6 +1882,22 @@ class V2VirtualRuntime:
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
         self._scale_parameter = record["scale_parameter"]
+        # The mass-shell guard's mass evaluator (``_bound_leg_masses``): the
+        # model's parameter records and each leg's mass parameter (the
+        # representative's legs); the rest of the compiled model is read
+        # here only, not kept (~60 k tracked objects that every full pass of
+        # the cyclic collector walks).
+        from types import SimpleNamespace
+
+        self._mass_model = SimpleNamespace(
+            name=compiled.name,
+            parameter_defaults=dict(compiled.parameter_defaults),
+            ir=SimpleNamespace(
+                parameters=tuple(compiled.ir.parameters),
+                particles=tuple(compiled.ir.particles),
+            ),
+        )
+        del compiled
         self._executor = self._native_process.executor(
             native, externals=self._externals, **self._thread_options()
         )
@@ -1910,6 +1985,9 @@ class V2VirtualRuntime:
             )
             for item in self._metadata["sectors"]
         )
+        # An artifact whose stored kinematics are off the shells it binds
+        # (generated before the bound masses) is refused.
+        _require_bound_validation_point(manifest, process_id, self)
 
     def _runtime_options(self) -> dict[str, object]:
         """The load-time runtime options in effect (``inspect``)."""
@@ -1968,23 +2046,179 @@ class V2VirtualRuntime:
         )
 
     def _kinematics_masses(
-        self, precision: Any, point: Any, scale: Any, count: int
+        self,
+        precision: Any,
+        point: Any,
+        scale: Any,
+        count: int,
+        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The squared masses the evaluation binds for each leg of a
         caller-order ``point`` (``NativeExecutor.leg_masses`` of the
         representative's executor, on the caller's legs): the improvement's
         targets."""
 
+        from .native_trees import scale_dependent_shared
+
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
-            parameters = dict(self._parameters)
-            masses = self._executor.leg_masses(
-                representative, scale, parameters, precision, count
+            # The caller's snapshot of the call (``parameters``), else the
+            # runtime's current parameters.
+            own = dict(self._parameters if parameters is None else parameters)
+            # The binding depends on the carrier and the parameters only
+            # (never on the point; on the scale too for a program whose
+            # masses run with it, which is bound per call): bound once. A
+            # program written before its record of scale-dependent outputs
+            # (no "scale_outputs") does not state that independence: bound
+            # per call.
+            key = (
+                "native",
+                precision.arithmetic,
+                precision.working_digits,
+                tuple(sorted(own.items())),
             )
+            masses = self._bound_masses.get(key)
+            if masses is None:
+                masses = self._executor.leg_masses(
+                    representative, scale, own, precision, count
+                )
+                trees = self._native_process.trees
+                if "scale_outputs" in trees.program[
+                    "parameters"
+                ] and not scale_dependent_shared(trees):
+                    self._bound_masses[key] = masses
+            masses = list(masses)
         if member is None:
             return masses
         return [masses[leg] for leg in member.legs]
+
+    def _shell(
+        self,
+        momenta: Any,
+        points: list[Any],
+        scales: list[str],
+        precision: Any,
+        choice: VirtualReduction,
+        parameters: Mapping[str, str] | None = None,
+    ) -> Any:
+        """The shell-consistency screen (``kinematics.shell_check``) of one
+        carrier's points (``points``, the caller's legs after the
+        improvement; ``momenta`` as supplied) at the call's point target, or
+        None in the unchecked mode (which measures nothing)."""
+
+        from functools import partial
+
+        from pyamplicol.kinematics import input_roundoff, shell_check
+
+        from .reduction import default_target
+
+        if choice.unchecked:
+            return None
+        target = default_target() if choice.target is None else choice.target
+        return shell_check(
+            points,
+            scales,
+            precision,
+            partial(self._shell_masses, parameters=parameters),
+            float(target),
+            input_roundoff(momenta),
+        )
+
+    def _shell_masses(
+        self,
+        precision: Any,
+        point: Any,
+        scale: Any,
+        count: int,
+        parameters: Mapping[str, str] | None = None,
+    ) -> list[Any]:
+        """The squared masses the shell-consistency screen measures each
+        caller leg against (``kinematics.shell_check``'s provider): those the
+        evaluation's own executor binds in its carrier (``_kinematics_masses``:
+        ``NativeExecutor.leg_masses``, the native tree program's binding),
+        at the call's parameters (``parameters``, its snapshot) and scale."""
+
+        return self._kinematics_masses(precision, point, scale, count, parameters)
+
+    def _native_leg_masses(
+        self, precision: Any, parameters: Mapping[str, str] | None = None
+    ) -> list[Fraction | None]:
+        """The squared mass each leg binds in the process's own executor at
+        ``precision`` (``NativeExecutor.leg_masses``: the native binding the
+        amplitude takes), in the representative's leg order, at the
+        runtime's parameters (or ``parameters``) and at no particular scale:
+        refused (``assemble.RunningExternalMass``) when an external mass runs
+        with the scale. The flat points' masses (``flat_points.
+        runtime_binding``)."""
+
+        from .assemble import RunningExternalMass, scale_dependent_legs
+
+        legs = sorted(
+            self._executor.slice.blocks.process.legs, key=lambda leg: int(leg.label)
+        )
+        pdgs = [int(leg.pdg) for leg in legs]
+        if scale_dependent_legs(self._mass_model, pdgs, self._scale_parameter):
+            raise RunningExternalMass(
+                "an external mass runs with the renormalisation scale: give "
+                "the points' momenta (a scale-dependent shell is not drawn "
+                "automatically)"
+            )
+        with self._lock:
+            own = dict(self._parameters if parameters is None else parameters)
+        zero = [[0, 0, 0, 0] for _ in legs]
+        return list(self._executor.leg_masses(zero, "1", own, precision, 1))
+
+    def _bound_leg_masses(
+        self,
+        precision: Any,
+        parameters: Mapping[str, str],
+        scale: Any,
+        *,
+        caller: bool = True,
+    ) -> list[Fraction | None]:
+        """Each leg's bound squared mass at ``parameters`` (the caller's)
+        over the fixed parameters: THE shared evaluator
+        (``assemble.bound_leg_masses``, which generation and the flat points
+        use too) on the stored model's records, from the exact texts at
+        ``validation.BOUND_MASS_DIGITS`` (or the carrier's working digits
+        when more), with no executor built; a mass that runs with the scale
+        at ``scale`` (mu_R^2). In the caller's leg order (``caller``), else
+        the representative's (its stored records'). Cached per digits and
+        parameters (and scale, for a running mass)."""
+
+        from pyamplicol.generation.validation import BOUND_MASS_DIGITS
+
+        from .assemble import bound_leg_masses, scale_dependent_legs
+
+        digits = max(BOUND_MASS_DIGITS, int(precision.working_digits))
+        values = {**dict(parameters), **self._fixed}
+        legs = sorted(
+            self._executor.slice.blocks.process.legs, key=lambda leg: int(leg.label)
+        )
+        pdgs = [int(leg.pdg) for leg in legs]
+        key = (digits, tuple(sorted(values.items())))
+        with self._lock:
+            found = self._bound_masses.get(key)
+        if found is None:
+            running = scale_dependent_legs(
+                self._mass_model, pdgs, self._scale_parameter
+            )
+            found = bound_leg_masses(
+                self._mass_model,
+                pdgs,
+                values,
+                digits,
+                scale_parameter=self._scale_parameter,
+                scale=scale,
+            )
+            if not running:
+                with self._lock:
+                    self._bound_masses[key] = found
+        member = self._member
+        if member is None or not caller:
+            return list(found)
+        return [found[leg] for leg in member.legs]
 
     def improved_points(
         self,
@@ -2021,8 +2255,11 @@ class V2VirtualRuntime:
         n_initial = initial_count(self._executor.slice.blocks.process.legs)
         out: list[Any] = list(points)
         records: list[Any] = [None] * len(points)
+        # One parameter snapshot for the call.
+        with self._lock:
+            parameters = dict(self._parameters)
         for index, (point, scale) in enumerate(zip(points, scales, strict=True)):
-            masses = self._kinematics_masses(setting, point, scale, 1)
+            masses = self._kinematics_masses(setting, point, scale, 1, parameters)
             digits = setting.working_digits if carrier == "arbitrary" else None
             (improved,), (record,) = improve(
                 [point], n_initial, masses, carrier, digits, chosen, fallback=fallback
@@ -2031,16 +2268,21 @@ class V2VirtualRuntime:
             records[index] = VirtualKinematics.from_record(record)
         return out, records
 
-    def _improver(self, settings: Any) -> Any:
+    def _improver(
+        self, settings: Any, parameters: Mapping[str, str] | None = None
+    ) -> Any:
         """A call's level-by-level improvement (``kinematics.LevelImprover``)
-        of its caller-order points."""
+        of its caller-order points, at the call's parameter snapshot
+        (``parameters``; None: the runtime's current ones)."""
+
+        from functools import partial
 
         from pyamplicol.kinematics import LevelImprover, initial_count
 
         return LevelImprover(
             settings,
             initial_count(self._executor.slice.blocks.process.legs),
-            self._kinematics_masses,
+            partial(self._kinematics_masses, parameters=parameters),
         )
 
     def _executor_for(self, poles: PoleSelection) -> Any:
@@ -2113,6 +2355,8 @@ class V2VirtualRuntime:
                 # The kinematics improvement's targets: the masses this
                 # runtime's executor binds (m-lit lit-psimprove).
                 runtime.kinematics_masses = self._kinematics_masses
+                # The mass-shell guard's (no executor built).
+                runtime.shell_masses = self._shell_masses
                 self._observables = runtime
             return self._observables
 
@@ -2420,6 +2664,12 @@ class V2VirtualRuntime:
         kinematics = self._kinematics(
             kinematics_improvement, kinematics_improvement_binary64
         )
+        # ONE immutable parameter snapshot for the whole call, taken at its
+        # entry: every route (the selected one passes it down) and every
+        # rescue level, the improvement, the screen and the evaluation take
+        # it (a concurrent set_model_parameters acts on later calls only).
+        with self._lock:
+            entry_parameters = dict(self._parameters)
 
         policy = rescue_policy(
             stability,
@@ -2475,6 +2725,7 @@ class V2VirtualRuntime:
                     reductions=choices,
                     kinematics_improvement=kinematics.setting,
                     kinematics_improvement_binary64=kinematics.binary64,
+                    _parameters=entry_parameters,
                     **carrier_options,
                 ),
             )
@@ -2501,7 +2752,7 @@ class V2VirtualRuntime:
         # improves them (m-lit lit-psimprove) before the member's map to the
         # representative's legs.
         caller, scales = _inputs(momenta, mu_r2, self.external_count)
-        improver = self._improver(kinematics)
+        improver = self._improver(kinematics, entry_parameters)
 
         def mapped(points: list[Any]) -> list[Any]:
             if self._member is None:
@@ -2509,9 +2760,15 @@ class V2VirtualRuntime:
             return [self._member.point(point) for point in points]
 
         with self._lock:
-            parameters = dict(self._parameters)
+            parameters = entry_parameters
             if policy is None:
                 points, records = improver.level(caller, scales, setting)
+                # The shell-consistency screen on the points this carrier
+                # evaluates (``kinematics``), in the caller's legs.
+                choice = choices[cast(str, carrier)]
+                shell = self._shell(
+                    momenta, points, scales, setting, choice, parameters
+                )
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
@@ -2523,7 +2780,8 @@ class V2VirtualRuntime:
                         selection,
                         checks,
                         on_failure,
-                        choices[cast(str, carrier)],
+                        choice,
+                        shell=shell,
                     ),
                     records,
                 )
@@ -2537,10 +2795,19 @@ class V2VirtualRuntime:
                 points, records = improver.level(
                     [caller[i] for i in indices], [scales[i] for i in indices], setting
                 )
+                level_scales = [scales[i] for i in indices]
+                shell = self._shell(
+                    [momenta[i] for i in indices],
+                    points,
+                    level_scales,
+                    setting,
+                    choices[rung],
+                    parameters,
+                )
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
-                        [scales[i] for i in indices],
+                        level_scales,
                         parameters,
                         carrier,
                         setting,
@@ -2556,6 +2823,7 @@ class V2VirtualRuntime:
                             else "return"
                         ),
                         choices[rung],
+                        shell=shell,
                     ),
                     records,
                 )
@@ -2740,6 +3008,7 @@ class V2VirtualRuntime:
         checks: VirtualStabilityChecks,
         on_failure: str,
         reduction: VirtualReduction,
+        shell: Any = None,
     ) -> VirtualEvaluation:
         """One batch of exact points in one carrier with one set of checks
         (the whole ``evaluate`` without a rescue policy, and each level of
@@ -2749,7 +3018,9 @@ class V2VirtualRuntime:
         refuses or fails again on NinjaRS at ``carrier``, each served one
         guarded by its reduction-direction check against the target,
         recorded per point; a fallback point's cross-backend check is not
-        run, m-lit R6)."""
+        run, m-lit R6). ``shell``: the call's shell-consistency screen in
+        this carrier (``kinematics.ShellCheck``; None in the unchecked mode),
+        which every lane records and whose marks the served lanes carry."""
 
         from .reduction import with_fallback
 
@@ -2791,6 +3062,7 @@ class V2VirtualRuntime:
             checks,
             reduction,
             served,
+            shell,
         )
 
     def _run(
@@ -2903,9 +3175,11 @@ class V2VirtualRuntime:
         checks: VirtualStabilityChecks,
         reduction: VirtualReduction | None = None,
         served: Mapping[int, VirtualReduction] | None = None,
+        shell: Any = None,
     ) -> VirtualEvaluation:
         """The public result of a batch; ``served`` maps the points the
-        per-point fallback evaluated again to their own reduction record."""
+        per-point fallback evaluated again to their own reduction record;
+        ``shell`` the mass-shell measure every lane records."""
 
         from pyamplicol.runtime.virtual import v2_public_estimate
 
@@ -2977,6 +3251,7 @@ class V2VirtualRuntime:
                         ),
                         primary_color_contraction=contraction,
                         reduction=(served or {}).get(index, reduction),
+                        mass_shell=None if shell is None else shell.defects[index],
                     )
                 )
                 continue
@@ -3037,6 +3312,10 @@ class V2VirtualRuntime:
             # kinematics): the value is returned, its accuracy is not
             # established.
             uncertified = uncertified_reasons(result.lane_rescue)
+            if shell is not None and index in shell.reasons:
+                # The shell-consistency screen's mark (``kinematics``), with
+                # every other reason.
+                uncertified = (*uncertified, shell.reasons[index])
             text += uncertified_detail(uncertified)
             diagnostics.append(
                 VirtualLaneDiagnostic(
@@ -3060,6 +3339,7 @@ class V2VirtualRuntime:
                     lane_rescue=rescue,
                     reduction_rescue=own_rescue,
                     uncertified=uncertified,
+                    mass_shell=None if shell is None else shell.defects[index],
                 )
             )
         return VirtualEvaluation(

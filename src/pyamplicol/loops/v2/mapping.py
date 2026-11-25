@@ -193,6 +193,11 @@ class _Rekeyed:
             return None
         return {name: result[key] for name, key in self._keys.items()}
 
+    def leg_masses(self, *args: Any) -> Any:
+        """The masses of the selection it re-keys (``leg_masses``)."""
+
+        return self._selection.leg_masses(*args)
+
     def evaluate(self, points: Any, scales: Any, **options: Any) -> Any:
         from .plan_export import FailedPoints
 

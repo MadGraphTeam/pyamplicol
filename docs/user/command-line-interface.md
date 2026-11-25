@@ -1473,8 +1473,14 @@ against `stability_setup.target`).
 
 `--samples-output PATH` (`benchmark.samples_output`) writes the same records
 to their own file instead, as its own phase: one JSON document with
-`schema` `"pyamplicol.profile-samples/1"`, `process`, `seed`, `sqrt_s`,
-`cuts`, `inputs` (the setup's tables) and `backends` (each backend's table).
+`schema` `"pyamplicol.profile-samples/1"`, `process` (the representative's
+process id), `selector` (the process selector the profile loaded),
+`external_pdgs` (the legs' PDG codes in the order of every sample's
+momenta), `seed`, `sqrt_s`, `cuts`, `inputs` (the setup's tables) and
+`backends` (each backend's table). Replay the samples with `selector`:
+a selector that orders the final state differently from its stored
+representative (`u u~ > z t t~` of a stored `u u~ > t t~ z`) has its
+momenta in its own order, which `process` alone does not state.
 The report's `samples` then name it (`{"output": PATH, "points": N}`); this also
 works with the human tables. Without `--json` or `--samples-output` no
 per-sample record is built.
