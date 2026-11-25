@@ -198,13 +198,12 @@ def test_the_default_chain_is_frame_independent_at_double_double(zz):
 @pytest.mark.loop_fast
 def test_the_check_rungs_evaluate_the_improved_point(monkeypatch):
     """``pyamplicol check`` (DECISIONS 2026-11-10 18:54 (b)): the ladder's
-    double-double evaluation, the rung's own double-double estimate
-    (``RECOMMENDED_CHECKS``: the rotation) and its arbitrary-precision re-run
-    each take the point improved in that carrier (``checks._improved``, the
-    public chain), never the binary64 point; a binary64 rung takes the point
-    as given (the improvement is off in binary64 by default). Scripted: a row
-    double-double cannot decide (1/eps off by 1e-11, estimate 1e-11) is
-    re-run at 34 digits, where it is decided."""
+    double-double evaluation and its arbitrary-precision re-run each take
+    the point improved in that carrier (``checks._improved``, the public
+    chain), never the binary64 point; a binary64 rung takes the point as
+    given (the improvement is off in binary64 by default). Scripted: a row
+    that misses R < K S (K 1e-12) in binary64 (R / S 1e-3) and double-double
+    (1e-11) is re-run at 64 digits, where it passes (R = 0)."""
 
     from types import SimpleNamespace as NS
 
@@ -226,20 +225,13 @@ def test_the_check_rungs_evaluate_the_improved_point(monkeypatch):
     def evaluate(_executor, point, _scale, carrier, checks_):
         calls.append((carrier.arithmetic, carrier.digits, checks_ is not None, point))
         if carrier.arithmetic == "double":
-            single, error = 2.0, 1e-3
+            single = 2.0 * (1 + 1e-3)
         elif carrier.arithmetic == "double-double":
-            single, error = 2.0 * (1 + 1e-11), (1e-11 if checks_ is not None else None)
+            single = 2.0 * (1 + 1e-11)
         else:
-            single, error = 2.0 * (1 + 1e-14), 1e-15
-        stability = None
-        if error is not None:
-            stability = NS(
-                relative=error,
-                absolute={sector: laurent(0.0, error, 1e-40)},
-                scale={sector: laurent(1.0, 1.0, 1.0)},
-            )
+            single = 2.0 * (1 + 1e-20)
         return NS(
-            stability=stability,
+            stability=None,
             components={"virtual": {sector: laurent(0.0, single, -3.0)}},
             ir_poles={sector: (2.0, -3.0)},
         )
@@ -252,14 +244,14 @@ def test_the_check_rungs_evaluate_the_improved_point(monkeypatch):
     target = NS(unpredicted_sectors=lambda: {})
     carriers = (Precision.double(), Precision.double_double())
     rung = checks.Rung(lambda index, carrier: (("lifted", carrier.digits), 1))
-    rows = checks.born_interfered_rows(
-        target, [("given", 1)], carriers, rung, kinematics="settings"
-    )
+    with checks.tolerating(1e-12):
+        rows = checks.born_interfered_rows(
+            target, [("given", 1)], carriers, rung, kinematics="settings"
+        )
     assert [(a, d, c) for a, d, c, _p in calls] == [
         ("double", None, True),
         ("double-double", None, False),
-        ("double-double", None, True),
-        ("arbitrary", 34, True),
+        ("arbitrary", 64, True),
     ]
     for arithmetic, digits, _checked, point in calls:
         if arithmetic == "double":
