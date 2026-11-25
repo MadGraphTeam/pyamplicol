@@ -174,9 +174,12 @@ def rotate_validation_point(
         f"{rotation_seed}:proper-spatial-rotation-v1".encode("ascii")
     ).digest()
     denominator = float(1 << 64)
-    azimuth = 2.0 * math.pi * ((int.from_bytes(digest[:8], "big") + 0.5) / denominator)
+    azimuth = 2.0 * math.pi * (
+        (int.from_bytes(digest[:8], "big") + 0.5) / denominator
+    )
     cosine_polar = (
-        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator) - 1.0
+        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator)
+        - 1.0
     )
     sine_polar = math.sqrt(max(0.0, 1.0 - cosine_polar * cosine_polar))
     cos_azimuth = math.cos(azimuth)
@@ -210,7 +213,9 @@ def rotate_validation_point(
 
     return replace(
         point,
-        particles=tuple((pdg, rotated(momentum)) for pdg, momentum in point.particles),
+        particles=tuple(
+            (pdg, rotated(momentum)) for pdg, momentum in point.particles
+        ),
     )
 
 
