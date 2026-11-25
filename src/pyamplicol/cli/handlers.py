@@ -747,15 +747,10 @@ class DefaultCliServices:
         # Every time a profile prints is that of one core (a Monte Carlo
         # worker's): the pools this process starts run one thread each.
         one_core()
-        if config.evaluation.model_parameters is not None:
-            # profile / benchmark load the artifact at its own parameters:
-            # a model parameter file would be ignored by the evaluation and
-            # by the flat points alike.
-            raise ConfigurationError(
-                "profile and benchmark evaluate at the artifact's own model "
-                "parameters; remove evaluation.model_parameters, or evaluate "
-                "at other parameters with `pyamplicol evaluate --model-parameters`"
-            )
+        from pyamplicol.benchmarking import require_artifact_parameters
+
+        # (Before the flat points: their masses would be the artifact's.)
+        require_artifact_parameters(config)
         points = None
         if config.evaluation.momenta is not None:
             raw_points = _read_json(config.evaluation.momenta)

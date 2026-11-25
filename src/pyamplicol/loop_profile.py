@@ -1004,7 +1004,13 @@ def profile_loop(
     stability statistics of each reduction backend, as ``config.benchmark``
     selects (neither ``runtime`` nor ``stability``: the runtime only), on
     ``config.evaluation.reduction`` alone when it is set. The runtime times
-    ``points`` (default: ``benchmarking.profile_points``)."""
+    ``points`` (default: ``benchmarking.profile_points``). A configuration
+    with ``evaluation.model_parameters`` is refused (``benchmarking.
+    require_artifact_parameters``)."""
+
+    from pyamplicol.benchmarking import require_artifact_parameters
+
+    require_artifact_parameters(config)
 
     from pyamplicol.api import Runtime
     from pyamplicol.api.errors import ReductionUnavailable
@@ -1811,6 +1817,12 @@ def profile_loop(
     in_process = want_stability and (
         workers == 1 or (stability_given is not None and completion is None)
     )
+    # The flat points' binding (``flat_points.runtime_binding``: the masses
+    # the loaded runtime binds, its leg map), taken before the runtime can
+    # be released: the stability run draws its points with it.
+    from pyamplicol.cli.flat_points import runtime_binding
+
+    binding = runtime_binding(runtime) if want_stability else None
     if not in_process:
         # Nothing evaluates in this process any more (the runtime timings and
         # the stability workers load their own): its runtime is released and
@@ -2344,6 +2356,7 @@ def profile_loop(
             deadline=deadline if given_points is None else None,
             costs=costs,
             current=current,
+            binding=binding,
             worker_bytes=_worker_memory(
                 load_peak,
                 _own_peak_bytes() if costs and not blind else None,
@@ -4632,6 +4645,7 @@ def _stability(
     records: bool = True,
     tail_seconds: float = 0.0,
     worker_bytes: float | None = None,
+    binding: Any = None,
 ) -> tuple[tuple[BackendStability, ...], Mapping[str, object]]:
     """The stability statistics of every backend (module docstring) over
     flat points, evaluated on ``benchmark.n_core`` worker processes (capped
@@ -4796,8 +4810,10 @@ def _stability(
 
     from pyamplicol.cli.flat_points import runtime_binding
 
-    # The masses the loaded runtime binds, in its leg order (once).
-    binding = None if runtime is None else runtime_binding(runtime)
+    # The masses the loaded runtime binds, in its leg order (once; taken by
+    # the caller before it released its runtime, ``binding``).
+    if binding is None and runtime is not None:
+        binding = runtime_binding(runtime)
 
     def draw(start: int, size: int) -> tuple[list[Any], list[Any] | Any]:
         flat = draw_flat_points(
@@ -5298,7 +5314,11 @@ def _stability(
                 workers,
                 (
                     str(artifact),
-                    physics.process_id,
+                    # The caller's selector (a permutation of the stored
+                    # process keeps its leg order in the workers).
+                    evaluation.process
+                    if evaluation.process is not None
+                    else physics.process_id,
                     dict(load_options or {}),
                     warm,
                     checks,

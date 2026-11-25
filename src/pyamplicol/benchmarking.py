@@ -2956,6 +2956,25 @@ def _initial_invariant(point: Sequence[Sequence[object]], initial: int) -> str:
     return repr(initial_invariant(point, initial, exact=False))
 
 
+def require_artifact_parameters(config: object) -> None:
+    """Refuse a profile or benchmark whose configuration sets
+    ``evaluation.model_parameters``: they load the artifact at its own model
+    parameters (their timed calls and their flat points alike), so the file
+    would be ignored. The one check of every entry point (the CLI's
+    ``profile`` / ``benchmark``, ``BenchmarkRunner.run``, ``loop_profile.
+    profile_loop``)."""
+
+    from pyamplicol.config import ConfigurationError
+
+    evaluation = getattr(config, "evaluation", None)
+    if getattr(evaluation, "model_parameters", None) is not None:
+        raise ConfigurationError(
+            "profile and benchmark evaluate at the artifact's own model "
+            "parameters; remove evaluation.model_parameters, or evaluate "
+            "at other parameters with `pyamplicol evaluate --model-parameters`"
+        )
+
+
 def profile_points(
     artifact: Path,
     process_id: str,
