@@ -928,6 +928,7 @@ class V2ObservablesRuntime:
         precision: Any,
         setting: str | None,
         binary64: bool | None,
+        parameters: Mapping[str, str] | None = None,
     ) -> tuple[list[Any], list[Any]]:
         """One carrier's points of a call and their kinematics records
         (m-lit lit-psimprove, ``kinematics.LevelImprover``): the caller's
@@ -944,7 +945,12 @@ class V2ObservablesRuntime:
             precision.arithmetic
         ):
             return points, [None] * len(points)
-        provider = self.kinematics_masses or self._slice_masses
+        from functools import partial
+
+        # The call's one parameter snapshot (``parameters``).
+        provider = partial(
+            self.kinematics_masses or self._slice_masses, parameters=parameters
+        )
         legs = self._observables.slice.blocks.process.legs
         improver = LevelImprover(settings, initial_count(legs), provider)
         return improver.level(points, scales, precision)
@@ -956,6 +962,8 @@ class V2ObservablesRuntime:
         scales: list[str],
         precision: Any,
         reduction: VirtualReduction | None,
+        parameters: Mapping[str, str] | None = None,
+        native_key: tuple[Any, ...] | None = None,
     ) -> Any:
         """The shell-consistency screen (``kinematics.shell_check``) on one
         carrier's points of a call (the caller's legs, after ``_improve``;
@@ -972,7 +980,27 @@ class V2ObservablesRuntime:
             if reduction is None or reduction.target is None
             else reduction.target
         )
-        provider = self.shell_masses or self._slice_masses
+        from functools import partial
+
+        # The call's one parameter snapshot (``parameters``): the masses the
+        # evaluation binds at the parameters it evaluates with.
+        provider: Any = partial(
+            self.shell_masses or self._slice_masses, parameters=parameters
+        )
+        bind = None
+        if self._executor == "native" and native_key is not None:
+            # The masses the call's own column executor binds (``leg_masses``:
+            # its native tree program's binding, read in the carrier of the
+            # evaluation; the set is the one ``_run`` evaluates, built once).
+            bind = getattr(self._native_columns(native_key), "leg_masses", None)
+        if callable(bind):
+
+            def provider(
+                precision: Any, point: Any, scale: Any, count: int
+            ) -> list[Any]:
+                del count
+                return list(bind(point, scale, parameters, precision))
+
         return shell_check(
             points,
             scales,
@@ -983,7 +1011,12 @@ class V2ObservablesRuntime:
         )
 
     def _slice_masses(
-        self, precision: Any, point: Any, scale: Any, count: int
+        self,
+        precision: Any,
+        point: Any,
+        scale: Any,
+        count: int,
+        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The legs' squared masses the slice's native column executors
         bind (their Python inputs, ``assemble._leg_masses``), on the caller's
@@ -993,9 +1026,10 @@ class V2ObservablesRuntime:
 
         del point, count
         slice_ = self._observables.slice
-        with self._lock:
-            parameters = dict(self._parameters)
-        values = slice_._point_parameters(parameters, _fraction(scale), precision)
+        if parameters is None:
+            with self._lock:
+                parameters = dict(self._parameters)
+        values = slice_._point_parameters(dict(parameters), _fraction(scale), precision)
         masses = list(_leg_masses(slice_, values, precision.working_digits))
         member = self._member
         return masses if member is None else [masses[leg] for leg in member.legs]
@@ -1628,12 +1662,17 @@ class V2ObservablesRuntime:
         column = lc.column(rows, basis)
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
+        # One immutable parameter snapshot for the call: the improvement,
+        # the screen and the evaluation all take it.
+        with self._lock:
+            parameters = dict(self._parameters)
         points, kinematics = self._improve(
             points,
             scales,
             carrier,
             kinematics_improvement,
             kinematics_improvement_binary64,
+            parameters,
         )
         shell = self._shell(
             momenta,
@@ -1641,9 +1680,9 @@ class V2ObservablesRuntime:
             scales,
             carrier,
             None if reductions is None else reductions[arithmetic],
+            parameters,
+            (lc.SELECTION, column),
         )
-        with self._lock:
-            parameters = dict(self._parameters)
         settings = {
             "parameters": parameters,
             "precision": carrier,
@@ -1725,23 +1764,20 @@ class V2ObservablesRuntime:
         selection, checks = v2_options(on_failure=on_failure, **options)
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
+        # One immutable parameter snapshot for the call: the improvement,
+        # the screen and the evaluation all take it.
+        with self._lock:
+            parameters = dict(self._parameters)
         points, kinematics = self._improve(
             points,
             scales,
             carrier,
             kinematics_improvement,
             kinematics_improvement_binary64,
+            parameters,
         )
-        shell = self._shell(
-            momenta,
-            points,
-            scales,
-            carrier,
-            None if reductions is None else reductions[arithmetic],
-        )
+        shell = None
         groups, sources = self._spin_groups(requests, len(points))
-        with self._lock:
-            parameters = dict(self._parameters)
         settings = {
             "parameters": parameters,
             "precision": carrier,
@@ -1753,6 +1789,18 @@ class V2ObservablesRuntime:
         for outputs, spins, python, labels in self._correlated_batches(
             requests, groups, sources, len(points), settings
         ):
+            if shell is None:
+                # (The masses every column set's executor binds alike: the
+                # first batch's.)
+                shell = self._shell(
+                    momenta,
+                    points,
+                    scales,
+                    carrier,
+                    None if reductions is None else reductions[arithmetic],
+                    parameters,
+                    ("correlated", outputs),
+                )
             per_point, failures, served = self._run(
                 ("correlated", outputs),
                 python,
@@ -1895,19 +1943,17 @@ class V2ObservablesRuntime:
         observables = self._observables
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
+        # One immutable parameter snapshot for the call: the improvement,
+        # the screen and the evaluation all take it.
+        with self._lock:
+            parameters = dict(self._parameters)
         points, kinematics = self._improve(
             points,
             scales,
             carrier,
             kinematics_improvement,
             kinematics_improvement_binary64,
-        )
-        shell = self._shell(
-            momenta,
-            points,
-            scales,
-            carrier,
-            None if reductions is None else reductions[arithmetic],
+            parameters,
         )
         rows = observables.rows
         if self._member is not None:
@@ -1926,8 +1972,6 @@ class V2ObservablesRuntime:
                 helicity_ids = tuple(helicity_ids[k] for k in chosen)
             if basis is not None:
                 components = tuple(b for b in components if b in basis)
-        with self._lock:
-            parameters = dict(self._parameters)
         settings = {
             "parameters": parameters,
             "precision": carrier,
@@ -1941,8 +1985,18 @@ class V2ObservablesRuntime:
                 point, scale, resolution=resolution, **settings
             ).entries
 
+        key = self._resolved_key(resolution, kept, basis)
+        shell = self._shell(
+            momenta,
+            points,
+            scales,
+            carrier,
+            None if reductions is None else reductions[arithmetic],
+            parameters,
+            key,
+        )
         entries, failures, served = self._run(
-            self._resolved_key(resolution, kept, basis),
+            key,
             python,
             points,
             scales,

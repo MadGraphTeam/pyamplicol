@@ -2051,6 +2051,7 @@ class V2VirtualRuntime:
         point: Any,
         scale: Any,
         count: int,
+        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The squared masses the evaluation binds for each leg of a
         caller-order ``point`` (``NativeExecutor.leg_masses`` of the
@@ -2060,9 +2061,11 @@ class V2VirtualRuntime:
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
-            parameters = dict(self._parameters)
+            # The caller's snapshot of the call (``parameters``), else the
+            # runtime's current parameters.
+            own = dict(self._parameters if parameters is None else parameters)
             masses = self._executor.leg_masses(
-                representative, scale, parameters, precision, count
+                representative, scale, own, precision, count
             )
         if member is None:
             return masses
@@ -2098,7 +2101,12 @@ class V2VirtualRuntime:
         )
 
     def _shell_masses(
-        self, precision: Any, point: Any, scale: Any, count: int
+        self,
+        precision: Any,
+        point: Any,
+        scale: Any,
+        count: int,
+        parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
         """The squared masses the mass-shell guard measures each caller leg
         against (``kinematics.shell_check``'s provider): those the evaluation
