@@ -1219,3 +1219,36 @@ def test_the_draws_and_the_screen_take_the_executor_binding(uux_ww):
     (lane,) = improved.diagnostics
     assert lane.kinematics.status == "improved"
     assert not any(is_shell_reason(r) for r in lane.uncertified)
+
+
+@pytest.mark.loop_physics
+def test_one_parameter_snapshot_per_call(uux_ttx_free, monkeypatch):
+    """The review's interleaving on b9ae740d9: a set_model_parameters
+    (MT = 160) between the observables' screen and its reduction. The call
+    evaluates on its own snapshot (MT = 173, the screen's and the
+    reduction's alike); the next call takes the new value, marked."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import is_shell_reason
+    from pyamplicol.runtime.virtual import V2ObservablesRuntime
+
+    point, scale = _flat_point(uux_ttx_free)
+    baseline = Runtime.load(uux_ttx_free).evaluate_resolved([point], mu_r2=scale)
+    runtime = Runtime.load(uux_ttx_free)
+    original = V2ObservablesRuntime._shell
+    fired = []
+
+    def interleaved(self, *args, **kwargs):
+        found = original(self, *args, **kwargs)
+        if not fired:
+            fired.append(True)
+            runtime.set_model_parameters({"MT": "160"})
+        return found
+
+    monkeypatch.setattr(V2ObservablesRuntime, "_shell", interleaved)
+    first = runtime.evaluate_resolved([point], mu_r2=scale)
+    assert fired
+    assert [d.uncertified for d in first.diagnostics] == [()]
+    assert first.values == baseline.values
+    second = runtime.evaluate_resolved([point], mu_r2=scale)
+    assert any(is_shell_reason(r) for r in second.diagnostics[0].uncertified)
