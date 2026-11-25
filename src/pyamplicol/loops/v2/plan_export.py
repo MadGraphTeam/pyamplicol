@@ -3512,6 +3512,7 @@ class NativeExecutor:
                             ]
                             for column, _count, sums in output["lane_sums"][index]
                         },
+                        exported,
                     )
                 else:
                     evaluation.set_lanes(

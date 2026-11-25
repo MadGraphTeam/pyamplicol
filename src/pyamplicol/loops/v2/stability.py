@@ -837,6 +837,9 @@ def native_estimate(
         LOCAL_COMPONENTS if all(name in components for name in LOCAL_COMPONENTS) else ()
     )
     keys: dict[Any, int] = {}
+    # Per native lane key its (number, sector position): one label per lane
+    # and call (``_PointEvaluation.native_lane_rows``).
+    seen: dict[Any, tuple[int, int]] = {}
 
     def lanes(evaluation: Any, name: str) -> list:
         # Per lane (its number, its sector's, its coefficients' (re, im)),
@@ -844,7 +847,7 @@ def native_estimate(
         # (``_PointEvaluation.native_lane_rows``).
         rows = getattr(evaluation, "native_lane_rows", None)
         if rows is not None:
-            return rows(name, keys, index)
+            return rows(name, keys, index, seen)
         return [
             (
                 keys.setdefault(lane, len(keys)),

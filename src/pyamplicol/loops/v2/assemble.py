@@ -4829,6 +4829,7 @@ class _PointEvaluation:
         check: Sequence[tuple[Any, Sequence[Sequence[float]]]] | None,
         label: Callable[[Any], Any],
         sums: Mapping[Orders, list[Any]] | None,
+        space: Any = None,
     ) -> None:
         """``set_lanes`` of a native binary64 point in the "all" or "none"
         pole mode without a scaleless companion, formed on first read from
@@ -4837,7 +4838,9 @@ class _PointEvaluation:
         ``sums`` are, per sector with lanes, the executor's sums of its
         lanes per Laurent coefficient in lane order from zero
         (``V2Executor.evaluate``'s ``lane_sums``): exactly the sums
-        ``_bare`` forms from ``families``, which it then reads instead."""
+        ``_bare`` forms from ``families``, which it then reads instead.
+        ``space`` names the labelling (the exported plan): points of one
+        space label a native lane key alike."""
 
         if splits(self.mode):
             raise ValueError("pending lanes are for the 'all' and 'none' pole modes")
@@ -4862,7 +4865,7 @@ class _PointEvaluation:
         else:
             found["_pending_retest_families"] = _Formed(laurents(check))
             runs["retest_families"] = check
-        found["_native_runs"] = (runs, label)
+        found["_native_runs"] = (runs, label, id(space))
         found["native_lane_sums"] = sums
         found.pop("native_column_sums", None)
 
@@ -4876,29 +4879,38 @@ class _PointEvaluation:
         return f"_pending_{name}" in found
 
     def native_lane_rows(
-        self, name: str, keys: dict[Any, int], index: Mapping[Any, int]
+        self,
+        name: str,
+        keys: dict[Any, int],
+        index: Mapping[Any, int],
+        seen: dict[Any, tuple[int, int]] | None = None,
     ) -> list[tuple[int, int, list[tuple[float, float]]]]:
         """The lanes ``name`` (``families``, ``retest_families``) as the
         native stability estimate reads them (``stability.native_estimate``):
         per lane, in order, (its number in ``keys``, set on first sight, the
         position of its sector in ``index``, its coefficients' (re, im));
         from the executor's own pairs while they are pending (no lane
-        object formed)."""
+        object formed). ``seen`` (one per ``keys``) keeps each native lane
+        key's (number, position), so that a lane's label is formed once per
+        call and labelling: labels are distinct per native key
+        (``set_native_lanes``)."""
 
         found = self.__dict__
         native = found.get("_native_runs")
         if name not in found and native is not None and name in native[0]:
-            runs, label = native
+            runs, label, space = native
+            if seen is None:
+                seen = {}
             out = []
             for lane, values in runs[name]:
-                key = label(lane)
-                out.append(
-                    (
+                known = seen.get((space, lane))
+                if known is None:
+                    key = label(lane)
+                    known = seen[space, lane] = (
                         keys.setdefault(key, len(keys)),
                         index[key[2]],
-                        [(float(re), float(im)) for re, im in values],
                     )
-                )
+                out.append((known[0], known[1], list(map(tuple, values))))
             return out
         return [
             (

@@ -2415,6 +2415,7 @@ class StoredColumns:
                         checks,
                         lambda lane, orders=orders: (lane[0], orders[lane[1]], lane[2]),
                         None,
+                        self,
                     )
                     evaluation.native_column_sums = {
                         column: [complex(re, im) for re, im in values]
