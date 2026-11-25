@@ -2348,6 +2348,16 @@ class StoredColumns:
         )
         from .plan_export import point_measures, point_rescued, with_measures
 
+        # binary64 in the "all" and "none" modes with distinct loop-order
+        # labels: the lanes are formed on first read and each column's sums
+        # are the executor's own (``_PointEvaluation.set_native_lanes``).
+        pending = (
+            extra is None
+            and not splits(mode)
+            and output.get("lane_sums") is not None
+            and len(set(orders)) == len(orders)
+        )
+
         failed: dict[int, list[str]] = {}
         for index, (evaluation, lanes, checks, failures) in enumerate(
             zip(
@@ -2399,12 +2409,24 @@ class StoredColumns:
                     evaluation.column_locals_uv = self._locals(
                         regulated[index], numbers, True
                     )
-                evaluation.set_lanes(
-                    read(lanes, orders, 0),
-                    read(checks, orders, 0),
-                    scaleless,
-                    scaleless_check,
-                )
+                if pending and numbers.double:
+                    evaluation.set_native_lanes(
+                        lanes,
+                        checks,
+                        lambda lane, orders=orders: (lane[0], orders[lane[1]], lane[2]),
+                        None,
+                    )
+                    evaluation.native_column_sums = {
+                        column: [complex(re, im) for re, im in values]
+                        for column, _count, values in output["lane_sums"][index]
+                    }
+                else:
+                    evaluation.set_lanes(
+                        read(lanes, orders, 0),
+                        read(checks, orders, 0),
+                        scaleless,
+                        scaleless_check,
+                    )
         return evaluations, failed
 
     def _sources(self, spin: Mapping[int, Any] | None):

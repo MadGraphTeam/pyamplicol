@@ -101,10 +101,12 @@ from .assemble import (
     LAURENT,
     LOCAL_COMPONENTS,
     Laurent,
+    LazyLanes,
     LoopSlice,
     PointResult,
     Precision,
     SliceRequest,
+    _Formed,
     _fraction,
     _interfere,
     _max,
@@ -1777,14 +1779,32 @@ class _Assembly:
             if key[0] == column.key:
                 index[direct] = (key[1], "direct")
                 index.setdefault(swapped, (key[1], "swapped"))
-        # Only this column's lanes, in the evaluation's lane order.
-        for (family, loop, k), value in _lanes_in(evaluation, "families", index):
-            terms = omega.setdefault(k, [numbers.zero] * width)
-            for i, coefficient in enumerate(value.coefficients):
-                terms[i] = terms[i] + coefficient
-            sector, part = index[k]
-            if part == "direct":
-                families[family, loop, sector] = value
+        sums = evaluation.__dict__.get("native_column_sums")
+        if sums is not None:
+            # The executor's sums of each column's lanes in lane order
+            # (``StoredColumns._evaluations``): the sums below; the output's
+            # lanes are formed on first read.
+            omega = {k: list(sums[k]) for k in index if k in sums}
+
+            def own(evaluation=evaluation, index=index) -> dict:
+                return {
+                    (family, loop, index[k][0]): value
+                    for (family, loop, k), value in _lanes_in(
+                        evaluation, "families", index
+                    )
+                    if index[k][1] == "direct"
+                }
+
+            families = LazyLanes(_Formed(own))
+        else:
+            # Only this column's lanes, in the evaluation's lane order.
+            for (family, loop, k), value in _lanes_in(evaluation, "families", index):
+                terms = omega.setdefault(k, [numbers.zero] * width)
+                for i, coefficient in enumerate(value.coefficients):
+                    terms[i] = terms[i] + coefficient
+                sector, part = index[k]
+                if part == "direct":
+                    families[family, loop, sector] = value
         real = not column.directed
         zero = numbers.zero
         # "uv" and "ir": the combined Laurent and the UV part of every lane

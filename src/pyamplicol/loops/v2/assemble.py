@@ -3984,6 +3984,8 @@ class _LaneAttribute:
         if self.name == "families":
             # The executor's sums are those of the pending lanes only.
             found.pop("native_lane_sums", None)
+            found.pop("native_column_sums", None)
+            found.pop("_native_runs", None)
         found[self.name] = value
 
 
@@ -4862,6 +4864,7 @@ class _PointEvaluation:
             runs["retest_families"] = check
         found["_native_runs"] = (runs, label)
         found["native_lane_sums"] = sums
+        found.pop("native_column_sums", None)
 
     def _has_lanes(self, name: str) -> bool:
         """Whether the lanes ``name`` are set and not None, without forming
