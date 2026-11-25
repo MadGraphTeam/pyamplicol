@@ -830,6 +830,56 @@ struct Step {
     /// (accumulator offset, propagator, momentum start, state start,
     /// dimension, only epsilon-pole terms read it).
     outputs: Vec<(usize, Option<usize>, usize, usize, usize, bool)>,
+    /// Its interactions by accumulator (`parallel_step`), formed on first
+    /// use (None: an interaction adds to no output's accumulator).
+    index: std::sync::OnceLock<Option<StepIndex>>,
+}
+
+/// A step's interactions by the accumulator they add to (`parallel_step`):
+/// per accumulator offset of its outputs (ascending) a unit holding that
+/// offset's outputs and the (kernel group, interaction) pairs adding to it,
+/// in the step's order.
+struct StepIndex {
+    units: Vec<Unit>,
+    /// Per kernel group the narrowest span of the units it adds to.
+    group_spans: Vec<usize>,
+}
+
+struct Unit {
+    /// Accumulator components up to the next unit's (or the row's end).
+    span: usize,
+    outputs: Vec<usize>,
+    edges: Vec<(u32, u32)>,
+}
+
+impl StepIndex {
+    fn of(step: &Step) -> Option<Self> {
+        let mut offsets: Vec<usize> = step.outputs.iter().map(|output| output.0).collect();
+        offsets.sort_unstable();
+        offsets.dedup();
+        let mut units: Vec<Unit> = offsets
+            .iter()
+            .enumerate()
+            .map(|(k, &accumulator)| Unit {
+                span: offsets.get(k + 1).copied().unwrap_or(step.width) - accumulator,
+                outputs: Vec::new(),
+                edges: Vec::new(),
+            })
+            .collect();
+        for (o, output) in step.outputs.iter().enumerate() {
+            let unit = offsets.binary_search(&output.0).ok()?;
+            units[unit].outputs.push(o);
+        }
+        let mut group_spans = vec![usize::MAX; step.groups.len()];
+        for (g, (_, edges)) in step.groups.iter().enumerate() {
+            for (e, edge) in edges.iter().enumerate() {
+                let unit = offsets.binary_search(&(edge.accumulator as usize)).ok()?;
+                units[unit].edges.push((g as u32, e as u32));
+                group_spans[g] = group_spans[g].min(units[unit].span);
+            }
+        }
+        Some(Self { units, group_spans })
+    }
 }
 
 struct Interactions {
@@ -1863,6 +1913,7 @@ fn load_interactions(
             groups: groups.into_iter().collect(),
             width,
             outputs,
+            index: std::sync::OnceLock::new(),
         })
     };
     let mut steps = Vec::new();
@@ -4538,7 +4589,6 @@ where
         }) {
             continue;
         }
-        let mut sums = vec![czero.clone(); points * step.width];
         if let Some(forks) = forks.filter(|_| parallel_worth(step, points))
             && parallel_step(
                 program,
@@ -4550,13 +4600,13 @@ where
                 poles,
                 kept,
                 step,
-                &mut sums,
                 czero,
                 workers,
             )?
         {
             continue;
         }
+        let mut sums = vec![czero.clone(); points * step.width];
         for (g, (kernel, edges)) in step.groups.iter().enumerate() {
             let active: Vec<(&Edge, &Complex<T>)> = edges
                 .iter()
@@ -4689,18 +4739,20 @@ fn parallel_worth(step: &Step, points: usize) -> bool {
 }
 
 /// One step of `run_interactions` on several workers, each on its own copies
-/// of the kernels (`forks`), bitwise the serial step: the vertex kernels'
-/// rows are cut into tasks of whole interactions at every point (rows are
+/// of the kernels (`forks`), bitwise the serial step. A task owns a range of
+/// the step's accumulators ([`StepIndex`]): per kernel group in order it
+/// evaluates the interactions adding to them at every point (rows are
 /// independent, and a plane application pads every call to whole SIMD
-/// blocks, so a row's value does not depend on its call), the tasks'
-/// outputs are accumulated per point in the serial order (kernel group,
-/// interaction, output component; the points in parallel: their sums are
-/// disjoint), then each output's propagator runs as its own task on the
-/// states before any of the step's outputs is written (it reads the step's
-/// sums, momenta and model parameters only: no current slot) and the
-/// outputs are written in order. Returns false, having done nothing, for a
-/// step whose propagators would read a state component the step writes
-/// (`propagators_read_outputs`): the serial step runs it.
+/// blocks, so a row's value does not depend on its call), adds each to its
+/// accumulator in the serial order (kernel group, then interaction: an
+/// accumulator only receives its own interactions), then runs its outputs'
+/// propagators on the states as they were before the step (a propagator
+/// reads its sum, a momentum and model parameters: no current the step
+/// writes, `propagators_read_outputs`). The outputs are written in order
+/// after every task. Returns false, having done nothing, for a step the
+/// serial step must run (an interaction adding to no output's accumulator,
+/// a kernel wider than its accumulator's span, or a propagator reading a
+/// current the step writes).
 #[allow(clippy::too_many_arguments)]
 fn parallel_step<T: Carrier>(
     program: &Interactions,
@@ -4712,119 +4764,168 @@ fn parallel_step<T: Carrier>(
     poles: bool,
     kept: Option<&(Vec<Vec<bool>>, Vec<bool>)>,
     step: &Step,
-    sums: &mut [Complex<T>],
     czero: &Complex<T>,
     workers: usize,
 ) -> RusticolResult<bool>
 where
     Complex<T>: Real + EvaluationDomain,
 {
-    // The outputs this call writes.
-    let written: Vec<usize> = step
-        .outputs
-        .iter()
-        .enumerate()
-        .filter(|&(o, &(.., pole))| !((pole && !poles) || kept.is_some_and(|(_, out)| !out[o])))
-        .map(|(o, _)| o)
-        .collect();
+    let Some(index) = step.index.get_or_init(|| StepIndex::of(step)) else {
+        return Ok(false);
+    };
+    let writes = |o: usize| {
+        let pole = step.outputs[o].5;
+        !((pole && !poles) || kept.is_some_and(|(_, out)| !out[o]))
+    };
+    let written: Vec<usize> = (0..step.outputs.len()).filter(|&o| writes(o)).collect();
     if propagators_read_outputs(program, layout, step, &written) {
         return Ok(false);
     }
-    // The tasks: per kernel group its active interactions (as the serial
-    // step filters them), cut into runs of about a share of the step's rows
-    // per worker, within one kernel call's rows.
-    let mut active: Vec<(usize, Vec<(&Edge, &Complex<T>)>)> = Vec::with_capacity(step.groups.len());
-    for (g, (kernel, edges)) in step.groups.iter().enumerate() {
-        let edges: Vec<(&Edge, &Complex<T>)> = edges
-            .iter()
-            .enumerate()
-            .filter(|(e, edge)| {
-                (poles || !edge.pole) && kept.is_none_or(|(groups, _)| groups[g][*e])
+    // Every kernel fits its accumulators' spans (as the serial step's sums
+    // would hold its values within the accumulator).
+    let fits = step
+        .groups
+        .iter()
+        .zip(&index.group_spans)
+        .all(|((kernel, _), &span)| kernels[*kernel].output_len() <= span)
+        && index.units.iter().all(|unit| {
+            unit.outputs.iter().all(|&o| match step.outputs[o].1 {
+                Some(kernel) => {
+                    let inputs = kernels[kernel].input_len();
+                    inputs >= 4 + program.models[kernel].len()
+                        && inputs - 4 - program.models[kernel].len() <= unit.span
+                        && step.outputs[o].4 <= kernels[kernel].output_len()
+                }
+                None => step.outputs[o].4 <= unit.span,
             })
-            .map(|(_, edge)| (edge, &edge_weights[edge.weight as usize]))
-            .collect();
-        if !edges.is_empty() {
-            active.push((*kernel, edges));
-        }
+        });
+    if !fits {
+        return Ok(false);
     }
-    let total: usize = active.iter().map(|(_, edges)| edges.len()).sum::<usize>() * points;
+    // The units a call writes to, cut into tasks of about a share of the
+    // step's rows per worker.
+    let live: Vec<&Unit> = index
+        .units
+        .iter()
+        .filter(|unit| unit.outputs.iter().any(|&o| writes(o)))
+        .collect();
+    let cost = |unit: &Unit| (unit.edges.len() + unit.outputs.len()) * points;
+    let total: usize = live.iter().map(|unit| cost(unit)).sum();
     let share = total.div_ceil(4 * workers).max(TASK_ROWS);
-    let mut tasks: Vec<(usize, &[(&Edge, &Complex<T>)])> = Vec::new();
-    for (kernel, edges) in &active {
-        let call = match kernels[*kernel] {
-            Kernel::Plane(_) => PLANE_ROWS,
-            Kernel::Exact(_) => EXACT_ROWS,
-        };
-        let per_task = (share.min(call) / points.max(1)).max(1);
-        tasks.extend(edges.chunks(per_task).map(|chunk| (*kernel, chunk)));
+    let mut tasks: Vec<&[&Unit]> = Vec::new();
+    let (mut first, mut held) = (0, 0);
+    for (k, unit) in live.iter().enumerate() {
+        held += cost(unit);
+        if held >= share || k + 1 == live.len() {
+            tasks.push(&live[first..=k]);
+            (first, held) = (k + 1, 0);
+        }
     }
     let base = std::sync::Mutex::new(&mut *kernels);
     let shared: &[Complex<T>] = states;
-    let outputs: Vec<Vec<Complex<T>>> = tasks
-        .par_iter()
-        .map(|&(kernel, edges)| {
-            forks.with(&base, kernel, |evaluator| {
-                vertex_rows(
-                    evaluator,
-                    &program.models[kernel],
-                    layout,
-                    edges,
-                    shared,
-                    points,
-                    czero,
-                )
-            })
-        })
-        .collect::<RusticolResult<_>>()?;
-    if step.width > 0 {
-        sums.par_chunks_mut(step.width)
-            .enumerate()
-            .for_each(|(point, target)| {
-                for (&(_, edges), rows) in tasks.iter().zip(&outputs) {
-                    let width = rows.len() / (edges.len() * points).max(1);
-                    for (e, &(edge, weight)) in edges.iter().enumerate() {
-                        let values = &rows[(e * points + point) * width..][..width];
-                        let target = &mut target[edge.accumulator as usize..];
+    let run = |units: &[&Unit]| -> RusticolResult<Vec<(usize, Vec<Complex<T>>)>> {
+        // Per unit its accumulators at every point (`span` per point).
+        let mut sums: Vec<Vec<Complex<T>>> = units
+            .iter()
+            .map(|unit| vec![czero.clone(); points * unit.span])
+            .collect();
+        let mut edges: Vec<(&Edge, &Complex<T>)> = Vec::new();
+        let mut owners: Vec<usize> = Vec::new();
+        for (g, (kernel, group)) in step.groups.iter().enumerate() {
+            edges.clear();
+            owners.clear();
+            for (u, unit) in units.iter().enumerate() {
+                let from = unit.edges.partition_point(|&(h, _)| (h as usize) < g);
+                for &(h, e) in &unit.edges[from..] {
+                    if h as usize != g {
+                        break;
+                    }
+                    let edge = &group[e as usize];
+                    if (poles || !edge.pole) && kept.is_none_or(|(groups, _)| groups[g][e as usize])
+                    {
+                        edges.push((edge, &edge_weights[edge.weight as usize]));
+                        owners.push(u);
+                    }
+                }
+            }
+            if edges.is_empty() {
+                continue;
+            }
+            let call = forks.with(&base, *kernel, |evaluator| {
+                Ok(match evaluator {
+                    Kernel::Plane(_) => PLANE_ROWS,
+                    Kernel::Exact(_) => EXACT_ROWS,
+                })
+            })?;
+            let per_call = (call / points.max(1)).max(1);
+            for (chunk, chunk_owners) in edges.chunks(per_call).zip(owners.chunks(per_call)) {
+                let rows = forks.with(&base, *kernel, |evaluator| {
+                    vertex_rows(
+                        evaluator,
+                        &program.models[*kernel],
+                        layout,
+                        chunk,
+                        shared,
+                        points,
+                        czero,
+                    )
+                })?;
+                let width = rows.len() / (chunk.len() * points).max(1);
+                let mut values = rows.chunks_exact(width.max(1));
+                for (&(_, weight), &u) in chunk.iter().zip(chunk_owners) {
+                    let span = units[u].span;
+                    for point in 0..points {
+                        let values = values.next().expect("a kernel row per point");
+                        let target = &mut sums[u][point * span..(point + 1) * span];
                         for (sum, value) in target.iter_mut().zip(values) {
                             *sum += weight.clone() * value.clone();
                         }
                     }
                 }
-            });
-    }
-    // The propagators' rows, then the outputs in order.
-    let sums = &*sums;
-    let propagated: Vec<Option<Vec<Complex<T>>>> = written
+            }
+        }
+        // The units' outputs: their propagators, or their sums.
+        let mut out = Vec::new();
+        for (u, unit) in units.iter().enumerate() {
+            for &o in &unit.outputs {
+                if !writes(o) {
+                    continue;
+                }
+                let (_, propagator, momentum, _, dimension, _) = step.outputs[o];
+                let values = match propagator {
+                    Some(kernel) => forks.with(&base, kernel, |evaluator| {
+                        propagator_rows(
+                            evaluator,
+                            &program.models[kernel],
+                            layout,
+                            (&sums[u], unit.span, 0),
+                            (momentum, dimension),
+                            shared,
+                            points,
+                            czero,
+                        )
+                    })?,
+                    None => sums[u]
+                        .chunks_exact(unit.span)
+                        .flat_map(|row| row[..dimension].iter().cloned())
+                        .collect(),
+                };
+                out.push((o, values));
+            }
+        }
+        Ok(out)
+    };
+    let done: Vec<Vec<(usize, Vec<Complex<T>>)>> = tasks
         .par_iter()
-        .map(|&o| {
-            let (accumulator, propagator, momentum, _, dimension, _) = step.outputs[o];
-            let Some(kernel) = propagator else {
-                return Ok(None);
-            };
-            forks
-                .with(&base, kernel, |evaluator| {
-                    propagator_rows(
-                        evaluator,
-                        &program.models[kernel],
-                        layout,
-                        (sums, step.width, accumulator),
-                        (momentum, dimension),
-                        shared,
-                        points,
-                        czero,
-                    )
-                })
-                .map(Some)
-        })
+        .map(|units| run(units))
         .collect::<RusticolResult<_>>()?;
-    for (&o, rows) in written.iter().zip(propagated) {
-        let (accumulator, _, _, start, dimension, _) = step.outputs[o];
+    let mut done: Vec<(usize, Vec<Complex<T>>)> = done.into_iter().flatten().collect();
+    done.sort_unstable_by_key(|(o, _)| *o);
+    for (o, values) in done {
+        let (_, _, _, start, dimension, _) = step.outputs[o];
         for (point, state) in states.chunks_exact_mut(layout.size).enumerate() {
-            let values = match &rows {
-                Some(rows) => &rows[point * dimension..][..dimension],
-                None => &sums[point * step.width + accumulator..][..dimension],
-            };
-            state[start..start + dimension].clone_from_slice(values);
+            state[start..start + dimension]
+                .clone_from_slice(&values[point * dimension..][..dimension]);
         }
     }
     Ok(true)
