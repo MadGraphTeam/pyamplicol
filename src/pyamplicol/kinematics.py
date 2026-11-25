@@ -448,13 +448,13 @@ def shell_check(
     precision: Any,
     masses: MassProvider,
     target: float,
-    roundoff: Sequence[float],
+    roundoff: Sequence[Sequence[float]],
 ) -> ShellCheck:
     """The screen on the points one carrier evaluates (``precision``, a v2
     ``Precision``; the caller's legs, after the call's kinematics
     improvement) against the squared masses that call binds (``masses``,
     caller order; None: no mass bound), at the call's point ``target`` and
-    the supplied carriers' unit roundoffs (``roundoff``, per point,
+    the supplied carriers' unit roundoffs (``roundoff``, per point and leg,
     ``input_roundoff``)."""
 
     masses2: list[Sequence[Fraction | None]] = [()] * len(points)
