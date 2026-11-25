@@ -26,6 +26,10 @@ class ValidationPointRecord:
     seed: int
     particles: tuple[tuple[int, FourMomentum], ...] = ()
     error: str | None = None
+    # The bound mass of every leg (``bound_external_masses``), recorded for a
+    # loop process (its amplitude binds them from the parameters it fixes,
+    # which the model's own values need not be); None: not recorded.
+    masses: tuple[float, ...] | None = None
 
     @property
     def available(self) -> bool:
@@ -58,6 +62,11 @@ class ValidationPointRecord:
             "available": self.available,
             "error": self.error,
             "points": points,
+            **(
+                {"masses": [_decimal_string(mass) for mass in self.masses]}
+                if self.masses is not None and self.available
+                else {}
+            ),
         }
 
 
@@ -76,6 +85,45 @@ def build_validation_point(
     )
 
 
+def bound_external_masses(
+    process: CanonicalProcessIR,
+    model: Model,
+    fixed_parameters: Mapping[str, str] | None = None,
+) -> tuple[float, ...]:
+    """The mass of every external leg of ``process`` (initial states first)
+    that its amplitude binds: the model's (its restriction applied) with the
+    parameters the generation fixes (``fixed_parameters``, exact decimal
+    texts by name: ``[loop.preparation] fixed_parameters``, the stable
+    external widths and the model preparation's constants, a loop slice's
+    ``fixed_parameters``) in place of the model's own values, derived masses
+    evaluated at them. THE one source of the external masses of the
+    generated kinematics: the stored validation point, the momenta of
+    ``pyamplicol check`` and of the loop-induced generation probes, and the
+    masses of the flat phase-space points (``cli.flat_points`` reads them
+    from the validation record). Without fixed parameters these are the
+    model's masses, bit for bit. A loop runtime binds the same values
+    (``NativeExecutor.leg_masses``, exact; a derived mass to its carrier's
+    rounding)."""
+
+    bound = model
+    if fixed_parameters:
+        rebind = getattr(model, "with_runtime_parameters", None)
+        if rebind is None:
+            raise ValueError(
+                "fixed parameters need a compiled model to bind them "
+                f"({type(model).__name__} has no runtime parameters)"
+            )
+        bound = rebind(
+            {
+                name: complex(float(value), 0.0)
+                for name, value in fixed_parameters.items()
+            }
+        )
+    return tuple(
+        _mass(bound, int(pdg)) for pdg in (*process.initial_pdgs, *process.final_pdgs)
+    )
+
+
 def build_process_validation_point(
     process: CanonicalProcessIR,
     model: Model,
@@ -83,13 +131,20 @@ def build_process_validation_point(
     process_id: str,
     seed: int,
     sqrt_s: float | None = None,
+    fixed_parameters: Mapping[str, str] | None = None,
+    record_masses: bool = False,
 ) -> ValidationPointRecord:
-    """Build validation momenta without requiring a materialized DAG.
-    ``sqrt_s`` replaces the centre-of-mass energy of a 2 -> n scattering
-    (n >= 2) (None: the convention of ``_build_particles``)."""
+    """Build validation momenta without requiring a materialized DAG, on
+    shell at the masses the amplitude binds (``bound_external_masses`` at
+    ``fixed_parameters``). ``sqrt_s`` replaces the centre-of-mass energy of
+    a 2 -> n scattering (n >= 2) (None: the convention of
+    ``_build_particles``). ``record_masses`` stores the bound masses in the
+    record (a loop process's, ``ValidationPointRecord.masses``)."""
 
+    masses = None
     try:
-        particles = _build_particles(process, model, seed=seed, sqrt_s=sqrt_s)
+        masses = bound_external_masses(process, model, fixed_parameters)
+        particles = _build_particles(process, masses, seed=seed, sqrt_s=sqrt_s)
     except (ArithmeticError, KeyError, RuntimeError, ValueError) as exc:
         return ValidationPointRecord(
             process_id=process_id,
@@ -102,6 +157,7 @@ def build_process_validation_point(
         process=process.process,
         seed=seed,
         particles=particles,
+        masses=masses if record_masses else None,
     )
 
 
@@ -118,12 +174,9 @@ def rotate_validation_point(
         f"{rotation_seed}:proper-spatial-rotation-v1".encode("ascii")
     ).digest()
     denominator = float(1 << 64)
-    azimuth = 2.0 * math.pi * (
-        (int.from_bytes(digest[:8], "big") + 0.5) / denominator
-    )
+    azimuth = 2.0 * math.pi * ((int.from_bytes(digest[:8], "big") + 0.5) / denominator)
     cosine_polar = (
-        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator)
-        - 1.0
+        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator) - 1.0
     )
     sine_polar = math.sqrt(max(0.0, 1.0 - cosine_polar * cosine_polar))
     cos_azimuth = math.cos(azimuth)
@@ -157,9 +210,7 @@ def rotate_validation_point(
 
     return replace(
         point,
-        particles=tuple(
-            (pdg, rotated(momentum)) for pdg, momentum in point.particles
-        ),
+        particles=tuple((pdg, rotated(momentum)) for pdg, momentum in point.particles),
     )
 
 
@@ -176,12 +227,13 @@ _MASSIVE_BEAM_SCALE = 2.0
 
 def _build_particles(
     process: CanonicalProcessIR,
-    model: Model,
+    masses: tuple[float, ...],
     *,
     seed: int,
     sqrt_s: float | None = None,
 ) -> tuple[tuple[int, FourMomentum], ...]:
-    """One on-shell point of ``process`` from the model's masses.
+    """One on-shell point of ``process`` at the legs' ``masses`` (initial
+    states first, ``bound_external_masses``).
 
     A decay (1 -> n) is taken in the rest frame of the decaying particle; a
     scattering (2 -> n, n >= 2) in its centre-of-mass frame, beams along +-z.
@@ -203,8 +255,8 @@ def _build_particles(
         )
     if not final_pdgs:
         raise ValueError("validation momenta require at least one final-state particle")
-    initial_masses = tuple(_mass(model, pdg) for pdg in initial_pdgs)
-    final_masses = tuple(_mass(model, pdg) for pdg in final_pdgs)
+    initial_masses = masses[: len(initial_pdgs)]
+    final_masses = masses[len(initial_pdgs) :]
     threshold = sum(final_masses)
     if sqrt_s is not None and (len(initial_pdgs) == 1 or len(final_pdgs) == 1):
         raise ValueError(
@@ -312,6 +364,7 @@ def _decimal_string(value: float) -> str:
 
 __all__ = [
     "ValidationPointRecord",
+    "bound_external_masses",
     "build_process_validation_point",
     "build_validation_point",
     "rotate_validation_point",

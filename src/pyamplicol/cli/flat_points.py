@@ -12,10 +12,13 @@ how many are drawn. Cuts (``generation.phase_space_cuts``) reject attempts of a 
 so a point still depends on its own seed alone.
 
 Except for which legs the cuts act on (the artifact's model record), nothing
-is read from the model: the external masses are those of the
-artifact's own validation point (``processes/<id>/validation-momenta.json``,
-written at generation with the generation's masses), m^2 = E^2 - |p|^2 in
-exact decimal arithmetic on its stored digits. A square below the rounding
+is read from the model: the external masses are those the artifact's own
+validation record states (``processes/<id>/validation-momenta.json``,
+``"masses"``: the masses the amplitude binds, ``generation.validation.
+bound_external_masses``, which a loop artifact records). A record without
+them (a tree artifact, whose amplitudes bind the model's masses, the
+validation point's) gives the masses of its point, m^2 = E^2 - |p|^2 in
+exact decimal arithmetic on its stored digits; a square below the rounding
 of the stored binary64 components (64 epsilon E^2) is a massless leg. The
 default energy is the validation point's (its initial state's invariant
 mass), so it is above threshold for any process the artifact holds.
@@ -96,7 +99,7 @@ def _process_id(artifact: Path, process: str | None) -> str:
     return process
 
 
-def _validation_point(artifact: Path, process_id: str) -> list[tuple[Decimal, ...]]:
+def _validation_record(artifact: Path, process_id: str) -> dict:
     path = artifact / "processes" / process_id / "validation-momenta.json"
     try:
         record = json.loads(path.read_text())
@@ -111,10 +114,31 @@ def _validation_point(artifact: Path, process_id: str) -> list[tuple[Decimal, ..
             f"no momenta file was given and the artifact's validation point is "
             f"unavailable ({record.get('error')}); give evaluation.momenta"
         )
+    return record
+
+
+def _validation_point(record: dict) -> list[tuple[Decimal, ...]]:
     return [
         tuple(Decimal(str(value)) for value in entry["momentum"])
         for entry in record["points"][0]
     ]
+
+
+def _recorded_masses(
+    record: dict, validation: list[tuple[Decimal, ...]]
+) -> tuple[float, ...]:
+    """The legs' masses: the record's bound masses (``"masses"``), else its
+    point's (``_mass``)."""
+
+    stored = record.get("masses")
+    if stored is None:
+        return tuple(_mass(momentum) for momentum in validation)
+    if len(stored) != len(validation):
+        raise ConfigurationError(
+            "the artifact's validation record states "
+            f"{len(stored)} masses for {len(validation)} legs"
+        )
+    return tuple(float(value) for value in stored)
 
 
 def _mass(momentum: tuple[Decimal, ...]) -> float:
@@ -170,8 +194,9 @@ def draw_flat_points(
     from pyamplicol.generation.phase_space_cuts import CutsError, draw_accepted
 
     process_id = _process_id(artifact, process)
-    validation = _validation_point(artifact, process_id)
-    masses = tuple(_mass(momentum) for momentum in validation)
+    record = _validation_record(artifact, process_id)
+    validation = _validation_point(record)
+    masses = _recorded_masses(record, validation)
     initial = _initial_count_from_point(artifact, process_id, validation)
     final = len(validation) - initial
     incoming = validation[:initial]

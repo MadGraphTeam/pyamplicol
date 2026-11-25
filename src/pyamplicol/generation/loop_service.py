@@ -1844,11 +1844,16 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                                     # lit-eft; None otherwise, not recorded).
                                     reductions=process.reductions(),
                                 ),
+                                # On shell at the masses the amplitude binds
+                                # (the slice's fixed parameters), which the
+                                # record states (``cli.flat_points``).
                                 validation_point=build_process_validation_point(
                                     entry.process_ir,
                                     context.resolved.model,
                                     process_id=name,
                                     seed=validation.seed + index,
+                                    fixed_parameters=process.slice.fixed_parameters,
+                                    record_masses=True,
                                 ),
                                 generation_filters={
                                     "loop_engine": "v2",
@@ -1932,6 +1937,7 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                                 state_legs=tuple(legs),
                                 helicities=tuple(map(tuple, process.helicities())),
                                 point_inputs=process.point_inputs,
+                                fixed_parameters=process.slice.fixed_parameters,
                             )
                         )
                         process_handle.summary = (
@@ -2165,6 +2171,7 @@ def check_loop_requests(
                 seed=seed,
                 count=points,
                 unavailable=f"check momenta unavailable for {name}",
+                fixed=request.fixed_parameters,
                 sqrt_s=sqrt_s,
                 cuts=cuts,
             )
@@ -2261,19 +2268,23 @@ def _loop_induced_candidates(context, entry, process, validation, index):
         seed=validation.seed + index,
         count=max(validation.samples, 1),
         unavailable="loop-induced probe momenta unavailable",
+        fixed=slice_.fixed_parameters,
     )
 
 
 def _validation_momenta(
-    context, entry, *, seed, count, unavailable, sqrt_s=None, cuts=None
+    context, entry, *, seed, count, unavailable, fixed, sqrt_s=None, cuts=None
 ):
     """``count`` phase-space points of the generation's validation convention
     (``build_process_validation_point`` at seeds ``seed``, ``seed + 1``,
     ...; ``sqrt_s`` replaces a scattering's energy; within ``cuts``, by
-    rejection, point by point): the four-vectors, or ``GenerationError``
-    "``unavailable``: <why>"."""
+    rejection, point by point), on shell at the masses the amplitude binds
+    (``validation.bound_external_masses`` at the parameters the generation
+    fixes, ``fixed``: a slice's ``fixed_parameters``, or its request's): the
+    four-vectors, or ``GenerationError`` "``unavailable``: <why>"."""
 
     from .phase_space_cuts import CutsError, draw_accepted, is_cut_particle
+    from .validation import bound_external_masses
 
     def draw(point_seed):
         record = build_process_validation_point(
@@ -2282,6 +2293,7 @@ def _validation_momenta(
             process_id=entry.request.name,
             seed=point_seed,
             sqrt_s=sqrt_s,
+            fixed_parameters=fixed,
         )
         if not record.available:
             raise GenerationError(f"{unavailable}: {record.error}")
@@ -2296,15 +2308,15 @@ def _validation_momenta(
                 "need the beams of a scattering, not a decay"
             )
         return [draw(point_seed) for point_seed in seeds]
-    model = context.resolved.model
     particles = {
         int(particle.pdg_code): particle
         for particle in context.resolved.compiled.ir.particles
     }
+    masses = bound_external_masses(entry.process_ir, context.resolved.model, fixed)
     legs = [
         initial + leg
         for leg, pdg in enumerate(entry.process_ir.final_pdgs)
-        if model.mass(int(pdg)) == 0.0
+        if masses[initial + leg] == 0.0
         and is_cut_particle(
             spin=int(particles[int(pdg)].spin),
             color=int(particles[int(pdg)].color),
@@ -2472,7 +2484,13 @@ def _validate_v2_artifact(backend, output, context, generated, members):
             raise GenerationError("v2 validation loaded incompatible artifact metadata")
         if not validation.enabled:
             continue
-        points, scales = _v2_validation_points(context, entry, validation, index)
+        points, scales = _v2_validation_points(
+            context,
+            entry,
+            validation,
+            index,
+            generated[representative].slice.fixed_parameters,
+        )
         if permutation is not None:
             # The target's points in the alias's leg order.
             points = [
@@ -2697,7 +2715,11 @@ def _compare_v2(
     return largest
 
 
-def _v2_validation_points(context, entry, validation, index):
+def _v2_validation_points(context, entry, validation, index, fixed):
+    """The post-build validation's points of ``entry`` (``_validation_momenta``
+    on shell at the masses the slice binds, ``fixed`` its fixed parameters)
+    and their scales (each point's initial invariant)."""
+
     from pyamplicol.loops.v2.induced import initial_invariant
 
     points, scales = [], []
@@ -2707,6 +2729,7 @@ def _v2_validation_points(context, entry, validation, index):
         seed=validation.seed + index,
         count=validation.samples,
         unavailable="virtual validation momenta unavailable",
+        fixed=fixed,
     ):
         point = [[repr(float(x)) for x in vector] for vector in vectors]
         initial = len(entry.process_ir.initial_pdgs)
