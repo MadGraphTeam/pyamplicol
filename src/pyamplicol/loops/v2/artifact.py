@@ -2068,7 +2068,10 @@ class V2VirtualRuntime:
             own = dict(self._parameters if parameters is None else parameters)
             # The binding depends on the carrier and the parameters only
             # (never on the point; on the scale too for a program whose
-            # masses run with it, which is bound per call): bound once.
+            # masses run with it, which is bound per call): bound once. A
+            # program written before its record of scale-dependent outputs
+            # (no "scale_outputs") does not state that independence: bound
+            # per call.
             key = (
                 "native",
                 precision.arithmetic,
@@ -2080,7 +2083,10 @@ class V2VirtualRuntime:
                 masses = self._executor.leg_masses(
                     representative, scale, own, precision, count
                 )
-                if not scale_dependent_shared(self._native_process.trees):
+                trees = self._native_process.trees
+                if "scale_outputs" in trees.program[
+                    "parameters"
+                ] and not scale_dependent_shared(trees):
                     self._bound_masses[key] = masses
             masses = list(masses)
         if member is None:

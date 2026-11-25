@@ -1573,3 +1573,31 @@ def test_the_samples_file_replays_with_its_selector(uux_ttz, tmp_path):
     sample = [[float(x) for x in leg] for leg in points[0]]
     (lane,) = replay.evaluate([sample], mu_r2="1000000").diagnostics
     assert not any(is_shell_reason(r) for r in lane.uncertified), lane.uncertified
+
+
+@pytest.mark.loop_physics
+def test_a_program_without_its_scale_record_binds_masses_per_call(
+    uux_ttx_free, monkeypatch
+):
+    """The review of 80403dc7c (a follow-up limit): a tree program written
+    before its record of scale-dependent outputs does not state that its
+    masses are independent of mu_R: they are bound per call, never cached
+    across scales; with the record (empty) they are bound once."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.loops.v2.assemble import Precision
+
+    point, scale = _flat_point(uux_ttx_free)
+    backend = Runtime.load(uux_ttx_free)._backend
+    record = backend._native_process.trees.program["parameters"]
+    assert "scale_outputs" in record
+
+    def native():
+        return [key for key in backend._bound_masses if key[0] == "native"]
+
+    masses = backend._kinematics_masses(Precision.double(), point, scale, 1)
+    assert len(native()) == 1
+    backend._bound_masses.clear()
+    monkeypatch.delitem(record, "scale_outputs")
+    again = backend._kinematics_masses(Precision.double(), point, scale, 1)
+    assert again == masses and not native()
