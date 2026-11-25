@@ -722,3 +722,68 @@ fn a_propagator_reading_its_steps_outputs_keeps_the_step_serial() {
     let step = &program.steps[0];
     assert!(propagators_read_outputs(&program, layout, step, &written));
 }
+
+/// The slot-major state (`c * points + p`): every point's components of a
+/// 16-point run are bitwise those of the point run alone (where the
+/// layouts coincide), for exact and plane kernels, on one thread and on
+/// several (the parallel step).
+#[test]
+fn each_point_of_a_slot_major_batch_is_the_point_alone() {
+    let (program, layout, all) = parallel_program();
+    let weights = [
+        Complex::new(1.0, 0.0),
+        Complex::new(-0.5, 0.25),
+        Complex::new(0.0, 2.0),
+    ];
+    let czero = Complex::new(0.0, 0.0);
+    let points = 16;
+    let size = layout.size;
+    // Point `p`'s state: its own random values, read point-major from `all`.
+    let point = |p: usize| all[p * size..(p + 1) * size].to_vec();
+    let mut batch = vec![czero; points * size];
+    for p in 0..points {
+        for (c, value) in point(p).into_iter().enumerate() {
+            batch[c * points + p] = value;
+        }
+    }
+    for plane in [false, true] {
+        let mut kernels = parallel_kernels(plane);
+        for threads in [1, 4] {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .start_handler(|_| crate::licence::unlock_thread())
+                .num_threads(threads)
+                .build()
+                .unwrap();
+            let mut forks = Forks::default();
+            let mut run = |states: &mut Vec<Complex<f64>>, points: usize| {
+                pool.install(|| {
+                    run_interactions(
+                        &program,
+                        layout,
+                        &mut kernels,
+                        Some(&mut forks),
+                        &weights,
+                        states,
+                        points,
+                        true,
+                        None,
+                        &czero,
+                    )
+                })
+                .unwrap();
+            };
+            let mut got = batch.clone();
+            run(&mut got, points);
+            for p in 0..points {
+                let mut alone = point(p);
+                run(&mut alone, 1);
+                let column: Vec<Complex<f64>> = (0..size).map(|c| got[c * points + p]).collect();
+                assert_eq!(
+                    bits(&column),
+                    bits(&alone),
+                    "plane {plane}, {threads} threads, point {p}"
+                );
+            }
+        }
+    }
+}
