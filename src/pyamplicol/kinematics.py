@@ -414,6 +414,23 @@ def input_roundoff(momenta: Any) -> list[tuple[float, ...]]:
     ]
 
 
+def carrier_roundoff(precision: Any) -> Fraction:
+    """The unit roundoff of the carrier an evaluation runs in, as the native
+    executor carries it (``v2_executor::carrier_bits``): 2^-53 for binary64,
+    2^-106 for double-double, and for arbitrary precision 2^-bits with the
+    bits of its WORKING digits (Symbolica's ``decimal_digits_to_bits``,
+    ceil(digits log2 10), the lane diagnostics' ``precision_bits``); an
+    exact rational, so that no exponent is lost."""
+
+    if precision.arithmetic == "double":
+        bits = 53
+    elif precision.arithmetic == "double-double":
+        bits = 106
+    else:
+        bits = math.ceil(int(precision.working_digits) * math.log2(10))
+    return Fraction(1, 2**bits)
+
+
 @dataclass(frozen=True, slots=True)
 class ShellCheck:
     """The screen's measure of one carrier's points of a call: per point the
@@ -457,19 +474,14 @@ def shell_check(
             bound = [None] * len(points[first])
         for index in indices:
             masses2[index] = bound
-    carrier = (
-        _BINARY64_ROUNDOFF
-        if precision.arithmetic == "double"
-        else 2.0**-106
-        if precision.arithmetic == "double-double"
-        else 0.0
-    )
+    carrier = carrier_roundoff(precision)
     # Per point and leg: the leg's supplied carrier (``input_roundoff``; a
     # number per point applies to each of its legs), the evaluating
-    # carrier's when coarser.
+    # carrier's when coarser (exact rationals: an arbitrary-precision
+    # roundoff below the float range stays nonzero).
     units = [
         tuple(
-            max(float(u), carrier)
+            max(Fraction(u), carrier)
             for u in (
                 [leg_unit] * len(point)
                 if isinstance(leg_unit, (int, float))
@@ -483,7 +495,12 @@ def shell_check(
         # The binary64 values, measured in vectorised double-double
         # arithmetic (``_binary64_legs``); a point it marks is measured
         # again exactly for its reason.
-        relative, ratio = _binary64_legs(points, masses2, float(target), units)
+        relative, ratio = _binary64_legs(
+            points,
+            masses2,
+            float(target),
+            [[float(u) for u in row] for row in units],
+        )
         defects = [tuple(row) for row in relative]
         candidates = [
             # (Not every ratio within 1: a NaN, an unmeasured leg, too.)
@@ -727,6 +744,7 @@ __all__ = [
     "MassProvider",
     "ShellCheck",
     "binary64_value",
+    "carrier_roundoff",
     "default_binary64",
     "default_setting",
     "improve",

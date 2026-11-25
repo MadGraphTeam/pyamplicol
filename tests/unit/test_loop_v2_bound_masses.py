@@ -1252,3 +1252,41 @@ def test_one_parameter_snapshot_per_call(uux_ttx_free, monkeypatch):
     assert first.values == baseline.values
     second = runtime.evaluate_resolved([point], mu_r2=scale)
     assert any(is_shell_reason(r) for r in second.diagnostics[0].uncertified)
+
+
+@pytest.mark.loop_physics
+def test_an_arbitrary_precision_point_is_screened_at_its_working_roundoff(
+    uux_ttx_free,
+):
+    """The review of 80403dc7c: a boosted top pair (MT = 173), outgoing
+    p = +-(3e18, 4e18, 2e18), the energy an exact text, evaluated at 20
+    digits with target 1e-12. The improvement leaves it exact in its
+    carrier; the screen's allowance is that carrier's working roundoff
+    (u = 0 marked it at 25,200 allowances), so it is not marked."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import carrier_roundoff, is_shell_reason
+    from pyamplicol.loops.v2.assemble import Precision
+
+    energy = "5385164807134504031.250710491540332335133"
+    point = [
+        [energy, "0", "0", energy],
+        [energy, "0", "0", "-" + energy],
+        [energy, "3e18", "4e18", "2e18"],
+        [energy, "-3e18", "-4e18", "-2e18"],
+    ]
+    from decimal import Decimal, localcontext
+
+    with localcontext() as context:
+        context.prec = 80
+        scale = str((2 * Decimal(energy)) ** 2)
+    runtime = Runtime.load(uux_ttx_free, reduction_target=1e-12)
+    result = runtime.evaluate(
+        [point], mu_r2=scale, arithmetic="arbitrary", precision=20
+    )
+    (lane,) = result.diagnostics
+    assert lane.kinematics.status in ("improved", "exact")
+    assert not any(is_shell_reason(r) for r in lane.uncertified)
+    # Exponent-safe: a 500-digit carrier's roundoff is far below the float
+    # range and still nonzero.
+    assert carrier_roundoff(Precision.arbitrary(500)) > 0
