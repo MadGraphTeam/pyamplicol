@@ -37,6 +37,34 @@ dependency source patches or unpublished wheels are needed.
 
 ## Changes after 1.0.3
 
+**Fixed parameters now define the masses of the generated points.** In 1.0.2
+and 1.0.3 (every one-loop artifact), a card's `[loop.preparation]
+fixed_parameters` were bound by the amplitude but ignored by the kinematics:
+the artifact's validation point, the points of `check` and of the
+generation's probes and, in 1.0.3, the flat phase-space points of `evaluate`
+and `profile` (which take their masses from the validation point) were drawn
+on the model's own masses, and `model/parameters.json` stated the model's
+values.
+Where a fixed parameter changes an external mass, every such point was off
+the shells the amplitude binds and its value was returned as `success`
+although it is no amplitude: `g g > t t~ h` with `MT = ymt = 173`, `MH = 125`
+on `loop_qcd_qed_sm_Gmu` / `with_b_mass_no_width` (174.3 / 120) was profiled
+with tops 1.5 % and the Higgs 7.8 % off shell in p^2, its double pole up to
+0.2 off -2 C_A (alpha_s / 2 pi) Born and the two reduction backends up to an
+order apart (on shell: Catani's pole to 1e-10, the backends to 1e-24,
+MadLoop and Recola agree). `check` was not affected (it re-shells its points
+on the masses it binds). Now one function gives the bound external masses
+(the model's with the fixed parameters, stable widths and preparation
+constants applied) to every generated point, the validation record states
+them, `model/parameters.json` states the bound values, and a virtual
+evaluation refuses a point off the bound shells beyond binary64 rounding
+(stage `external-mass-shell`, [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
+"The mass-shell guard"). Processes whose fixed parameters move no external
+mass keep their validation points and values bit for bit. **Artifacts with an
+external mass fixed to another value than the model's must be regenerated:**
+loading one is refused with that request (its stored validation point is
+measured against the masses it binds).
+
 **NinjaRS no longer loses a lane's digits silently.** At ordinary phase-space
 points a few NinjaRS reduction lanes lost most of their binary64 digits to
 cancellation at a nearly degenerate cut (a triangle with two massive legs of
