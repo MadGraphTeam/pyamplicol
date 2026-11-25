@@ -464,3 +464,261 @@ fn single_row_checks_measure_against_every_rows_scale() {
     let wrong = [Complex::new(0.5, 0.0)];
     assert!(first_mismatch_at(&expected[1..], &wrong, 1, &scales).is_some());
 }
+
+/// A two-step interaction program on random states: vertex kernel 0 (two
+/// two-component currents, both momenta and model parameter 0 in, two
+/// components out) and propagator kernel 1 (a two-component sum, a
+/// momentum and model parameter 1 in, two components out). Step 1 has
+/// interactions enough to run on several workers at one point, step 2 only
+/// from a few points on.
+fn parallel_program() -> (Interactions, StateLayout, Vec<Complex<f64>>) {
+    let mut state = 0x2545_f491_4f6c_dd1d_u64;
+    let mut next = move || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        state
+    };
+    // 8 source currents (0..16), 12 momenta (16..64), step 1's 6 currents
+    // (64..76), step 2's 4 (76..84), 2 model parameters (84..86).
+    let layout = StateLayout {
+        size: 86,
+        model_offset: 84,
+        model_block: 2,
+    };
+    let edge = |next: &mut dyn FnMut() -> u64, left: u32, right: u32, accumulator: u32| Edge {
+        left,
+        left_dimension: 2,
+        right,
+        right_dimension: 2,
+        left_momentum: 16 + 4 * (next() % 12) as u32,
+        right_momentum: 16 + 4 * (next() % 12) as u32,
+        accumulator,
+        weight: (next() % 3) as u32,
+        pole: next() % 5 == 0,
+    };
+    let first: Vec<Edge> = (0..150)
+        .map(|k| {
+            let (left, right) = (2 * (next() % 8) as u32, 2 * (next() % 8) as u32);
+            edge(&mut next, left, right, 2 * (k % 6))
+        })
+        .collect();
+    let second: Vec<Edge> = (0..30)
+        .map(|k| {
+            let (left, right) = (64 + 2 * (next() % 6) as u32, 2 * (next() % 8) as u32);
+            edge(&mut next, left, right, 2 * (k % 4))
+        })
+        .collect();
+    let outputs = |count: usize, start: usize| {
+        (0..count)
+            .map(|j| {
+                let propagator = (j % 2 == 0).then_some(1);
+                (
+                    2 * j,
+                    propagator,
+                    16 + 4 * (j % 12),
+                    start + 2 * j,
+                    2,
+                    j == 3,
+                )
+            })
+            .collect()
+    };
+    let program = Interactions {
+        saved: Vec::new(),
+        models: vec![vec![0], vec![1]],
+        planes: None,
+        shapes: Vec::new(),
+        steps: vec![
+            Step {
+                groups: vec![(0, first)],
+                width: 12,
+                outputs: outputs(6, 64),
+                index: std::sync::OnceLock::new(),
+            },
+            Step {
+                groups: vec![(0, second)],
+                width: 8,
+                outputs: outputs(4, 76),
+                index: std::sync::OnceLock::new(),
+            },
+        ],
+        weights: vec![[Rational::from(1), Rational::from(0)]; 3],
+    };
+    let value = |next: &mut dyn FnMut() -> u64| {
+        let r = next();
+        ((r >> 11) as f64 / (1u64 << 53) as f64 - 0.5) * f64::powi(2.0, (r % 5) as i32 - 2)
+    };
+    let states = (0..16 * layout.size)
+        .map(|_| Complex::new(value(&mut next), value(&mut next)))
+        .collect();
+    (program, layout, states)
+}
+
+/// The kernels of `parallel_program`, exact evaluators or plane applications.
+fn parallel_kernels(plane: bool) -> Vec<Kernel<f64>> {
+    use symbolica::atom::{Atom, AtomCore};
+    let _unlock = crate::licence::unlock();
+    let symbols = |names: &str| -> Vec<Atom> {
+        names
+            .split(' ')
+            .map(|name| symbolica::parse!(&format!("pyamplicol_trees_tests::{name}")))
+            .collect()
+    };
+    let kernel = |inputs: &str, outputs: [&str; 2]| {
+        let parameters = symbols(inputs);
+        let expressions: Vec<Atom> = outputs
+            .iter()
+            .map(|e| {
+                let mut text = (*e).to_owned();
+                for name in inputs.split(' ') {
+                    text = text.replace(
+                        &format!("{{{name}}}"),
+                        &format!("pyamplicol_trees_tests::{name}"),
+                    );
+                }
+                symbolica::parse!(&text)
+            })
+            .collect();
+        let evaluator = Atom::evaluator_multiple(&expressions, &parameters)
+            .build()
+            .expect("an evaluator");
+        let binary64 = evaluator.map_coeff(&|r| Complex::new(r.re.to_f64(), r.im.to_f64()));
+        if plane {
+            let (bytes, inputs, outputs) =
+                crate::engine::compile_symbolica_evaluator_to_plane_application_bytes(
+                    &binary64, 2, false,
+                )
+                .expect("a plane application");
+            Kernel::Plane(Box::new(
+                BinaryPlane::load(&bytes, (inputs, outputs)).expect("loads"),
+            ))
+        } else {
+            Kernel::Exact(RowEvaluator::new(binary64))
+        }
+    };
+    vec![
+        kernel(
+            "l0 l1 r0 r1 p0 p1 p2 p3 q0 q1 q2 q3 m",
+            [
+                "{l0}*{r1} - {l1}*{r0} + ({p0}*{q1} - {p1}*{q0})*{m}",
+                "{l0}*{r0}*{m} + ({p2} + {q3})*{l1} + {r1}/3",
+            ],
+        ),
+        kernel(
+            "v0 v1 k0 k1 k2 k3 m",
+            [
+                "{v0}/({k0}^2 - {k1}^2 - {k2}^2 - {k3}^2 - {m} + 7)",
+                "{v1}*{m} + {v0}*{k0}",
+            ],
+        ),
+    ]
+}
+
+fn bits(states: &[Complex<f64>]) -> Vec<(u64, u64)> {
+    states
+        .iter()
+        .map(|z| (z.re.to_bits(), z.im.to_bits()))
+        .collect()
+}
+
+/// The interaction program on 1, 2, 4 and 8 workers (the workers' kernel
+/// copies, `parallel_step`) gives every state bitwise as on one thread, for
+/// exact and plane kernels, with and without the pole-only interactions,
+/// at 1, 3 and 16 points; a second fill reuses the copies.
+#[test]
+fn the_interaction_program_on_several_workers_is_bitwise_the_serial_one() {
+    let (program, layout, all) = parallel_program();
+    let weights = [
+        Complex::new(1.0, 0.0),
+        Complex::new(-0.5, 0.25),
+        Complex::new(0.0, 2.0),
+    ];
+    let czero = Complex::new(0.0, 0.0);
+    for plane in [false, true] {
+        let mut kernels = parallel_kernels(plane);
+        for points in [1, 3, 16] {
+            for poles in [true, false] {
+                let initial = all[..points * layout.size].to_vec();
+                let serial = rayon::ThreadPoolBuilder::new()
+                    .start_handler(|_| crate::licence::unlock_thread())
+                    .num_threads(1)
+                    .build()
+                    .unwrap();
+                let mut expected = initial.clone();
+                let mut forks = Forks::default();
+                serial
+                    .install(|| {
+                        run_interactions(
+                            &program,
+                            layout,
+                            &mut kernels,
+                            Some(&mut forks),
+                            &weights,
+                            &mut expected,
+                            points,
+                            poles,
+                            None,
+                            &czero,
+                        )
+                    })
+                    .unwrap();
+                assert!(forks.workers.is_empty(), "one thread forks no kernel");
+                assert_ne!(bits(&expected), bits(&initial));
+                for threads in [2, 4, 8] {
+                    let pool = rayon::ThreadPoolBuilder::new()
+                        .start_handler(|_| crate::licence::unlock_thread())
+                        .num_threads(threads)
+                        .build()
+                        .unwrap();
+                    let mut forks = Forks::default();
+                    for fill in 0..2 {
+                        let mut got = initial.clone();
+                        pool.install(|| {
+                            run_interactions(
+                                &program,
+                                layout,
+                                &mut kernels,
+                                Some(&mut forks),
+                                &weights,
+                                &mut got,
+                                points,
+                                poles,
+                                None,
+                                &czero,
+                            )
+                        })
+                        .unwrap();
+                        assert_eq!(
+                            bits(&got),
+                            bits(&expected),
+                            "plane {plane}, {points} points, poles {poles}, {threads} threads, fill {fill}"
+                        );
+                    }
+                    assert!(
+                        forks.workers.len() >= threads,
+                        "the steps ran on the workers"
+                    );
+                    assert!(
+                        program.steps[0].index.get().is_some_and(Option::is_some),
+                        "step 1 ran in parallel"
+                    );
+                }
+            }
+        }
+    }
+}
+
+/// A propagator reading a current its own step writes keeps the step serial
+/// (`propagators_read_outputs`).
+#[test]
+fn a_propagator_reading_its_steps_outputs_keeps_the_step_serial() {
+    let (mut program, layout, _) = parallel_program();
+    let step = &program.steps[0];
+    let written: Vec<usize> = (0..step.outputs.len()).collect();
+    assert!(!propagators_read_outputs(&program, layout, step, &written));
+    // Output 0's propagator reads the momentum at output 1's current.
+    program.steps[0].outputs[0].2 = 66;
+    let step = &program.steps[0];
+    assert!(propagators_read_outputs(&program, layout, step, &written));
+}
