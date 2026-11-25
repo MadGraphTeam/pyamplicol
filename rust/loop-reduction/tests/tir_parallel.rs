@@ -419,14 +419,14 @@ fn several_threads_use_engines_of_their_own() {
 }
 
 /// A nearly degenerate row's outcome does not depend on the rows reduced
-/// before it, in the same call or in an earlier call on the same backend:
-/// TIRust's workspaces are lane-independent (`v2_tir` module docs
-/// 'Threads'), so a slice boundary or an engine's history changes no bit.
-/// The fixture: an exactly degenerate box (two equal external momenta, a
-/// vanishing Gram determinant) and the same box moved by 1e-13, at ranks 2
-/// and 4, unchecked (the gate-0 last resort) and checked (the method
-/// choice); before lane independence the moved box's value followed the
-/// plan variant the exact box had selected.
+/// before it, in the same call or in an earlier call on the same backend
+/// (`v2_tir` module docs 'Threads': the workspaces are lane-independent, so
+/// a slice boundary or an engine's history changes no bit). The fixture: an
+/// exactly degenerate box (two equal external momenta, a vanishing Gram
+/// determinant) and the same box moved by 1e-13, at ranks 2 and 4, checked
+/// and unchecked. With the invariants supplied, these rows show no history
+/// dependence even without lane independence; TIRust's own tests reproduce
+/// the dependence its setting removes (`tests/parallel_engines.rs`).
 #[test]
 fn a_nearly_degenerate_row_does_not_depend_on_the_rows_before_it() {
     let box_at = |eps: f64| {
