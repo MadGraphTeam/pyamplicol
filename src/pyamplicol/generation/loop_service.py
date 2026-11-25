@@ -2273,15 +2273,16 @@ def _loop_induced_candidates(context, entry, process, validation, index):
 
 
 def _validation_momenta(
-    context, entry, *, seed, count, unavailable, fixed, sqrt_s=None, cuts=None
+    context, entry, *, seed, count, unavailable, fixed=None, sqrt_s=None, cuts=None
 ):
     """``count`` phase-space points of the generation's validation convention
     (``build_process_validation_point`` at seeds ``seed``, ``seed + 1``,
     ...; ``sqrt_s`` replaces a scattering's energy; within ``cuts``, by
     rejection, point by point), on shell at the masses the amplitude binds
     (``validation.bound_external_masses`` at the parameters the generation
-    fixes, ``fixed``: a slice's ``fixed_parameters``, or its request's): the
-    four-vectors, or ``GenerationError`` "``unavailable``: <why>"."""
+    fixes, ``fixed``: a slice's ``fixed_parameters``, or its request's; None:
+    none, the model's own masses): the four-vectors, or ``GenerationError``
+    "``unavailable``: <why>"."""
 
     from .phase_space_cuts import CutsError, draw_accepted, is_cut_particle
     from .validation import bound_external_masses
