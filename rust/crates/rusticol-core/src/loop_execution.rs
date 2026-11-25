@@ -853,6 +853,13 @@ pub mod v2 {
     /// Evaluations timed on each side before a batch size keeps the faster.
     const CALL_PROBES: u32 = 2;
 
+    /// A batch size whose evaluations on the pool take at least this long is
+    /// never timed on one thread: the pool's fan-out cost measured on the
+    /// smallest calls is at most about a millisecond per call (g g > t t~,
+    /// u u~ > e+ e- g on 8 threads), a few percent of such a call, while a
+    /// one-thread probe of it costs up to the thread count times as long.
+    const SERIAL_PROBE_SECONDS: f64 = 0.02;
+
     macro_rules! with_lanes {
         ($lanes:expr, $f:ident :: <$t:ty>($($arg:expr),*)) => {
             match $lanes {
@@ -989,7 +996,8 @@ pub mod v2 {
         /// thread, each batch size is timed on both for its first
         /// [`CALL_PROBES`] evaluations each (pool first), then keeps the
         /// faster, so that a call too small to gain from the pool pays
-        /// nothing for it. The values do not depend on the choice (they do
+        /// nothing for it; a size whose pool evaluations take
+        /// [`SERIAL_PROBE_SECONDS`] or more stays on the pool untimed. The values do not depend on the choice (they do
         /// not depend on the thread count); one thread never asks.
         pub fn serial_call(&self, points: usize) -> bool {
             if self.pool.current_num_threads() == 1 {
@@ -999,7 +1007,7 @@ pub mod v2 {
                 return false;
             };
             let found = times.get(&points).copied().unwrap_or_default();
-            if found.pool.0 < CALL_PROBES {
+            if found.pool.0 < CALL_PROBES || found.pool.1 >= SERIAL_PROBE_SECONDS {
                 false
             } else if found.serial.0 < CALL_PROBES {
                 true
@@ -3931,21 +3939,36 @@ pub mod v2 {
             one.record(3, false, 1.0);
             assert!(!one.serial_call(3), "one thread never asks");
             let four = V2Executor::new(plan.clone(), DEFAULT_LANES, Some(4)).unwrap();
+            let ms = 1e-3;
             let picks: Vec<bool> = (0..4)
                 .map(|k| {
                     let serial = four.serial_call(3);
-                    four.record(3, serial, if serial { 2.0 } else { 1.0 + k as f64 });
+                    four.record(
+                        3,
+                        serial,
+                        if serial {
+                            2.0 * ms
+                        } else {
+                            (1.0 + k as f64) * ms
+                        },
+                    );
                     serial
                 })
                 .collect();
             assert_eq!(picks, [false, false, true, true]);
-            assert!(!four.serial_call(3), "the pool was faster (1 s vs 2 s)");
-            four.record(5, false, 3.0);
-            four.record(5, false, 3.0);
-            four.record(5, true, 1.0);
-            four.record(5, true, 1.5);
+            assert!(!four.serial_call(3), "the pool was faster (1 ms vs 2 ms)");
+            four.record(5, false, 3.0 * ms);
+            four.record(5, false, 3.0 * ms);
+            four.record(5, true, 1.0 * ms);
+            four.record(5, true, 1.5 * ms);
             assert!(four.serial_call(5), "one thread was faster for 5 points");
             assert!(!four.serial_call(7), "an untimed size starts on the pool");
+            four.record(9, false, 0.5);
+            four.record(9, false, 0.4);
+            assert!(
+                !four.serial_call(9),
+                "a long call is never timed on one thread"
+            );
             let momentum = |e: i64| -> Vec<Rational> {
                 [e, 0, 0, e, e, 0, 0, -e].map(Rational::from).to_vec()
             };
