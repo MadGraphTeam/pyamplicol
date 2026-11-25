@@ -495,7 +495,7 @@ fn parallel_program() -> (Interactions, StateLayout, Vec<Complex<f64>>) {
         right_momentum: 16 + 4 * (next() % 12) as u32,
         accumulator,
         weight: (next() % 3) as u32,
-        pole: next() % 5 == 0,
+        pole: next().is_multiple_of(5),
     };
     let first: Vec<Edge> = (0..150)
         .map(|k| {

@@ -1663,7 +1663,9 @@ pub mod v2 {
                 .collect();
         }
         let entry: &[Vec<String>] = failures;
-        let scattered: Vec<(FamilyLanes<T>, Vec<(usize, String)>)> = numerators
+        // Per numerator its lanes and the failures it found (point, why).
+        type Scattered<T> = (FamilyLanes<T>, Vec<(usize, String)>);
+        let scattered: Vec<Scattered<T>> = numerators
             .par_iter()
             .map(|numerator| {
                 let mut new = Vec::new();
@@ -3448,11 +3450,15 @@ pub mod v2 {
             assert_eq!(report.counts["reduction lanes"], 3);
         }
 
+        /// A received group: its family, points, keys and the bits of every
+        /// lane input.
+        type Received = (usize, Vec<usize>, Vec<LaneKey>, Vec<u64>);
+
         /// Records every group it receives (points, keys and the bits of
         /// every lane input) and serves each lane its first coefficient.
         #[derive(Default)]
         struct Recording {
-            groups: Vec<(usize, Vec<usize>, Vec<LaneKey>, Vec<u64>)>,
+            groups: Vec<Received>,
         }
 
         impl V2Backend<f64> for Recording {
