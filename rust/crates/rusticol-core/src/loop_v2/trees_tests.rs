@@ -787,3 +787,59 @@ fn each_point_of_a_slot_major_batch_is_the_point_alone() {
         }
     }
 }
+
+/// Propagators batched per kernel (`propagate` on several outputs at once,
+/// rows request-major then point, in calls of at most `PLANE_ROWS` rows)
+/// give every output bitwise as its own call does, on exact and plane
+/// kernels, at 1, 3, 16 and 100 points (100: several calls).
+#[test]
+fn batched_propagators_are_bitwise_each_output_alone() {
+    let (program, layout, all) = parallel_program();
+    let czero = Complex::new(0.0, 0.0);
+    let models = &program.models[1];
+    for plane in [false, true] {
+        let mut kernels = parallel_kernels(plane);
+        for points in [1, 3, 16, 100] {
+            // Slot-major states and sums of `points` points from the random
+            // values (repeated past 16 points).
+            let states: Vec<Complex<f64>> = (0..points * layout.size)
+                .map(|k| all[k % all.len()])
+                .collect();
+            let sums: Vec<Complex<f64>> = (0..points * 12)
+                .map(|k| all[(7 * k + 3) % all.len()])
+                .collect();
+            let requests: Vec<Propagation<'_, f64>> = (0..37)
+                .map(|r| (sums.as_slice(), 2 * (r % 6), 16 + 4 * (r % 12), 1 + r % 2))
+                .collect();
+            let together = propagate(
+                &mut kernels[1],
+                models,
+                layout,
+                &requests,
+                &states,
+                points,
+                &czero,
+            )
+            .unwrap();
+            assert_eq!(together.len(), requests.len());
+            for (request, values) in requests.iter().zip(&together) {
+                let alone = propagate(
+                    &mut kernels[1],
+                    models,
+                    layout,
+                    std::slice::from_ref(request),
+                    &states,
+                    points,
+                    &czero,
+                )
+                .unwrap();
+                assert_eq!(values.len(), points * request.3);
+                assert_eq!(
+                    bits(values),
+                    bits(&alone[0]),
+                    "plane {plane}, {points} points"
+                );
+            }
+        }
+    }
+}

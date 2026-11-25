@@ -4692,29 +4692,47 @@ where
                 }
             }
         }
-        for (o, &(accumulator, propagator, momentum, start, dimension, pole)) in
-            step.outputs.iter().enumerate()
-        {
-            if (pole && !poles) || kept.is_some_and(|(_, outputs)| !outputs[o]) {
-                continue;
+        let written: Vec<usize> = (0..step.outputs.len())
+            .filter(|&o| !((step.outputs[o].5 && !poles) || kept.is_some_and(|(_, out)| !out[o])))
+            .collect();
+        if !propagators_read_outputs(program, layout, step, &written) {
+            // Every propagator reads the states as before the step: the
+            // outputs sharing a kernel run in one call (`step_values`).
+            let values = step_values(
+                program,
+                layout,
+                step,
+                &written,
+                |o| (sums.as_slice(), step.outputs[o].0),
+                |k, f| f(&mut kernels[k]),
+                (states, points),
+                czero,
+            )?;
+            for (o, values) in &values {
+                let (_, _, _, start, dimension, _) = step.outputs[*o];
+                states[start * points..(start + dimension) * points].clone_from_slice(values);
             }
+            continue;
+        }
+        for &o in &written {
+            let (accumulator, propagator, momentum, start, dimension, _) = step.outputs[o];
             let Some(kernel) = propagator else {
                 states[start * points..(start + dimension) * points].clone_from_slice(
                     &sums[accumulator * points..(accumulator + dimension) * points],
                 );
                 continue;
             };
-            let values = propagator_rows(
+            let mut values = propagate(
                 &mut kernels[kernel],
                 &program.models[kernel],
                 layout,
-                (&sums, accumulator),
-                (momentum, dimension),
+                &[(sums.as_slice(), accumulator, momentum, dimension)],
                 states,
                 points,
                 czero,
             )?;
-            states[start * points..(start + dimension) * points].clone_from_slice(&values);
+            states[start * points..(start + dimension) * points]
+                .clone_from_slice(&values.pop().unwrap_or_default());
         }
     }
     Ok(())
@@ -4880,34 +4898,32 @@ where
                 Ok(())
             })?;
         }
-        // The units' outputs: their propagators, or their sums (each
-        // `dimension` components, slot major).
-        let mut out = Vec::new();
+        // The units' outputs: their propagators (the outputs sharing a
+        // kernel in one call), or their sums (each `dimension` components,
+        // slot major).
+        let mut owner = Vec::new();
+        let mut task_written = Vec::new();
         for (u, unit) in units.iter().enumerate() {
             for &o in &unit.outputs {
-                if !writes(o) {
-                    continue;
+                if writes(o) {
+                    task_written.push(o);
+                    owner.push((o, u));
                 }
-                let (_, propagator, momentum, _, dimension, _) = step.outputs[o];
-                let values = match propagator {
-                    Some(kernel) => forks.with(&base, kernel, |evaluator| {
-                        propagator_rows(
-                            evaluator,
-                            &program.models[kernel],
-                            layout,
-                            (&sums[u], 0),
-                            (momentum, dimension),
-                            shared,
-                            points,
-                            czero,
-                        )
-                    })?,
-                    None => sums[u][..dimension * points].to_vec(),
-                };
-                out.push((o, values));
             }
         }
-        Ok(out)
+        task_written.sort_unstable();
+        owner.sort_unstable();
+        let unit_of = |o: usize| owner[owner.partition_point(|&(p, _)| p < o)].1;
+        step_values(
+            program,
+            layout,
+            step,
+            &task_written,
+            |o| (sums[unit_of(o)].as_slice(), 0),
+            |k, f| forks.with(&base, k, |evaluator| f(evaluator)),
+            (shared, points),
+            czero,
+        )
     };
     let done: Vec<Vec<(usize, Vec<Complex<T>>)>> = tasks
         .par_iter()
@@ -5098,88 +5114,184 @@ where
     }
 }
 
-/// A propagator kernel's first `dimension` outputs at every point, slot
-/// major (`c * points + p`), from the slot-major sums at `accumulator`, the
-/// momentum at `momentum` and the kernel's model parameters of the
-/// slot-major `states`, as the serial step evaluates them (a plane call of
-/// `points` rows, or the row-major parameters).
+/// One propagated output of a step (`propagate`): its slot-major sums and
+/// accumulator offset, its momentum's state component and its dimension.
+type Propagation<'a, T> = (&'a [Complex<T>], usize, usize, usize);
+
+/// A propagator kernel's first `dimension` outputs of each request at every
+/// point, slot major (`c * points + p`), from the request's slot-major sums
+/// at its accumulator, the momentum at its `momentum` and the kernel's
+/// model parameters of the slot-major `states`: the requests' rows
+/// (request-major, then point) in calls of at most [`PLANE_ROWS`] rows on a
+/// plane application (one call of the requests' rows otherwise). Rows are
+/// independent, so each value is the one a call of its request alone gives.
 #[allow(clippy::too_many_arguments)]
-fn propagator_rows<T: Carrier>(
+fn propagate<T: Carrier>(
     kernel: &mut Kernel<T>,
     models: &[usize],
     layout: StateLayout,
-    (sums, accumulator): (&[Complex<T>], usize),
-    (momentum, dimension): (usize, usize),
+    requests: &[Propagation<'_, T>],
     states: &[Complex<T>],
     points: usize,
     czero: &Complex<T>,
-) -> RusticolResult<Vec<Complex<T>>>
+) -> RusticolResult<Vec<Vec<Complex<T>>>>
 where
     Complex<T>: Real + EvaluationDomain,
 {
-    if points == 0 {
-        return Ok(Vec::new());
-    }
-    let value = kernel
-        .input_len()
-        .checked_sub(4 + models.len())
-        .ok_or_else(|| invalid("propagator kernel inputs"))?;
-    require(
-        dimension <= kernel.output_len(),
-        "propagator kernel outputs",
-    )?;
-    // The kernel's inputs: its sum's components, then the momentum and the
-    // model parameters (each a run of `points` values).
-    let sum = |k: usize| &sums[(accumulator + k) * points..(accumulator + k + 1) * points];
-    let state = |at: usize| &states[at * points..(at + 1) * points];
-    let state_inputs = (0..4)
-        .map(|mu| momentum + mu)
-        .chain(models.iter().map(|&index| layout.model_offset + index));
-    if let Kernel::Plane(plane) = kernel {
-        let inputs = plane.input_len();
-        let (planes, stride) = plane.planes(points);
-        let runs = (0..value).map(sum).chain(state_inputs.map(state));
-        for (k, run) in runs.enumerate() {
-            let (re, im) = planes[2 * k * stride..][..2 * stride].split_at_mut(stride);
-            for (p, x) in run.iter().enumerate() {
-                re[p] = x.re.clone();
-                im[p] = x.im.clone();
-            }
-        }
-        let planes = plane
-            .run(points)
-            .map_err(|e| invalid(format!("propagator kernel: {}", e.message())))?;
-        let base = 2 * inputs * stride;
-        let mut out = Vec::with_capacity(points * dimension);
-        for output in 0..dimension {
-            let at = base + 2 * output * stride;
-            out.extend(
-                planes[at..at + points]
-                    .iter()
-                    .zip(&planes[at + stride..at + stride + points])
-                    .map(|(re, im)| Complex::new(re.clone(), im.clone())),
-            );
-        }
-        return Ok(out);
+    if points == 0 || requests.is_empty() {
+        return Ok(vec![Vec::new(); requests.len()]);
     }
     let inputs = kernel.input_len();
     let width = kernel.output_len();
-    let mut parameters = vec![czero.clone(); points * inputs];
-    let runs = (0..value).map(sum).chain(state_inputs.map(state));
-    for (k, run) in runs.enumerate() {
-        for (p, x) in run.iter().enumerate() {
-            parameters[p * inputs + k] = x.clone();
+    let value = inputs
+        .checked_sub(4 + models.len())
+        .ok_or_else(|| invalid("propagator kernel inputs"))?;
+    require(
+        requests
+            .iter()
+            .all(|&(_, _, _, dimension)| dimension <= width),
+        "propagator kernel outputs",
+    )?;
+    // A request's `k`-th input at every point: its sum's components, then
+    // the momentum and the model parameters (each a run of `points` values).
+    fn input<'a, T>(
+        &(sums, accumulator, momentum, _): &Propagation<'a, T>,
+        k: usize,
+        (value, models, model_offset): (usize, &[usize], usize),
+        (states, points): (&'a [Complex<T>], usize),
+    ) -> &'a [Complex<T>] {
+        let at = if k < value {
+            return &sums[(accumulator + k) * points..(accumulator + k + 1) * points];
+        } else if k < value + 4 {
+            momentum + k - value
+        } else {
+            model_offset + models[k - value - 4]
+        };
+        &states[at * points..(at + 1) * points]
+    }
+    let shape = (value, models, layout.model_offset);
+    let mut out = Vec::with_capacity(requests.len());
+    if let Kernel::Plane(plane) = kernel {
+        for chunk in requests.chunks((PLANE_ROWS / points).max(1)) {
+            let rows = chunk.len() * points;
+            let (planes, stride) = plane.planes(rows);
+            for k in 0..inputs {
+                let (re, im) = planes[2 * k * stride..][..2 * stride].split_at_mut(stride);
+                for (r, request) in chunk.iter().enumerate() {
+                    for (p, x) in input(request, k, shape, (states, points))
+                        .iter()
+                        .enumerate()
+                    {
+                        re[r * points + p] = x.re.clone();
+                        im[r * points + p] = x.im.clone();
+                    }
+                }
+            }
+            let planes = plane
+                .run(rows)
+                .map_err(|e| invalid(format!("propagator kernel: {}", e.message())))?;
+            let base = 2 * inputs * stride;
+            for (r, &(_, _, _, dimension)) in chunk.iter().enumerate() {
+                let mut values = Vec::with_capacity(points * dimension);
+                for output in 0..dimension {
+                    let at = base + 2 * output * stride + r * points;
+                    values.extend(
+                        planes[at..at + points]
+                            .iter()
+                            .zip(&planes[at + stride..at + stride + points])
+                            .map(|(re, im)| Complex::new(re.clone(), im.clone())),
+                    );
+                }
+                out.push(values);
+            }
+        }
+        return Ok(out);
+    }
+    let rows = requests.len() * points;
+    let mut parameters = vec![czero.clone(); rows * inputs];
+    for (r, request) in requests.iter().enumerate() {
+        for k in 0..inputs {
+            for (p, x) in input(request, k, shape, (states, points))
+                .iter()
+                .enumerate()
+            {
+                parameters[(r * points + p) * inputs + k] = x.clone();
+            }
         }
     }
-    let mut rows = vec![czero.clone(); points * width];
+    let mut values = vec![czero.clone(); rows * width];
     kernel
-        .evaluate_batch(&parameters, &mut rows, points)
+        .evaluate_batch(&parameters, &mut values, rows)
         .map_err(|e| invalid(format!("propagator kernel: {e}")))?;
-    let mut out = Vec::with_capacity(points * dimension);
-    for output in 0..dimension {
-        out.extend((0..points).map(|p| rows[p * width + output].clone()));
+    for (r, &(_, _, _, dimension)) in requests.iter().enumerate() {
+        let mut request = Vec::with_capacity(points * dimension);
+        for output in 0..dimension {
+            request.extend((0..points).map(|p| values[(r * points + p) * width + output].clone()));
+        }
+        out.push(request);
     }
     Ok(out)
+}
+
+/// The values a step writes (`run_interactions`, `parallel_step`): per
+/// written output `o` (ascending) its `dimension` components at every point,
+/// slot major: its sum (`sums(o)`, the slot-major sums and accumulator
+/// offset), or its propagator's outputs, the outputs sharing a propagator
+/// kernel in one `propagate` (`kernel(k, f)` runs `f` on kernel `k`).
+/// Called only when no propagator reads a component the step writes
+/// (`propagators_read_outputs`), so every propagator reads the states as
+/// they were before the step, as the serial step's outputs in turn do.
+fn step_values<'s, T: Carrier>(
+    program: &Interactions,
+    layout: StateLayout,
+    step: &Step,
+    written: &[usize],
+    sums: impl Fn(usize) -> (&'s [Complex<T>], usize),
+    mut kernel: impl FnMut(
+        usize,
+        &mut dyn FnMut(&mut Kernel<T>) -> RusticolResult<Vec<Vec<Complex<T>>>>,
+    ) -> RusticolResult<Vec<Vec<Complex<T>>>>,
+    (states, points): (&[Complex<T>], usize),
+    czero: &Complex<T>,
+) -> RusticolResult<Vec<(usize, Vec<Complex<T>>)>>
+where
+    Complex<T>: Real + EvaluationDomain + 's,
+{
+    let mut values: Vec<(usize, Vec<Complex<T>>)> = Vec::with_capacity(written.len());
+    // The propagated outputs by kernel, each kernel's in step order.
+    let mut propagated: Vec<(usize, usize)> = Vec::new();
+    for &o in written {
+        let (_, propagator, _, _, dimension, _) = step.outputs[o];
+        match propagator {
+            Some(kernel) => propagated.push((kernel, o)),
+            None => {
+                let (sums, accumulator) = sums(o);
+                values.push((
+                    o,
+                    sums[accumulator * points..(accumulator + dimension) * points].to_vec(),
+                ));
+            }
+        }
+    }
+    propagated.sort_by_key(|&(kernel, _)| kernel);
+    for group in propagated.chunk_by(|a, b| a.0 == b.0) {
+        let k = group[0].0;
+        let requests: Vec<Propagation<'_, T>> = group
+            .iter()
+            .map(|&(_, o)| {
+                let (_, _, momentum, _, dimension, _) = step.outputs[o];
+                let (sums, accumulator) = sums(o);
+                (sums, accumulator, momentum, dimension)
+            })
+            .collect();
+        let models = &program.models[k];
+        let results = kernel(k, &mut |evaluator| {
+            propagate(evaluator, models, layout, &requests, states, points, czero)
+        })?;
+        values.extend(group.iter().map(|&(_, o)| o).zip(results));
+    }
+    values.sort_unstable_by_key(|(o, _)| *o);
+    Ok(values)
 }
 
 /// Fill the input planes of a vertex kernel call on the interactions `chunk`
