@@ -226,9 +226,11 @@ def _setting_text(value: object) -> str:
     return str(value)
 
 
-def _flat_points(config: RunConfig):
+def _flat_points(config: RunConfig, binding=None):
     """The flat phase-space points of ``[evaluation.phase_space]`` for the
-    configured artifact (``cli.flat_points``)."""
+    configured artifact (``cli.flat_points``), on ``binding``'s masses (a
+    loaded runtime's, ``flat_points.runtime_binding``; None: the validation
+    record's)."""
 
     from .flat_points import draw_flat_points
 
@@ -241,6 +243,7 @@ def _flat_points(config: RunConfig):
         seed=space.seed,
         sqrt_s=space.sqrt_s,
         cuts=space.cuts,
+        binding=binding,
     )
 
 
@@ -526,6 +529,8 @@ class DefaultCliServices:
     def evaluate(self, config: RunConfig, progress: ProgressSink) -> object:
         from pyamplicol.api import Runtime
 
+        from .flat_points import runtime_binding
+
         if config.evaluation.artifact is None:
             raise ConfigurationError("evaluate requires evaluation.artifact")
         artifact = config.evaluation.artifact
@@ -576,28 +581,6 @@ class DefaultCliServices:
             if not isinstance(raw_parameters, Mapping):
                 raise ConfigurationError("model parameter JSON must be an object")
             parameters = cast("ModelParameters", raw_parameters)
-        flat = None
-        if config.evaluation.momenta is None:
-            # Flat phase-space points ([evaluation.phase_space]).
-            flat = _flat_points(config)
-            momenta: object = flat.as_inputs(exact=exact_inputs)
-        else:
-            momenta = _read_json(config.evaluation.momenta, exact=exact_inputs)
-        if not isinstance(momenta, list):
-            raise ConfigurationError("momenta JSON must be a point list")
-        scales: ScalarInput | list[ScalarInput] | None = evaluation.mu_r2
-        if flat is not None and scales is None and evaluation.mu_r2_file is None:
-            # The flat points' default scale: s of each point.
-            scales = cast("list[ScalarInput]", flat.mu_r2())
-        if evaluation.mu_r2_file is not None:
-            raw_scales = _read_json(evaluation.mu_r2_file, exact=True)
-            if not isinstance(raw_scales, list):
-                raise ConfigurationError("mu_r2 JSON must be a per-point scale list")
-            scales = cast("list[ScalarInput]", raw_scales)
-        if virtual and scales is None:
-            raise ConfigurationError(
-                "virtual evaluation requires --mu-r2 or --mu-r2-file"
-            )
 
         # The kinematics improvement (m-lit lit-psimprove): load-time
         # defaults of the runtime, set only when given.
@@ -647,6 +630,30 @@ class DefaultCliServices:
             )
 
         runtime = _load_process_output(artifact, progress, load_runtime)
+        flat = None
+        if config.evaluation.momenta is None:
+            # Flat phase-space points ([evaluation.phase_space]) on the
+            # masses the loaded runtime binds (its model parameters
+            # applied; ``flat_points.runtime_binding``).
+            flat = _flat_points(config, binding=runtime_binding(runtime))
+            momenta: object = flat.as_inputs(exact=exact_inputs)
+        else:
+            momenta = _read_json(config.evaluation.momenta, exact=exact_inputs)
+        if not isinstance(momenta, list):
+            raise ConfigurationError("momenta JSON must be a point list")
+        scales: ScalarInput | list[ScalarInput] | None = evaluation.mu_r2
+        if flat is not None and scales is None and evaluation.mu_r2_file is None:
+            # The flat points' default scale: s of each point.
+            scales = cast("list[ScalarInput]", flat.mu_r2())
+        if evaluation.mu_r2_file is not None:
+            raw_scales = _read_json(evaluation.mu_r2_file, exact=True)
+            if not isinstance(raw_scales, list):
+                raise ConfigurationError("mu_r2 JSON must be a per-point scale list")
+            scales = cast("list[ScalarInput]", raw_scales)
+        if virtual and scales is None:
+            raise ConfigurationError(
+                "virtual evaluation requires --mu-r2 or --mu-r2-file"
+            )
         if requests is not None:
             if virtual:
                 return runtime.evaluate_correlated_many(
@@ -728,6 +735,15 @@ class DefaultCliServices:
         # Every time a profile prints is that of one core (a Monte Carlo
         # worker's): the pools this process starts run one thread each.
         one_core()
+        if config.evaluation.model_parameters is not None:
+            # profile / benchmark load the artifact at its own parameters:
+            # a model parameter file would be ignored by the evaluation and
+            # by the flat points alike.
+            raise ConfigurationError(
+                "profile and benchmark evaluate at the artifact's own model "
+                "parameters; remove evaluation.model_parameters, or evaluate "
+                "at other parameters with `pyamplicol evaluate --model-parameters`"
+            )
         points = None
         if config.evaluation.momenta is not None:
             raw_points = _read_json(config.evaluation.momenta)

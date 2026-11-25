@@ -3176,7 +3176,7 @@ def _measure(
 
     from pyamplicol.api.errors import ReductionUnavailable
     from pyamplicol.benchmarking import REFERENCE_PRIOR, _initial_invariant
-    from pyamplicol.cli.flat_points import draw_flat_points
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
     from pyamplicol.loops.v2.plan_export import DEFAULT_LANES
     from pyamplicol.loops.v2.reduction import NAMES
     from pyamplicol.profile_plan import (
@@ -3194,6 +3194,8 @@ def _measure(
         seed=space.seed,
         sqrt_s=space.sqrt_s,
         cuts=space.cuts,
+        # The masses the loaded runtime binds, in its leg order.
+        binding=runtime_binding(runtime),
     ).as_inputs(exact=False)
     initial = sum(1 for leg in physics.external_particles if leg.state == "incoming")
     scales = (
@@ -4792,6 +4794,11 @@ def _stability(
     sqrt_s: list[float] = []
     cut_legs: list[tuple[int, ...]] = []
 
+    from pyamplicol.cli.flat_points import runtime_binding
+
+    # The masses the loaded runtime binds, in its leg order (once).
+    binding = None if runtime is None else runtime_binding(runtime)
+
     def draw(start: int, size: int) -> tuple[list[Any], list[Any] | Any]:
         flat = draw_flat_points(
             artifact,
@@ -4800,6 +4807,7 @@ def _stability(
             seed=space.seed + start,
             sqrt_s=space.sqrt_s,
             cuts=space.cuts,
+            binding=binding,
         )
         if not sqrt_s:
             sqrt_s.append(flat.sqrt_s)

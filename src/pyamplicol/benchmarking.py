@@ -3006,7 +3006,8 @@ class _PointBatches:
         from pyamplicol.config import EvaluationPhaseSpaceConfig
 
         assert self.flat is not None
-        artifact, process_id, config = self.flat
+        artifact, process_id, config, *rest = self.flat
+        binding = rest[0] if rest else None
         space = (
             config.evaluation.phase_space
             if isinstance(config, RunConfig)
@@ -3022,6 +3023,7 @@ class _PointBatches:
             seed=space.seed + len(self.source),
             sqrt_s=space.sqrt_s,
             cuts=space.cuts,
+            binding=binding,
         ).as_inputs(exact=False)
 
     def __call__(self, k: int, size: int | None = None) -> Momenta:
@@ -3111,6 +3113,8 @@ def profile_virtual(
             process=None if evaluation is None else evaluation.process,
             **options,
         )
+    from pyamplicol.cli.flat_points import runtime_binding
+
     physics = runtime.physics
     if points is None and source is None:
         raise EvaluationError(
@@ -3128,6 +3132,7 @@ def profile_virtual(
             source,
             physics.process_id,
             config,
+            runtime_binding(runtime),
         ),
     )
     initial = sum(1 for leg in physics.external_particles if leg.state == "incoming")
