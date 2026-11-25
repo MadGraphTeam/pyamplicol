@@ -12,38 +12,61 @@ points of the generation's validation convention lifted to exact momentum
 conservation (``induced.probe_point``; every carrier evaluates the same
 exact point), with mu_R^2 the squared invariant mass of the initial state
 (``induced._point_scale``). Every check reduces on ``induced.
-PROBE_REDUCTION`` (NinjaRS) at every carrier. The checks and their
-criteria are the existing ones; nothing here is a new threshold:
+PROBE_REDUCTION`` (NinjaRS) at every carrier.
 
-* **Poles, Born-interfered** (``born_interfered_rows``): per point, squared-order
-  sector and pole coefficient the renormalised virtual (poles "all") against
-  Catani's prediction of the requested corrections (QCD and QED summed per
-  sector, formed natively, ``NativeExecutor(catani=True)``): in binary64 with
-  ``stability.RECOMMENDED_CHECKS`` it passes iff |pole - Catani| <=
-  ``ESTIMATES`` E + ``CATANI_FLOOR`` |Catani| (``catani_comparison``); in
-  double-double (no checks) iff |pole - Catani| <= ``CATANI_DD_FLOOR``
-  |Catani| (``catani_dd_comparison``). A sector the operators do not predict
-  is listed with its reason (``poles.UNPREDICTED_REASONS``), never as a
-  pass; a sector they predict without a pole row at a point is "not run"
-  (an applicable check that did not run). A binary64 point whose relative
-  estimate exceeds the default target accuracy (``stability.RESCUE_TARGET``,
-  the built-in rescue's level criterion) is out of the binary64 scope. When
-  binary64 evaluated a point and the double-double run is refused, the
-  undecided pole and Ward rows keep binary64's verdict (never a pass) and
-  say that double-double was refused.
-* **Ward, Born-interfered**: ``ward.ward_check`` on every external gluon and
-  photon leg (``ward.gauge_legs``) and both factors (``ward.WARD_FACTORS``),
-  its tree-level Born part included, with ``ward.ward_row``'s criteria.
-* **Loop-induced**: the generation-time probes' per-point pieces
-  (``induced.point_probes``): the finiteness probe (the amplitude's poles
-  against the row term floor S_k(h), the pre-cancellation scale) and the
-  amplitude-level Ward probe of one leg of every gluon and photon species,
-  each within ``induced.ESTIMATE_FACTOR`` times its own estimate.
+**THE RULE** (USER 2026-11-25: "Just test for R < K * S where K is a
+threshold set as a parameter for the checks, and typically of the order of
+the requested number of stable digits"): every independently required row
+(a point, a sector or loop order and helicity row, a leg and factor, a
+Laurent coefficient) is judged on its own, before any aggregation, by
+``threshold``: PASS iff R < K S, FAIL iff R >= K S (equality is a miss),
+INCONCLUSIVE iff R or S cannot be computed (not a finite number, a missing
+operand, a refused run, or S not positive: 0/0 included). R is the row's
+residue and S its own scale, both fixed per check below, both linear in the
+amplitude (an amplitude-level row compares colour-metric norms, square roots
+of the squared forms; an interference-level row compares the interference
+itself), so K is a relative accuracy of the checked quantity. K is the
+check's tolerance (``tolerance``: ``check.tolerance``, else the run's
+requested relative accuracy ``evaluation.reduction_target``, whose default
+is the native policy's target ``reduction.default_target()``). The
+comparisons are ordinary carrier arithmetic: this is a tolerance, not a
+certificate. The error estimate E of an evaluation is reported over the
+same S for information; it decides nothing.
+
+* **Poles, Born-interfered** (``born_interfered_rows``, ``_pole_rows``): per
+  point, squared-order sector and pole coefficient k of the renormalised
+  virtual (poles "all") against Catani's prediction C of the requested
+  corrections (QCD and QED summed per sector, formed natively,
+  ``NativeExecutor(catani=True)``): R = |Re V_k - Re C_k|, S =
+  ``_scales``: the largest of |C_k| and of the same sector's coefficient k
+  in the virtual and each of its parts (bare, R2, UV) at the same point. A
+  vanishing prediction with no part at k (the double pole of a process with
+  only massive coloured legs) is measured against the same sector's next
+  lower coefficient (1/eps for 1/eps^2). A sector the operators do not
+  predict is listed with its reason (``poles.UNPREDICTED_REASONS``), never
+  as a pass; a sector they predict without a pole row at a point is "not
+  run" (an applicable check that did not run).
+* **Ward, Born-interfered** (``_ward_measures``): ``ward.ward_check`` on
+  every external gluon and photon leg (``ward.gauge_legs``) and both
+  factors (``ward.WARD_FACTORS``): per Born sector R = |loop-side Born|, S =
+  |physical Born|; per virtual sector and coefficient R = |V_k| of the
+  substituted evaluation, S = ``_scales`` of the physical evaluation at the
+  same point, sector and coefficient (its virtual and each part).
+* **Loop-induced** (``induced.point_probes``): the finiteness probe (R =
+  the colour-metric norm of each pole coefficient of each loop order and
+  helicity row, S = that row's term floor S_k(h), ``induced.row_scales``)
+  and the amplitude-level Ward probe of one leg of every gluon and photon
+  species (R = the substituted amplitude's norm at every coefficient, S =
+  the physical row's floor, ``induced.ward_floors``). A helicity row with no
+  term at a coefficient nor at its finite order (one that vanishes
+  identically, e.g. by chirality) is measured against the point's largest
+  row floor at that coefficient (``induced.widest_floors``).
 * **Goldstone** (``induced.goldstone_point``): k.A(V) = eta M_V A(G) where
   the probe serves the slice (``induced.goldstone_applicability``:
   't Hooft-Feynman gauge, an external massive vector with a Goldstone
-  partner, a loop-induced amplitude); otherwise a "not applicable" row
-  with the reason.
+  partner, a loop-induced amplitude); R = ||A(V)_k - eta (M/E) A(G)_k||,
+  S = the vector row's floor plus M/E times the Goldstone row's
+  (``goldstone.probe``); otherwise a "not applicable" row with the reason.
 * **Ward rows not applicable** (``ward_applicability``, USER 2026-11-10
   ~00:17): a request whose corrections include one other than the model's
   strong correction and with an on-shell zero-width external massive quark
@@ -52,29 +75,18 @@ criteria are the existing ones; nothing here is a new threshold:
   by squared-order sector, so its QCD-loop sectors are not checked either.
 
 Carriers (``induced.probe_carriers``): binary64 first and double-double
-only for a row whose binary64 run fails, is refused or is out of its
-criterion's scope; an explicit carrier alone otherwise. The deciding carrier
-and the fallback's reason are recorded per row.
+only for a row binary64 does not pass (a failure, an inconclusive row or a
+refused run); an explicit carrier alone otherwise. The verdict is the one of
+the first carrier that passes the row, else of the last carrier that judged
+it; a later carrier's refusal leaves the row inconclusive (never a pass).
+The deciding carrier and the fallback's reason are recorded per row.
 
-**The arbitrary-precision rung** (DECISIONS 2026-11-10 00:08; ``auto``
-only): a row the ladder's last carrier fails is asked for that carrier's
-own estimate (the checks binary64 runs: ``stability.RECOMMENDED_CHECKS`` for
-poles, ``ward.WARD_CHECKS`` for Ward; above binary64 evaluated again with
-them, only then). It is undecided (``undecided``, one predicate for every
-row kind and carrier) iff each failing part's residual is within
-``ESTIMATES`` times that estimate; a residual far above it stays a failure.
-Only the undecided rows of a point are re-run, in arbitrary precision at
-the digits ``rung_digits`` derives from the shortfall, d = ceil(d_c +
-log10(ESTIMATES E / B)) with d_c the carrier's decimal digits (32 for
-double-double), E the estimate and B the bound (the largest over the
-point's undecided rows; ``check.arbitrary_digits`` overrides it), the
-point lifted again at that carrier's digits; there the row is judged by its
-double-double criterion (``catani_dd_comparison``, ``ward.ward_row``; no
-new bound). A row still undecided there, or undecided at an explicit
-carrier, reads ``UNDECIDED`` with its numbers and fails its process (exit
-code 1, as the failure it was). The loop-induced probes' criterion is
-their own estimate (within ``induced.ESTIMATE_FACTOR`` of it), so the
-predicate never holds for a failing probe: the probes keep their ladder.
+**The arbitrary-precision rung** (``auto`` only, Born-interfered rows): a
+row the ladder's last carrier does not pass is evaluated again in arbitrary
+precision at ``check.arbitrary_digits`` digits, by default twice the last
+carrier's decimal digits (``rung_digits``), the point lifted again at those
+digits; its verdict there is the row's. The loop-induced probes keep their
+ladder (binary64, double-double).
 """
 
 from __future__ import annotations
@@ -87,29 +99,27 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
-from pyamplicol.loops.v2.stability import relative_text
-
-# The pole criterion against Catani's operator (moved here from
-# tools/loop_benchmark/stored_checks.py, which imports it): each deviation
-# within ESTIMATES x E plus CATANI_FLOOR of the prediction (binary64 with
-# the recommended checks), or within CATANI_DD_FLOOR of the prediction in
-# double-double (precision is lax).
+# The stored-process harness's criteria (``tools/loop_benchmark/
+# stored_checks.py``, which imports them): each deviation within ESTIMATES x
+# E plus CATANI_FLOOR of the prediction (binary64 with the recommended
+# checks), or within CATANI_DD_FLOOR of the prediction in double-double.
+# ``pyamplicol check`` judges by ``threshold`` (module docstring).
 ESTIMATES = 10
 CATANI_FLOOR = 1e-12
 CATANI_DD_FLOOR = 1e-12
 
-# Row verdicts: only PASS is a pass; UNDECIDED (``undecided``: the digits of
-# the last carrier ran out) fails its process as FAIL does; NOT_APPLICABLE,
-# NO_PREDICTION and NOT_RUN carry their reason and never count as one.
+# Row verdicts: only PASS is a pass; UNDECIDED (no longer produced by the
+# threshold rule; kept for records) fails its process as FAIL does;
+# NOT_APPLICABLE, NO_PREDICTION and NOT_RUN carry their reason and never
+# count as one.
 PASS = "pass"
 FAIL = "fail"
 UNDECIDED = "undecided"
 NOT_APPLICABLE = "not applicable"
 NO_PREDICTION = "no prediction"
 NOT_RUN = "not run"
-# A criterion that reads reduction lanes served without accuracy evidence and
-# cannot be decided with their absolute bound (``ward.judged``): never a
-# pass; the ladder's next carrier evaluates the row again.
+# A row whose R or S cannot be computed (``threshold``): never a pass; the
+# ladder's next carrier evaluates the row again.
 INCONCLUSIVE = "inconclusive"
 VERDICTS = (PASS, FAIL, UNDECIDED, NOT_APPLICABLE, NO_PREDICTION, NOT_RUN, INCONCLUSIVE)
 # The verdicts that carry their reason and neither pass nor fail a process.
@@ -171,70 +181,108 @@ def catani_dd_comparison(
     return catani, errors, all(e <= CATANI_DD_FLOOR for e in errors)
 
 
-def uncertified_verdict(residual: float, bound: float, uncertain: float) -> str:
-    """A criterion's verdict (``residual`` <= ``bound`` passes) when the
-    residual includes reduction lanes served without accuracy evidence of
-    absolute bound ``uncertain`` (``ward.judged``: PASS iff residual +
-    uncertain <= bound, FAIL iff residual - uncertain > bound, INCONCLUSIVE
-    otherwise or for an infinite bound)."""
+# ------------------------------------------------------- the threshold rule
 
-    from .ward import judged
-
-    found = judged(residual, bound, uncertain)
-    return PASS if found is True else FAIL if found is False else INCONCLUSIVE
-
-
-def _uncertain(result: Any, sector: Any, k: int) -> float:
-    """The absolute bound of the lanes served without accuracy evidence on
-    coefficient ``k`` of ``sector`` of a result (``ward.uncertified_bounds``:
-    infinite where not attributable)."""
-
-    from .ward import uncertified_bounds
-
-    virtual = result.components["virtual"]
-    width = len(next(iter(virtual.values())).coefficients)
-    return uncertified_bounds(result, list(virtual), width)[sector][k]
-
-
-_INCONCLUSIVE_REASON = (
-    "inconclusive: reduction lanes served without accuracy evidence, of "
-    "absolute bound {bound:.3g}, straddle the criterion"
+# The check's tolerance K (``tolerating``; None: ``tolerance``'s default).
+_TOLERANCE: ContextVar[float | None] = ContextVar(
+    "pyamplicol_check_tolerance", default=None
 )
 
 
-# ------------------------------------------------------- the rung's rule
+def tolerance() -> float:
+    """K of the current check: ``check.tolerance`` (``tolerating``), else the
+    run's requested relative accuracy (the reduction target in effect,
+    ``evaluation.reduction_target``, ``reduction.targeting``), else the
+    native policy's default target (``reduction.default_target``)."""
+
+    found = _TOLERANCE.get()
+    if found is not None:
+        return found
+    from .reduction import current_target, default_target
+
+    target = current_target()
+    return float(target) if target is not None else default_target()
 
 
-@dataclass(frozen=True)
-class Part:
-    """One part of a row's criterion at one carrier: the residual, its bound
-    (the criterion passes the part iff residual <= bound) and the
-    evaluation's own estimate of the residual's rounding (None: none), in
-    one unit (absolute, or over the row's scale)."""
+@contextmanager
+def tolerating(value: float | None) -> Iterator[None]:
+    """Judge this context's rows with tolerance ``value`` (None:
+    ``tolerance``'s default)."""
 
-    residual: float
-    bound: float
-    estimate: float | None
+    token = _TOLERANCE.set(None if value is None else float(value))
+    try:
+        yield
+    finally:
+        _TOLERANCE.reset(token)
 
 
-def undecided(parts: Sequence[Part]) -> bool:
-    """THE PREDICATE of the arbitrary-precision rung, one rule for every row
-    kind and carrier: a row is undecided at a carrier iff it fails its
-    criterion and every failing part's residual is within ``ESTIMATES``
-    times the evaluation's own estimate (bound < residual <= ESTIMATES E):
-    the residual is above the criterion while the evaluation says its
-    digits ran out. A failing part without a finite estimate, with a
-    residual far above its estimate or with a vanishing bound (only an exact
-    zero passes it) is decided: the row fails."""
+def magnitude(value: Any) -> float | None:
+    """|value| as a finite binary64 number, None where it is not one (not a
+    number, infinite, beyond binary64's range, or not convertible): the
+    quantity cannot be computed in binary64 and decides nothing."""
 
-    failing = [part for part in parts if not part.residual <= part.bound]
-    return bool(failing) and all(
-        part.bound > 0
-        and part.estimate is not None
-        and math.isfinite(part.estimate)
-        and part.residual <= ESTIMATES * part.estimate
-        for part in failing
-    )
+    if value is None:
+        return None
+    try:
+        found = abs(complex(value))
+    except (ArithmeticError, TypeError, ValueError):
+        return None
+    return found if math.isfinite(found) else None
+
+
+def real_gap(a: Any, b: Any) -> float | None:
+    """|Re a - Re b|, the difference formed in the operands' own carrier
+    arithmetic (binary64 only where they do not subtract), None where it
+    cannot be computed (``magnitude``)."""
+
+    try:
+        gap = complex(a - b).real
+    except (ArithmeticError, TypeError, ValueError):
+        try:
+            gap = complex(a).real - complex(b).real
+        except (ArithmeticError, TypeError, ValueError):
+            return None
+    return abs(gap) if math.isfinite(gap) else None
+
+
+def threshold(residual: float | None, scale: float | None, tolerance_: float) -> str:
+    """THE RULE of every row (module docstring): PASS iff R < K S, FAIL iff
+    R >= K S (equality is a miss), INCONCLUSIVE iff R or S cannot be
+    computed: R not a finite non-negative number, or S not a finite
+    positive one (a vanishing scale, 0/0 included). Compared as R / S < K,
+    so that neither K S nor R / S underflows to a false verdict."""
+
+    if (
+        residual is None
+        or scale is None
+        or not math.isfinite(residual)
+        or not math.isfinite(scale)
+        or residual < 0
+        or not scale > 0
+    ):
+        return INCONCLUSIVE
+    return PASS if residual / scale < tolerance_ else FAIL
+
+
+def over(residual: float | None, scale: float | None) -> float | None:
+    """R / S where both are computed and S is positive, else None."""
+
+    if residual is None or scale is None or not scale > 0:
+        return None
+    return residual / scale
+
+
+def combined(verdicts: Sequence[str]) -> str:
+    """The verdict of a row made of several required rows (judged each on its
+    own): FAIL if one fails, else INCONCLUSIVE if one is, else PASS (and
+    INCONCLUSIVE for none: nothing compared is no pass)."""
+
+    found = set(verdicts)
+    if FAIL in found:
+        return FAIL
+    if INCONCLUSIVE in found or not found:
+        return INCONCLUSIVE
+    return PASS
 
 
 def carrier_digits(roundoff: float) -> float:
@@ -245,57 +293,21 @@ def carrier_digits(roundoff: float) -> float:
     return 1 + math.log10(0.5 / roundoff)
 
 
-def rung_digits(parts: Sequence[Part], roundoff: float) -> int:
-    """THE DIGIT DERIVATION of the arbitrary-precision rung for an undecided
-    row (``undecided``) at a carrier of unit roundoff ``roundoff``: the
-    estimate scales with the unit roundoff, so at d digits a failing part's
-    estimate is E u(d) / u with u(d) = 0.5 x 10^(1 - d); the rung takes the
-    smallest d at which ESTIMATES times it is within the part's bound B (a
-    rounding residual then passes, the predicate cannot hold again), over
-    the failing parts: d = ceil(carrier_digits(u) + log10(ESTIMATES E / B)),
-    the carrier's digits plus the decimal digits by which ESTIMATES E
-    exceeds the bound (no fixed count, no margin)."""
+def rung_digits(roundoff: float) -> int:
+    """The default digits of the arbitrary-precision rung after a carrier of
+    unit roundoff ``roundoff``: twice its whole decimal digits (64 after
+    double-double, whose 2^-104 is 32.006 digits)."""
 
-    return max(
-        math.ceil(
-            carrier_digits(roundoff)
-            + math.log10(ESTIMATES * float(part.estimate) / part.bound)
-        )
-        for part in parts
-        if not part.residual <= part.bound
-    )
-
-
-def _worst(parts: Sequence[Part]) -> Part:
-    """The failing part furthest above its bound."""
-
-    return max(
-        (part for part in parts if not part.residual <= part.bound),
-        key=lambda part: part.residual / part.bound if part.bound else math.inf,
-    )
-
-
-def _undecided_text(name: str, parts: Sequence[Part], digits: int | None) -> str:
-    """The numbers of an undecided row at carrier ``name``: its worst
-    failing part's residual, bound and estimate, and the derived digits."""
-
-    part = _worst(parts)
-    derived = "" if digits is None else f": {digits} digits derived"
-    return (
-        f"{name} undecided: residual {part.residual:.3g} above its bound "
-        f"{part.bound:.3g}, within {ESTIMATES} x its own estimate "
-        f"{float(part.estimate):.3g}{derived}"
-    )
+    return 2 * math.floor(carrier_digits(roundoff))
 
 
 @dataclass(frozen=True)
 class Rung:
-    """The arbitrary-precision rung of the auto ladder (``undecided``,
-    ``rung_digits``): ``lift(index, carrier)`` is point ``index`` lifted for
-    ``carrier`` (the same binary64 momenta again at the carrier's digits
-    where the check lifted them at fewer); ``digits`` the option's digit
-    count (``check.arbitrary_digits``; None: derived per point from its
-    undecided rows)."""
+    """The arbitrary-precision rung of the auto ladder: ``lift(index,
+    carrier)`` is point ``index`` lifted for ``carrier`` (the same binary64
+    momenta again at the carrier's digits where the check lifted them at
+    fewer); ``digits`` the option's digit count (``check.arbitrary_digits``;
+    None: ``rung_digits``)."""
 
     lift: Callable[[int, Any], tuple[Any, Any]]
     digits: int | None = None
@@ -304,87 +316,41 @@ class Rung:
 def _rung(
     decided: dict[Any, CheckRow],
     final: Any,
-    parts_at: Callable[[Any, list[Any]], Any],
     run_at: Callable[[Any, list[Any]], Any],
     rung: Rung | None,
 ) -> None:
     """The rung of one point's rows of one kind, in place on ``decided``:
-    the rows the ladder's final carrier ``final`` failed get that carrier's
-    own estimate (``parts_at(carrier, keys)``: per key its parts and the
-    estimate it shows, or a refusal text); an undecided row (``undecided``)
-    is re-run in arbitrary precision at the derived digits (``rung_digits``,
-    the largest over the point's undecided rows) or the option's, by
-    ``run_at(carrier, keys)`` (per key the row, judged by the double-double
-    criterion, and its parts; or a refusal text), only those rows; without
-    a rung (an explicit carrier) or still undecided there it reads
-    ``UNDECIDED`` with its numbers. A refused estimate keeps the failure; a
-    refused arbitrary-precision run leaves the rows undecided."""
+    the rows the ladder's final carrier ``final`` judged and did not pass
+    (FAIL or INCONCLUSIVE) are re-run in arbitrary precision at the option's
+    digits or ``rung_digits`` by ``run_at(carrier, keys)`` (per key the
+    row judged there; or a refusal text), and take that verdict. Without a
+    rung (an explicit carrier) they keep the final carrier's; a refused run
+    or a row missing there leaves them inconclusive."""
 
     from .assemble import Precision
 
     name = _carrier_name(final)
-    # The rows that carrier judged and failed (a refused row has no ratio).
-    failing = [
+    open_ = [
         key
         for key, row in decided.items()
-        if row.verdict == FAIL and row.carrier == name and row.ratio is not None
+        if row.verdict in (FAIL, INCONCLUSIVE) and row.carrier == name
     ]
-    if not failing:
+    if not open_ or rung is None:
         return
-    found = parts_at(final, failing)
-    if isinstance(found, str):
-        for key in failing:
-            decided[key] = _refused(decided[key], found)
-        return
-    open_ = []
-    for key in failing:
-        parts, shown = found[key]
-        if shown is not None and decided[key].estimate is None:
-            decided[key] = _with(decided[key], estimate=_short(shown))
-        if undecided(parts):
-            open_.append(key)
-    if not open_:
-        return
-    if rung is None:
-        for key in open_:
-            text = _undecided_text(name, found[key][0], None)
-            decided[key] = _with(
-                decided[key],
-                verdict=UNDECIDED,
-                reason=f"{text} (an explicit carrier runs no arbitrary-precision rung)",
-            )
-        return
-    derived = {key: rung_digits(found[key][0], final.unit_roundoff) for key in open_}
-    texts = {key: _undecided_text(name, found[key][0], derived[key]) for key in open_}
-    digits = rung.digits if rung.digits is not None else max(derived.values())
-    carrier = Precision.arbitrary(digits)
-    if rung.digits is not None:
-        texts = {key: f"{text}; option: {digits} digits" for key, text in texts.items()}
-    result = run_at(carrier, open_)
+    digits = (
+        rung.digits if rung.digits is not None else rung_digits(final.unit_roundoff)
+    )
+    result = run_at(Precision.arbitrary(digits), open_)
     if isinstance(result, str):
         for key in open_:
-            decided[key] = _with(
-                decided[key], verdict=UNDECIDED, reason=f"{texts[key]}; {result}"
-            )
+            decided[key] = _refused(decided[key], result)
         return
     for key in open_:
+        earlier = decided[key]
         if key not in result:
-            decided[key] = _with(
-                decided[key],
-                verdict=UNDECIDED,
-                reason=f"{texts[key]}; no such row at {digits} digits",
-            )
+            decided[key] = _refused(earlier, f"no such row at {digits} digits")
             continue
-        row, parts = result[key]
-        row = _with(row, digits=digits, fallback=texts[key])
-        if row.verdict == FAIL and undecided(parts):
-            still = _undecided_text(
-                f"arbitrary ({digits} digits)",
-                parts,
-                rung_digits(parts, carrier.unit_roundoff),
-            )
-            row = _with(row, verdict=UNDECIDED, reason=f"{texts[key]}; still {still}")
-        decided[key] = row
+        decided[key] = _with(result[key], digits=digits, fallback=_not_passed(earlier))
 
 
 # ------------------------------------------------------------------ records
@@ -395,16 +361,14 @@ class CheckRow:
     """One judged check: ``check`` ("poles", "ward" or "goldstone"),
     ``subject`` (a sector and pole coefficient, a leg and factor, or the
     finiteness of every loop order and row), the point index, the carrier
-    that decided, the verdict (``VERDICTS``), ``ratio`` the measured value
-    over its allowed bound (<= 1 passes: the deviation over ESTIMATES E plus
-    the floor, a probe's residue over ten times its estimate),
-    ``deviation`` and ``estimate`` the deviation and E over the row's scale
-    (where formed): a binary64 pole row's pre-cancellation scale S, a
-    double-double pole row's |Catani| (its criterion is relative; no E), a
-    Born-interfered Ward row's physical scale (``ward.ward_scales``), a
-    probe's row term floor S_k(h); ``fallback`` why the first carrier did
-    not decide, ``reason`` why a row is not a verdict; ``digits`` the digit
-    count of an arbitrary-precision carrier (the rung, ``_rung``)."""
+    that decided, the verdict (``VERDICTS``), ``deviation`` the measured R /
+    S (``threshold``; for a row made of several required rows, of the one
+    with the largest R / S), ``tolerance`` the K it was judged with and
+    ``ratio`` (R / S) / K (below 1 passes); ``estimate`` the evaluation's
+    error estimate E over the same S, for information (it decides nothing);
+    ``fallback`` why the first carrier did not decide, ``reason`` why a row
+    is not a verdict; ``digits`` the digit count of an arbitrary-precision
+    carrier (the rung, ``_rung``)."""
 
     check: str
     subject: str
@@ -417,6 +381,7 @@ class CheckRow:
     fallback: str | None = None
     reason: str | None = None
     digits: int | None = None
+    tolerance: float | None = None
     # The deciding rung's kinematics improvement of the lifted point (m-lit
     # lit-psimprove (G5)): the variant that produced it, "exact" or
     # "not-improved"; None where none ran (binary64 without the switch).
@@ -489,6 +454,8 @@ class CheckReport:
     # Ctrl-C stopped the check: the tests not run are marked "not run" (the
     # exit code is not 0; the CLI exits with 130).
     interrupted: bool = False
+    # The tolerance K every row was judged with (``tolerance``).
+    tolerance: float | None = None
 
     def __post_init__(self) -> None:
         statuses = {process.status for process in self.processes}
@@ -623,134 +590,129 @@ def _improved(
     return improved, record["produced"] or record["status"]
 
 
-def _pole_rows_binary64(result: Any, index: int, target: float) -> dict[Any, CheckRow]:
-    """The binary64 pole rows of one evaluated point, keyed by (sector, k).
-    A row without its criterion (no estimate E) or out of the binary64 scope
-    (relative estimate above ``target``) is "not run" with the reason: the
-    next carrier decides it, and with binary64 alone it is no pass."""
+def _own_scales(
+    components: Mapping[str, Mapping[Any, Any]],
+    sector: Any,
+    width: int,
+    predicted: Sequence[Any] = (),
+) -> list[float | None]:
+    """``_scales`` of one sector before the cross-sector fallback."""
+
+    out: list[float | None] = []
+    for k in range(width):
+        found: float | None = 0.0
+        values = [
+            laurent.coefficients[k]
+            for laurent in (part.get(sector) for part in components.values())
+            if laurent is not None and len(laurent.coefficients) > k
+        ]
+        if k < len(predicted) and predicted[k] is not None:
+            values.append(predicted[k])
+        for value in values:
+            size = magnitude(value)
+            if size is None:
+                found = None
+                break
+            found = max(found, size)
+        if found == 0.0 and k > 0:
+            found = out[k - 1]
+        out.append(found)
+    return out
+
+
+def _scales(
+    components: Mapping[str, Mapping[Any, Any]],
+    sector: Any,
+    width: int,
+    predicted: Sequence[Any] = (),
+) -> list[float | None]:
+    """The scale S_k of each Laurent coefficient k of one sector of an
+    evaluation at one point (module docstring): the largest magnitude of
+    coefficient k over the virtual and each of its parts (``assemble.
+    COMPONENTS``) and the prediction ``predicted[k]`` where given (None:
+    none). A vanishing reference is defined explicitly: a coefficient that
+    no part and no prediction has is measured against the same sector's next
+    lower coefficient (1/eps^2 against 1/eps, 1/eps against the finite
+    part), and a sector that vanishes at every coefficient at this point (a
+    colour zero) against the largest scale of that coefficient over the
+    point's sectors. None where a magnitude cannot be computed
+    (``magnitude``): the row is inconclusive."""
+
+    own = _own_scales(components, sector, width, predicted)
+    if not any(value == 0.0 for value in own):
+        return own
+    others = [
+        _own_scales(components, other, width)
+        for other in components.get("virtual", {})
+        if other != sector
+    ]
+    out: list[float | None] = []
+    for k, value in enumerate(own):
+        if value == 0.0:
+            sizes = [scales[k] for scales in others if len(scales) > k]
+            value = None if None in sizes else max(sizes, default=0.0)
+        out.append(value)
+    return out
+
+
+def _pole_rows(
+    result: Any, index: int, carrier: str, tolerance_: float
+) -> dict[Any, CheckRow]:
+    """The pole rows of one evaluated point, keyed by (sector, k): R =
+    |Re V_k - Re C_k| against S = ``_scales`` (the prediction included),
+    judged by ``threshold``; E / S where the evaluation ran its checks."""
 
     estimate = result.stability
     rows: dict[Any, CheckRow] = {}
-    reason = None
-    if estimate is None:
-        reason = "no criterion: the binary64 evaluation carries no estimate E"
-    elif float(estimate.relative) > target:
-        reason = (
-            f"out of the binary64 scope: relative estimate "
-            f"{relative_text(float(estimate.relative), '.3g')} above the default "
-            f"target accuracy {target:g}"
-        )
     for sector, laurent in result.components["virtual"].items():
-        values = [complex(x).real for x in laurent.coefficients]
         poles = (result.ir_poles or {}).get(sector)
-        if poles is None or len(values) != 3:
+        if poles is None or len(laurent.coefficients) != 3:
             continue
-        absolute = scale = None
-        if estimate is not None:
-            absolute = [abs(float(x)) for x in estimate.absolute[sector].coefficients]
-            scale = [abs(float(x)) for x in estimate.scale[sector].coefficients]
-        _catani, deviations, bounds, _ok = catani_comparison(values, poles, absolute)
+        scales = _scales(result.components, sector, 3, (None, poles[0], poles[1]))
         for k in (1, 2):
-            deviation, bound = deviations[k - 1], bounds[k - 1]
-            ratio = (
-                deviation / bound if bound else (0.0 if not deviation else float("inf"))
-            )
-            uncertain = _uncertain(result, sector, k)
-            verdict = (
-                NOT_RUN if reason else uncertified_verdict(deviation, bound, uncertain)
-            )
-            over = scale[k] if scale is not None else 0.0
-            rows[(sector, k)] = CheckRow(
-                "poles",
-                f"{_sector_name(sector)} {POLE_NAMES[k]}",
-                index,
-                "double",
-                verdict,
-                _short(ratio),
-                _short(deviation / over) if over else None,
-                _short(absolute[k] / over) if over and absolute is not None else None,
-                reason=reason
-                or (
-                    _INCONCLUSIVE_REASON.format(bound=uncertain)
-                    if verdict == INCONCLUSIVE
-                    else None
-                ),
-            )
-    return rows
-
-
-def _pole_rows_dd(
-    result: Any, index: int, carrier: str = "double-double"
-) -> dict[Any, CheckRow]:
-    """The double-double pole rows of one evaluated point: the relative
-    deviation from Catani's prediction (``catani_dd_comparison``), also the
-    criterion of an arbitrary-precision ``carrier`` (the rung); the estimate
-    E / |Catani| where the evaluation ran the checks (the rung's), else
-    none."""
-
-    rows: dict[Any, CheckRow] = {}
-    for sector, laurent in result.components["virtual"].items():
-        values = [complex(x).real for x in laurent.coefficients]
-        poles = (result.ir_poles or {}).get(sector)
-        if poles is None or len(values) != 3:
-            continue
-        catani, errors, _ok = catani_dd_comparison(values, poles)
-        for k in (1, 2):
-            estimate = None
-            if result.stability is not None and catani[k - 1]:
-                absolute = result.stability.absolute[sector].coefficients[k]
-                estimate = abs(float(absolute)) / abs(catani[k - 1])
-            size = max(abs(catani[k - 1]), 1e-300)
-            uncertain = _uncertain(result, sector, k)
-            verdict = uncertified_verdict(
-                errors[k - 1] * size, CATANI_DD_FLOOR * size, uncertain
-            )
+            residual = real_gap(laurent.coefficients[k], poles[k - 1])
+            verdict = threshold(residual, scales[k], tolerance_)
+            measured = over(residual, scales[k])
+            shown = None
+            if estimate is not None:
+                shown = over(
+                    magnitude(estimate.absolute[sector].coefficients[k]), scales[k]
+                )
             rows[(sector, k)] = CheckRow(
                 "poles",
                 f"{_sector_name(sector)} {POLE_NAMES[k]}",
                 index,
                 carrier,
                 verdict,
-                _short(errors[k - 1] / CATANI_DD_FLOOR),
-                _short(errors[k - 1]),
-                _short(estimate),
-                reason=_INCONCLUSIVE_REASON.format(bound=uncertain)
+                _short(None if measured is None else measured / tolerance_),
+                _short(measured),
+                _short(shown),
+                reason=_uncomputed(residual, scales[k])
                 if verdict == INCONCLUSIVE
                 else None,
+                tolerance=tolerance_,
             )
     return rows
 
 
-def _pole_parts(result: Any, key: Any, double: bool) -> list[Part]:
-    """The criterion part of the pole row ``key`` (sector, k) of a point
-    evaluated in binary64 (``double``) or above, absolute: in binary64
-    (``catani_comparison``: the bound ESTIMATES
-    E + CATANI_FLOOR |Catani| holds the estimate, so the predicate never
-    holds), above it the double-double criterion CATANI_DD_FLOOR |Catani|
-    (``catani_dd_comparison``), with the estimate E of the evaluation's
-    checks (None without them)."""
+def _uncomputed(residual: float | None, scale: float | None) -> str:
+    """Why ``threshold`` found a row inconclusive."""
 
-    sector, k = key
-    values = [
-        complex(x).real for x in result.components["virtual"][sector].coefficients
-    ]
-    poles = result.ir_poles[sector]
-    estimate = result.stability
-    absolute = (
-        None
-        if estimate is None
-        else [abs(float(x)) for x in estimate.absolute[sector].coefficients]
+    if residual is None:
+        return "inconclusive: the residue R cannot be computed (not a finite number)"
+    if scale is None:
+        return "inconclusive: the scale S cannot be computed (not a finite number)"
+    return (
+        f"inconclusive: the scale S is {scale:.3g}, not positive (R = {residual:.3g})"
     )
-    catani, deviations, bounds, _ok = catani_comparison(values, poles, absolute)
-    if not double:
-        bounds = [CATANI_DD_FLOOR * abs(x) for x in catani]
-    return [
-        Part(
-            deviations[k - 1],
-            bounds[k - 1],
-            None if absolute is None else absolute[k],
-        )
-    ]
+
+
+def _not_passed(row: CheckRow) -> str:
+    """Why a carrier's row did not decide it (the next carrier's fallback)."""
+
+    if row.reason:
+        return f"{row.carrier}: {row.reason}"
+    return f"{row.carrier}: R / S {row.deviation} not below K {row.tolerance}"
 
 
 def _unpredicted_rows(
@@ -872,14 +834,15 @@ def born_interfered_rows(
 ) -> list[CheckRow]:
     """The pole and Ward rows of a Born-interfered probe slice (module
     docstring) at the lifted ``points`` ((point, mu_R^2) pairs), in
-    ``carriers`` in order and, for a row the last one leaves undecided, the
-    arbitrary-precision ``rung`` (None: none, an explicit carrier)."""
+    ``carriers`` in order and, for a row the last one does not pass, the
+    arbitrary-precision ``rung`` (None: none, an explicit carrier), judged
+    with the check's ``tolerance``."""
 
     from . import induced, stability, ward
     from .plan_export import FailedPoints, NativeExecutor
 
     executor = NativeExecutor(target, inputs="native", forward=False, catani=True)
-    target_accuracy = float(stability.RESCUE_TARGET)
+    tolerance_ = tolerance()
     legs = ward.gauge_legs(target)
     excluded = ward_applicability(target) if legs else None
     # ``out``: the caller's list, which keeps the rows of an interrupted
@@ -920,11 +883,7 @@ def born_interfered_rows(
                 continue
             sectors = list(result.components["virtual"])
             formed = result.ir_poles is not None
-            found = (
-                _pole_rows_binary64(result, index, target_accuracy)
-                if double
-                else _pole_rows_dd(result, index)
-            )
+            found = _pole_rows(result, index, _carrier_name(carrier), tolerance_)
             if improved is not None:
                 found = {
                     key: _with(row, kinematics=improved) for key, row in found.items()
@@ -936,13 +895,14 @@ def born_interfered_rows(
                 }
             else:
                 for key in pending:
-                    if key in found:
-                        earlier = decided[key]
-                        decided[key] = _with(
-                            found[key],
-                            fallback=earlier.reason
-                            or f"{earlier.carrier} ratio {earlier.ratio}",
+                    earlier = decided[key]
+                    decided[key] = (
+                        _with(found[key], fallback=_not_passed(earlier))
+                        if key in found
+                        else _refused(
+                            earlier, f"{_carrier_name(carrier)} has no such row"
                         )
+                    )
             evaluated = True
             refusal = None
             last = (carrier, result, at)
@@ -950,13 +910,20 @@ def born_interfered_rows(
             _rung(
                 decided,
                 carriers[-1],
-                _pole_estimates(executor, last[2], scale, last[1]),
-                _pole_rerun(executor, index, rung, kinematics),
+                _pole_rerun(executor, index, rung, tolerance_, kinematics),
                 rung,
             )
         if not evaluated:
             rows.append(
-                CheckRow("poles", "every sector", index, None, FAIL, reason=refusal)
+                CheckRow(
+                    "poles",
+                    "every sector",
+                    index,
+                    None,
+                    INCONCLUSIVE,
+                    reason=f"inconclusive: {refusal}",
+                    tolerance=tolerance_,
+                )
             )
         rows.extend(decided.values())
         rows.extend(
@@ -969,7 +936,15 @@ def born_interfered_rows(
             status(f"{_point_text(index, points)}: Ward identities, {_legs(legs)}")
             rows.extend(
                 _born_ward_rows(
-                    executor, point, scale, legs, carriers, index, rung, kinematics
+                    executor,
+                    point,
+                    scale,
+                    legs,
+                    carriers,
+                    index,
+                    tolerance_,
+                    rung,
+                    kinematics,
                 )
             )
     if excluded is not None:
@@ -1002,47 +977,18 @@ def born_interfered_rows(
     return rows
 
 
-def _pole_estimates(executor: Any, point: Any, scale: Any, result: Any) -> Any:
-    """The rung's ``parts_at`` of a point's pole rows: binary64's own
-    evaluation ``result`` carries its estimate (``RECOMMENDED_CHECKS``); a
-    carrier above it, which runs no checks on the ladder, evaluates the
-    point again with them (the same checks), only where a row failed.
-    ``point`` is the point that carrier evaluated on the ladder (its
-    kinematics improvement, m-lit lit-psimprove (G5))."""
-
-    from . import stability
-    from .plan_export import FailedPoints
-
-    def parts_at(carrier: Any, keys: list[Any]) -> Any:
-        double = _carrier_name(carrier) == "double"
-        checked = result
-        if not double:
-            try:
-                checked = _evaluate(
-                    executor, point, scale, carrier, stability.RECOMMENDED_CHECKS
-                )
-            except FailedPoints as error:
-                return f"its {_carrier_name(carrier)} estimate was refused: {error}"
-        shown = {} if double else _pole_rows_dd(checked, 0)
-        return {
-            key: (
-                _pole_parts(checked, key, double),
-                None if key not in shown else shown[key].estimate,
-            )
-            for key in keys
-        }
-
-    return parts_at
-
-
 def _pole_rerun(
-    executor: Any, index: int, rung: Rung | None, kinematics: Any = None
+    executor: Any,
+    index: int,
+    rung: Rung | None,
+    tolerance_: float,
+    kinematics: Any = None,
 ) -> Any:
     """The rung's ``run_at`` of a point's pole rows: the point lifted for
     the arbitrary-precision carrier and improved there like every rung's
     (``_improved``, m-lit lit-psimprove (G5)), evaluated with
-    ``RECOMMENDED_CHECKS`` and judged by the double-double criterion
-    (``_pole_rows_dd``)."""
+    ``RECOMMENDED_CHECKS`` (its estimate is reported) and judged by
+    ``_pole_rows``."""
 
     from . import stability
     from .plan_export import FailedPoints
@@ -1057,14 +1003,9 @@ def _pole_rerun(
             )
         except FailedPoints as error:
             return f"arbitrary ({carrier.digits} digits) refused: {error}"
-        found = _pole_rows_dd(result, index, "arbitrary")
+        found = _pole_rows(result, index, "arbitrary", tolerance_)
         return {
-            key: (
-                _with(found[key], kinematics=improved),
-                _pole_parts(result, key, False),
-            )
-            for key in keys
-            if key in found
+            key: _with(found[key], kinematics=improved) for key in keys if key in found
         }
 
     return run_at
@@ -1077,64 +1018,121 @@ def _with(row: CheckRow, **changes: Any) -> CheckRow:
 
 
 def _refused(row: CheckRow, refusal: str) -> CheckRow:
-    """``row`` (an earlier carrier's undecided or failed row) with a later
-    carrier's refusal added to its reason; the verdict is kept."""
+    """``row`` (an earlier carrier's row that did not pass) when a later
+    carrier cannot judge it (a refusal, or no such row there): inconclusive
+    (the carrier that would decide computed no R or S; never a pass), with
+    the refusal and the earlier carrier's measurement in its reason."""
 
-    reason = refusal if row.reason is None else f"{row.reason}; {refusal}"
-    return _with(row, reason=reason)
-
-
-def _ward_row(
-    row: Mapping[str, Any], carrier: str, index: int, *, name: str | None = None
-) -> CheckRow:
-    """A ``ward.ward_row`` record of criterion ``carrier`` ("double" or
-    "double-double") as a check row: the ratio is the largest of the
-    criterion's parts over their bounds (<= 1 passes); ``name`` the carrier
-    it records (default ``carrier``; "arbitrary" on the rung)."""
-
-    from . import ward
-
-    parts = [row["born"] / ward.BORN_BOUNDS[carrier]]
-    virtual = max(row["parts"]["virtual"])
-    if carrier in ward.VIRTUAL_BOUNDS:
-        parts.append(virtual / ward.VIRTUAL_BOUNDS[carrier])
-    if row.get("estimate_over") is not None:
-        parts.append(max(row["estimate_over"]) / ward.ESTIMATE_FACTOR)
-    if row.get("o1_over") is not None:
-        parts.append(max(row["o1_over"]))
-    reason = None
-    if row.get("in_scope") is False:
-        reason = (
-            f"out of the binary64 scope: E above {ward.BINARY64_SCOPE:g} of the "
-            "physical scale"
-        )
-    elif row["passed"] is None:
-        reason = "no criterion: the binary64 evaluation carries no estimate"
-    factor = "c = 1" if tuple(row["factor"]) == (1, 0) else "c = i"
-    if row.get("inconclusive") and row["born_passed"]:
-        reason = f"inconclusive: {row['inconclusive']}"
-    if row["passed"] is True:
-        verdict = PASS
-    elif row.get("inconclusive") and row["born_passed"]:
-        verdict = INCONCLUSIVE
-    elif not row["born_passed"] or reason is None:
-        verdict = FAIL
-    else:
-        # The virtual part without its binary64 criterion (no estimate, or
-        # out of scope) and the tree-level Born part passed: the next
-        # carrier decides; with binary64 alone the row is no pass.
-        verdict = NOT_RUN
-    return CheckRow(
-        "ward",
-        f"leg {row['leg']}, {factor}",
-        index,
-        name or carrier,
-        verdict,
-        _short(max(parts)),
-        _short(virtual),
-        _short(max(row["estimate"])) if row.get("estimate") else None,
-        reason=reason if row["passed"] is not True else None,
+    earlier = row.reason or f"R / S {row.deviation} at {row.carrier}"
+    return _with(
+        row, verdict=INCONCLUSIVE, reason=f"inconclusive: {refusal}; {earlier}"
     )
+
+
+def _ward_measures(physical: Any, result: Any) -> list[tuple[Any, ...]]:
+    """The required rows of one Ward evaluation (module docstring), each
+    (label, R, S, E): per Born sector R = |loop-side Born|, S = |physical
+    Born| (a sector the physical Born lacks at this point, a colour zero,
+    against the largest physical Born sector); per virtual sector and
+    Laurent coefficient R = |V_k| of the substituted evaluation, S =
+    ``_scales`` of the physical evaluation, E its estimate where formed. A
+    sector or coefficient only one of the two evaluations has is a missing
+    operand (R and S None: inconclusive), never skipped."""
+
+    out: list[tuple[Any, ...]] = []
+    loop_born = result.loop_born
+    born = physical.born or {}
+    if loop_born is None:
+        out.append(("Born", None, None, None))
+    else:
+        largest = [magnitude(value) for value in born.values()]
+        widest = None if None in largest else max(largest, default=0.0)
+        for sector in dict.fromkeys([*born, *loop_born]):
+            residual = magnitude(loop_born[sector]) if sector in loop_born else None
+            size = magnitude(born[sector]) if sector in born else None
+            if size == 0.0:
+                size = widest
+            out.append((f"Born {_sector_name(sector)}", residual, size, None))
+    virtual = result.components["virtual"]
+    reference = physical.components["virtual"]
+    estimate = result.stability
+    for sector in dict.fromkeys([*reference, *virtual]):
+        laurent = virtual.get(sector)
+        width = len(reference[sector].coefficients) if sector in reference else None
+        if laurent is None or width is None or len(laurent.coefficients) != width:
+            out.append(
+                (
+                    f"{_sector_name(sector)} (a sector or coefficient only one "
+                    "evaluation has)",
+                    None,
+                    None,
+                    None,
+                )
+            )
+            continue
+        scales = _scales(physical.components, sector, width)
+        for k in range(width):
+            error = None
+            if estimate is not None and sector in estimate.absolute:
+                error = magnitude(estimate.absolute[sector].coefficients[k])
+            out.append(
+                (
+                    f"{_sector_name(sector)} {COEFFICIENT_NAMES[k]}",
+                    magnitude(laurent.coefficients[k]),
+                    scales[k],
+                    error,
+                )
+            )
+    return out
+
+
+COEFFICIENT_NAMES = ("finite", "1/eps", "1/eps^2")
+
+
+def _judged_row(
+    check: str,
+    subject: str,
+    index: int,
+    carrier: str,
+    measures: Sequence[tuple[Any, ...]],
+    tolerance_: float,
+) -> CheckRow:
+    """One row made of the required rows ``measures`` ((label, R, S, E)),
+    each judged on its own by ``threshold`` first (``combined``): the
+    largest R / S and its E / S are shown, an inconclusive part names its
+    label."""
+
+    verdicts = []
+    reasons = []
+    worst: tuple[float, float | None] | None = None
+    for label, residual, scale, error in measures:
+        verdict = threshold(residual, scale, tolerance_)
+        verdicts.append(verdict)
+        if verdict == INCONCLUSIVE:
+            reasons.append(f"{label}: {_uncomputed(residual, scale)}")
+        measured = over(residual, scale)
+        if measured is not None and (worst is None or measured >= worst[0]):
+            worst = (measured, over(error, scale))
+    verdict = combined(verdicts)
+    reason = None
+    if verdict == INCONCLUSIVE:
+        reason = "; ".join(reasons) or "inconclusive: nothing compared"
+    return CheckRow(
+        check,
+        subject,
+        index,
+        carrier,
+        verdict,
+        _short(None if worst is None else worst[0] / tolerance_),
+        _short(None if worst is None else worst[0]),
+        _short(None if worst is None else worst[1]),
+        reason=reason,
+        tolerance=tolerance_,
+    )
+
+
+def _ward_subject(leg: int, factor: Any) -> str:
+    return f"leg {leg}, " + ("c = 1" if tuple(factor) == (1, 0) else "c = i")
 
 
 def _ward_batches(keys: Sequence[Any], legs: Sequence[int]) -> list[Any]:
@@ -1152,57 +1150,46 @@ def _ward_batches(keys: Sequence[Any], legs: Sequence[int]) -> list[Any]:
     ]
 
 
-def _ward_parts(physical: Any, result: Any, carrier: str) -> list[Part]:
-    """The criterion parts of one Ward evaluation (``ward.ward_row``'s, per
-    sector and Laurent coefficient, over the physical scale ``ward.
-    ward_scales``) for criterion ``carrier``: the Born part (tree level, no
-    estimate); the virtual against ``ward.VIRTUAL_BOUNDS`` (double-double,
-    also the rung's) or binary64's O1 rules 2 and 3 (max(BINARY64_FLOOR,
-    E) and ESTIMATE_FACTOR E), with the evaluation's estimate E (None
-    without its checks)."""
+def _ward_found(
+    executor: Any,
+    point: Any,
+    scale: Any,
+    keys: Sequence[Any],
+    legs: Sequence[int],
+    carrier: Any,
+    index: int,
+    tolerance_: float,
+) -> dict[Any, CheckRow]:
+    """The Ward rows ``keys`` ((leg, factor)) of one point evaluated in
+    ``carrier`` (``ward.ward_check``, binary64 with its estimate's checks),
+    judged by ``_ward_measures``; a refused run raises ``FailedPoints``."""
 
     from . import ward
 
-    scale = ward.ward_scales(physical)
-    parts = [Part(ward.born_ratio(result, physical), ward.BORN_BOUNDS[carrier], None)]
-    estimate = result.stability
-    for sector, laurent in result.components["virtual"].items():
-        for k, value in enumerate(laurent.coefficients):
-            residual = ward._ratio(abs(complex(value)), scale[k])
-            error = None
-            if estimate is not None:
-                absolute = abs(float(estimate.absolute[sector].coefficients[k]))
-                error = ward._ratio(absolute, scale[k])
-            if carrier in ward.VIRTUAL_BOUNDS:
-                parts.append(Part(residual, ward.VIRTUAL_BOUNDS[carrier], error))
-            elif error is not None:
-                parts.append(Part(residual, max(ward.BINARY64_FLOOR, error), error))
-                parts.append(Part(residual, ward.ESTIMATE_FACTOR * error, error))
-    return parts
-
-
-def _ward_judged(check: Mapping[str, Any], carrier: str) -> dict[Any, Any]:
-    """Per (leg, factor) of a ``ward.ward_check`` run with its checks: the
-    row of criterion ``carrier`` judged as without them (``ward.ward_row``
-    of the result with no estimate: the double-double criterion is the
-    bound alone), the largest E / scale it shows and its parts."""
-
-    from dataclasses import replace
-
-    from . import ward
-
-    physical = check["physical"]
-    out = {}
-    for row, result in zip(check["rows"], check["results"], strict=True):
-        judged = ward.ward_row(physical, replace(result, stability=None), carrier)
-        key = (row["leg"], tuple(row["factor"]))
-        shown = max(row["estimate"]) if row.get("estimate") else None
-        out[key] = (
-            {**judged, "leg": row["leg"], "factor": row["factor"]},
-            shown,
-            _ward_parts(physical, result, carrier),
+    name = _carrier_name(carrier)
+    found: dict[Any, CheckRow] = {}
+    for batch_legs, factors in _ward_batches(keys, legs):
+        check = ward.ward_check(
+            executor,
+            point,
+            scale,
+            "double" if name == "double" else "double-double",
+            legs=batch_legs,
+            factors=factors,
+            precision=carrier,
+            judge=False,
         )
-    return out
+        for row, result in zip(check["rows"], check["results"], strict=True):
+            key = (row["leg"], tuple(row["factor"]))
+            found[key] = _judged_row(
+                "ward",
+                _ward_subject(*key),
+                index,
+                name,
+                _ward_measures(check["physical"], result),
+                tolerance_,
+            )
+    return found
 
 
 def _born_ward_rows(
@@ -1212,6 +1199,7 @@ def _born_ward_rows(
     legs: Sequence[int],
     carriers: Sequence[Any],
     index: int,
+    tolerance_: float,
     rung: Rung | None = None,
     kinematics: Any = None,
 ) -> list[CheckRow]:
@@ -1219,119 +1207,73 @@ def _born_ward_rows(
     from .plan_export import FailedPoints
 
     decided: dict[Any, CheckRow] = {}
-    fallback: str | None = None
-    raw: dict[Any, Any] = {}
     lifted = point
+    every = [(leg, factor) for leg in legs for factor in ward.WARD_FACTORS]
     for carrier in carriers:
         name = _carrier_name(carrier)
         point, improved = _improved(executor, lifted, scale, carrier, kinematics)
         pending = [
-            key
-            for key in ((leg, factor) for leg in legs for factor in ward.WARD_FACTORS)
-            if key not in decided or decided[key].verdict != PASS
+            key for key in every if key not in decided or decided[key].verdict != PASS
         ]
         if not pending:
             break
-        found: dict[Any, CheckRow] = {}
         try:
-            for batch_legs, factors in _ward_batches(pending, legs):
-                check = ward.ward_check(
-                    executor, point, scale, name, legs=batch_legs, factors=factors
-                )
-                results = check.get("results") or [None] * len(check["rows"])
-                for row, result in zip(check["rows"], results, strict=True):
-                    key = (row["leg"], tuple(row["factor"]))
-                    found[key] = _with(_ward_row(row, name, index), kinematics=improved)
-                    raw[key] = (check.get("physical"), result)
+            found = _ward_found(
+                executor, point, scale, pending, legs, carrier, index, tolerance_
+            )
         except FailedPoints as error:
-            fallback = f"{name} refused: {error}"
+            refusal = f"{name} refused: {error}"
             for key in pending:
                 earlier = decided.get(key)
                 decided[key] = (
                     CheckRow(
                         "ward",
-                        f"leg {key[0]}",
+                        _ward_subject(*key),
                         index,
                         name,
-                        FAIL,
-                        reason=fallback,
+                        INCONCLUSIVE,
+                        reason=f"inconclusive: {refusal}",
+                        tolerance=tolerance_,
                     )
                     if earlier is None
-                    else _refused(earlier, fallback)
+                    else _refused(earlier, refusal)
                 )
             continue
         for key in pending:
-            row = found[key]
             earlier = decided.get(key)
-            if earlier is not None:
-                row = _with(
-                    row,
-                    fallback=earlier.reason
-                    or f"{earlier.carrier} ratio {earlier.ratio}",
-                )
-            decided[key] = row
-
-    def parts_at(carrier: Any, keys: list[Any]) -> Any:
-        # binary64 ran WARD_CHECKS on the ladder; a carrier above it runs
-        # the failed rows again with them.
-        name = _carrier_name(carrier)
-        if name == "double":
-            return {key: (_ward_parts(*raw[key], name), None) for key in keys}
-        # The point this carrier evaluated on the ladder (recomputed
-        # bitwise: one improved point per carrier, m-lit lit-psimprove).
-        at_point, _ = _improved(executor, lifted, scale, carrier, kinematics)
-        found: dict[Any, Any] = {}
-        try:
-            for batch_legs, factors in _ward_batches(keys, legs):
-                check = ward.ward_check(
-                    executor,
-                    at_point,
-                    scale,
+            if key not in found:
+                row = CheckRow(
+                    "ward",
+                    _ward_subject(*key),
+                    index,
                     name,
-                    legs=batch_legs,
-                    factors=factors,
-                    checks=True,
-                    precision=carrier,
+                    INCONCLUSIVE,
+                    reason=f"inconclusive: {name} has no such row",
+                    tolerance=tolerance_,
                 )
-                for key, (_row, shown, parts) in _ward_judged(check, name).items():
-                    found[key] = (parts, shown)
-        except FailedPoints as error:
-            return f"its {name} estimate was refused: {error}"
-        return found
+            else:
+                row = _with(found[key], kinematics=improved)
+            if earlier is not None:
+                row = _with(row, fallback=_not_passed(earlier))
+            decided[key] = row
 
     def run_at(carrier: Any, keys: list[Any]) -> Any:
         assert rung is not None
         relifted, at = rung.lift(index, carrier)
         relifted, improved = _improved(executor, relifted, at, carrier, kinematics)
-        found: dict[Any, Any] = {}
         try:
-            for batch_legs, factors in _ward_batches(keys, legs):
-                check = ward.ward_check(
-                    executor,
-                    relifted,
-                    at,
-                    "double-double",
-                    legs=batch_legs,
-                    factors=factors,
-                    checks=True,
-                    precision=carrier,
-                )
-                judged = _ward_judged(check, "double-double")
-                for key, (row, shown, parts) in judged.items():
-                    found[key] = (
-                        _with(
-                            _ward_row(row, "double-double", index, name="arbitrary"),
-                            estimate=_short(shown),
-                            kinematics=improved,
-                        ),
-                        parts,
-                    )
+            found = _ward_found(
+                executor, relifted, at, keys, legs, carrier, index, tolerance_
+            )
         except FailedPoints as error:
             return f"arbitrary ({carrier.digits} digits) refused: {error}"
-        return found
+        return {
+            key: _with(row, carrier="arbitrary", kinematics=improved)
+            for key, row in found.items()
+        }
 
     if decided and carriers:
-        _rung(decided, carriers[-1], parts_at, run_at, rung)
+        _rung(decided, carriers[-1], run_at, rung)
     return list(decided.values())
 
 
@@ -1402,8 +1344,10 @@ def induced_rows(
                     "finiteness",
                     index,
                     None,
-                    FAIL,
-                    reason=f"the point's physical floors were refused: {error}",
+                    INCONCLUSIVE,
+                    reason="inconclusive: the point's physical floors (S) were "
+                    f"refused: {error}",
+                    tolerance=tolerance(),
                 )
             )
             continue
@@ -1417,14 +1361,14 @@ def induced_rows(
             improve=lambda point, scale, carrier: _improved(
                 executor, point, scale, carrier, kinematics
             ),
-            uncertified_escalates=True,
+            tolerance=tolerance(),
         )
         for entry, result in zip(entries, decided, strict=True):
             rows.append(_probe_row(entry, result, index))
         if sides:
             status(f"{_point_text(index, points)}: Goldstone-equivalence probes")
             results, gentries, _phases, _times = induced.goldstone_point(
-                target, sides, point, scale, carriers, floors, executors
+                target, sides, point, scale, carriers, floors, executors, tolerance()
             )
             for entry, (_leg, result) in zip(gentries, results, strict=True):
                 rows.append(_probe_row(entry, result, index))
@@ -1460,9 +1404,8 @@ def induced_rows(
 
 
 def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
-    """A generation-time probe's decided result as a check row."""
-
-    from .induced import ESTIMATE_FACTOR
+    """A generation-time probe's decided result as a check row (its verdict
+    the threshold rule's, ``induced.probe_verdict``)."""
 
     probe = entry["probe"]
     check = {"finiteness": "poles", "ward": "ward", "goldstone": "goldstone"}[probe]
@@ -1479,7 +1422,8 @@ def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
         fallback_text = (
             f"{fallback['carrier']} refused: {fallback['detail']}"
             if fallback["reason"] == "refused"
-            else f"{fallback['carrier']} ratio {fallback['worst']} times its estimate"
+            else f"{fallback['carrier']}: {fallback['verdict']}, largest R / S "
+            f"{fallback['worst']}"
         )
     improved = entry.get("kinematics", {}).get(entry["carrier"])
     if isinstance(result, str):
@@ -1488,10 +1432,11 @@ def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
             subject,
             index,
             entry["carrier"],
-            FAIL,
+            INCONCLUSIVE,
             fallback=fallback_text,
-            reason=result,
+            reason=f"inconclusive: refused: {result}",
             kinematics=improved,
+            tolerance=tolerance(),
         )
     deviation = estimate = None
     relative = getattr(result, "relative", None) or {}
@@ -1499,34 +1444,20 @@ def _probe_row(entry: Mapping[str, Any], result: Any, index: int) -> CheckRow:
         key = max(result.ratios, key=lambda k: result.ratios[k])
         if key in relative:
             deviation, estimate = relative[key]
-    # The rung's predicate in the probe's own unit (its estimate E): the
-    # criterion's bound is ESTIMATE_FACTOR E itself, so a failing probe's
-    # residue is above ESTIMATES E and the row is never undecided.
-    verdict = PASS if result.passed else FAIL
-    if not result.passed and undecided([Part(result.worst, ESTIMATE_FACTOR, 1.0)]):
-        verdict = UNDECIDED
-    reason = None
-    if getattr(result, "uncertified", False):
-        # A run served a lane without accuracy evidence: the amplitude-level
-        # residue is quadratic in |A|^2 terms and the lane's bound is not
-        # propagated through it, so the probe decides nothing.
-        verdict = INCONCLUSIVE
-        reason = (
-            "inconclusive: a probe run served reduction lanes without accuracy "
-            "evidence, whose bound is not propagated to the amplitude-level probe"
-        )
+    reason = result.reason
     return CheckRow(
         check,
         subject,
         index,
         entry["carrier"],
-        verdict,
-        _short(result.worst / ESTIMATE_FACTOR),
+        result.verdict,
+        _short(None if deviation is None else deviation / result.tolerance),
         _short(deviation),
         _short(estimate),
         fallback=fallback_text,
-        reason=reason,
+        reason=None if reason is None else f"inconclusive: {reason}",
         kinematics=improved,
+        tolerance=result.tolerance,
     )
 
 
@@ -1696,7 +1627,6 @@ __all__ = [
     "CheckInterrupted",
     "CheckReport",
     "CheckRow",
-    "Part",
     "ProcessCheck",
     "Rung",
     "born_interfered_rows",
@@ -1710,7 +1640,8 @@ __all__ = [
     "rung_digits",
     "status",
     "status_of",
-    "uncertified_verdict",
-    "undecided",
+    "threshold",
+    "tolerance",
+    "tolerating",
     "ward_applicability",
 ]

@@ -207,7 +207,7 @@ def test_goldstone_probe_discriminates(probes, monkeypatch):
     with monkeypatch.context() as patch:
         patch.setattr(ward, "gauge_ward", lambda leg, factor, point: (leg, control))
         result = probes.probe("li_aa_zz")
-    assert not result.passed and result.worst > 1e6
+    assert result.verdict == "fail" and result.worst > 100 * result.tolerance
     exact = goldstone._mass_over_energy
     with monkeypatch.context() as patch:
         patch.setattr(
@@ -216,7 +216,7 @@ def test_goldstone_probe_discriminates(probes, monkeypatch):
             lambda point, leg, digits: exact(point, leg, digits) * 101 / 100,
         )
         result = probes.probe("li_aa_zz")
-    assert not result.passed and result.worst > 1e6
+    assert result.verdict == "fail" and result.worst > 100 * result.tolerance
 
 
 def test_goldstone_equivalence_on_h_to_z_a_vanishes_on_both_sides(probes):

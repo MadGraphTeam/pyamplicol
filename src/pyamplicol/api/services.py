@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import math
 import os
 import time
 import weakref
@@ -2217,6 +2218,7 @@ def check(
     progress: ProgressSink | None = None,
     sqrt_s: float | None = None,
     arbitrary_digits: int | None = None,
+    tolerance: float | None = None,
     cuts: PhaseSpaceCuts | None = None,
     kinematics_improvement: str | None = None,
     kinematics_improvement_binary64: bool | None = None,
@@ -2241,6 +2243,7 @@ def check(
             progress=progress,
             sqrt_s=sqrt_s,
             arbitrary_digits=arbitrary_digits,
+            tolerance=tolerance,
             cuts=cuts,
             kinematics_improvement=kinematics_improvement,
             kinematics_improvement_binary64=kinematics_improvement_binary64,
@@ -2261,6 +2264,7 @@ def _check(
     progress: ProgressSink | None = None,
     sqrt_s: float | None = None,
     arbitrary_digits: int | None = None,
+    tolerance: float | None = None,
     cuts: PhaseSpaceCuts | None = None,
     kinematics_improvement: str | None = None,
     kinematics_improvement_binary64: bool | None = None,
@@ -2280,13 +2284,18 @@ def _check(
     ``generation.validation.seed``): Born-interfered poles against Catani's
     operator and Ward identities, loop-induced finiteness and Ward probes,
     Goldstone-equivalence probes where they apply (``loops.v2.checks``).
-    ``precision`` "auto" runs binary64 first, double-double only where
-    binary64 fails, is refused or is out of scope, and arbitrary precision
-    only for a row double-double leaves undecided (its residual above the
-    criterion while within ten times its own estimate), at the digit count
-    derived from the shortfall or ``arbitrary_digits`` (None takes
-    ``check.arbitrary_digits``; it needs "auto"); a row still undecided
-    there fails the check ("undecided", exit code 1). ``model`` replaces the
+    Every row passes iff its residue R < K S, S the row's own scale
+    (``loops.v2.checks.threshold``; a tolerance, not a certificate), K =
+    ``tolerance`` (None takes ``check.tolerance``; both None: the run's
+    requested relative accuracy, ``reduction_target`` or
+    ``evaluation.reduction_target``, else the native policy's default
+    target); a row whose R or S cannot be computed is inconclusive (exit
+    code 4, never a pass). ``precision`` "auto" runs binary64 first,
+    double-double only for a row binary64 does not pass, and arbitrary
+    precision only for a row double-double does not pass, at
+    ``arbitrary_digits`` digits (None takes ``check.arbitrary_digits``;
+    both None: twice double-double's; it needs "auto"); the verdict is the
+    first passing carrier's, else the last one's. ``model`` replaces the
     configuration's model source (a ``ModelSource``, or a source as
     ``model.source`` takes it, with the configuration's restriction; None
     takes the configuration's ``check.model``, if set): e.g. an artifact
@@ -2385,6 +2394,12 @@ def _check(
                 "check.arbitrary_digits sets the arbitrary-precision rung of the "
                 f"auto ladder; precision {str(carrier)!r} runs its carrier alone"
             )
+    if tolerance is None:
+        tolerance = run.check.tolerance
+    elif isinstance(tolerance, bool) or not (
+        isinstance(tolerance, (int, float)) and 0 < tolerance < math.inf
+    ):
+        raise ValueError("check tolerance must be a finite positive number")
     energy = run.check.sqrt_s if sqrt_s is None else float(sqrt_s)
     recorded = run.evaluation.phase_space.cuts
     cuts = recorded if cuts is None else cuts.over(recorded)
@@ -2432,6 +2447,7 @@ def _check(
                     stored=stored,
                     sqrt_s=energy,
                     arbitrary_digits=digits,
+                    tolerance=tolerance,
                     cuts=cuts,
                     kinematics_improvement=kinematics_improvement,
                     kinematics_improvement_binary64=kinematics_improvement_binary64,
@@ -2455,7 +2471,27 @@ def _check(
         "complex-mass scheme",
         round(time.perf_counter() - started, 3),
         interrupted=interrupted,
+        tolerance=_check_tolerance(tolerance, reduction_target, run),
     )
+
+
+def _check_tolerance(tolerance: Any, reduction_target: Any, run: Any) -> float:
+    """The K a check judged with (``loops.v2.checks.tolerance``): the given
+    tolerance, else the requested relative accuracy, else the default
+    target."""
+
+    if tolerance is not None:
+        return float(tolerance)
+    target = (
+        reduction_target
+        if reduction_target is not None
+        else run.evaluation.reduction_target
+    )
+    if target is not None:
+        return float(target)
+    from pyamplicol.loops.v2.reduction import default_target
+
+    return default_target()
 
 
 class _CheckProgress:

@@ -777,6 +777,7 @@ class DefaultCliServices:
             model=config.check.model,
             sqrt_s=config.check.sqrt_s,
             arbitrary_digits=config.check.arbitrary_digits,
+            tolerance=config.check.tolerance,
             cuts=config.evaluation.phase_space.cuts,
             kinematics_improvement=config.evaluation.kinematics_improvement,
             kinematics_improvement_binary64=(

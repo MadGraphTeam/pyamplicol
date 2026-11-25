@@ -26,17 +26,18 @@ particle replaced by its Goldstone partner, admitted as an external leg in
 
     r(l, h) = || a_V(l, h) - eta (M_V / E_j) a_G(l, h_j -> 0) ||_G
 
-against E_V + (M_V / E_j) E_G, the two amplitudes' absolute estimates
-(``induced.amplitude_estimates``: re-test and rotation budgets plus the
-floor on the physical amplitude's term scale); it passes within ten times
-that (the user's x10 rule, m-lit Q12). eta is a field convention (a
+against S = S_V + (M_V / E_j) S_G, the two rows' term floors (the vector
+row's physical floor, ``induced.ward_floors``, and the Goldstone row's): it
+passes iff r < K S at every coefficient (``checks.threshold``, K the
+check's tolerance); the estimates E_V + (M_V / E_j) E_G
+(``induced.amplitude_estimates``) are reported. eta is a field convention (a
 Goldstone's phase can be redefined), so the probe reads it from the
 amplitudes: the unit phase of sum <b, a_V>_G with b = (M_V / E_j) a_G over
 every row, then requires every row to hold with that one phase and unit
 modulus (a wrong Goldstone vertex, a missing R2 vertex or a wrong
 counterterm breaks a row or the modulus; ``phase`` is recorded). Where the
 Goldstone side vanishes (h > z a: k.A(V) = 0 by the photon's transversality)
-the probe checks that both sides vanish within their estimates.
+the probe checks that the vector side vanishes against its floor.
 
 Widths: the probe slices are the generation-time probe's (``ew_policy.
 probe_widths``: zero widths outside the complex-mass scheme, which keeps its
@@ -140,11 +141,15 @@ def goldstone_slice(
 
 @dataclass(frozen=True)
 class GoldstoneResult:
-    """A Goldstone-equivalence probe of one leg (``probe``): per (loop
-    order, row) of the vector side the ratio of the residue to its estimate,
-    the fitted phase eta (re, im) and the size of the Goldstone side against
-    its estimate (``goldstone_ratio``: how far it is from vanishing; the
-    identity is vacuous where both sides vanish)."""
+    """A Goldstone-equivalence probe of one leg (``probe``), judged by the
+    threshold rule (``checks.threshold``): per (loop order, row) of the
+    vector side the largest R / S over the Laurent coefficients (R =
+    ||A(V)_k - eta (M/E) A(G)_k||_G, S = the vector row's floor plus M/E
+    times the Goldstone row's), the rows whose R or S cannot be computed
+    (``undefined``), the tolerance K, the fitted phase eta (re, im) and the
+    size of the Goldstone side against its estimate (``goldstone_ratio``,
+    reported: how far it is from vanishing; the identity is vacuous where
+    both sides vanish)."""
 
     leg: int
     ratios: Mapping[tuple[Any, Any], float]
@@ -152,17 +157,38 @@ class GoldstoneResult:
     goldstone_ratio: float
     scales: Mapping = field(default_factory=lambda: MappingProxyType({}))
     # Whether a run of either side served a reduction lane without accuracy
-    # evidence (``induced.ProbeResult.uncertified``): ``pyamplicol check``
-    # reads the probe as inconclusive.
+    # evidence (``induced.ProbeResult.uncertified``): recorded.
     uncertified: bool = False
+    undefined: tuple[str, ...] = ()
+    tolerance: float = field(default_factory=induced._default_tolerance)
+    # Per (loop order, row): R / S and E / S of the coefficient with the
+    # largest R / S (reported).
+    relative: Mapping = field(default_factory=lambda: MappingProxyType({}))
 
     @property
     def worst(self) -> float:
         return max(self.ratios.values(), default=0.0)
 
     @property
+    def verdict(self) -> str:
+        return induced.probe_verdict(self.ratios, self.undefined, self.tolerance)
+
+    @property
     def passed(self) -> bool:
-        return self.worst <= ESTIMATE_FACTOR
+        return self.verdict == "pass"
+
+    @property
+    def reason(self) -> str | None:
+        if self.verdict != "inconclusive":
+            return None
+        if not self.undefined:
+            return "nothing compared"
+        more = len(self.undefined) - 1
+        return (
+            "R or S cannot be computed: "
+            + self.undefined[0]
+            + (f" (and {more} more)" if more else "")
+        )
 
 
 def _mass_over_energy(point: Sequence[Sequence[Any]], leg: int, digits: int) -> Decimal:
@@ -223,6 +249,7 @@ def probe(
     precision: Any = None,
     checks: Any = None,
     physical: Mapping | None = None,
+    tolerance: float | None = None,
 ) -> GoldstoneResult:
     """The Goldstone-equivalence probe of leg ``leg`` (module docstring) at
     one point on the native executors of the vector's slice (``vector``, on
@@ -234,13 +261,15 @@ def probe(
     double-double where the backend refuses that run, ``induced.
     probe_floors``); a run the backend refuses raises ``induced.
     ProbePointRefused`` (the generation-time probes re-run the probe in
-    their next carrier, ``induced.generation_probes``)."""
+    their next carrier, ``induced.generation_probes``). ``tolerance``: K
+    (None: ``checks.tolerance``)."""
 
     from .assemble import Precision, _fraction
     from .stability import RECOMMENDED_CHECKS
     from .ward import gauge_ward, rotated_ward
 
     precision = precision or Precision.double_double()
+    tolerance = induced._default_tolerance() if tolerance is None else tolerance
     checks = RECOMMENDED_CHECKS if checks is None else checks
     frame = checks.frame
     if frame is None:
@@ -329,29 +358,69 @@ def probe(
                 goldstone_ratio = max(
                     goldstone_ratio, residue / estimate if estimate else float("inf")
                 )
-    ratios = {}
+    from .checks import INCONCLUSIVE, threshold
+
+    ratios: dict = {}
+    relative: dict = {}
+    undefined: list[str] = []
     scaled_factor = float(factor)
+
+    def row_scales(key):
+        """S per coefficient of a vector row: its floor plus M/E times its
+        Goldstone row's (None where it cannot be computed)."""
+
+        order, row = key
+        floor_v = floors_v.get(key)
+        floor_g = floors_g.get((order, _row_map(row, leg)), ())
+        out = []
+        for k in range(width):
+            size_v = (
+                None
+                if floor_v is None or k >= len(floor_v)
+                else induced._finite(floor_v[k])
+            )
+            size_g = induced._finite(floor_g[k]) if k < len(floor_g) else 0.0
+            out.append(
+                None
+                if size_v is None or size_g is None
+                else size_v + scaled_factor * size_g
+            )
+        return out
+
+    scales_ = {key: row_scales(key) for key in keys}
+    # A row whose S vanishes (no term on either side: a helicity row that
+    # vanishes identically) is measured against the point's largest S at k.
+    widest = induced.widest_floors(
+        {key: [0.0 if x is None else x for x in v] for key, v in scales_.items()}
+    )
     for key in keys:
         a = side_v.amplitude_vectors[key]
         b = sides[key]
-        entries_v = estimates_v.get(key, ())
         order, row = key
+        entries_v = estimates_v.get(key, ())
         entries_g = estimates_g.get((order, _row_map(row, leg)), ())
-        ratio = 0.0
         for k in range(width):
             with numbers.scope():
-                residue = float(
+                residue = induced._finite(
                     induced.g_norm(
                         [a[t][k] - eta * b[t][k] for t in range(size)], gram, numbers
                     )
                 )
-            if not residue:
+            scale_ = scales_[key][k]
+            if scale_ == 0.0:
+                scale_ = widest[k]
+            if threshold(residue, scale_, tolerance) == INCONCLUSIVE:
+                undefined.append(f"{key} k={k}: R {residue}, S {scale_}")
                 continue
-            estimate = (
-                entries_v[k][1] if k < len(entries_v) else 0.0
-            ) + scaled_factor * (entries_g[k][1] if k < len(entries_g) else 0.0)
-            ratio = max(ratio, residue / estimate if estimate else float("inf"))
-        ratios[key] = ratio
+            ratio = residue / scale_
+            if key not in ratios or ratio >= ratios[key]:
+                ratios[key] = ratio
+                # The estimate E over S, reported (it decides nothing).
+                error = induced._finite(
+                    (entries_v[k][1] if k < len(entries_v) else 0.0)
+                    + scaled_factor * (entries_g[k][1] if k < len(entries_g) else 0.0)
+                )
+                relative[key] = (ratio, None if error is None else error / scale_)
     phase = complex(eta)
     return GoldstoneResult(
         leg,
@@ -362,6 +431,9 @@ def probe(
         uncertified=any(
             getattr(run, "uncertified_bound", None) for run in (side_v, side_g)
         ),
+        undefined=tuple(undefined),
+        tolerance=tolerance,
+        relative=MappingProxyType(relative),
     )
 
 

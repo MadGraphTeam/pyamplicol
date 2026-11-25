@@ -1541,7 +1541,9 @@ def judge(record: dict, entry: dict) -> dict:
         served = len(worst)
         if not worst:
             status = "partial" if label.startswith("tirust") else "not run"
-        elif max(worst) <= FACTOR:
+        elif all(x.get("passed") is True for x in probe if "worst" in x):
+            # The probe's own verdict (R < K S per row, ``checks.threshold``);
+            # ``worst`` is its largest R / S.
             status = "pass" if served == count else "partial"
         else:
             status = "fail"
@@ -1671,9 +1673,7 @@ def judge(record: dict, entry: dict) -> dict:
             worst = [max(x["worst"].values()) for x in arm if "worst" in x]
             if not worst:
                 status = "partial" if label.startswith("tirust") else "not run"
-            elif max(worst) <= FACTOR and all(
-                x.get("passed") for x in arm if "worst" in x
-            ):
+            elif all(x.get("passed") is True for x in arm if "worst" in x):
                 status = "pass" if len(worst) == count else "partial"
             else:
                 status = "fail"

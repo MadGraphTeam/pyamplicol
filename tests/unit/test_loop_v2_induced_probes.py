@@ -14,15 +14,18 @@ on 2026-11-08 22:34 (3), package lit-probe).
   screened).
 * **Opt-in** ``generation.loop_induced_probes`` in the run config, the CLI
   and the Python config object; any other value refused with one message.
-  Every probe runs first in binary64; only a probe whose binary64 run fails
-  its verdict or is refused runs again in double-double (a test seam forces
-  either); a probe that fails after the fallback refuses the process unless
-  ``generation.allow_failed_probes``, which stores it with the failure.
+  Every probe runs first in binary64; only a probe binary64 does not pass
+  (R < K S, ``checks.threshold``) or refuses runs again in double-double (a
+  test seam forces either); a probe that fails after the fallback refuses
+  the process unless ``generation.allow_failed_probes``, which stores it
+  with the failure; a probe refused in every carrier is recorded
+  inconclusive (never a pass) and generation continues.
 * **A real gauge check**: g g > a a (massless quarks, nf5) generated from a
   test-only copy of the shipped loop_sm without the R2 vertex whose legs are
   the row's external particles (selected by PDG codes from the model's own
   files): the finite part changes far beyond its estimate, the finiteness
-  probe still passes (R2 is finite), the binary64 Ward probe fails by far,
+  probe still passes (R2 is finite), the binary64 Ward probe fails (R / S
+  70 times K),
   the double-double fallback fails too (a defect, not rounding), and the
   public generation refuses (``loop-induced-probe``) unless allowed; the
   unmodified copy passes in binary64 with no fallback.
@@ -366,7 +369,7 @@ def test_only_the_probe_refused_in_binary64_runs_in_double_double(gg_h, monkeypa
 
 @pytest.mark.loop_physics
 def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypatch):
-    """A finiteness verdict failed in binary64 (a test seam: ratio 1e3) is
+    """A finiteness verdict failed in binary64 (a test seam: R / S 1e3) is
     re-run in double-double, where it passes, which decides it; the Ward
     probe keeps its binary64 verdict."""
 
@@ -396,6 +399,7 @@ def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypa
     assert finiteness["fallback"] == {
         "carrier": "double",
         "reason": "verdict",
+        "verdict": "fail",
         "worst": 1000.0,
     }
     assert ward["carrier"] == "double" and "fallback" not in ward
@@ -404,15 +408,15 @@ def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypa
 
 
 @pytest.mark.loop_physics
-def test_a_probe_refused_in_every_carrier_fails_generation_unless_allowed(
-    gg_h, monkeypatch
+def test_a_probe_refused_in_every_carrier_is_recorded_inconclusive(
+    gg_h, monkeypatch, caplog
 ):
-    """A probe without a verdict in any carrier is a failure, never a pass:
-    ``ProbeFailure`` (``loop-induced-probe``) unless allowed, which records
-    the refusal and the carrier that last refused it."""
+    """A probe without R and S in any carrier (refused everywhere) is
+    inconclusive, never a pass: recorded with the carrier that last refused
+    it and logged as a warning by the generation; generation continues (only
+    a decisive failure refuses the process, ``ProbeFailure``)."""
 
     from pyamplicol.loops.v2 import induced
-    from pyamplicol.loops.v2.refusals import LoopEngineRefusal, keyed_error
 
     def force(carrier, ward, result):
         if ward is not None:
@@ -420,23 +424,67 @@ def test_a_probe_refused_in_every_carrier_fails_generation_unless_allowed(
         return result
 
     _seam(monkeypatch, force)
-    with pytest.raises(induced.ProbeFailure, match="ward probe") as refused:
-        induced.generation_probes(
-            gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
-        )
-    typed = keyed_error(refused.value)
-    assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
     record = induced.generation_probes(
-        gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates, allow_failure=True
+        gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
     )
-    assert record["allowed_failure"] and not record["ward"]["passed"]
+    assert "failed" not in record and "allowed_failure" not in record
+    assert not record["ward"]["passed"]
     (ward,) = (entry for entry in record["probes"] if entry["probe"] == "ward")
     assert ward["carrier"] == "double-double" and not ward["passed"]
+    assert ward["verdict"] == "inconclusive"
     assert ward["refused"].endswith("forced refusal in double-double")
     assert ward["fallback"]["reason"] == "refused"
+    (line,) = record["inconclusive"]
+    assert line.startswith("ward probe (leg 1): inconclusive, refused in")
     assert record["finiteness"]["passed"] and record["finiteness"]["carrier"] == (
         "double"
     )
+    json.dumps(record, allow_nan=False)
+
+
+@pytest.mark.loop_fast
+def test_a_probe_verdict_is_the_threshold_rule():
+    """A probe fails iff a measured R / S is not below K (whatever else is
+    inconclusive), is inconclusive iff a row's R or S cannot be computed or
+    nothing was compared, and passes otherwise; its failure is the keyed
+    ``loop-induced-probe`` refusal (the dropped-R2 test below runs it)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.refusals import LoopEngineRefusal, keyed_error
+
+    assert induced.probe_verdict({"k": 7.1e-4}, (), 1e-5) == "fail"
+    assert induced.probe_verdict({"k": 7.1e-4}, ("x",), 1e-5) == "fail"
+    assert induced.probe_verdict({"k": 1e-5}, (), 1e-5) == "fail"
+    assert induced.probe_verdict({"k": 1e-13}, ("x",), 1e-5) == "inconclusive"
+    assert induced.probe_verdict({}, (), 1e-5) == "inconclusive"
+    assert induced.probe_verdict({"k": 1e-13}, (), 1e-5) == "pass"
+    assert induced.probe_verdict({"k": 1e-13}, (), 1e-14) == "fail"
+    typed = keyed_error(induced.ProbeFailure("'g g > a a': ward probe failed"))
+    assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
+    # R and S per row and coefficient: a missing floor, a non-finite residue
+    # and a floor row the evaluation lacks are inconclusive rows.
+    estimates = {
+        "a": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
+        "b": ((1.0, 0.1), (float("nan"), 0.1), (0.0, 0.1)),
+        "c": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
+    }
+    floors = {"a": [1.0, 1.0, 1.0], "b": [1.0, 1.0, 1.0], "d": [1.0, 1.0, 1.0]}
+    ratios, relative, undefined = induced.probe_measures(estimates, floors, 1, 1e-5)
+    assert ratios == {"a": 1e-15, "b": 0.0} and relative["a"] == (1e-15, 0.1)
+    assert len(undefined) == 4  # b k=1, c k=1, c k=2, d (no row)
+    assert any(text.startswith("d:") for text in undefined)
+    # A row whose floor vanishes (no term: a helicity row that vanishes
+    # identically) is measured against the point's largest row floor; 0 / 0
+    # where every floor vanishes is inconclusive.
+    estimates = {"a": ((1.0, 0.1), (1e-15, 0.1)), "z": ((0.0, 0.0), (0.0, 0.0))}
+    floors = {"a": [4.0, 2.0], "z": [0.0, 0.0]}
+    ratios, _relative, undefined = induced.probe_measures(estimates, floors, 1, 1e-5)
+    assert ratios == {"a": 5e-16, "z": 0.0} and not undefined
+    estimates = {"z": ((0.0, 0.0), (1e-3, 0.0))}
+    ratios, _relative, undefined = induced.probe_measures(
+        estimates, {"z": [0.0, 0.0]}, 1, 1e-5
+    )
+    assert ratios == {} and len(undefined) == 1
 
 
 @pytest.mark.loop_fast
@@ -451,11 +499,11 @@ def test_a_goldstone_probe_refused_in_binary64_runs_in_double_double(monkeypatch
 
     calls: list[tuple[int, str]] = []
 
-    def probe(vector, partner, point, scale, leg, *, precision, physical):
+    def probe(vector, partner, point, scale, leg, *, precision, physical, tolerance):
         calls.append((leg, precision.arithmetic))
         if leg == 3 and precision.arithmetic == "double":
             raise induced.ProbePointRefused("the probe point failed: forced (seam)")
-        return GoldstoneResult(leg, {("o", "r"): 0.5}, None, 0.1)
+        return GoldstoneResult(leg, {("o", "r"): 1e-13}, None, 0.1, tolerance=1e-5)
 
     monkeypatch.setattr(
         goldstone, "massive_vector_legs", lambda target: {3: 250, 4: 251}
@@ -589,9 +637,11 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     for entry in wards:
         assert entry["fallback"]["carrier"] == "double"
         assert entry["fallback"]["reason"] == "verdict"
-        assert entry["fallback"]["worst"] > 1e6
+        # R / S 7e-4 at K 1e-5 in both carriers (a defect, not rounding).
+        assert entry["fallback"]["worst"] > 10 * dropped_record["tolerance"]
         assert entry["carrier"] == "double-double" and not entry["passed"]
-        assert entry["worst"] > 1e6
+        assert entry["verdict"] == "fail"
+        assert entry["worst"] > 10 * dropped_record["tolerance"]
     assert dropped_record["allowed_failure"] and dropped_record["fallbacks"] == 2
     # The public route with the option: refused, or stored with the failure.
     expression = "g g > a a"

@@ -27,10 +27,11 @@ def _number(value: float | None) -> str:
 
 
 def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
-    """The header (what was checked and how), one table per process (every
-    row: check, subject, point, deciding carrier, ratio to its bound,
-    deviation and E over the row's scale (``checks.CheckRow``), verdict,
-    fallback or reason) and the overall verdict with the exit code."""
+    """The header (what was checked and how, the tolerance K), one table per
+    process (every row: check, subject, point, deciding carrier, the
+    measured R / S, the K it was judged with, the estimate E / S for
+    information (``checks.CheckRow``), verdict, fallback or reason) and the
+    overall verdict with the exit code."""
 
     from .summary import _paint
 
@@ -52,6 +53,16 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 if len(report.carriers) > 1
                 else f"{report.precision}: {report.carriers[0]}",
             ),
+            (
+                "rule",
+                "a row passes iff R < K S (R its residue, S its own scale; a "
+                "tolerance, not a certificate)"
+                + (
+                    ""
+                    if getattr(report, "tolerance", None) is None
+                    else f"; K = {report.tolerance:g}"
+                ),
+            ),
             ("seconds", f"{report.seconds:.3g}"),
         )
     )
@@ -63,9 +74,9 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 "subject",
                 "point",
                 "carrier",
-                "ratio",
-                "dev / scale",
-                "E / scale",
+                "R / S",
+                "K",
+                "E / S (info)",
                 "verdict",
                 "fallback / reason",
             )
@@ -101,8 +112,8 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                     f"{row.carrier} ({row.digits} digits)"
                     if row.digits
                     else row.carrier or "",
-                    _number(row.ratio),
                     _number(row.deviation),
+                    _number(getattr(row, "tolerance", None)),
                     _number(row.estimate),
                     verdict,
                     # An undecided row's reason holds both carriers' numbers.

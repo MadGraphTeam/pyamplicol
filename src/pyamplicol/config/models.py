@@ -2033,7 +2033,11 @@ class CheckConfig:
     ``generation.validation._build_particles``) and the digit count of the
     auto ladder's arbitrary-precision rung (``arbitrary_digits``: None
     derives it per row from the double-double shortfall, ``loops.v2.checks.
-    rung_digits``; it needs ``precision`` auto)."""
+    rung_digits``; it needs ``precision`` auto) and the tolerance K of every
+    check row (``tolerance``: a row passes iff R < K S, ``loops.v2.checks.
+    threshold``; None takes the run's requested relative accuracy
+    ``evaluation.reduction_target``, whose default is the native policy's
+    target; the generation-time probes read it too)."""
 
     points: int = field(default=3, metadata=_setting("int"))
     seed: int | None = field(default=None, metadata=_setting("int", nullable=True))
@@ -2048,9 +2052,20 @@ class CheckConfig:
     arbitrary_digits: int | None = field(
         default=None, metadata=_setting("int", nullable=True)
     )
+    tolerance: float | None = field(
+        default=None, metadata=_setting("float", nullable=True)
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "points", _integer(self.points, "check.points"))
+        if self.tolerance is not None:
+            object.__setattr__(
+                self,
+                "tolerance",
+                _finite_float(
+                    self.tolerance, "check.tolerance", minimum=0.0, exclusive=True
+                ),
+            )
         object.__setattr__(
             self,
             "arbitrary_digits",

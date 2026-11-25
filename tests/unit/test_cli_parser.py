@@ -841,8 +841,16 @@ def test_check_takes_a_card_or_an_artifact_and_its_options(tmp_path: Path) -> No
     assert direct.check.sqrt_s is None
     energetic = parse_cli(("check", str(card), "--sqrt-s", "2500")).resolve()
     assert energetic.effective.check.sqrt_s == 2500.0
+    # --tolerance: the threshold rule's K (default None: the requested
+    # relative accuracy); a finite positive number.
+    assert direct.check.tolerance is None
+    tight = parse_cli(("check", str(card), "--tolerance", "1e-9")).resolve()
+    assert tight.effective.check.tolerance == 1e-9
+    for bad in ("0", "-1e-5", "inf", "nan"):
+        with pytest.raises(ConfigurationError, match=r"check\.tolerance"):
+            parse_cli(("check", str(card), f"--tolerance={bad}")).resolve()
     # --arbitrary-digits: the auto ladder's arbitrary-precision rung (default
-    # None: derived per row); an explicit precision runs no rung.
+    # None: twice double-double's digits); an explicit precision runs no rung.
     assert direct.check.arbitrary_digits is None
     digits = parse_cli(("check", str(artifact), "--arbitrary-digits", "48")).resolve()
     assert digits.effective.check.arbitrary_digits == 48

@@ -368,18 +368,25 @@ zero (the complex-mass scheme keeps its complex masses):
 - **Goldstone**, for an external massive vector of a 't Hooft-Feynman gauge
   request: the identity k.A(V) = eta M_V A(G) must hold.
 
-Each passes within ten times the probe's own estimate. Every probe runs in
-binary64 first. A probe whose binary64 run fails that test, or whose point
-the reduction backend refuses in binary64, runs again in double-double on the
-same point, and the double-double run decides it. A failure refuses the
-process (`loop-induced-probe`); `[generation] allow_failed_probes = true`
-(CLI `--allow-failed-probes`) stores it anyway, with the failure recorded.
-`allow_failed_probes` does nothing while the probes are off.
+Each is judged as `pyamplicol check` judges it: every row and Laurent
+coefficient passes iff its residue R < K S, S the row's own scale, K
+`check.tolerance`, by default the requested relative accuracy
+(`evaluation.reduction_target`, default 1e-5); a tolerance, not a
+certificate. Every probe runs in binary64 first. A probe binary64 does not
+pass, or whose point the reduction backend refuses in binary64, runs again in
+double-double on the same point, and the double-double run decides it. A
+failure (R >= K S) refuses the process (`loop-induced-probe`);
+`[generation] allow_failed_probes = true` (CLI `--allow-failed-probes`)
+stores it anyway, with the failure recorded. A probe whose R or S cannot be
+computed (a non-finite value, or a point every carrier refuses) is recorded
+as inconclusive, never a pass, and logged as a warning; generation
+continues. `allow_failed_probes` does nothing while the probes are off.
 
 The outcome is recorded in the artifact's generation filters
-(`loop_induced_probes`): per probe the carrier that decided it, its ratio to
-its estimate, the reason for a double-double rerun and the time, plus the
-time of each stage. The probes reduce on NinjaRS (recorded). A `goldstone`
+(`loop_induced_probes`): K (`tolerance`), per probe the carrier that decided
+it, its verdict and largest R / S (`worst`), the reason for a double-double
+rerun and the time, plus the time of each stage and the inconclusive probes
+(`inconclusive`). The probes reduce on NinjaRS (recorded). A `goldstone`
 entry reads `status = "not-run"`, with the refusals, when no Goldstone side
 of the request could be generated. With the probes off the record reads
 `{"status": "off"}`: not run, never a pass. An exact colour zero records
@@ -428,9 +435,10 @@ artifact = "artifacts/loop_gg_zgg"   # omit to check the card's own request
 points = 3          # seeded phase-space points per process
 seed = 12345        # default: generation.validation.seed
 precision = "auto"  # binary64, then double-double where it fails; or one carrier
+# tolerance = 1e-5  # K of the rule R < K S; default: evaluation.reduction_target
 # model = "my_ufo"  # default: model.source (an artifact: the source it records)
 # sqrt_s = 2000.0   # a scattering's energy; default: the validation convention
-# arbitrary_digits = 50  # the auto ladder's arbitrary-precision rung; default: derived
+# arbitrary_digits = 50  # the auto ladder's arbitrary-precision rung; default: 64
 ```
 
 Generation also drops the helicity rows of a loop-induced process that are
