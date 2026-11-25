@@ -629,31 +629,43 @@ class DefaultCliServices:
                 **kinematics,
             )
 
+        def point_inputs(runtime: Runtime | None) -> tuple[object, object]:
+            """The momenta and scales of the call: the momenta file's, read
+            and checked before the load, else flat phase-space points
+            ([evaluation.phase_space]) on the masses the loaded runtime
+            binds (its model parameters applied;
+            ``flat_points.runtime_binding``)."""
+
+            flat = None
+            if config.evaluation.momenta is None:
+                flat = _flat_points(config, binding=runtime_binding(runtime))
+                momenta: object = flat.as_inputs(exact=exact_inputs)
+            else:
+                momenta = _read_json(config.evaluation.momenta, exact=exact_inputs)
+            if not isinstance(momenta, list):
+                raise ConfigurationError("momenta JSON must be a point list")
+            scales: ScalarInput | list[ScalarInput] | None = evaluation.mu_r2
+            if flat is not None and scales is None and evaluation.mu_r2_file is None:
+                # The flat points' default scale: s of each point.
+                scales = cast("list[ScalarInput]", flat.mu_r2())
+            if evaluation.mu_r2_file is not None:
+                raw_scales = _read_json(evaluation.mu_r2_file, exact=True)
+                if not isinstance(raw_scales, list):
+                    raise ConfigurationError(
+                        "mu_r2 JSON must be a per-point scale list"
+                    )
+                scales = cast("list[ScalarInput]", raw_scales)
+            if virtual and scales is None:
+                raise ConfigurationError(
+                    "virtual evaluation requires --mu-r2 or --mu-r2-file"
+                )
+            return momenta, scales
+
+        if config.evaluation.momenta is not None:
+            momenta, scales = point_inputs(None)
         runtime = _load_process_output(artifact, progress, load_runtime)
-        flat = None
         if config.evaluation.momenta is None:
-            # Flat phase-space points ([evaluation.phase_space]) on the
-            # masses the loaded runtime binds (its model parameters
-            # applied; ``flat_points.runtime_binding``).
-            flat = _flat_points(config, binding=runtime_binding(runtime))
-            momenta: object = flat.as_inputs(exact=exact_inputs)
-        else:
-            momenta = _read_json(config.evaluation.momenta, exact=exact_inputs)
-        if not isinstance(momenta, list):
-            raise ConfigurationError("momenta JSON must be a point list")
-        scales: ScalarInput | list[ScalarInput] | None = evaluation.mu_r2
-        if flat is not None and scales is None and evaluation.mu_r2_file is None:
-            # The flat points' default scale: s of each point.
-            scales = cast("list[ScalarInput]", flat.mu_r2())
-        if evaluation.mu_r2_file is not None:
-            raw_scales = _read_json(evaluation.mu_r2_file, exact=True)
-            if not isinstance(raw_scales, list):
-                raise ConfigurationError("mu_r2 JSON must be a per-point scale list")
-            scales = cast("list[ScalarInput]", raw_scales)
-        if virtual and scales is None:
-            raise ConfigurationError(
-                "virtual evaluation requires --mu-r2 or --mu-r2-file"
-            )
+            momenta, scales = point_inputs(runtime)
         if requests is not None:
             if virtual:
                 return runtime.evaluate_correlated_many(
