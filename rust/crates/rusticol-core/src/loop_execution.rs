@@ -995,11 +995,12 @@ pub mod v2 {
         /// Whether an evaluation of `points` points runs on one thread
         /// instead of this executor's pool: on a pool of more than one
         /// thread, each batch size is timed on both for its first
-        /// [`CALL_PROBES`] evaluations each (alternately, pool first), then keeps the
-        /// faster, so that a call too small to gain from the pool pays
-        /// nothing for it; a size whose pool evaluations take
-        /// [`SERIAL_PROBE_SECONDS`] or more stays on the pool untimed. The values do not depend on the choice (they do
-        /// not depend on the thread count); one thread never asks.
+        /// [`CALL_PROBES`] evaluations each (alternately, pool first), then
+        /// keeps the faster, so that a call too small to gain from the pool
+        /// pays nothing for it; a size whose pool evaluations take
+        /// [`SERIAL_PROBE_SECONDS`] or more stays on the pool untimed. The
+        /// values do not depend on the choice (they do not depend on the
+        /// thread count); one thread never asks.
         pub fn serial_call(&self, points: usize) -> bool {
             if self.pool.current_num_threads() == 1 {
                 return false;
