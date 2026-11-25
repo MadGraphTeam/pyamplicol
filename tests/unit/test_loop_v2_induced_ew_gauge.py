@@ -155,6 +155,32 @@ class _Probes:
             precision=precision or Precision.double(),
         )
 
+    def induced(self, name: str, *, index: int = 0):
+        """The finiteness probe and the Ward probe of leg 1 of the fixture's
+        vector slice at point ``index``, in binary64."""
+
+        from pyamplicol.loops.v2 import induced
+        from pyamplicol.loops.v2.assemble import Precision
+        from pyamplicol.loops.v2.ward import gauge_ward
+
+        _leg, vector, _side, executor, _partner = self.sides(name)
+        fixture = _fixture(name)
+        point, scale = _point(fixture, index)
+        external = vector._external_parameters()
+        parameters = {
+            key: value
+            for key, value in fixture["scheme_data"]["parameters"].items()
+            if key in external and key not in vector.fixed_parameters
+        }
+        return induced.probes(
+            executor,
+            point,
+            scale,
+            [None, gauge_ward(1, (1, 0), point)],
+            parameters=parameters,
+            precision=Precision.double(),
+        )
+
 
 @pytest.fixture(scope="module")
 def probes(gmu, loop_native):
@@ -195,37 +221,103 @@ def test_goldstone_equivalence_holds_on_a_a_to_z_z(probes):
         assert abs(re) <= 1e-9 and abs(im + 1) <= 1e-9
 
 
+def _planted(result, scale_ratio=1e4, coefficient=None):
+    """The judge-level discrimination of one probe (the threshold rule, S =
+    max(P, K T)): of its rows whose terms cancel by at least ``scale_ratio``
+    (T / P; at Laurent coefficient ``coefficient`` only, where given: the
+    Goldstone sides are a physical size at the finite part, their poles
+    vanish), the physically largest (largest P) passes as measured and fails
+    with its residue replaced by 1e-3 of P; returns (T / P, clean R / S,
+    planted R / S). A row whose P is below K^2 T is decided on the noise
+    guard K T: there a violation of 1e-3 of P is below what the computation
+    resolves at K."""
+
+    from dataclasses import replace
+
+    from pyamplicol.loops.v2 import checks, induced
+
+    rows = [
+        (key, measure)
+        for key, measure in result.measures
+        if measure.physical and measure.terms and measure.residue is not None
+        if coefficient is None or measure.label.endswith(f"k={coefficient}")
+        if measure.terms >= scale_ratio * measure.physical
+    ]
+    assert rows, "no row whose terms cancel by the required ratio"
+    key, measure = max(rows, key=lambda row: row[1].physical)
+    heavy = measure.terms / measure.physical
+    tolerance = result.tolerance
+    clean = induced.judged_rows([(key, measure)], tolerance)
+    planted = replace(measure, residue=1e-3 * measure.physical)
+    wrong = induced.judged_rows([(key, planted)], tolerance)
+    assert checks.judge(measure, tolerance) == checks.PASS
+    assert checks.judge(planted, tolerance) == checks.FAIL
+    return heavy, clean["ratios"][key], wrong["ratios"][key]
+
+
 def test_goldstone_probe_discriminates(probes, monkeypatch):
-    """The probe fails by far when either side of the identity is wrong: a
-    non-gauge vector in place of p_3 / E_3 on the vector side (the Ward
-    probe's control), or a Goldstone side off by 1 % in modulus (the fitted
-    phase cannot absorb it: eta has unit modulus)."""
+    """The probe fails when either side of the identity is wrong, even on
+    rows whose terms cancel by four orders of magnitude and more (S = max(P,
+    K T), P the larger side of the identity): a non-gauge vector in place of
+    p_3 / E_3 on the vector side (the Ward probe's control), or a Goldstone
+    side off by 1e-3 or 1 % in modulus (the fitted phase cannot absorb it:
+    eta has unit modulus)."""
 
     from pyamplicol.loops.v2 import goldstone, ward
 
+    clean = probes.probe("li_aa_zz")
+    assert clean.verdict == "pass", clean.worst_row
+    heavy, measured, planted = _planted(clean, coefficient=0)
+    print(f"goldstone: T / P {heavy:.3g}, R / S {measured:.3g}, planted {planted:.3g}")
     control = (("1", "0"), ("0", "0"), ("1", "0"), ("0", "0"))
     with monkeypatch.context() as patch:
         patch.setattr(ward, "gauge_ward", lambda leg, factor, point: (leg, control))
         result = probes.probe("li_aa_zz")
     assert result.verdict == "fail" and result.worst > 100 * result.tolerance
     exact = goldstone._mass_over_energy
-    with monkeypatch.context() as patch:
-        patch.setattr(
-            goldstone,
-            "_mass_over_energy",
-            lambda point, leg, digits: exact(point, leg, digits) * 101 / 100,
+    for shift in (1e-3, 1e-2):
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                goldstone,
+                "_mass_over_energy",
+                lambda point, leg, digits, shift=shift: (
+                    exact(point, leg, digits)
+                    * (1 + type(exact(point, leg, digits))(shift))
+                ),
+            )
+            result = probes.probe("li_aa_zz")
+        assert result.verdict == "fail" and result.worst > 10 * result.tolerance, (
+            shift,
+            result.worst_row,
         )
-        result = probes.probe("li_aa_zz")
-    assert result.verdict == "fail" and result.worst > 100 * result.tolerance
+
+
+def test_finiteness_and_ward_probes_discriminate_on_cancelling_rows(probes):
+    """a a > z z's finiteness and Ward probes (S = max(P, K T), P the norm of
+    the row's physical finite amplitude, T its term floor, which is 1e5 to
+    1e6 times P here): the clean rows pass with their R / S; a pole planted
+    at 1e-3 of the finite amplitude, and a substituted amplitude at 1e-3 of
+    the physical one, fail (judge level, on the rows' real numbers)."""
+
+    finiteness, ward = probes.induced("li_aa_zz")
+    for result in (finiteness, ward):
+        assert result.verdict == "pass", result.worst_row
+        heavy, measured, planted = _planted(result)
+        print(
+            f"{result.kind}: T / P {heavy:.3g}, R / S {measured:.3g}, "
+            f"planted {planted:.3g}"
+        )
 
 
 def test_goldstone_equivalence_on_h_to_z_a_vanishes_on_both_sides(probes):
     """h > z a: k_Z . A(h -> Z gamma) vanishes by the photon's
-    transversality, and so does h > G0 a: both sides are zero within their
-    estimates, the probe passes with no phase to read."""
+    transversality, and so does h > G0 a: both sides are below what the
+    computation resolves, so S is K times the rows' floors (the noise guard)
+    and the probe passes, with no phase to read."""
 
     result = probes.probe("li_h_za")
-    assert result.passed and result.phase is None
+    assert result.verdict == "pass" and result.phase is None
+    assert result.worst_row[4] == "K T"
     assert result.goldstone_ratio <= 10
 
 

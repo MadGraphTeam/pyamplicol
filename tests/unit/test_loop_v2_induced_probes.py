@@ -461,30 +461,49 @@ def test_a_probe_verdict_is_the_threshold_rule():
     assert induced.probe_verdict({"k": 1e-13}, (), 1e-14) == "fail"
     typed = keyed_error(induced.ProbeFailure("'g g > a a': ward probe failed"))
     assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
-    # R and S per row and coefficient: a missing floor, a non-finite residue
-    # and a floor row the evaluation lacks are inconclusive rows.
+    # R, P and T per row and coefficient (S = max(P, K T)): a missing floor,
+    # a non-finite residue and a floor row the evaluation lacks are
+    # inconclusive rows; a row without any term is vacuous.
+    floors = induced.RowFloors(
+        {"a": [1e5, 1e5, 1e5], "b": [1.0, 1.0, 1.0], "d": [1.0, 1.0, 1.0]}
+    )
+    floors.finite = {"a": 1.0, "b": 1.0, "d": 1.0}
     estimates = {
         "a": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
         "b": ((1.0, 0.1), (float("nan"), 0.1), (0.0, 0.1)),
         "c": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
     }
-    floors = {"a": [1.0, 1.0, 1.0], "b": [1.0, 1.0, 1.0], "d": [1.0, 1.0, 1.0]}
-    ratios, relative, undefined = induced.probe_measures(estimates, floors, 1, 1e-5)
-    assert ratios == {"a": 1e-15, "b": 0.0} and relative["a"] == (1e-15, 0.1)
-    assert len(undefined) == 4  # b k=1, c k=1, c k=2, d (no row)
-    assert any(text.startswith("d:") for text in undefined)
-    # A row whose floor vanishes (no term: a helicity row that vanishes
-    # identically) is measured against the point's largest row floor; 0 / 0
-    # where every floor vanishes is inconclusive.
-    estimates = {"a": ((1.0, 0.1), (1e-15, 0.1)), "z": ((0.0, 0.0), (0.0, 0.0))}
-    floors = {"a": [4.0, 2.0], "z": [0.0, 0.0]}
-    ratios, _relative, undefined = induced.probe_measures(estimates, floors, 1, 1e-5)
-    assert ratios == {"a": 5e-16, "z": 0.0} and not undefined
-    estimates = {"z": ((0.0, 0.0), (1e-3, 0.0))}
-    ratios, _relative, undefined = induced.probe_measures(
-        estimates, {"z": [0.0, 0.0]}, 1, 1e-5
+    judged = induced.judged_rows(induced.probe_measures(estimates, floors, 1), 1e-5)
+    assert judged["ratios"] == {"a": 1e-15, "b": 0.0}
+    assert judged["relative"]["a"] == (1e-15, 0.1)
+    assert len(judged["undefined"]) == 4  # b k=1, c k=1, c k=2, d (no row)
+    assert any(text.startswith("d:") for text in judged["undefined"])
+    assert judged["worst_row"][4] == "P" and judged["vacuous"] == 0
+    # A row whose physical finite amplitude is unresolved (P below K T):
+    # S = K T, the noise guard, so the test is R < K^2 T.
+    floors = induced.RowFloors({"a": [1e8, 1e8]})
+    floors.finite = {"a": 1.0}
+    judged = induced.judged_rows(
+        induced.probe_measures({"a": ((1.0, 0.0), (1e-3, 0.0))}, floors, 1), 1e-5
     )
-    assert ratios == {} and len(undefined) == 1
+    assert judged["worst_row"][4] == "K T" and judged["ratios"]["a"] == 1e-6
+    assert induced.probe_verdict(judged["ratios"], judged["undefined"], 1e-5) == "pass"
+    judged = induced.judged_rows(
+        induced.probe_measures({"a": ((1.0, 0.0), (1e-1, 0.0))}, floors, 1), 1e-5
+    )
+    assert induced.probe_verdict(judged["ratios"], judged["undefined"], 1e-5) == "fail"
+    # Every row vacuous (no term: the amplitude vanishes identically).
+    floors = induced.RowFloors({"z": [0.0, 0.0]})
+    floors.finite = {"z": 0.0}
+    judged = induced.judged_rows(
+        induced.probe_measures({"z": ((0.0, 0.0), (0.0, 0.0))}, floors, 1), 1e-5
+    )
+    assert judged["vacuous"] == 1 and not judged["ratios"]
+    result = induced.ProbeResult(
+        "finiteness", judged["ratios"], vacuous=judged["vacuous"], tolerance=1e-5
+    )
+    assert result.verdict == "vacuous" and result.passed
+    assert result.reason.startswith("nothing to test")
 
 
 @pytest.mark.loop_fast

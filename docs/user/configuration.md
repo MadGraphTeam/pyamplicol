@@ -369,10 +369,15 @@ zero (the complex-mass scheme keeps its complex masses):
   request: the identity k.A(V) = eta M_V A(G) must hold.
 
 Each is judged as `pyamplicol check` judges it: every row and Laurent
-coefficient passes iff its residue R < K S, S the row's own scale, K
+coefficient passes iff its residue R < K S with S = max(P, K T), P the
+row's physical reference (the norm of its physical finite amplitude; for
+Goldstone the larger side of the identity) and T its term scale, K
 `check.tolerance`, by default the requested relative accuracy
 (`evaluation.reduction_target`, default 1e-5); a tolerance, not a
-certificate. Every probe runs in binary64 first. A probe binary64 does not
+certificate. A row with no term at all is vacuous (skipped); a probe every
+row of which is vacuous has nothing to test (the amplitude vanishes
+identically): it is recorded with a warning and does not refuse the
+process. Every probe runs in binary64 first. A probe binary64 does not
 pass, or whose point the reduction backend refuses in binary64, runs again in
 double-double on the same point, and the double-double run decides it. A
 failure (R >= K S) refuses the process (`loop-induced-probe`);

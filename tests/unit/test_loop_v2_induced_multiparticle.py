@@ -235,9 +235,9 @@ def _assert_zero_member(artifact, key, expression, value, info, probes, inputs):
     colour tensor at the root of leg 1 (H H > c c~ has none): not
     a colour zero (m-lit Q13), evaluated numerically, exactly 0 within its
     absolute estimate. Its amplitude and every row floor are exactly zero
-    (zero Yukawa couplings), so the finiteness probe's R / S is 0 / 0 at
-    every row: inconclusive, recorded (never a pass), and generation goes
-    on. ``inputs``: the evaluated (point, scale, parameters)."""
+    (zero Yukawa couplings): every finiteness row is vacuous, the probe has
+    nothing to test (recorded with a warning). ``inputs``: the evaluated
+    (point, scale, parameters)."""
 
     from pyamplicol.api.virtual_results import VirtualStabilityChecks
 
@@ -250,16 +250,14 @@ def _assert_zero_member(artifact, key, expression, value, info, probes, inputs):
         assert probes[key] == {"exact_colour_zero": True}
         return
     assert info["exact_colour_zero"] is False, expression
+    # The amplitude and every row floor are exactly zero (zero Yukawa
+    # couplings): every finiteness row is vacuous (no term), nothing to test.
     record = probes[key]
-    assert not record["finiteness"]["passed"] and "failed" not in record, expression
+    assert record["finiteness"]["passed"], expression
     finiteness = record["probes"][0]
-    assert finiteness["probe"] == "finiteness"
-    assert finiteness["verdict"] == "inconclusive", finiteness
-    assert "R 0.0, S 0.0" in finiteness["inconclusive"]
-    assert any(
-        line.startswith("finiteness probe: inconclusive")
-        for line in record["inconclusive"]
-    )
+    assert finiteness["probe"] == "finiteness" and finiteness["verdict"] == "vacuous"
+    assert finiteness["vacuous"].startswith("nothing to test")
+    assert "inconclusive" not in record and "failed" not in record
     _runtime, checked = _evaluate(
         artifact,
         key,
@@ -293,7 +291,7 @@ def test_an_amplitude_without_a_slot_has_an_empty_term_scale():
 def test_a_counterterm_only_loop_induced_process_generates(tmp_path):
     """c c~ > h h alone (a member of p p > h h): no loop family, the
     zero-coupling Yukawa counterterm kets only; generated (its finiteness
-    probe is inconclusive, 0 / 0, and recorded), served as exactly 0 within
+    probe has nothing to test: every row vacuous), served as exactly 0 within
     its absolute estimate. Measured 25 s."""
 
     _unused, *inputs = _point("li_gg_hh")

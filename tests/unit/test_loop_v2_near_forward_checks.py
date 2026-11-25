@@ -230,9 +230,11 @@ def test_the_check_rungs_evaluate_the_improved_point(monkeypatch):
             single = 2.0 * (1 + 1e-11)
         else:
             single = 2.0 * (1 + 1e-20)
+        # The virtual and one part equal to it (its term scale T).
+        values = laurent(0.0, single, -3.0)
         return NS(
             stability=None,
-            components={"virtual": {sector: laurent(0.0, single, -3.0)}},
+            components={"virtual": {sector: values}, "bare": {sector: values}},
             ir_poles={sector: (2.0, -3.0)},
         )
 

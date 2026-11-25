@@ -1543,40 +1543,48 @@ sets a scattering's energy in the model's mass unit, above its threshold),
 lifted to exact momentum conservation, at mu_R^2 = the squared invariant mass
 of the initial state, on NinjaRS at every carrier:
 
-**The rule.** Every row passes iff its residue R is below K times its own
-scale S, R < K S; equality is a miss. K is `--tolerance K`
+**The rule.** Every row passes iff its residue R is below K times its scale
+S, R < K S, equality a miss, with
+
+    S = max(P, K T):
+
+P the row's **physical reference** (the size of the physical quantities whose
+difference or vanishing the identity tests, at the same point and row or
+sector) and T its **term scale** (the size of the terms that cancel into it).
+K T only guards a row whose physical reference is below what the computation
+resolves: there the test becomes R < K^2 T, which rounding passes and which
+escalates to the next carrier when K is tight. K is `--tolerance K`
 (`check.tolerance`), by default the requested relative accuracy
 (`--reduction-target`, `evaluation.reduction_target`, default 1e-5), so K is
 of the order of the requested number of stable digits. Each independently
 required row (a point, a sector or loop order and helicity row, a leg and
 factor, a Laurent coefficient) is compared on its own before any
-aggregation. R and S are both linear in the amplitude: an amplitude-level row
+aggregation. R, P and T are linear in the amplitude: an amplitude-level row
 compares colour-metric norms (the square roots of the squared forms), an
 interference-level row the interference itself, so K is a relative accuracy
 of the checked quantity. The comparison uses the carrier's ordinary
 arithmetic: this is a tolerance, not a certificate.
 
-| Check | R | S |
-| --- | --- | --- |
-| poles, Born-interfered | \|Re V_k - Re C_k\| for each squared-order sector and pole coefficient k, V the renormalised virtual, C Catani's prediction of the requested corrections (QCD; QED where requested), formed natively | the largest of \|C_k\| and of coefficient k of the same sector in the virtual and each of its parts (bare, R2, UV) at the same point |
-| poles, loop-induced (finiteness) | the colour-metric norm of each pole coefficient of each loop order and helicity row | that row's term floor S_k(h) (the pre-cancellation scale of its terms) |
-| ward, Born-interfered | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i: per Born sector \|loop-side Born\|, per virtual sector and Laurent coefficient \|V_k\| | per Born sector \|physical Born\|; per virtual sector and coefficient the same scale as a pole row, of the physical evaluation at the same point |
-| ward, loop-induced | epsilon_j -> p_j / E_j on one leg of every gluon and photon species: the norm of the substituted amplitude at every coefficient | the physical row's term floor |
-| goldstone | \|\|A(V)_k - eta (M/E) A(G)_k\|\| on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge (loop-induced) | the vector row's floor plus M/E times the Goldstone row's |
+| Check | R | P | T |
+| --- | --- | --- | --- |
+| poles, Born-interfered | \|Re V_k - Re C_k\| per squared-order sector and pole coefficient k (V the renormalised virtual, C Catani's prediction of the requested corrections, QCD; QED where requested, formed natively) | max(\|Re C_k\|, \|Re V_k\|) | the largest part (bare, R2, UV) of that sector and coefficient |
+| poles, loop-induced (finiteness) | the colour-metric norm of each pole coefficient of each loop order and helicity row | the norm of that row's physical finite amplitude | the row's term floor S_k(h) |
+| ward, Born-interfered | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i: per Born sector \|loop-side Born\|; per virtual sector and coefficient \|V_k\| | per Born sector \|physical Born\|; per virtual sector and coefficient \|V_k\| of the physical evaluation | per Born sector \|physical Born\|; per virtual sector and coefficient its largest physical part |
+| ward, loop-induced | epsilon_j -> p_j / E_j on one leg of every gluon and photon species: the norm of the substituted amplitude at every coefficient | the norm of the physical finite amplitude of that row (the largest over the substituted leg's helicities) | the physical row's term floor |
+| goldstone | \|\|A(V)_k - eta (M/E) A(G)_k\|\| on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge (loop-induced) | max(\|\|A(V)_k\|\|, \|\|eta (M/E) A(G)_k\|\|) | the vector row's floor plus M/E times the Goldstone row's |
 
-A vanishing reference is defined explicitly: a coefficient that neither the
-prediction nor any part has (the double pole of a process with only massive
-coloured legs) is measured against the same sector's next lower coefficient;
-a sector that vanishes at a point (a colour zero) against the largest scale
-of that coefficient over the point's sectors; and a loop-induced helicity row
-with no term at a coefficient nor at its finite order (one that vanishes
-identically, e.g. by chirality) against the point's largest row floor at
-that coefficient. A row whose R or S cannot
-be computed (not a finite number, a sector or coefficient only one of the
-compared evaluations has, a refused run, or S not positive, 0/0 included) is
-`inconclusive`, never a pass. A row made of several required rows (a Ward
-leg and factor over its sectors and coefficients, a probe over its rows)
-fails if one of them fails, else is inconclusive if one of them is.
+A row with no term at all (R = 0 exactly and T = 0: a coefficient that
+neither the prediction nor any part has, such as the double pole of a process
+with only massive coloured legs, or a helicity row that vanishes
+structurally) is **vacuous**: it is skipped and counted, neither a pass nor
+an inconclusive. A check every row of which is vacuous has nothing to test
+(the amplitude vanishes identically, e.g. a zero coupling): it reads
+`vacuous`, prints a warning line and does not change the exit code. A row
+whose R, P or T cannot be computed (not a finite number, a sector or
+coefficient only one of the compared evaluations has, a refused run, or S not
+positive) is `inconclusive`, never a pass. A row made of several required
+rows (a Ward leg and factor over its sectors and coefficients, a probe over
+its rows) fails if one of them fails, else is inconclusive if one of them is.
 
 `--precision auto` (default) runs binary64 first, double-double only for a
 row binary64 does not pass, and, for a Born-interfered row double-double does
@@ -1612,13 +1620,16 @@ external gluon or photon, no massive vector, a unitary-gauge request) reads
 
 Every row names the check, its subject (sector and pole, leg and factor),
 the point, the carrier that decided, `R / S` (the largest over the row's
-parts; `deviation` in JSON), `K` (`tolerance`), the evaluation's error
+parts; `deviation` in JSON) with that part's `R`, `P` and `T` (`residue`,
+`physical`, `terms`) and `S by` (`scale_by`: `P`, or `K T` where the noise
+guard set S), the count of its vacuous parts (`vacuous`), `K` (`tolerance`),
+the evaluation's error
 estimate over the same scale (`E / S (info)`, `estimate`: reported, it
 decides nothing), the fallback's reason and the verdict; `ratio` in JSON is
 (R / S) / K (below 1 passes). A process's status is a closed aggregate:
 `failed` if a row failed; else `inconclusive` if a row is inconclusive or
 carries an unrecognized verdict; else `nothing checked` if no row passed or
-an applicable check did not run; else `passed`. The exit code is 0 iff
+was vacuous, or an applicable check did not run; else `passed`. The exit code is 0 iff
 every process passed, 1 on any failure, 4 when a process is inconclusive
 (and none failed), and 3 when a process had nothing to check (or an
 applicable check did not run). `--json` returns the `CheckReport`

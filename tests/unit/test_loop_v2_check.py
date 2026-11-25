@@ -404,6 +404,25 @@ def test_the_threshold_rule():
             assert checks.tolerance() == 1e-7
             with checks.tolerating(1e-3):
                 assert checks.tolerance() == 1e-3
+    # S = max(P, K T): P decides a resolved row, K T guards an unresolved
+    # one (there R < K^2 T); a row without any term is vacuous.
+    assert checks.scale_of(2.0, 10.0, 1e-5) == (2.0, "P")
+    assert checks.scale_of(1e-7, 10.0, 1e-5) == (1e-4, "K T")
+    assert checks.scale_of(None, 1.0, 1e-5) == (None, None)
+    measure = checks.Measure
+    assert checks.judge(measure("x", 1e-6, 1.0, 1e5, None), 1e-5) == checks.PASS
+    assert checks.judge(measure("x", 1e-3, 1.0, 1e5, None), 1e-5) == checks.FAIL
+    assert checks.judge(measure("x", 0.0, 0.0, 0.0, None), 1e-5) == checks.VACUOUS
+    assert checks.judge(measure("x", 1e-30, 0.0, 0.0), 1e-5) == checks.INCONCLUSIVE
+    assert checks.judge(measure("x", 0.0, None, 1.0), 1e-5) == checks.INCONCLUSIVE
+    # A row every part of which is vacuous; a process of vacuous rows passes.
+    row = checks._judged_row(
+        "poles", "x", 0, "double", [measure("x", 0.0, 0.0, 0.0)], 1e-5
+    )
+    assert row.verdict == checks.VACUOUS and row.vacuous == 1
+    assert row.reason.startswith("nothing to test")
+    assert checks.status_of([checks.VACUOUS, checks.NOT_APPLICABLE]) == checks.PASSED
+    assert checks.status_of([checks.NOT_APPLICABLE]) == checks.NOTHING_CHECKED
     # The stored-process harness keeps its three-way rule (``ward.judged``).
     assert judged(0.5, 1.0, 0.0) is True and judged(1.5, 1.0, 0.0) is False
     assert judged(0.5, 1.0, 0.6) is None
@@ -435,12 +454,13 @@ def _laurent(*values):
 
 def _pole_result(sector, virtual, poles, parts=None, stability=None):
     """A pole evaluation stand-in: the virtual's Laurent coefficients, its
-    parts (default: the virtual alone) and Catani's (1/eps, 1/eps^2)."""
+    parts (default: one bare part equal to the virtual) and Catani's (1/eps,
+    1/eps^2)."""
 
     from types import SimpleNamespace as NS
 
     components = {"virtual": {sector: _laurent(*virtual)}}
-    for name, values in (parts or {}).items():
+    for name, values in (parts or {"bare": virtual}).items():
         components[name] = {sector: _laurent(*values)}
     return NS(stability=stability, components=components, ir_poles={sector: poles})
 
@@ -477,22 +497,30 @@ def test_pole_and_ward_rows_judge_r_against_k_s():
     assert checks._pole_rows(planted, 0, "double", 1e-2)[(first, 1)].verdict == (
         checks.PASS
     )
-    # The scale reads the parts: a bare part of 20 makes the 1/eps scale 20.
+    # S = max(P, K T): P = max(|C|, |V|) decides; a bare part of 20 is T and
+    # only guards (K T = 2e-4 < P); a part of 1e6 sets S (K T = 10 > P).
     parted = _pole_result(
         first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 20.0, -3.0)}
     )
     row = checks._pole_rows(parted, 0, "double", 1e-5)[(first, 1)]
-    assert row.deviation == pytest.approx(1e-4, rel=1e-6) and row.verdict == checks.FAIL
+    assert (row.scale_by, row.physical, row.terms) == ("P", 2.0, 20.0)
+    assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
+    assert row.verdict == checks.FAIL and row.residue == pytest.approx(2e-3)
+    cancelled = _pole_result(
+        first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 1e6, -3.0)}
+    )
+    row = checks._pole_rows(cancelled, 0, "double", 1e-5)[(first, 1)]
+    assert row.scale_by == "K T" and row.deviation == pytest.approx(2e-4, rel=1e-3)
     # A non-finite coefficient: inconclusive, never a raise or a pass.
     broken = _pole_result(first, (0.5, float("nan"), -3.0), (2.0, -3.0))
     rows = checks._pole_rows(broken, 0, "double", 1e-5)
     assert rows[(first, 1)].verdict == checks.INCONCLUSIVE
     assert "cannot be computed" in rows[(first, 1)].reason
-    # A vanishing double pole with no part (only massive coloured legs):
-    # measured against the 1/eps scale.
+    # A double pole neither the prediction nor any part has (only massive
+    # coloured legs): vacuous, nothing to test.
     massive = _pole_result(first, (0.5, 2.0, 0.0), (2.0, 0.0))
     row = checks._pole_rows(massive, 0, "double", 1e-5)[(first, 2)]
-    assert (row.verdict, row.deviation) == (checks.PASS, 0.0)
+    assert (row.verdict, row.vacuous) == (checks.VACUOUS, 1)
     # A spurious double pole: S is its own size (the virtual is a part), so
     # R / S = 1 and it fails at any K below 1.
     spurious = _pole_result(first, (0.5, 2.0, 1e-3), (2.0, 0.0))
@@ -523,14 +551,16 @@ def test_pole_and_ward_rows_judge_r_against_k_s():
     physical = evaluation((2.0, 1.0, 0.5), {first: 4.0})
     clean = evaluation((1e-16, 1e-17, 0.0), {first: 4.0}, {first: 1e-16})
     measures = checks._ward_measures(physical, clean)
-    assert [m[0] for m in measures] == [
+    assert [m.label for m in measures] == [
         "Born QCD^4",
         "QCD^4 finite",
         "QCD^4 1/eps",
         "QCD^4 1/eps^2",
     ]
     row = checks._judged_row("ward", "leg 1, c = 1", 0, "double", measures, 1e-5)
+    # The double pole has no physical term (T = 0) and R = 0: vacuous.
     assert row.verdict == checks.PASS and row.deviation == pytest.approx(5e-17)
+    assert row.vacuous == 1 and row.scale_by == "P"
     planted = evaluation((1e-16, 1e-3, 0.0), {first: 4.0}, {first: 1e-16})
     row = checks._judged_row(
         "ward",
@@ -555,13 +585,23 @@ def test_pole_and_ward_rows_judge_r_against_k_s():
             1e-5,
         )
         assert row.verdict == checks.INCONCLUSIVE, substituted
-    # A Born sector the physical Born lacks at this point (a colour zero) is
-    # measured against the largest physical Born sector.
+    # A Born sector that vanishes at this point (a colour zero) on both sides
+    # is vacuous; a loop-side residue there has no reference (no cross-row
+    # fallback): inconclusive, never a pass.
     zero = evaluation((2.0, 1.0, 0.5), {first: 4.0, second: 0.0})
+    measures = checks._ward_measures(
+        zero, evaluation((2.0, 1.0, 0.5), {}, {first: 0.0, second: 0.0})
+    )
+    assert [checks.judge(m, 1e-5) for m in measures if m.label.startswith("Born")] == [
+        checks.PASS,
+        checks.VACUOUS,
+    ]
     measures = checks._ward_measures(
         zero, evaluation((0.0, 0.0, 0.0), {}, {first: 0.0, second: 1e-3})
     )
-    assert ("Born QCD^2 QED^2", 1e-3, 4.0, None) in measures
+    (born,) = [m for m in measures if m.label == "Born QCD^2 QED^2"]
+    assert (born.residue, born.physical, born.terms) == (1e-3, 0.0, 0.0)
+    assert checks.judge(born, 1e-5) == checks.INCONCLUSIVE
 
 
 @pytest.mark.loop_fast
@@ -737,11 +777,7 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
         assert (
             carrier.arithmetic == "double" and checks_ is stability.RECOMMENDED_CHECKS
         )
-        return NS(
-            stability=estimate,
-            components={"virtual": {sector: NS(coefficients=[0.0, 2.0, -3.0])}},
-            ir_poles={sector: (2.0, -3.0)},
-        )
+        return _pole_result(sector, (0.0, 2.0, -3.0), (2.0, -3.0), stability=estimate)
 
     def never(*_args, **_options):
         raise AssertionError("the Ward evaluation runs for a not-applicable class")
@@ -957,7 +993,7 @@ def test_a_row_still_failing_in_arbitrary_precision_fails_its_process(
         0,
     )
     assert undefined.verdict == checks.INCONCLUSIVE
-    assert "R or S cannot be computed" in undefined.reason
+    assert "R, P or T cannot be computed" in undefined.reason
 
 
 @pytest.mark.loop_fast

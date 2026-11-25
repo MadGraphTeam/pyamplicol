@@ -2434,6 +2434,8 @@ def _loop_induced_probes(backend, context, process, native, candidates, memo=Non
             process.slice.request.process,
             line,
         )
+    for line in record.get("vacuous", ()):
+        _LOGGER.warning("%s: generation-time %s", process.slice.request.process, line)
     return record
 
 

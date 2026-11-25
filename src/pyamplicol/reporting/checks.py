@@ -13,6 +13,7 @@ _VERDICT_COLOURS = {
     "no prediction": "YELLOW",
     "not run": "YELLOW",
     "inconclusive": "YELLOW",
+    "vacuous": "YELLOW",
 }
 _STATUS_COLOURS = {
     "passed": "GREEN",
@@ -29,9 +30,11 @@ def _number(value: float | None) -> str:
 def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
     """The header (what was checked and how, the tolerance K), one table per
     process (every row: check, subject, point, deciding carrier, the
-    measured R / S, the K it was judged with, the estimate E / S for
-    information (``checks.CheckRow``), verdict, fallback or reason) and the
-    overall verdict with the exit code."""
+    measured R / S with its R, P and T and which of P and K T set S, the K
+    it was judged with, the estimate E / S for information
+    (``checks.CheckRow``), verdict, fallback or reason), a warning line per
+    vacuous row (nothing to test) and the overall verdict with the exit
+    code."""
 
     from .summary import _paint
 
@@ -55,8 +58,9 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
             ),
             (
                 "rule",
-                "a row passes iff R < K S (R its residue, S its own scale; a "
-                "tolerance, not a certificate)"
+                "a row passes iff R < K S, S = max(P, K T) (R its residue, P its "
+                "physical reference, T its term scale; a tolerance, not a "
+                "certificate)"
                 + (
                     ""
                     if getattr(report, "tolerance", None) is None
@@ -75,6 +79,10 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 "point",
                 "carrier",
                 "R / S",
+                "R",
+                "P",
+                "T",
+                "S by",
                 "K",
                 "E / S (info)",
                 "verdict",
@@ -113,6 +121,10 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                     if row.digits
                     else row.carrier or "",
                     _number(row.deviation),
+                    _number(getattr(row, "residue", None)),
+                    _number(getattr(row, "physical", None)),
+                    _number(getattr(row, "terms", None)),
+                    getattr(row, "scale_by", None) or "",
                     _number(getattr(row, "tolerance", None)),
                     _number(row.estimate),
                     verdict,
@@ -123,6 +135,16 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 )
             )
         blocks.append(table.get_string())
+        for row in process.rows:
+            if row.verdict == "vacuous":
+                blocks.append(
+                    _paint(
+                        f"warning: {process.process}, {row.check} {row.subject}, "
+                        f"point {row.point}: {row.reason}",
+                        "YELLOW",
+                        enabled=color,
+                    )
+                )
     verdict = {0: "PASSED", 1: "FAILED", 4: "INCONCLUSIVE"}.get(
         report.exit_code, "NOTHING CHECKED"
     )

@@ -712,10 +712,11 @@ def _check(report: Any) -> list[Block]:
                 ),
                 (
                     "rule",
-                    "a row passes iff R < K S: R its residue, S its own scale, "
-                    "K the check's tolerance (--tolerance; default the "
-                    "requested relative accuracy). A tolerance, not a "
-                    "certificate",
+                    "a row passes iff R < K S with S = max(P, K T): R its "
+                    "residue, P its physical reference, T its term scale, K the "
+                    "check's tolerance (--tolerance; default the requested "
+                    "relative accuracy). A row with no term is vacuous. A "
+                    "tolerance, not a certificate",
                 ),
                 ("seconds", "the wall time of the whole check"),
                 (None, f"Regeneration: {report.regeneration}."),
@@ -735,9 +736,11 @@ def _check(report: Any) -> list[Block]:
                 ("carrier", "the precision that decided the row"),
                 (
                     "R / S",
-                    "the residue over the row's own scale (the largest over the "
+                    "the residue over S = max(P, K T) (the largest over the "
                     "row's sectors and coefficients); below K passes",
                 ),
+                ("R, P, T", "that row's residue, physical reference and term scale"),
+                ("S by", "which of P and K T set S (K T: the noise guard)"),
                 ("K", "the tolerance the row was judged with"),
                 (
                     "E / S (info)",
@@ -746,8 +749,8 @@ def _check(report: Any) -> list[Block]:
                 ),
                 (
                     "verdict",
-                    "pass, fail, inconclusive (R or S cannot be computed), not "
-                    "applicable or not run",
+                    "pass, fail, inconclusive (R or S cannot be computed), "
+                    "vacuous (no term: nothing to test), not applicable or not run",
                 ),
                 (
                     "fallback / reason",

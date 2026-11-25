@@ -1397,77 +1397,114 @@ def _default_tolerance() -> float:
     return tolerance()
 
 
-def probe_verdict(ratios: Mapping, undefined: Sequence[str], tolerance: float) -> str:
-    """The verdict of a probe from its required rows (``checks.threshold``
-    each, before any aggregation): FAIL if a measured R / S (``ratios``, per
-    row the largest over its coefficients) is not below ``tolerance``, else
-    INCONCLUSIVE if a row's R or S cannot be computed (``undefined``), else
-    PASS."""
+def probe_verdict(
+    ratios: Mapping, undefined: Sequence[str], tolerance: float, vacuous: int = 0
+) -> str:
+    """The verdict of a probe from its required rows (``checks.judge`` each,
+    before any aggregation): FAIL if a measured R / S (``ratios``, per row
+    the largest over its coefficients) is not below ``tolerance``, else
+    INCONCLUSIVE if a row's R, P or T cannot be computed (``undefined``),
+    else PASS; VACUOUS when every row is vacuous (no term: the amplitude
+    vanishes identically), INCONCLUSIVE when nothing was compared."""
 
-    from .checks import FAIL, INCONCLUSIVE, PASS
+    from .checks import FAIL, INCONCLUSIVE, PASS, VACUOUS
 
     if any(not ratio < tolerance for ratio in ratios.values()):
         return FAIL
-    if undefined or not ratios:
+    if undefined:
         return INCONCLUSIVE
+    if not ratios:
+        return VACUOUS if vacuous else INCONCLUSIVE
     return PASS
 
 
-def probe_measures(
-    estimates: Mapping, floors: Mapping, first: int, tolerance: float
-) -> tuple[dict, dict, list[str]]:
-    """The threshold rule's rows of one probe (``checks.threshold``): per
-    (loop order, row) of the evaluation and Laurent coefficient k >=
-    ``first``, R = the colour-metric residue (``amplitude_estimates``) and S
-    = the row's floor (``floors``). A row whose floor vanishes (no term at
-    k nor at its finite order: a helicity row that vanishes identically, e.g.
-    by chirality) is measured against the point's largest row floor at k
-    (``widest_floors``). Returns per row the largest R / S (``ratios``), its
-    (R / S, E / S) (``relative``) and the labels of the rows whose R or S
-    cannot be computed (a floor the row lacks, a non-finite value, a
-    vanishing S; a floor row the evaluation lacks)."""
+def judged_rows(measures: Sequence[Any], tolerance: float) -> dict[str, Any]:
+    """The threshold rule over a probe's required rows ((key, ``checks.
+    Measure``) pairs, key a (loop order, row)): per key the largest R / S
+    (``ratios``) and its (R / S, E / S) (``relative``), the rows whose R, P
+    or T cannot be computed (``undefined``), the count of vacuous rows and
+    the worst row (label, R, P, T, the one of P and K T that set S)."""
 
-    from .checks import INCONCLUSIVE, threshold
+    from .checks import INCONCLUSIVE, VACUOUS, judge, scale_of
 
     ratios: dict = {}
     relative: dict = {}
     undefined: list[str] = []
-    widest = widest_floors(floors)
+    vacuous = 0
+    worst: tuple[float, Any, str | None] | None = None
+    for key, measure in measures:
+        verdict = judge(measure, tolerance)
+        if verdict == VACUOUS:
+            vacuous += 1
+            continue
+        if verdict == INCONCLUSIVE:
+            undefined.append(
+                f"{measure.label}: R {measure.residue}, P {measure.physical}, "
+                f"T {measure.terms}"
+            )
+            continue
+        scale, by = scale_of(measure.physical, measure.terms, tolerance)
+        ratio = measure.residue / scale
+        if key not in ratios or ratio >= ratios[key]:
+            ratios[key] = ratio
+            error = measure.estimate
+            relative[key] = (ratio, None if error is None else error / scale)
+        if worst is None or ratio >= worst[0]:
+            worst = (ratio, measure, by)
+    return {
+        "ratios": ratios,
+        "relative": relative,
+        "undefined": tuple(undefined),
+        "vacuous": vacuous,
+        "worst_row": None
+        if worst is None
+        else (
+            worst[1].label,
+            worst[1].residue,
+            worst[1].physical,
+            worst[1].terms,
+            worst[2],
+        ),
+    }
+
+
+def probe_measures(
+    estimates: Mapping, floors: Mapping, first: int
+) -> list[tuple[Any, Any]]:
+    """The required rows of one probe ((key, ``checks.Measure``) pairs): per
+    (loop order, row) of the evaluation and Laurent coefficient k >=
+    ``first``, R = the colour-metric residue (``amplitude_estimates``), P =
+    the row's physical finite-amplitude norm (``RowFloors.finite``), T = the
+    row's term floor at k, E the estimate (reported); a floor row the
+    evaluation lacks is a missing operand (R None)."""
+
+    from .checks import Measure
+
+    finite = getattr(floors, "finite", None) or {}
+    out: list[tuple[Any, Any]] = []
     for key, entries in estimates.items():
         floor = floors.get(key)
         for k, (residue, estimate) in enumerate(entries):
             if k < first:
                 continue
-            size = None if floor is None or k >= len(floor) else _finite(floor[k])
-            if size == 0.0 and k < len(widest):
-                size = widest[k]
-            value = _finite(residue)
-            if threshold(value, size, tolerance) == INCONCLUSIVE:
-                undefined.append(f"{key} k={k}: R {value}, S {size}")
-                continue
-            ratio = value / size
-            if key not in ratios or ratio >= ratios[key]:
-                ratios[key] = ratio
-                error = _finite(estimate)
-                relative[key] = (ratio, None if error is None else error / size)
-    undefined.extend(
-        f"{key}: no amplitude row for its floor"
+            terms = None if floor is None or k >= len(floor) else _finite(floor[k])
+            out.append(
+                (
+                    key,
+                    Measure(
+                        f"{key} k={k}",
+                        _finite(residue),
+                        finite.get(key),
+                        terms,
+                        _finite(estimate),
+                    ),
+                )
+            )
+    out.extend(
+        (key, Measure(f"{key}: no amplitude row for its floor", None, None, None))
         for key in floors
         if key not in estimates
     )
-    return ratios, relative, undefined
-
-
-def widest_floors(floors: Mapping) -> list[float | None]:
-    """Per Laurent coefficient the largest row floor of a point (None where
-    one cannot be computed): the reference of a row whose own floor
-    vanishes (``probe_measures``)."""
-
-    width = max((len(floor) for floor in floors.values()), default=0)
-    out: list[float | None] = []
-    for k in range(width):
-        sizes = [_finite(floor[k]) for floor in floors.values() if k < len(floor)]
-        out.append(None if None in sizes else max(sizes, default=0.0))
     return out
 
 
@@ -1484,13 +1521,16 @@ def _finite(value: Any) -> float | None:
 @dataclass(frozen=True)
 class ProbeResult:
     """A loop-induced probe of one point (``probe``), judged by the
-    threshold rule (``checks.threshold``, ``probe_measures``): per (loop
-    order, row) the largest R / S over the probed Laurent coefficients
-    (``ratios``: R the colour-metric residue, S the row's floor), the rows
-    whose R or S cannot be computed (``undefined``) and the tolerance K;
-    ``scales`` are the physical amplitude's row term floors; ``relative``
-    holds, per (loop order, row), R / S and the estimate E over S of the
-    coefficient with the largest R / S (E is reported, it decides
+    threshold rule (``checks.judge`` per row and coefficient,
+    ``probe_measures``, ``judged_rows``): per (loop order, row) the largest
+    R / S over the probed Laurent coefficients (``ratios``: R the
+    colour-metric residue, S = max(P, K T) with P the row's physical
+    finite-amplitude norm and T its term floor), the rows whose R, P or T
+    cannot be computed (``undefined``), the count of vacuous rows (no term),
+    the worst row (label, R, P, T, the one of P and K T that set S) and the
+    tolerance K; ``scales`` are the physical amplitude's row term floors;
+    ``relative`` holds, per (loop order, row), R / S and the estimate E over
+    S of the coefficient with the largest R / S (E is reported, it decides
     nothing)."""
 
     kind: str
@@ -1507,6 +1547,10 @@ class ProbeResult:
     uncertified: bool = False
     undefined: tuple[str, ...] = ()
     tolerance: float = field(default_factory=_default_tolerance)
+    vacuous: int = 0
+    worst_row: tuple[Any, ...] | None = None
+    # The judged rows ((key, ``checks.Measure``) pairs, ``probe_measures``).
+    measures: tuple[Any, ...] = field(default=(), repr=False, compare=False)
 
     @property
     def worst(self) -> float:
@@ -1514,23 +1558,33 @@ class ProbeResult:
 
     @property
     def verdict(self) -> str:
-        return probe_verdict(self.ratios, self.undefined, self.tolerance)
+        return probe_verdict(self.ratios, self.undefined, self.tolerance, self.vacuous)
 
     @property
     def passed(self) -> bool:
-        return self.verdict == "pass"
+        """Decided without a failure: every row with a term passes, or every
+        row is vacuous (nothing to test, ``verdict`` "vacuous")."""
+
+        return self.verdict in ("pass", "vacuous")
 
     @property
     def reason(self) -> str | None:
-        """Why the probe is inconclusive (None otherwise)."""
+        """Why the probe is inconclusive, or that it has nothing to test
+        (None otherwise)."""
 
-        if self.verdict != "inconclusive":
+        verdict = self.verdict
+        if verdict == "vacuous":
+            return (
+                "nothing to test: the amplitude vanishes identically (every row "
+                "vacuous: no term)"
+            )
+        if verdict != "inconclusive":
             return None
         if not self.undefined:
             return "nothing compared"
         more = len(self.undefined) - 1
         return (
-            "R or S cannot be computed: "
+            "R, P or T cannot be computed: "
             + self.undefined[0]
             + (f" (and {more} more)" if more else "")
         )
@@ -1611,7 +1665,32 @@ def physical_floors(
         None,
         True,
     )
-    return row_scales(evaluation)
+    return row_floors(evaluation)
+
+
+class RowFloors(dict):
+    """Per (loop order, row) the term floor T_k of each Laurent coefficient
+    (``row_scales``), with ``finite``: per row the colour-metric norm of the
+    physical finite amplitude ||a_0(h)||, the probes' physical reference P
+    (None where it cannot be computed)."""
+
+    finite: dict
+
+
+def row_floors(evaluation: Any) -> RowFloors:
+    """``RowFloors`` of a physical evaluation: its row term floors and the
+    norm of each row's finite amplitude."""
+
+    floors = RowFloors(row_scales(evaluation))
+    numbers = evaluation.numbers
+    gram = evaluation.gram
+    size = len(evaluation.slice.amplitude)
+    with numbers.scope():
+        floors.finite = {
+            key: _finite(g_norm([vector[t][0] for t in range(size)], gram, numbers))
+            for key, vector in evaluation.amplitude_vectors.items()
+        }
+    return floors
 
 
 def probe_floors(
@@ -1640,11 +1719,13 @@ def probe_floors(
         }
 
 
-def ward_floors(physical: Mapping, leg: int) -> dict:
-    """The term floors a Ward probe of leg ``leg`` (1-based) stands on: per
-    (loop order, row) the largest physical floor over the rows that differ
-    from it only in that leg's helicity (the substituted leg reads one
-    vector for every helicity, so its rows repeat the same amplitude)."""
+def ward_floors(physical: Mapping, leg: int) -> RowFloors:
+    """The term floors and physical references a Ward probe of leg ``leg``
+    (1-based) stands on: per (loop order, row) the largest physical floor
+    and the largest physical finite-amplitude norm (``RowFloors.finite``)
+    over the rows that differ from it only in that leg's helicity (the
+    substituted leg reads one vector for every helicity, so its rows repeat
+    the same amplitude)."""
 
     def merged(row):
         return tuple((i, 0 if i == leg - 1 else h) for i, h in row)
@@ -1658,7 +1739,19 @@ def ward_floors(physical: Mapping, leg: int) -> dict:
             if found is None
             else [max(a, b) for a, b in zip(found, values, strict=True)]
         )
-    return {(order, row): out[(order, merged(row))] for order, row in physical}
+    floors = RowFloors(
+        {(order, row): out[(order, merged(row))] for order, row in physical}
+    )
+    finite = getattr(physical, "finite", None) or {}
+    widest: dict = {}
+    for (order, row), value in finite.items():
+        key = (order, merged(row))
+        known = widest.get(key, 0.0)
+        widest[key] = None if value is None or known is None else max(known, value)
+    floors.finite = {
+        (order, row): widest[(order, merged(row))] for order, row in finite
+    }
+    return floors
 
 
 def probe(
@@ -1835,21 +1928,23 @@ def probe_results(
         estimates = amplitude_estimates(
             evaluation, carrier.unit_roundoff, floors, turned
         )
-        ratios, relative, undefined = probe_measures(
-            estimates, floors, 0 if ward is not None else 1, tolerance
-        )
+        measures = probe_measures(estimates, floors, 0 if ward is not None else 1)
+        judged = judged_rows(measures, tolerance)
         runs = [evaluation, *kept]
         out.append(
             ProbeResult(
                 "ward" if ward is not None else "finiteness",
-                ratios,
+                judged["ratios"],
                 MappingProxyType(physical),
-                MappingProxyType(relative),
+                MappingProxyType(judged["relative"]),
                 uncertified=any(
                     getattr(run, "uncertified_bound", None) for run in runs
                 ),
-                undefined=tuple(undefined),
+                undefined=judged["undefined"],
                 tolerance=tolerance,
+                vacuous=judged["vacuous"],
+                worst_row=judged["worst_row"],
+                measures=tuple(measures),
             )
         )
     return out
@@ -2114,8 +2209,10 @@ def _decided(
             entry["tolerance"] = result.tolerance
             entry["verdict"] = result.verdict
             entry["passed"] = result.passed
-            if result.reason is not None:
+            if result.verdict == "inconclusive":
                 entry["inconclusive"] = result.reason
+            elif result.verdict == "vacuous":
+                entry["vacuous"] = result.reason
             if result.uncertified:
                 entry["uncertified"] = True
         fallbacks = [
@@ -2386,6 +2483,13 @@ def generation_probes(
     ]
     if inconclusive:
         record["inconclusive"] = inconclusive
+    vacuous = [
+        f"{label(entry)}: {entry['vacuous']} in {entry['carrier']}"
+        for entry in entries
+        if entry.get("verdict") == "vacuous"
+    ]
+    if vacuous:
+        record["vacuous"] = vacuous
     failed = [
         f"{label(entry)}: R / S {entry['worst']} not below K {tolerance:g} in "
         f"{entry['carrier']}"
