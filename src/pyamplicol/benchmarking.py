@@ -2960,9 +2960,12 @@ def require_artifact_parameters(config: object) -> None:
     """Refuse a profile or benchmark whose configuration sets
     ``evaluation.model_parameters``: they load the artifact at its own model
     parameters (their timed calls and their flat points alike), so the file
-    would be ignored. The one check of every entry point (the CLI's
-    ``profile`` / ``benchmark``, ``BenchmarkRunner.run``, ``loop_profile.
-    profile_loop``)."""
+    would be ignored. The one check of every entry point: the lowest shared
+    functions of the profiles (``_profile_runtime``, which loads a profiled
+    runtime, and ``_PointBatches``, through which every profiled call and
+    every drawn point of ``profile_virtual`` and ``profile_points`` passes),
+    and, before their own work, the CLI's ``profile`` / ``benchmark``,
+    ``BenchmarkRunner.run`` and ``loop_profile.profile_loop``."""
 
     from pyamplicol.config import ConfigurationError
 
@@ -2973,6 +2976,42 @@ def require_artifact_parameters(config: object) -> None:
             "parameters; remove evaluation.model_parameters, or evaluate "
             "at other parameters with `pyamplicol evaluate --model-parameters`"
         )
+
+
+def _profile_runtime(
+    artifact: os.PathLike[str] | str,
+    config: RunConfig | BenchmarkConfig | None,
+    *,
+    process: str | None = None,
+) -> Any:
+    """The runtime a profile loads from ``artifact``: ``evaluation.
+    process`` (``process`` overrides it), ``reduction``,
+    ``reduction_target``, ``reduction_unchecked`` and ``lane_rescue``, at
+    the artifact's own model parameters (a configuration setting
+    ``evaluation.model_parameters`` is refused, ``require_artifact_
+    parameters``)."""
+
+    from pyamplicol.api import Runtime
+
+    require_artifact_parameters(config)
+    evaluation = config.evaluation if isinstance(config, RunConfig) else None
+    options: dict[str, Any] = {}
+    if evaluation is not None:
+        if evaluation.reduction is not None:
+            options["reduction"] = str(evaluation.reduction)
+        if evaluation.reduction_target is not None:
+            options["reduction_target"] = evaluation.reduction_target
+        if evaluation.reduction_unchecked:
+            options["reduction_unchecked"] = True
+        if not evaluation.lane_rescue:
+            options["lane_rescue"] = False
+    if process is None and evaluation is not None:
+        process = evaluation.process
+    return Runtime.load(
+        Path(os.fspath(artifact)).expanduser().resolve(strict=False),
+        process=process,
+        **options,
+    )
 
 
 def profile_points(
@@ -2986,15 +3025,21 @@ def profile_points(
     ``batch_size x (warmup_runs + max(minimum_samples, 1))`` of them, drawn
     by ``cli.flat_points`` with ``evaluation.phase_space``'s seed and energy
     (point i from seed + i; without a RunConfig: its defaults, seed 1 at the
-    validation point's energy). A profile drawing its own points continues
-    the sequence for its further calls (``_PointBatches``)."""
+    validation point's energy). ``process_id`` selects the process (any
+    selector ``Runtime.load`` accepts); the points are drawn in its leg
+    order on the masses its loaded runtime binds (``_PointBatches``). A
+    configuration setting ``evaluation.model_parameters`` is refused. A
+    profile drawing its own points continues the sequence for its further
+    calls (``_PointBatches``)."""
 
     if isinstance(config, RunConfig):
         bench = config.benchmark
     else:
         bench = config or BenchmarkConfig()
     calls = bench.warmup_runs + max(bench.minimum_samples, 1)
-    batches = _PointBatches(bench.batch_size, flat=(artifact, process_id, config))
+    batches = _PointBatches(
+        bench.batch_size, flat=(artifact, process_id, config), config=config
+    )
     return tuple(point for k in range(calls) for point in batches(k))
 
 
@@ -3003,17 +3048,27 @@ class _PointBatches:
     the ``batch_size`` points from k x ``batch_size`` on (``size``: the first
     ``size`` of them), of ``points`` cycled, or of the distinct flat points
     drawn as ``profile_points`` draws them (``flat``: the artifact, the
-    process id and the configuration; point i from seed + i, drawn in
+    process id and the configuration, and the loaded runtime's binding,
+    ``flat_points.runtime_binding``; without one, the runtime is loaded
+    once for it, ``_profile_runtime``; point i from seed + i, drawn in
     growing blocks as the calls need them, so every call index has the same
-    points in every profile of the same seed)."""
+    points in every profile of the same seed).
+
+    The lowest shared function of the profiled calls and of the drawn
+    points: a ``config`` setting ``evaluation.model_parameters`` is refused
+    here (``require_artifact_parameters``)."""
 
     def __init__(
         self,
         batch_size: int,
         points: Momenta | None = None,
         *,
-        flat: tuple[Path, str, RunConfig | BenchmarkConfig | None] | None = None,
+        flat: tuple[Any, ...] | None = None,
+        config: RunConfig | BenchmarkConfig | None = None,
     ) -> None:
+        require_artifact_parameters(config)
+        if flat is not None:
+            require_artifact_parameters(flat[2])
         self.batch_size = batch_size
         self.source: list[Any] = list(points or ())
         self.flat = flat
@@ -3026,7 +3081,16 @@ class _PointBatches:
 
         assert self.flat is not None
         artifact, process_id, config, *rest = self.flat
-        binding = rest[0] if rest else None
+        if not rest:
+            # The masses the selected process binds, in its leg order: its
+            # runtime loaded once (and released), as a profile's own.
+            from pyamplicol.cli.flat_points import runtime_binding
+
+            rest = [
+                runtime_binding(_profile_runtime(artifact, config, process=process_id))
+            ]
+            self.flat = (artifact, process_id, config, *rest)
+        binding = rest[0]
         space = (
             config.evaluation.phase_space
             if isinstance(config, RunConfig)
@@ -3101,13 +3165,15 @@ def profile_virtual(
 
     from pyamplicol.api import Runtime
 
-    run = config if isinstance(config, RunConfig) else None
+    # Model parameters are not applied by a profile: refused before any
+    # load (``_profile_runtime`` and ``_PointBatches`` check it too).
+    require_artifact_parameters(config)
     bench = (
         config.benchmark
         if isinstance(config, RunConfig)
         else config or BenchmarkConfig()
     )
-    evaluation = run.evaluation if run is not None else None
+    evaluation = config.evaluation if isinstance(config, RunConfig) else None
     if isinstance(target, Runtime):
         runtime = target
         source = (
@@ -3117,21 +3183,7 @@ def profile_virtual(
         )
     else:
         source = Path(os.fspath(target)).expanduser().resolve(strict=False)
-        options: dict[str, Any] = {}
-        if evaluation is not None:
-            if evaluation.reduction is not None:
-                options["reduction"] = str(evaluation.reduction)
-            if evaluation.reduction_target is not None:
-                options["reduction_target"] = evaluation.reduction_target
-            if evaluation.reduction_unchecked:
-                options["reduction_unchecked"] = True
-            if not evaluation.lane_rescue:
-                options["lane_rescue"] = False
-        runtime = Runtime.load(
-            source,
-            process=None if evaluation is None else evaluation.process,
-            **options,
-        )
+        runtime = _profile_runtime(source, config)
     from pyamplicol.cli.flat_points import runtime_binding
 
     physics = runtime.physics
@@ -3153,6 +3205,7 @@ def profile_virtual(
             config,
             runtime_binding(runtime),
         ),
+        config=config,
     )
     initial = sum(1 for leg in physics.external_particles if leg.state == "incoming")
     options = {"poles": "none", "on_failure": on_failure}

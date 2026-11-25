@@ -2376,6 +2376,10 @@ def profile_loop(
                 stability_setup,
                 monitor,
                 physics.process_id,
+                selector=physics.process_id
+                if evaluation.process is None
+                else str(evaluation.process),
+                legs=tuple(leg.pdg_id for leg in physics.external_particles),
             )
     causes, totals = _runtime_causes(runtime_rows or (), truth)
     more, more_totals = _stability_causes(stability_rows or ())
@@ -5967,11 +5971,23 @@ def _write_samples(
     setup: Mapping[str, object],
     monitor: _Monitor,
     process: str,
+    *,
+    selector: str,
+    legs: Sequence[int],
 ) -> tuple[tuple[BackendStability, ...], Mapping[str, object]]:
     """``--samples-output``: every sample's record to ``path`` (one JSON
     document: ``inputs`` as the setup's ``samples``, ``backends`` each
     backend's as its ``samples``), as its own phase; the report then names
-    the file where the records were."""
+    the file where the records were.
+
+    ``process`` is the representative's process id (kept for
+    compatibility); ``selector`` the process selector the profile loaded,
+    and ``legs`` the external legs' PDG codes in the order of every
+    sample's momenta: a replay passes ``selector`` (``Runtime.load(...,
+    process=selector)``), so that each momentum is the leg it was drawn
+    for. The representative id alone does not say it when the selector
+    orders the legs differently (``u u~ > z t t~`` of a stored
+    ``u u~ > t t~ z``)."""
 
     from pyamplicol.reporting.raw_json import RawJson, splice
 
@@ -5992,6 +6008,8 @@ def _write_samples(
     document = {
         "schema": "pyamplicol.profile-samples/1",
         "process": process,
+        "selector": selector,
+        "external_pdgs": list(legs),
         "seed": setup.get("seed"),
         "sqrt_s": setup.get("sqrt_s"),
         "cuts": setup.get("cuts"),

@@ -1405,3 +1405,171 @@ def test_one_parameter_snapshot_for_a_rescued_batch(uux_ttx_free, monkeypatch):
     assert [lane.accuracy_established for lane in result.diagnostics] == [
         lane.accuracy_established for lane in control.diagnostics
     ]
+
+
+# ------------------------------------- the public profiling entry points
+
+
+def _small_profile(artifact: Path, *extra: str, parameters: Path | None = None):
+    """A profile configuration of one point per call, no warm-up, one
+    timed call (``parameters``: an ``evaluation.model_parameters`` file)."""
+
+    from dataclasses import replace
+
+    from pyamplicol.cli import parse_cli
+
+    config = parse_cli(("profile", str(artifact), *extra)).resolve().effective
+    config = replace(
+        config,
+        benchmark=replace(
+            config.benchmark,
+            batch_size=1,
+            warmup_runs=0,
+            minimum_samples=1,
+            target_runtime=1e-9,
+        ),
+    )
+    if parameters is not None:
+        config = replace(
+            config,
+            evaluation=replace(config.evaluation, model_parameters=parameters),
+        )
+    return config
+
+
+@pytest.fixture(scope="module")
+def udx_w_legacy(tmp_path_factory):
+    """u d~ > w+ on loop_sm with the derived W of the review's inputs, its
+    validation record as main wrote it (no bound masses, consistent)."""
+
+    root = tmp_path_factory.mktemp("bound-masses-udw")
+    fresh = _card(
+        root / "fresh",
+        "loop_sm",
+        "no_b_mass",
+        "u d~ > w+",
+        {"MZ": "91", "aEWM1": "132", "Gf": _GF},
+    )
+    return _legacy(fresh, root)
+
+
+@pytest.mark.loop_physics
+def test_the_profiling_functions_refuse_ignored_parameters(tmp_path):
+    """The review of 80403dc7c: MH = 130 requested through the run
+    configuration of the shipped g g > h artifact. Every public profiling
+    entry point refuses it (it would profile a 125 GeV Higgs):
+    benchmarking.profile_virtual (a path, and a loaded runtime with its
+    artifact), benchmarking.profile_points, api.BenchmarkRunner.run and
+    api.benchmark."""
+
+    from pyamplicol import benchmarking
+    from pyamplicol._internal import selftest_virtual_li as li
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.services import BenchmarkRunner, benchmark
+    from pyamplicol.config import ConfigurationError
+
+    artifact = li.fixture_root() / "artifact"
+    parameters = tmp_path / "parameters.json"
+    parameters.write_text('{"MH": "130"}')
+    config = _small_profile(artifact, parameters=parameters)
+    refused = pytest.raises(ConfigurationError, match="own model parameters")
+    with refused:
+        benchmarking.profile_virtual(artifact, config)
+    with refused:
+        benchmarking.profile_virtual(Runtime.load(artifact), config, artifact=artifact)
+    process = Runtime.load(artifact).physics.process_id
+    with refused:
+        benchmarking.profile_points(artifact, process, config)
+    with refused:
+        BenchmarkRunner(config=config).run(artifact)
+    with refused:
+        benchmark(artifact, config=config)
+
+
+@pytest.mark.loop_physics
+def test_every_profiling_entry_point_draws_a_main_built_artifact(
+    udx_w_legacy, uux_ttz, monkeypatch
+):
+    """A consistent main-built u d~ > w+ record (no bound masses, a derived
+    W) loads and draws on its runtime's binding through every public
+    profiling entry point: profile_points (it refused the record on
+    80403dc7c: it drew without a runtime), profile_virtual on a path and
+    on a loaded runtime, BenchmarkRunner.run and benchmark. A permuted
+    selector's profile_points come in its own leg order on its shells."""
+
+    from pyamplicol import benchmarking
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.services import BenchmarkRunner, benchmark
+    from pyamplicol.cli import flat_points
+    from pyamplicol.cli.flat_points import runtime_binding
+
+    runtime = Runtime.load(udx_w_legacy)
+    binding = runtime_binding(runtime)
+    (mw,) = binding.masses[2:]
+    config = _small_profile(udx_w_legacy)
+    process = runtime.physics.process_id
+    points = benchmarking.profile_points(udx_w_legacy, process, config)
+    assert points
+    for point in points:
+        _assert_on_shell(point, binding.masses)
+        assert [float(x) for x in point[2]] == [mw, 0.0, 0.0, 0.0]
+
+    drawn = []
+    original = flat_points.draw_flat_points
+
+    def spy(*args, **kwargs):
+        found = original(*args, **kwargs)
+        drawn.append(found)
+        return found
+
+    monkeypatch.setattr(flat_points, "draw_flat_points", spy)
+    for call in (
+        lambda: benchmarking.profile_virtual(udx_w_legacy, config),
+        lambda: benchmarking.profile_virtual(
+            Runtime.load(udx_w_legacy), config, artifact=udx_w_legacy
+        ),
+        lambda: BenchmarkRunner(config=config).run(udx_w_legacy),
+        lambda: benchmark(udx_w_legacy, config=config),
+    ):
+        drawn.clear()
+        result = call()
+        assert result.samples >= 1 and drawn
+        for flat in drawn:
+            assert flat.masses == binding.masses
+            for point in flat.points:
+                _assert_on_shell(point, binding.masses)
+    monkeypatch.undo()
+
+    selector = "u u~ > z t t~"
+    permuted = benchmarking.profile_points(
+        uux_ttz, selector, _small_profile(uux_ttz, "--process", selector)
+    )
+    for point in permuted:
+        _assert_on_shell(point, (0.0, 0.0, 91.188, 160.0, 160.0))
+
+
+@pytest.mark.loop_physics
+def test_the_samples_file_replays_with_its_selector(uux_ttz, tmp_path):
+    """The review of 80403dc7c: u u~ > z t t~ of the stored u u~ > t t~ z,
+    profiled with --samples-output. The file keeps the representative id
+    (process) and records the selector and its legs: replayed with the
+    file's own selector, every sample is on its shells, unmarked (with the
+    representative id alone a top momentum lands on the Z)."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import is_shell_reason
+
+    selector = "u u~ > z t t~"
+    out = tmp_path / "ttz.json"
+    points = _profile_points(uux_ttz, out, 1, selector)
+    record = json.loads(out.read_text())
+    assert record["process"] == Runtime.load(uux_ttz).physics.process_id
+    assert record["selector"] == selector
+    assert record["external_pdgs"] == [2, -2, 23, 6, -6]
+    replay = Runtime.load(uux_ttz, process=record["selector"])
+    assert [leg.pdg_id for leg in replay.physics.external_particles] == record[
+        "external_pdgs"
+    ]
+    sample = [[float(x) for x in leg] for leg in points[0]]
+    (lane,) = replay.evaluate([sample], mu_r2="1000000").diagnostics
+    assert not any(is_shell_reason(r) for r in lane.uncertified), lane.uncertified

@@ -55,8 +55,14 @@ MadLoop and Recola agree). `check` was not affected (it re-shells its points
 on the masses it binds). Now one evaluator gives the bound external masses
 (from the exact parameter texts, on the effective binding, a derived mass
 rounded once) to every generated point; the flat points of `evaluate` follow
-the parameters given at evaluation (`--model-parameters`), `profile` and the
-benchmark runner refuse such parameters; the validation record states the
+the parameters given at evaluation (`--model-parameters`), `profile`, the
+benchmark runner and the Python profiling functions (`benchmarking.
+profile_virtual`, `profile_points`) refuse such parameters, and draw on the
+masses the runtime they load binds, in the selected process's leg order; a
+`profile --samples-output` file now also records the `selector` the profile
+loaded and its legs' PDG codes (`external_pdgs`), with which its samples
+are replayed (its `process`, the representative's id, does not give the leg
+order of a selector that permutes the final state); the validation record states the
 bound masses and `model/parameters.json` the bound values. In the checked
 mode a shell-consistency screen marks a point off the bound shells beyond the
 call's target as `uncertified` (its value still served; [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
