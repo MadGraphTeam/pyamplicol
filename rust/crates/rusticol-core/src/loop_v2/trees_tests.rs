@@ -535,12 +535,14 @@ fn parallel_program() -> (Interactions, StateLayout, Vec<Complex<f64>>) {
                 width: 12,
                 outputs: outputs(6, 64),
                 index: std::sync::OnceLock::new(),
+                own_reads: std::sync::OnceLock::new(),
             },
             Step {
                 groups: vec![(0, second)],
                 width: 8,
                 outputs: outputs(4, 76),
                 index: std::sync::OnceLock::new(),
+                own_reads: std::sync::OnceLock::new(),
             },
         ],
         weights: vec![[Rational::from(1), Rational::from(0)]; 3],
@@ -821,8 +823,14 @@ fn batched_propagators_are_bitwise_each_output_alone() {
                 &czero,
             )
             .unwrap();
-            assert_eq!(together.len(), requests.len());
-            for (request, values) in requests.iter().zip(&together) {
+            assert_eq!(
+                together.len(),
+                requests.iter().map(|r| r.3 * points).sum::<usize>()
+            );
+            let mut offset = 0;
+            for request in &requests {
+                let values = &together[offset..offset + points * request.3];
+                offset += points * request.3;
                 let alone = propagate(
                     &mut kernels[1],
                     models,
@@ -833,12 +841,7 @@ fn batched_propagators_are_bitwise_each_output_alone() {
                     &czero,
                 )
                 .unwrap();
-                assert_eq!(values.len(), points * request.3);
-                assert_eq!(
-                    bits(values),
-                    bits(&alone[0]),
-                    "plane {plane}, {points} points"
-                );
+                assert_eq!(bits(values), bits(&alone), "plane {plane}, {points} points");
             }
         }
     }
