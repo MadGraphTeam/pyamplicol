@@ -49,6 +49,16 @@ fn families() -> Vec<Family> {
     ]
 }
 
+/// A triangle with a light squared mass: its binary64 lanes reach the fast
+/// engine's absolute threshold and are routed to the exact engine.
+fn light() -> Family {
+    Family {
+        legs: vec![vec![0, 1], vec![2], vec![3]],
+        masses: vec![1e-12, TOP, 0.],
+        rank: 2,
+    }
+}
+
 /// Massless incoming and massive outgoing momenta of a 2 -> 2 point at
 /// scattering angles (`theta`, `phi`).
 fn momenta(theta: f64, phi: f64) -> [[f64; 4]; 4] {
@@ -161,6 +171,9 @@ fn all_lanes(points: usize, columns: usize, arithmetic: &str, digits: Option<u32
         .map(|k| momenta(0.3 + 2.5 * k as f64 / points as f64, 0.7 * k as f64))
         .collect();
     families()
+        .into_iter()
+        .chain(std::iter::once(light()))
+        .collect::<Vec<_>>()
         .iter()
         .map(|family| lanes(family, &kinematics, columns, arithmetic, digits))
         .collect()
@@ -355,4 +368,52 @@ fn lane_views_reduce_as_batches() {
         assert_eq!(serial, reduce(false));
         assert_eq!(serial, reduce(true));
     });
+}
+
+/// Invariant 5: a parallel reduction builds no template of its own on its
+/// workers (the generic engines lend the reducer's templates per bucket;
+/// the fast engine's routed lanes share the reducer's exact engine): the
+/// templates kept after a call are the serial reduction's, at any count.
+#[test]
+fn parallel_reductions_build_no_template_per_worker() {
+    let _unlock = pyamplicol::unlock();
+    for (arithmetic, engine, points) in [("double", "fast", 6), ("double-double", "generic", 2)] {
+        let all = all_lanes(points, 2, arithmetic, None);
+        let groups: Vec<_> = all.iter().map(group).collect();
+        let options = ReduceOptions {
+            poles: Poles::All,
+            check: Some(ReductionFrame::REVERSED),
+            ..ReduceOptions::default()
+        };
+        let mut serial = reducer(arithmetic, None, engine, false);
+        let want = fingerprint(
+            &serial.reduce_at(&groups, None, None, options).unwrap(),
+            &mut serial,
+        );
+        let templates = serial.built_templates();
+        assert!(templates > 0, "{arithmetic}: the call builds templates");
+        for threads in [2, 8] {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .start_handler(|_| pyamplicol::unlock_thread())
+                .build()
+                .unwrap();
+            let mut parallel = reducer(arithmetic, None, engine, false);
+            pool.install(|| {
+                for _ in 0..2 {
+                    let got = fingerprint(
+                        &parallel.reduce_at(&groups, None, None, options).unwrap(),
+                        &mut parallel,
+                    );
+                    parallel.clear_masters();
+                    assert_eq!(got, want, "{arithmetic} {threads} threads");
+                }
+            });
+            assert_eq!(
+                parallel.built_templates(),
+                templates,
+                "{arithmetic} {threads} threads"
+            );
+        }
+    }
 }
