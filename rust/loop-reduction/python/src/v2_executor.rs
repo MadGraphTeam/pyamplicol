@@ -3065,6 +3065,71 @@ fn induced_squares(
     })
 }
 
+/// The squares of one point's binary64 amplitude vectors on several
+/// (rows, metric) forms in one call (`loops.v2.induced_observables`'s
+/// resolved outputs): `amplitudes` per (squared loop order, row, basis
+/// element) over every row of the point, and per job the rows it reads
+/// (ascending indices) and its metric; each job is [`square_amplitudes`] of
+/// the same vectors restricted to its rows, bitwise.
+#[pyfunction]
+#[pyo3(signature = (amplitudes, orders, rows, basis, width, metrics, jobs, sectors, average))]
+#[allow(clippy::too_many_arguments)]
+fn square_row_forms(
+    py: Python<'_>,
+    amplitudes: Vec<Vec<[f64; 2]>>,
+    orders: usize,
+    rows: usize,
+    basis: usize,
+    width: usize,
+    metrics: Vec<Vec<[f64; 2]>>,
+    jobs: Vec<(Vec<usize>, usize)>,
+    sectors: Vec<Vec<(usize, usize)>>,
+    average: f64,
+) -> PyResult<Vec<Vec<Vec<f64>>>> {
+    let _unlock = pyamplicol::unlock();
+    let complex = |values: &[[f64; 2]]| {
+        values
+            .iter()
+            .map(|[re, im]| Complex::new(*re, *im))
+            .collect::<Vec<_>>()
+    };
+    if amplitudes.len() != orders * rows * basis {
+        return Err(error("amplitudes per (loop order, row, basis element)"));
+    }
+    let amplitudes: Vec<Vec<Complex<f64>>> = amplitudes.iter().map(|cell| complex(cell)).collect();
+    let metrics: Vec<Vec<Complex<f64>>> = metrics.iter().map(|m| complex(m)).collect();
+    py.detach(|| {
+        jobs.iter()
+            .map(|(kept, metric)| {
+                let metric = metrics
+                    .get(*metric)
+                    .ok_or_else(|| error("a job's metric outside the metrics"))?;
+                let mut restricted = Vec::with_capacity(orders * kept.len() * basis);
+                for o in 0..orders {
+                    for &r in kept {
+                        if r >= rows {
+                            return Err(error("a job's row outside the rows"));
+                        }
+                        let base = (o * rows + r) * basis;
+                        restricted.extend(amplitudes[base..base + basis].iter().cloned());
+                    }
+                }
+                rusticol_core::loop_v2::interference::square_amplitudes(
+                    &restricted,
+                    orders,
+                    kept.len(),
+                    basis,
+                    width,
+                    metric,
+                    &sectors,
+                    &average,
+                )
+                .map_err(error)
+            })
+            .collect()
+    })
+}
+
 /// The stored records of a Born-interfered process's resolved set
 /// (`native_observables.StoredObservables`) as the formation reads them.
 fn resolved_records<'a>(
@@ -3264,6 +3329,7 @@ pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(resolved_subset, module)?)?;
     module.add_function(wrap_pyfunction!(square_amplitudes, module)?)?;
     module.add_function(wrap_pyfunction!(induced_squares, module)?)?;
+    module.add_function(wrap_pyfunction!(square_row_forms, module)?)?;
     module.add_function(wrap_pyfunction!(compile_v2_plane, module)?)?;
     module.add(
         "PlaneMismatchError",

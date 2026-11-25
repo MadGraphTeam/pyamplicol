@@ -742,6 +742,11 @@ class PointOutputs:
         # transverse vectors within rho_j of the one the output reads.
         self.changes: dict[int, dict[int, float]] = {}
         self._transverse: dict | None = None
+        # The outputs this point's assignment serves (``InducedColumns``) and
+        # their values, formed together in binary64 (``_square_wanted``).
+        self.wanted: Sequence[Output] = ()
+        self._values: dict[Any, dict[Orders, tuple]] = {}
+        self._squared = False
         if spin:
             sources_json = (
                 json.dumps(list(sources))
@@ -800,6 +805,14 @@ class PointOutputs:
         return tuple(row for row in self.rows if row in output.rows)
 
     def value(self, output: Output) -> dict[Orders, tuple]:
+        key = (output.metric, self.rows_of(output))
+        found = self._values.get(key)
+        if found is None and self.wanted and not self._squared:
+            self._squared = True
+            self._square_wanted()
+            found = self._values.get(key)
+        if found is not None:
+            return found
         with self.evaluation.numbers.scope():
             return form(
                 self.evaluation,
@@ -808,6 +821,123 @@ class PointOutputs:
                 output.metric,
                 self.rows_of(output),
             )
+
+    def _square_wanted(self) -> None:
+        """The values of every wanted output of a binary64 point in one
+        native call (``square_row_forms``): the amplitude vectors packed once
+        as ``induced.native_square`` packs them, each output's rows and
+        metric squared by the same routine (``form``'s values, bitwise)."""
+
+        evaluation = self.evaluation
+        if not getattr(evaluation, "native_square", False):
+            return
+        slice_ = evaluation.slice
+        width = self.width
+        rows = self.rows
+        index = {row: r for r, row in enumerate(rows)}
+        jobs: list[tuple[list[int], int]] = []
+        metrics: list[list[list[float]]] = []
+        known: dict[int, int] = {}
+        keys: list[tuple[Any, Any, int, int | None]] = []
+
+        def metric_index(matrix: Any) -> int | None:
+            if len(matrix) != self.size:
+                # (``native_square`` squares on the metric's own size.)
+                return None
+            found = known.get(id(matrix))
+            if found is None:
+                found = known[id(matrix)] = len(metrics)
+                metrics.append(
+                    [
+                        [complex(x).real, complex(x).imag]
+                        for line in matrix
+                        for x in line
+                    ]
+                )
+            return found
+
+        seen = set()
+        for output in self.wanted:
+            kept = self.rows_of(output)
+            key = (output.metric, kept)
+            if key in seen:
+                continue
+            seen.add(key)
+            h, k, _magnitude = self.forms(output.metric)
+            picked = [index[row] for row in kept]
+            forms = [metric_index(h)] + ([] if k is None else [metric_index(k)])
+            if None in forms:
+                return
+            jobs.append((picked, forms[0]))
+            imaginary = None
+            if k is not None:
+                imaginary = len(jobs)
+                jobs.append((picked, forms[1]))
+            keys.append((key, kept, len(jobs) - (2 if k is not None else 1), imaginary))
+        if not jobs:
+            return
+        orders = sorted(
+            {
+                order
+                for _sector, pairs in slice_.sectors
+                for pair in pairs
+                for order in pair
+            }
+        )
+        slot = {order: k for k, order in enumerate(orders)}
+        zero = [[0.0, 0.0]] * width
+        values: list[Any] = []
+        amplitudes = self.amplitudes
+        for order in orders:
+            for row in rows:
+                vector = amplitudes.get((order, row))
+                if vector is None:
+                    values.extend([zero] * self.size)
+                elif width == 1:
+                    values.extend(
+                        [[cell[0].real, cell[0].imag]] for cell in vector[: self.size]
+                    )
+                else:
+                    values.extend(
+                        [[z.real, z.imag] for z in cell[:width]]
+                        for cell in vector[: self.size]
+                    )
+        squared = slice_.native.square_row_forms(
+            values,
+            len(orders),
+            len(rows),
+            self.size,
+            width,
+            metrics,
+            jobs,
+            [
+                sorted((slot[left], slot[right]) for left, right in pairs)
+                for _sector, pairs in slice_.sectors
+            ],
+            float(evaluation.average),
+        )
+
+        def per_sector(totals: Sequence[Sequence[float]]) -> dict[Orders, tuple]:
+            return {
+                sector: tuple(values)
+                for (sector, _pairs), values in zip(slice_.sectors, totals, strict=True)
+            }
+
+        numbers = evaluation.numbers
+        with numbers.scope():
+            for key, _kept, real_job, imaginary_job in keys:
+                real = per_sector(squared[real_job])
+                if imaginary_job is None:
+                    self._values[key] = real
+                    continue
+                imaginary = per_sector(squared[imaginary_job])
+                self._values[key] = {
+                    sector: tuple(
+                        numbers.pair(x, y)
+                        for x, y in zip(values, imaginary[sector], strict=True)
+                    )
+                    for sector, values in real.items()
+                }
 
     def budgets(
         self,
@@ -1088,6 +1218,10 @@ class InducedColumns:
         sources = observables.sources
         forms = observables.forms(precision)
         used = sorted({output.spin for output in self.outputs})
+        # Per spin assignment the outputs it serves (``PointOutputs.wanted``).
+        wanted = {
+            g: [output for output in self.outputs if output.spin == g] for g in used
+        }
         out: list[Any] = []
         for index, reference in enumerate(references):
             if index in failures:
@@ -1098,6 +1232,8 @@ class InducedColumns:
                 g: PointOutputs(reference, forms, sources, point, assignments[index][g])
                 for g in used
             }
+            for g, found in outputs.items():
+                found.wanted = wanted[g]
             turned: dict[int, list[PointOutputs]] = {}
 
             def rotations(
@@ -1121,6 +1257,8 @@ class InducedColumns:
                             stability.rotations, rotated, strict=True
                         )
                     ]
+                    for other in found:
+                        other.wanted = wanted[g]
                 return found
 
             crossed: dict[int, PointOutputs] = {}
@@ -1143,6 +1281,7 @@ class InducedColumns:
                     found = crossed[g] = PointOutputs(
                         run, forms, sources, point, assignments[index][g]
                     )
+                    found.wanted = wanted[g]
                 return found, {}
 
             result = {}
