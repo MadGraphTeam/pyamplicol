@@ -417,3 +417,89 @@ fn several_threads_use_engines_of_their_own() {
         );
     }
 }
+
+/// A nearly degenerate row's outcome does not depend on the rows reduced
+/// before it, in the same call or in an earlier call on the same backend:
+/// TIRust's workspaces are lane-independent (`v2_tir` module docs
+/// 'Threads'), so a slice boundary or an engine's history changes no bit.
+/// The fixture: an exactly degenerate box (two equal external momenta, a
+/// vanishing Gram determinant) and the same box moved by 1e-13, at ranks 2
+/// and 4, unchecked (the gate-0 last resort) and checked (the method
+/// choice); before lane independence the moved box's value followed the
+/// plan variant the exact box had selected.
+#[test]
+fn a_nearly_degenerate_row_does_not_depend_on_the_rows_before_it() {
+    let box_at = |eps: f64| {
+        vec![
+            [-1., -1., 0., 0.],
+            [0., -3., -1., 0.],
+            [0., 0., 0., 0.],
+            [1., -2., -1. + eps, 0.],
+        ]
+    };
+    let masses = [0., 2., 0., 2.];
+    for rank in [2, 4] {
+        let mut rng = Lcg(7);
+        let both = family(0, &[box_at(0.), box_at(1e-13)], &masses, rank, 2, &mut rng);
+        // The two lanes of each box, as a family of their own at point 0.
+        let part = |lanes: std::ops::Range<usize>| {
+            let n = |per: usize| lanes.start * per..lanes.end * per;
+            FamilyLanes {
+                family: 0,
+                propagators: 4,
+                rank,
+                points: vec![0; lanes.len()],
+                keys: both.keys[lanes.clone()].to_vec(),
+                shifts: both.shifts[n(16)].to_vec(),
+                masses: both.masses[n(4)].to_vec(),
+                scales: both.scales[n(1)].to_vec(),
+                s_matrix: both.s_matrix[n(16)].to_vec(),
+                coefficients: both.coefficients[n(ncoeff(rank))].to_vec(),
+            }
+        };
+        let (exact, near) = (part(0..2), part(2..4));
+        for unchecked in [true, false] {
+            let options = TirOptions {
+                unchecked,
+                ..TirOptions::default()
+            };
+            let outcomes = |calls: &[&FamilyLanes<f64>]| {
+                let mut backend = V2Backends::TiRust(Box::new(TirReductionBackend::new(options)));
+                let mut last = Vec::new();
+                for lanes in calls {
+                    V2Backend::<f64>::begin(&mut backend);
+                    let reduced = V2Backend::<f64>::reduce(
+                        &mut backend,
+                        std::slice::from_ref(*lanes),
+                        Poles::Split,
+                        None,
+                    )
+                    .unwrap();
+                    last = reduced.0[0]
+                        .iter()
+                        .map(|outcome| match outcome {
+                            Ok(values) => format!(
+                                "ok {:?}",
+                                values
+                                    .iter()
+                                    .map(|z| (z.re.to_bits(), z.im.to_bits()))
+                                    .collect::<Vec<_>>()
+                            ),
+                            Err(reason) => format!("err {reason}"),
+                        })
+                        .collect::<Vec<_>>();
+                }
+                last
+            };
+            let alone = outcomes(&[&near]);
+            let after_in_call = outcomes(&[&both]).split_off(2);
+            let after_a_call = outcomes(&[&exact, &near]);
+            let what = format!("rank {rank}, unchecked {unchecked}");
+            assert_eq!(
+                alone, after_in_call,
+                "{what}: after the exact box in one call"
+            );
+            assert_eq!(alone, after_a_call, "{what}: after a call of the exact box");
+        }
+    }
+}
