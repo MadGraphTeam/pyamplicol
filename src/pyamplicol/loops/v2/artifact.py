@@ -141,6 +141,7 @@ from pyamplicol.generation.evaluator_container import (
     PacbinReader,
     write_pacbin,
 )
+from pyamplicol.kinematics import failure_diagnostic
 from pyamplicol.loops.orders import BornLoopPair, VirtualOrderSector, canonical_order
 from pyamplicol.loops.strategy import R2Selection
 
@@ -1597,6 +1598,69 @@ def _json_payload(manifest: Any, path: str) -> dict[str, Any]:
         ) from error
 
 
+def _require_bound_validation_point(
+    manifest: Any, process_id: str, runtime: V2VirtualRuntime
+) -> None:
+    """Refuse a stored process whose validation point is off the mass shells
+    its amplitude binds at the artifact's own parameters (the slice's fixed
+    parameters, no caller's): an artifact generated before the kinematics
+    took the bound masses (pyAmpliCol 1.0.3 and older drew the validation
+    point, and so the flat phase-space points of ``evaluate`` and
+    ``profile``, on the model's masses although ``[loop.preparation]
+    fixed_parameters`` changed an external mass). Its records contradict its
+    binding (the point, ``model/parameters.json``, an API bundle's
+    validation points), and every reader of them would evaluate off shell:
+    it is refused, to be regenerated, rather than re-derived here, which
+    would mend this runtime's readers only. The measure is the mass-shell
+    guard's (``kinematics.shell_defects``, exact on the stored digits,
+    against ``shell_bound``), against the binary64 binding of the runtime
+    (``_kinematics_masses`` at the artifact's own parameters). A process
+    without a readable, available point is not checked."""
+
+    from pyamplicol.kinematics import initial_count, shell_bound, shell_defects
+
+    from .assemble import Precision
+
+    path = manifest.root / "processes" / process_id / "validation-momenta.json"
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return
+    if not record.get("available") or not record.get("points"):
+        return
+    point = [entry["momentum"] for entry in record["points"][0]]
+    if len(point) != runtime.external_count:
+        return
+    initial = initial_count(runtime._executor.slice.blocks.process.legs)
+    incoming = [[Fraction(str(x)) for x in leg] for leg in point[:initial]]
+    total = [sum(leg[mu] for leg in incoming) for mu in range(4)]
+    scale = total[0] ** 2 - total[1] ** 2 - total[2] ** 2 - total[3] ** 2
+    if scale <= 0:
+        scale = Fraction(1)
+    own = runtime._parameters
+    runtime._parameters = {}
+    try:
+        masses = runtime._kinematics_masses(Precision.double(), point, scale, 1)
+    finally:
+        runtime._parameters = own
+    (defects,) = shell_defects([point], [masses], binary64=False)
+    bound = shell_bound(len(point))
+    worst = max(range(len(point)), key=lambda leg: defects[leg])
+    if not defects[worst] > bound:
+        return
+    energy, x, y, z = (Fraction(str(value)) for value in point[worst])
+    square = energy * energy - x * x - y * y - z * z
+    raise ArtifactError(
+        f"{process_id}: the stored validation point is off the mass shells the "
+        f"amplitude binds (external leg {worst + 1}: p^2 = {float(square)!r}, "
+        f"bound m^2 = {float(masses[worst])!r}, relative shell defect "
+        f"{defects[worst]:.3e} above {bound:.3e}): the artifact was generated "
+        "before the kinematics took the parameters it fixes "
+        "([loop.preparation] fixed_parameters) and its validation records and "
+        "flat phase-space points are on other masses; regenerate the artifact"
+    )
+
+
 def _real_parameters(mapping: ModelParameters | None) -> dict[str, str]:
     from pyamplicol.runtime.virtual import _parameters
 
@@ -1738,6 +1802,9 @@ class V2VirtualRuntime:
         physics = _json_payload(manifest, str(selected["physics_path"]))
         model_payload = _json_payload(manifest, "model/compiled-model.json")
         self._lock = RLock()
+        # The legs' bound squared masses by carrier and parameters
+        # (``_kinematics_masses``).
+        self._bound_masses: dict[tuple[Any, ...], list[Any]] = {}
         self._native = native
         self._plan_sha256 = str(admission["plan_sha256"])
         self._scaleless_plan_sha256 = admission["scaleless_plan_sha256"]
@@ -1910,6 +1977,9 @@ class V2VirtualRuntime:
             )
             for item in self._metadata["sectors"]
         )
+        # An artifact whose stored kinematics are off the shells it binds
+        # (generated before the bound masses) is refused.
+        _require_bound_validation_point(manifest, process_id, self)
 
     def _runtime_options(self) -> dict[str, object]:
         """The load-time runtime options in effect (``inspect``)."""
@@ -1975,15 +2045,31 @@ class V2VirtualRuntime:
         representative's executor, on the caller's legs): the improvement's
         targets."""
 
+        from .native_trees import scale_dependent_shared
+
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
             parameters = dict(self._parameters)
-            masses = self._executor.leg_masses(
-                representative, scale, parameters, precision, count
+            # The binding depends on the carrier, the parameters and, for a
+            # program whose masses run with the scale, the scale (never on
+            # the point): bound once per carrier and parameters (the
+            # improvement and the shell guard ask per batch), per call for a
+            # running program.
+            key = (
+                precision.arithmetic,
+                precision.working_digits,
+                tuple(sorted(parameters.items())),
             )
+            masses = self._bound_masses.get(key)
+            if masses is None:
+                masses = self._executor.leg_masses(
+                    representative, scale, parameters, precision, count
+                )
+                if not scale_dependent_shared(self._native_process.trees):
+                    self._bound_masses[key] = masses
         if member is None:
-            return masses
+            return list(masses)
         return [masses[leg] for leg in member.legs]
 
     def improved_points(
@@ -2412,7 +2498,7 @@ class V2VirtualRuntime:
         in that carrier, in the caller's leg order; each lane diagnostic
         records it (``VirtualLaneDiagnostic.kinematics``)."""
 
-        from pyamplicol.kinematics import with_kinematics
+        from pyamplicol.kinematics import shell_check, with_kinematics
         from pyamplicol.runtime.virtual import _inputs, v2_options
 
         from .rescue import default_stack, rescue, rescue_policy
@@ -2512,6 +2598,9 @@ class V2VirtualRuntime:
             parameters = dict(self._parameters)
             if policy is None:
                 points, records = improver.level(caller, scales, setting)
+                # The mass-shell guard on the points this carrier evaluates
+                # (``kinematics``, "the shell guard"), in the caller's legs.
+                shell = shell_check(points, scales, setting, self._kinematics_masses)
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
@@ -2524,8 +2613,10 @@ class V2VirtualRuntime:
                         checks,
                         on_failure,
                         choices[cast(str, carrier)],
+                        refused=shell.refused,
                     ),
                     records,
+                    shell,
                 )
 
             last = policy.levels[-1]
@@ -2537,10 +2628,14 @@ class V2VirtualRuntime:
                 points, records = improver.level(
                     [caller[i] for i in indices], [scales[i] for i in indices], setting
                 )
+                level_scales = [scales[i] for i in indices]
+                shell = shell_check(
+                    points, level_scales, setting, self._kinematics_masses
+                )
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
-                        [scales[i] for i in indices],
+                        level_scales,
                         parameters,
                         carrier,
                         setting,
@@ -2556,8 +2651,10 @@ class V2VirtualRuntime:
                             else "return"
                         ),
                         choices[rung],
+                        refused=shell.refused,
                     ),
                     records,
+                    shell,
                 )
 
             return rescue(policy, len(caller), level, on_failure=on_failure)
@@ -2740,6 +2837,7 @@ class V2VirtualRuntime:
         checks: VirtualStabilityChecks,
         on_failure: str,
         reduction: VirtualReduction,
+        refused: Mapping[int, list[str]] | None = None,
     ) -> VirtualEvaluation:
         """One batch of exact points in one carrier with one set of checks
         (the whole ``evaluate`` without a rescue policy, and each level of
@@ -2749,22 +2847,33 @@ class V2VirtualRuntime:
         refuses or fails again on NinjaRS at ``carrier``, each served one
         guarded by its reduction-direction check against the target,
         recorded per point; a fallback point's cross-backend check is not
-        run, m-lit R6)."""
+        run, m-lit R6). A point the mass-shell guard refused (``refused``,
+        ``kinematics.shell_check``) is not evaluated: it fails with its
+        refusal (no fallback or best-effort value serves it)."""
+
+        from pyamplicol.kinematics import guarded_run
 
         from .reduction import with_fallback
+
+        refused = refused or {}
 
         def run(
             indices: list[int] | None, own: VirtualStabilityChecks
         ) -> tuple[list[Any], dict[int, list[str]]]:
-            if indices is None:
+            if indices is None and not refused:
                 return self._run(points, scales, parameters, setting, selection, own)
-            return self._run(
-                [points[i] for i in indices],
-                [scales[i] for i in indices],
-                parameters,
-                setting,
-                selection,
-                own,
+            return guarded_run(
+                lambda kept: self._run(
+                    [points[i] for i in kept],
+                    [scales[i] for i in kept],
+                    parameters,
+                    setting,
+                    selection,
+                    own,
+                ),
+                len(points),
+                refused,
+                indices,
             )
 
         results, failures, served = with_fallback(
@@ -2775,6 +2884,11 @@ class V2VirtualRuntime:
             carrier,
             best_effort=on_failure == "best-effort",
         )
+        for index, reasons in refused.items():
+            # The refusal alone (not the fallback's attempts at it).
+            results[index] = None
+            failures[index] = list(reasons)
+            served.pop(index, None)
         if failures and on_failure == "raise":
             index = min(failures)
             raise EvaluationError(
@@ -2970,11 +3084,7 @@ class V2VirtualRuntime:
                         bits,
                         False,
                         reason,
-                        failures=(
-                            VirtualFailureDiagnostic(
-                                index, None, None, None, "v2-evaluation", reason
-                            ),
-                        ),
+                        failures=(failure_diagnostic(index, reason),),
                         primary_color_contraction=contraction,
                         reduction=(served or {}).get(index, reduction),
                     )

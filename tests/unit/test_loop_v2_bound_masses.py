@@ -230,3 +230,126 @@ def test_the_campaign_gg_ttxh_card_is_on_its_bound_shells(tmp_path):
             artifact, flat.as_inputs(exact=False), flat.mu_r2(), backend
         ):
             assert abs(ratio / expected - 1) <= POLE_TOLERANCE, (backend, ratio)
+
+
+# ------------------------------------------------------------- the shell guard
+
+
+@pytest.mark.loop_fast
+def test_the_shell_measure_is_exact_and_its_bound_the_binary64_rounding():
+    from pyamplicol.kinematics import shell_bound, shell_defects, shell_refusals
+
+    point = [list(map(float, leg)) for leg in _UNCHANGED_POINT]
+    masses = [Fraction(0), Fraction(0), Fraction(29929), Fraction(29929)]
+    (fast,) = shell_defects([point], [masses], binary64=True)
+    binary = [[Fraction(x) for x in leg] for leg in point]
+    (exact,) = shell_defects([binary], [masses], binary64=False)
+    # The binary64 path measures the binary64 values exactly (double-double).
+    assert fast == pytest.approx(exact, rel=1e-12, abs=1e-30)
+    assert max(exact) <= shell_bound(4) == 13 * 2.0**-53
+    other = [Fraction(0), Fraction(0), Fraction(25600), Fraction(25600)]
+    (defects,) = shell_defects([point], [other], binary64=True)
+    refused = shell_refusals([point], [other], [defects])
+    assert set(refused) == {0}
+    (reason,) = refused[0]
+    assert reason.startswith("external-mass-shell: external leg ")
+    assert "bound m^2 = 25600.0" in reason
+    # A leg without a bound mass takes its own p^2; a non-finite component is
+    # left to the evaluation.
+    unknown = [None, None, None, None]
+    assert shell_defects([point], [unknown], binary64=True) == [(0.0,) * 4]
+    broken = [list(leg) for leg in point]
+    broken[2][0] = math.nan
+    for binary64 in (True, False):
+        (nan,) = shell_defects([broken], [masses], binary64=binary64)
+        assert all(math.isnan(value) for value in nan)
+        assert shell_refusals([broken], [masses], [nan]) == {}
+
+
+def _flat_point(artifact: Path, seed: int = 7):
+    from pyamplicol.cli.flat_points import draw_flat_points
+
+    flat = draw_flat_points(artifact, process=None, points=1, seed=seed, sqrt_s=None)
+    return [list(leg) for leg in flat.points[0]], flat.mu_r2()[0]
+
+
+@pytest.mark.loop_physics
+def test_an_off_shell_point_is_refused(uux_ttx):
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.errors import EvaluationError
+    from pyamplicol.kinematics import SHELL_STAGE, shell_bound
+
+    runtime = Runtime.load(uux_ttx)
+    good, scale = _flat_point(uux_ttx)
+    # The point the generation drew before the bound masses: tops at the
+    # model's 173, the amplitude binds 160.
+    stale = [list(map(float, leg)) for leg in _UNCHANGED_POINT]
+    for arithmetic in ("double", "double-double"):
+        result = runtime.evaluate(
+            [good, stale], mu_r2=[scale, "1000000"], arithmetic=arithmetic
+        )
+        assert [str(status) for status in result.statuses] == ["success", "failed"]
+        assert result.values[1] is None
+        lane = result.diagnostics[1]
+        (failure,) = lane.failures
+        assert failure.stage == SHELL_STAGE and failure.external_leg in (2, 3)
+        assert "bound m^2 = 25600.0" in lane.detail
+        assert max(lane.mass_shell) > shell_bound(4)
+        assert max(result.diagnostics[0].mass_shell) <= shell_bound(4)
+    with pytest.raises(EvaluationError, match=SHELL_STAGE):
+        runtime.evaluate([stale], mu_r2="1000000", on_failure="raise")
+    # The resolved outputs take the same guard.
+    resolved = runtime.evaluate_resolved([good, stale], mu_r2=[scale, "1000000"])
+    assert resolved.diagnostics[0].status == "success"
+    assert resolved.diagnostics[1].failures[0].stage == SHELL_STAGE
+
+
+@pytest.mark.loop_physics
+def test_a_point_off_shell_by_its_inputs_digits_is_refused_unless_improved(uux_ttx):
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import SHELL_STAGE
+
+    runtime = Runtime.load(uux_ttx)
+    point, scale = _flat_point(uux_ttx)
+    # A top momentum component to ten digits: off its shell by about 1e-10
+    # of E^2, far beyond binary64's rounding, well within the improvement's
+    # input test.
+    point[2][1] = float(f"{point[2][1]:.10g}")
+    plain = runtime.evaluate([point], mu_r2=scale, arithmetic="double")
+    assert plain.diagnostics[0].failures[0].stage == SHELL_STAGE
+    improved = runtime.evaluate(
+        [point], mu_r2=scale, arithmetic="double", kinematics_improvement_binary64=True
+    )
+    assert str(improved.statuses[0]) == "success"
+    assert improved.diagnostics[0].kinematics.status == "improved"
+    extended = runtime.evaluate([point], mu_r2=scale, arithmetic="double-double")
+    assert str(extended.statuses[0]) == "success"
+
+
+@pytest.mark.loop_physics
+def test_an_artifact_with_a_stale_validation_point_is_refused(uux_ttx, tmp_path):
+    import shutil
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.errors import ArtifactError
+
+    copy = tmp_path / "stale"
+    shutil.copytree(uux_ttx, copy)
+    path = copy / "processes" / "p" / "validation-momenta.json"
+    record = json.loads(path.read_text())
+    # As the generation wrote it before the bound masses: the point on the
+    # model's shells (173), no recorded masses.
+    record["points"] = [
+        [
+            {"pdg": entry["pdg"], "momentum": momentum}
+            for entry, momentum in zip(
+                record["points"][0], _UNCHANGED_POINT, strict=True
+            )
+        ]
+    ]
+    del record["masses"]
+    path.write_text(json.dumps(record))
+    with pytest.raises(ArtifactError, match="regenerate the artifact"):
+        Runtime.load(copy)
+    # The artifact as generated loads.
+    Runtime.load(uux_ttx)

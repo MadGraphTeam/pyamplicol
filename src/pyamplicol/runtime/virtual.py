@@ -50,6 +50,7 @@ from pyamplicol.correlators import (
     CorrelatedRequest,
     CorrelatedValue,
 )
+from pyamplicol.kinematics import failure_diagnostic
 from pyamplicol.loops.orders import BornLoopPair, VirtualOrderSector, canonical_order
 from pyamplicol.loops.strategy import R2Selection
 from pyamplicol.runtime.correlated_exact import (
@@ -183,13 +184,16 @@ def _recording_executor(base: type) -> type:
 _EvaluationT = TypeVar("_EvaluationT")
 
 
-def with_kinematics(evaluation: _EvaluationT, records: Sequence[Any]) -> _EvaluationT:
+def with_kinematics(
+    evaluation: _EvaluationT, records: Sequence[Any], shell: Any = None
+) -> _EvaluationT:
     """``kinematics.with_kinematics`` (each lane diagnostic's kinematics
-    record); the evaluation's type is kept (``dataclasses.replace``)."""
+    record and, with ``shell``, its mass-shell measure); the evaluation's
+    type is kept (``dataclasses.replace``)."""
 
     from pyamplicol.kinematics import with_kinematics as attach
 
-    return cast(_EvaluationT, attach(evaluation, records))
+    return cast(_EvaluationT, attach(evaluation, records, shell))
 
 
 def _number(value: object, description: str) -> str:
@@ -789,6 +793,7 @@ class V2ObservablesRuntime:
         reduction: VirtualReduction | None = None,
         best_effort: bool = False,
         kinematics: tuple[str | None, bool | None] | None = None,
+        refused: Mapping[int, list[str]] | None = None,
     ) -> tuple[list[Any], dict[int, list[str]], dict[int, VirtualReduction]]:
         """Per-point outputs (``None`` for a failed point), the failures and
         the per-point fallback's records; ``reduction`` is the call's backend
@@ -813,6 +818,31 @@ class V2ObservablesRuntime:
             if kinematics is not None and self._executor == "native"
             else None
         )
+        if refused:
+            # The points the mass-shell guard refused (``_shell``) are not
+            # evaluated: each fails with its refusal.
+            kept = [i for i in range(len(points)) if i not in refused]
+            found, failed, served = self._run(
+                native_key,
+                python,
+                [points[i] for i in kept],
+                [scales[i] for i in kept],
+                [spins[i] for i in kept],
+                options,
+                reduction,
+                best_effort,
+                kinematics,
+            )
+            results: list[Any] = [None] * len(points)
+            failures = {index: list(reasons) for index, reasons in refused.items()}
+            records: dict[int, VirtualReduction] = {}
+            for local, index in enumerate(kept):
+                results[index] = found[local]
+                if local in failed:
+                    failures[index] = failed[local]
+                if local in served:
+                    records[index] = served[local]
+            return results, failures, records
         with calling(text):
             return self._run_in(
                 native_key,
@@ -944,6 +974,16 @@ class V2ObservablesRuntime:
         legs = self._observables.slice.blocks.process.legs
         improver = LevelImprover(settings, initial_count(legs), provider)
         return improver.level(points, scales, precision)
+
+    def _shell(self, points: list[Any], scales: list[str], precision: Any) -> Any:
+        """The mass-shell guard (``kinematics.shell_check``) on one carrier's
+        points of a call (the caller's legs, after ``_improve``), against the
+        masses the evaluation binds (the improvement's provider)."""
+
+        from pyamplicol.kinematics import shell_check
+
+        provider = self.kinematics_masses or self._slice_masses
+        return shell_check(points, scales, precision, provider)
 
     def _slice_masses(
         self, precision: Any, point: Any, scale: Any, count: int
@@ -1098,11 +1138,7 @@ class V2ObservablesRuntime:
                 bits,
                 False,
                 f"v2 {executor} executor: {reason}",
-                failures=(
-                    VirtualFailureDiagnostic(
-                        index, None, None, None, "v2-evaluation", reason
-                    ),
-                ),
+                failures=(failure_diagnostic(index, reason),),
                 reduction=reduction,
             )
         best = None if reduction is None else reduction.best_effort
@@ -1574,6 +1610,7 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
+        shell = self._shell(points, scales, carrier)
         with self._lock:
             parameters = dict(self._parameters)
         settings = {
@@ -1606,6 +1643,7 @@ class V2ObservablesRuntime:
             None if reductions is None else reductions[arithmetic],
             best_effort=on_failure == "best-effort",
             kinematics=(kinematics_improvement, kinematics_improvement_binary64),
+            refused=shell.refused,
         )
         self._failed(failures, on_failure)
         return with_kinematics(
@@ -1625,6 +1663,7 @@ class V2ObservablesRuntime:
                 [getattr(result, "lane_rescue", ()) for result in per_point],
             ),
             kinematics,
+            shell,
         )
 
     def evaluate_correlated(
@@ -1663,6 +1702,7 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
+        shell = self._shell(points, scales, carrier)
         groups, sources = self._spin_groups(requests, len(points))
         with self._lock:
             parameters = dict(self._parameters)
@@ -1687,6 +1727,7 @@ class V2ObservablesRuntime:
                 reduction,
                 best_effort=on_failure == "best-effort",
                 kinematics=(kinematics_improvement, kinematics_improvement_binary64),
+                refused=shell.refused,
             )
             self._failed(failures, on_failure)
             for label, output in labels:
@@ -1707,6 +1748,7 @@ class V2ObservablesRuntime:
                         [getattr(results, "lane_rescue", ()) for results in per_point],
                     ),
                     kinematics,
+                    shell,
                 )
         return {label: out[label] for label in requests}
 
@@ -1825,6 +1867,7 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
+        shell = self._shell(points, scales, carrier)
         rows = observables.rows
         if self._member is not None:
             # The member's rows in its own catalogue order.
@@ -1867,6 +1910,7 @@ class V2ObservablesRuntime:
             None if reductions is None else reductions[arithmetic],
             best_effort=on_failure == "best-effort",
             kinematics=(kinematics_improvement, kinematics_improvement_binary64),
+            refused=shell.refused,
         )
         self._failed(failures, on_failure)
         born_orders = self._default_born_orders()
@@ -1999,7 +2043,7 @@ class V2ObservablesRuntime:
             pole_parts=tuple(parts) if split else None,
             contribution=self.contribution_kind,
         )
-        return with_kinematics(resolved, kinematics)
+        return with_kinematics(resolved, kinematics, shell)
 
 
 class V2InducedObservablesRuntime(V2ObservablesRuntime):
