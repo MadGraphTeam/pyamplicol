@@ -319,6 +319,22 @@ impl<M: FastMasters> MasterCache<M> {
         self.shared.as_ref()
     }
 
+    /// Drop this cache's own values, its buffers and its shared tier (a
+    /// parallel reduction's worker copy between calls); the provider and the
+    /// statistics stay.
+    pub fn release(&mut self) {
+        self.entries = HashMap::new();
+        self.values = Vec::new();
+        self.canonical = Vec::new();
+        self.sources = Vec::new();
+        self.pending = HashMap::new();
+        self.pending_keys = Vec::new();
+        self.miss_args = Vec::new();
+        self.miss_out = Vec::new();
+        self.miss_ok = Vec::new();
+        self.shared = None;
+    }
+
     pub fn enabled(&self) -> bool {
         self.enabled
     }

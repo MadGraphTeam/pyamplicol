@@ -565,12 +565,15 @@ trait BucketEngine<T>: Send + Sized {
     /// (the fast engine's exact engine); undone by [`Self::end_parallel`].
     fn begin_parallel(&mut self) {}
     fn end_parallel(&mut self) {}
-    /// Fold a worker copy's counters into this engine; the copy is dropped
-    /// after it (copies live for one parallel call only: their working
-    /// state is not kept between calls, [`retire_copies`]).
-    fn absorb(&mut self, copy: Self) {
+    /// Fold a worker copy's counters into this engine (after every
+    /// parallel call, [`retire_copies`]).
+    fn absorb(&mut self, copy: &mut Self) {
         let _ = copy;
     }
+    /// Drop the working state a copy grew during a call (its lane-sized
+    /// buffers); what is cheap to keep and costly to build (the master
+    /// provider) stays for the next call ([`retire_copies`]).
+    fn release(&mut self) {}
     /// `source`: the lanes' rescue-precision kinematics on demand (the
     /// fast engine's cancellation rescue; others ignore it).
     fn reduce(
@@ -773,14 +776,17 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     Ok(outcomes)
 }
 
-/// Drop the worker copies of a parallel call after folding their counters
-/// into the reducer's engine (invariant 5: between calls a reducer holds
-/// what the serial reducer holds; a copy's working state, its workspaces,
-/// its master provider and the rows it looked up, exist during one call).
+/// After a parallel call: fold the worker copies' counters into the
+/// reducer's engine and release their working state, then keep them for the
+/// next call (invariant 5: between calls a copy holds no lane-sized buffer,
+/// no template and no master row; a fast engine's copy keeps its master
+/// provider, a few kB of evaluator constants that are costly to rebuild).
 fn retire_copies<T, E: BucketEngine<T>>(engine: &mut E, mut pool: EnginePool<E>) {
-    for copy in pool.drain() {
+    for copy in pool.engines_mut() {
         engine.absorb(copy);
+        copy.release();
     }
+    *engine.pool() = pool;
 }
 
 /// Empty outcome tables of `frames` frames.
@@ -1254,10 +1260,22 @@ impl BucketEngine<f64> for FastEngine {
         }
     }
 
-    fn absorb(&mut self, mut copy: Self) {
+    fn absorb(&mut self, copy: &mut Self) {
         self.masters.add_statistics(copy.masters.take_statistics());
-        self.exact_lanes += copy.exact_lanes;
-        self.rescued_lanes += copy.rescued_lanes;
+        self.exact_lanes += std::mem::take(&mut copy.exact_lanes);
+        self.rescued_lanes += std::mem::take(&mut copy.rescued_lanes);
+    }
+
+    fn release(&mut self) {
+        // The amplitudes' per-lane workspaces, the numerators' coefficient
+        // buffers, the result buffers and the rows looked up in the shared
+        // master tier: rebuilt by the next call as it needs them.
+        self.amplitudes = HashMap::new();
+        self.numerators = HashMap::new();
+        self.results = Vec::new();
+        self.statuses = Vec::new();
+        self.masters.release();
+        self.shared_exact = None;
     }
 
     fn precision(&self) -> u32 {
