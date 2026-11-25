@@ -474,7 +474,10 @@ def shell_check(
         relative, ratio = _binary64_legs(points, masses2, float(target), units)
         defects = [tuple(row) for row in relative]
         candidates = [
-            index for index, row in enumerate(ratio) if not max(row, default=0.0) <= 1.0
+            # (Not every ratio within 1: a NaN, an unmeasured leg, too.)
+            index
+            for index, row in enumerate(ratio)
+            if not all(value <= 1.0 for value in row)
         ]
     else:
         defects = [()] * len(points)
@@ -483,8 +486,7 @@ def shell_check(
     for index in candidates:
         point, legs = points[index], masses2[index]
         measured = _shell_legs(point, legs, float(target), units[index], binary64)
-        if not binary64:
-            defects[index] = tuple(relative for relative, _ratio, _sq in measured)
+        defects[index] = tuple(relative for relative, _ratio, _sq in measured)
         reason = _shell_reason(point, legs, measured)
         if reason is not None:
             reasons[index] = reason
@@ -519,12 +521,21 @@ def _binary64_legs(
     m_hi = np.array([[part[0] for part in row] for row in parts])[index]
     m_lo = np.array([[part[1] for part in row] for row in parts])[index]
     m_exp = np.array([[part[2] for part in row] for row in parts])[index]
+    # The mass class of each leg from the unscaled binding (never from a
+    # scaled value that may underflow).
+    massive = np.array(
+        [[m is not None and m > 0 for m in masses] for masses in rows], dtype=bool
+    )[index]
     with np.errstate(all="ignore"):
         finite = np.isfinite(p).all(axis=2)
         largest = np.abs(np.where(np.isfinite(p), p, 0.0)).max(axis=2)
         _mant, exponent = np.frexp(largest)
-        # The mass's own exponent (m^2 = hi 2^e): its root's is about e / 2.
-        exponent = np.maximum(exponent, (m_exp + 1) // 2 + 1)
+        # The scale from the nonzero quantities: the components and, for a
+        # massive leg, its mass (m^2 = hi 2^e: its root's exponent is about
+        # e / 2).
+        exponent = np.where(
+            massive, np.maximum(exponent, (m_exp + 1) // 2 + 1), exponent
+        )
         q = np.ldexp(p, -exponent[..., None])
         mh = np.ldexp(m_hi, m_exp - 2 * exponent)
         ml = np.ldexp(m_lo, m_exp - 2 * exponent)
@@ -547,7 +558,6 @@ def _binary64_legs(
         defect = np.abs(total + lo)
         mass2 = mh + ml
         u = np.array(units, dtype=np.float64)
-        massive = mass2 > 0.0
         allowance = np.where(
             massive,
             target * mass2 + SHELL_ROUNDING * u * (size + mass2),
@@ -563,6 +573,11 @@ def _binary64_legs(
         bad = ~(finite & known)
         relative = np.where(bad, np.nan, relative)
         ratio = np.where(bad, np.inf, ratio)
+        # A scaled mass or square that left the binary64 range (a mass
+        # negligible beside the components): measured exactly instead
+        # (NaN ratio: the exact pass).
+        unreliable = (massive & ~(mh > 0.0)) | ~np.isfinite(defect) | ~np.isfinite(size)
+        ratio = np.where(unreliable & ~bad, np.nan, ratio)
     return relative.tolist(), ratio.tolist()
 
 
@@ -623,12 +638,37 @@ def _shell_legs(
             relative = defect / size if size else Fraction(0)
             allowance = (Fraction(target) + SHELL_ROUNDING * Fraction(unit)) * size
         ratio = (
-            float(defect / allowance)
+            _float(defect / allowance)
             if allowance
             else (0.0 if defect == 0 else math.inf)
         )
-        out.append((float(relative), ratio, square))
+        out.append((_float(relative), ratio, square))
     return out
+
+
+def _float(value: Fraction) -> float:
+    """A nonnegative exact value as a float, infinite beyond the range."""
+
+    try:
+        return float(value)
+    except OverflowError:
+        return math.inf
+
+
+def _display(value: Fraction | None) -> str:
+    """An exact value for a reason's text: its float, or beyond the float
+    range its decimal to 17 significant digits (never raises)."""
+
+    if value is None:
+        return "unknown"
+    try:
+        return repr(float(value))
+    except OverflowError:
+        from decimal import Decimal, localcontext
+
+        with localcontext() as context:
+            context.prec = 17
+            return str(Decimal(value.numerator) / Decimal(value.denominator))
 
 
 def _shell_reason(
@@ -650,8 +690,8 @@ def _shell_reason(
             "without a shell-consistency screen"
         )
     return (
-        f"{SHELL_REASON}: external leg {worst + 1}, p^2 = {float(square)!r}, "
-        f"bound m^2 = {float(mass2)!r}, relative defect {relative:.3e}, "
+        f"{SHELL_REASON}: external leg {worst + 1}, p^2 = {_display(square)}, "
+        f"bound m^2 = {_display(mass2)}, relative defect {relative:.3e}, "
         f"{ratio:.3g} times the screen's allowance (target m^2 + "
         f"{SHELL_ROUNDING} u (E^2 + |p|^2 + m^2); a shell-consistency screen, "
         "not an error bound: the value is served as computed)"

@@ -1068,3 +1068,38 @@ def test_a_two_to_one_draw_takes_the_bound_final_mass(higgs, tmp_path, monkeypat
     assert flat.mu_r2() == [repr(mass * mass)] * len(flat.points)
     for lane in result.diagnostics:
         assert not lane.uncertified, lane.uncertified
+
+
+@pytest.mark.loop_fast
+def test_the_screen_keeps_exponents_and_mass_classes():
+    """The three fixtures of the review of b9ae740d9: a tiny massless leg
+    (1e-180, 0, 0, 0) has relative defect 1 and is marked; a tiny positive
+    mass beside huge components (m^2 = 1e-60, E = 1e153, px = (1 - 1e-6) E)
+    keeps the massive rule (measured exactly); a huge leg (1e155, 0, 0, 0)
+    is reported without raising."""
+
+    tiny = _point((1e-180, 0, 0, 0))
+    found = _screen([tiny], [Fraction(0)])
+    assert set(found.reasons) == {0} and found.defects[0] == (1.0,)
+    energy = 1e153
+    light = _point((energy, (1 - 1e-6) * energy, 0, 0))
+    mass2 = Fraction(1, 10**60)
+    found = _screen([light], [mass2])
+    # |p^2 - m^2| / m^2 of about 2e360: beyond the float range (exactly
+    # measured, reported as infinite), the massive rule kept.
+    assert set(found.reasons) == {0} and found.defects[0] == (math.inf,)
+    assert "bound m^2 = 1e-60" in found.reasons[0]
+    huge = _point((1e155, 0, 0, 0))
+    (reason,) = _screen([huge], [Fraction(0)]).reasons.values()
+    assert "p^2 = 1.0000000000000000" in reason or "p^2 = 1.0" in reason
+
+
+@pytest.mark.loop_physics
+def test_a_huge_component_is_reported_without_raising(uux_ttx):
+    from pyamplicol.api import Runtime
+
+    runtime = Runtime.load(uux_ttx)
+    point, scale = _flat_point(uux_ttx)
+    point[0] = [1e155, 0.0, 0.0, 0.0]
+    result = runtime.evaluate([point], mu_r2=scale, on_failure="return")
+    assert len(result.diagnostics) == 1
