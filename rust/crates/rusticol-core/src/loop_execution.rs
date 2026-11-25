@@ -336,6 +336,33 @@ pub mod v2 {
         pub coefficients: Vec<Complex<T>>,
     }
 
+    impl<T: Clone> FamilyLanes<T> {
+        /// Keep the lanes of the points `keep` keeps (in order).
+        fn retain_points(&mut self, keep: impl Fn(usize) -> bool) {
+            let lanes = self.keys.len();
+            if lanes == 0 {
+                return;
+            }
+            let kept: Vec<bool> = self.points.iter().map(|&point| keep(point)).collect();
+            fn retain<V: Clone>(values: &mut Vec<V>, kept: &[bool]) {
+                let stride = values.len() / kept.len();
+                let mut at = 0;
+                values.retain(|_| {
+                    let keep = kept[at / stride.max(1)];
+                    at += 1;
+                    keep
+                });
+            }
+            retain(&mut self.points, &kept);
+            retain(&mut self.keys, &kept);
+            retain(&mut self.shifts, &kept);
+            retain(&mut self.masses, &kept);
+            retain(&mut self.scales, &kept);
+            retain(&mut self.s_matrix, &kept);
+            retain(&mut self.coefficients, &kept);
+        }
+    }
+
     /// One reduction lane: its raw Laurent integrals in the columns of
     /// [`Poles`], or the reducer status of a failed lane.
     pub type LaneOutcome<T> = Result<Vec<Complex<T>>, String>;
@@ -1499,6 +1526,32 @@ pub mod v2 {
         data: &LaneData<T, L>,
         failures: &mut [Vec<String>],
     ) -> FamilyLanes<T> {
+        lanes_with(
+            plan,
+            masses,
+            scales,
+            numerator,
+            data,
+            failures,
+            |failures, point| !failures[point].is_empty(),
+            |failures, point, failure| failures[point].push(failure),
+        )
+    }
+
+    /// [`lanes_of`] with the failures read and recorded through `state`:
+    /// `failed(state, point)` skips a point, `fail(state, point, failure)`
+    /// records a non-finite numerator.
+    #[allow(clippy::too_many_arguments)]
+    fn lanes_with<T: Carrier, S: ?Sized, const L: usize>(
+        plan: &LoopProgramV4,
+        masses: &[Complex<T>],
+        scales: &[Complex<T>],
+        numerator: &FamilyNumerator<T>,
+        data: &LaneData<T, L>,
+        state: &mut S,
+        failed: impl Fn(&S, usize) -> bool,
+        mut fail: impl FnMut(&mut S, usize, String),
+    ) -> FamilyLanes<T> {
         let family = &plan.families[numerator.family];
         let n = family.propagators();
         let masks = family.shift_masks();
@@ -1532,11 +1585,15 @@ pub mod v2 {
         let dependents = family_dependents(plan, family);
         for lane in 0..data.active {
             let point = data.points[lane];
-            if !failures[point].is_empty() {
+            if failed(state, point) {
                 continue;
             }
             if !finite[lane] {
-                failures[point].push(format!("family {}: non-finite numerator", numerator.family));
+                fail(
+                    state,
+                    point,
+                    format!("family {}: non-finite numerator", numerator.family),
+                );
                 continue;
             }
             for (k, &order) in family.orders.iter().enumerate() {
@@ -1581,6 +1638,66 @@ pub mod v2 {
             }
         }
         lanes
+    }
+
+    /// The reduction lanes of a bucket chunk's family numerators (the
+    /// groups with lanes, in numerator order): [`lanes_of`] of each in turn,
+    /// a point failed by one numerator skipped by the later ones. On several
+    /// threads the numerators scatter in parallel, each against the
+    /// failures at entry, and are merged in numerator order: a point a
+    /// numerator fails loses the later numerators' lanes and failures, as
+    /// in turn, so the groups and failures do not depend on the count.
+    fn scatter_lanes<T: Carrier, const L: usize>(
+        plan: &LoopProgramV4,
+        masses: &[Complex<T>],
+        scales: &[Complex<T>],
+        numerators: &[FamilyNumerator<T>],
+        data: &LaneData<T, L>,
+        failures: &mut [Vec<String>],
+    ) -> Vec<FamilyLanes<T>> {
+        if numerators.len() < 2 || rayon::current_num_threads() < 2 {
+            return numerators
+                .iter()
+                .map(|numerator| lanes_of(plan, masses, scales, numerator, data, failures))
+                .filter(|group| !group.keys.is_empty())
+                .collect();
+        }
+        let entry: &[Vec<String>] = failures;
+        let scattered: Vec<(FamilyLanes<T>, Vec<(usize, String)>)> = numerators
+            .par_iter()
+            .map(|numerator| {
+                let mut new = Vec::new();
+                let group = lanes_with(
+                    plan,
+                    masses,
+                    scales,
+                    numerator,
+                    data,
+                    &mut new,
+                    |_, point| !entry[point].is_empty(),
+                    |new: &mut Vec<(usize, String)>, point, failure| new.push((point, failure)),
+                );
+                (group, new)
+            })
+            .collect();
+        // Points failed within this chunk, by the numerators merged so far.
+        let mut failed_here: Vec<usize> = Vec::new();
+        let mut groups = Vec::with_capacity(scattered.len());
+        for (mut group, new) in scattered {
+            if !failed_here.is_empty() {
+                group.retain_points(|point| !failed_here.contains(&point));
+            }
+            for (point, failure) in new {
+                if !failed_here.contains(&point) {
+                    failures[point].push(failure);
+                    failed_here.push(point);
+                }
+            }
+            if !group.keys.is_empty() {
+                groups.push(group);
+            }
+        }
+        groups
     }
 
     /// The dependent columns of a dressed-row family (lit-fold F1d,
@@ -1835,20 +1952,14 @@ pub mod v2 {
             report: &mut Report,
         ) -> RusticolResult<()> {
             let start = Instant::now();
-            let groups: Vec<FamilyLanes<T>> = numerators
-                .iter()
-                .map(|numerator| {
-                    lanes_of(
-                        self.plan,
-                        self.masses,
-                        self.scales,
-                        numerator,
-                        self.data,
-                        &mut self.sink.failures,
-                    )
-                })
-                .filter(|group| !group.keys.is_empty())
-                .collect();
+            let groups = scatter_lanes(
+                self.plan,
+                self.masses,
+                self.scales,
+                numerators,
+                self.data,
+                &mut self.sink.failures,
+            );
             report.time("scatter", start);
             report.count(
                 "reduction lanes",

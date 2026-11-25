@@ -1264,6 +1264,59 @@ impl<T> TreeInputs<T> {
 }
 
 /// The carrier form of a program: its kernel evaluators and exact weights.
+/// One point's tree-fill outputs (`TreeProgram::fill_chunk`'s per-point
+/// stage), pushed into [`TreeInputs`] in point order.
+struct PointInputs<T> {
+    columns: Option<Vec<Vec<Complex<T>>>>,
+    block_rows: Vec<Complex<T>>,
+    counterterms: Option<Vec<T>>,
+    born: Vec<Complex<T>>,
+    kets: Option<Vec<Complex<T>>>,
+    born_squared: Option<Vec<T>>,
+    loop_born: Option<Vec<T>>,
+    amplitudes: Vec<Complex<T>>,
+}
+
+/// Which optional outputs a fill forms (its [`TreeInputs`]' `Some` fields).
+#[derive(Clone, Copy)]
+struct Wanted {
+    columns: bool,
+    counterterms: bool,
+    kets: bool,
+    born_squared: bool,
+    loop_born: bool,
+}
+
+/// The parts of a [`TreeRuntime`] the per-point stage reads (shared by the
+/// points' workers; the kernels are not).
+#[derive(Clone, Copy)]
+struct SharedRuntime<'a, T> {
+    columns: &'a [InterferenceRuntime<T>],
+    interference: Option<&'a InterferenceRuntime<T>>,
+    metric: Option<&'a [MetricValue<T>]>,
+    average: &'a T,
+}
+
+impl<T> TreeInputs<T> {
+    /// Append one point's outputs (a field the fill does not form stays
+    /// `None`).
+    fn push_point(&mut self, point: PointInputs<T>) {
+        fn push<V>(values: &mut Option<Vec<V>>, value: Option<V>) {
+            if let (Some(values), Some(value)) = (values, value) {
+                values.push(value);
+            }
+        }
+        push(&mut self.columns, point.columns);
+        self.block_rows.push(point.block_rows);
+        push(&mut self.counterterms, point.counterterms);
+        self.born.push(point.born);
+        push(&mut self.kets, point.kets);
+        push(&mut self.born_squared, point.born_squared);
+        push(&mut self.loop_born, point.loop_born);
+        self.amplitudes.push(point.amplitudes);
+    }
+}
+
 pub struct TreeRuntime<T> {
     /// The parameter program.
     parameters: Kernel<T>,
@@ -1284,6 +1337,92 @@ pub struct TreeRuntime<T> {
     /// The metric runtime of each distinct column interference
     /// (`Columns::programs`).
     columns: Vec<InterferenceRuntime<T>>,
+    /// The workers' copies of the interaction and counterterm programs'
+    /// kernels (a fill on several threads; kept for later fills).
+    forks: Forks<T>,
+    counterterm_forks: Forks<T>,
+}
+
+/// Per worker of the pool a tree fill runs on, its own copies of one
+/// interaction program's kernels ([`Kernel::fork`]), each forked from the
+/// runtime's kernel on the worker's first use and kept for later fills: a
+/// step's kernel calls then run on several workers at once
+/// ([`run_interactions`]). A worker only locks its own copies (uncontended),
+/// and the runtime's kernels while it forks one.
+struct Forks<T> {
+    workers: Vec<std::sync::Mutex<Vec<Option<Kernel<T>>>>>,
+    /// Whether every kernel has a copy (decided on the first parallel fill,
+    /// which forks the first worker's copies).
+    forkable: Option<bool>,
+}
+
+impl<T> Default for Forks<T> {
+    fn default() -> Self {
+        Self {
+            workers: Vec::new(),
+            forkable: None,
+        }
+    }
+}
+
+impl<T> Forks<T>
+where
+    Complex<T>: Real + EvaluationDomain,
+{
+    /// One slot per kernel of `base` for each of `workers` workers (grown
+    /// once, on the first fill on that many threads); whether every kernel
+    /// has a copy (the first call forks the first worker's).
+    fn prepare(&mut self, base: &[Kernel<T>], workers: usize) -> bool {
+        if self.forkable.is_none() {
+            let copies: Option<Vec<Option<Kernel<T>>>> =
+                base.iter().map(|kernel| kernel.fork().map(Some)).collect();
+            self.forkable = Some(copies.is_some());
+            if let Some(copies) = copies {
+                self.workers = vec![std::sync::Mutex::new(copies)];
+            }
+        }
+        if self.forkable != Some(true) {
+            return false;
+        }
+        while self.workers.len() < workers {
+            self.workers.push(std::sync::Mutex::new(Vec::new()));
+        }
+        for worker in &mut self.workers {
+            let slots = worker
+                .get_mut()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if slots.len() < base.len() {
+                slots.resize_with(base.len(), || None);
+            }
+        }
+        true
+    }
+
+    /// `f` on the calling worker's copy of kernel `kernel` (forked from
+    /// `base` on first use).
+    fn with<R>(
+        &self,
+        base: &std::sync::Mutex<&mut [Kernel<T>]>,
+        kernel: usize,
+        f: impl FnOnce(&mut Kernel<T>) -> RusticolResult<R>,
+    ) -> RusticolResult<R> {
+        let worker = rayon::current_thread_index().unwrap_or(0) % self.workers.len().max(1);
+        let mut slots = self.workers[worker]
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let slot = &mut slots[kernel];
+        if slot.is_none() {
+            let base = base
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *slot = Some(
+                base[kernel]
+                    .fork()
+                    .ok_or_else(|| invalid("a tree kernel without a worker copy"))?,
+            );
+        }
+        f(slot.as_mut().expect("the worker's kernel copy"))
+    }
 }
 
 /// A Born metric cell in a carrier: (squared order, component, component,
@@ -1332,12 +1471,29 @@ pub trait PlaneRows<T> {
     /// Run the kernel on the `rows` rows filled after [`Self::planes`]:
     /// the planes, the outputs' first `rows` values written.
     fn run(&mut self, rows: usize) -> RusticolResult<&[T]>;
+    /// A copy sharing this application's compiled code, with planes of its
+    /// own: a worker's kernel ([`Forks`]). None: the application has no
+    /// copy, and the tree fill runs its program on one thread.
+    fn fork(&self) -> Option<Box<dyn PlaneRows<T> + Send>> {
+        None
+    }
 }
 
 impl<T> Kernel<T>
 where
     Complex<T>: Real + EvaluationDomain,
 {
+    /// A copy of the kernel for another worker ([`Forks`]): an exact
+    /// evaluator's clone (its own stack), or a plane application sharing
+    /// its compiled code with planes of its own. Rows are independent, so a
+    /// copy evaluates every row bitwise as the kernel does.
+    fn fork(&self) -> Option<Self> {
+        match self {
+            Kernel::Exact(evaluator) => Some(Kernel::Exact(evaluator.clone())),
+            Kernel::Plane(plane) => plane.fork().map(Kernel::Plane),
+        }
+    }
+
     /// `rows` evaluations: inputs and outputs row-major.
     fn evaluate_batch(
         &mut self,
@@ -1403,7 +1559,9 @@ where
 /// to the same cache set, and the kernel and the fill touch all planes at
 /// one row together. The buffer only grows; nothing is zeroed per call.
 struct BinaryPlane {
-    kernel: SymjitPlaneKernel,
+    /// Shared by the plane's forks ([`PlaneRows::fork`]): its execution
+    /// reads the compiled code only.
+    kernel: std::sync::Arc<SymjitPlaneKernel>,
     inputs: usize,
     outputs: usize,
     planes: Vec<f64>,
@@ -1418,7 +1576,11 @@ impl BinaryPlane {
     fn load(bytes: &[u8], (inputs, outputs): (usize, usize)) -> RusticolResult<Self> {
         let layout = SymjitPlaneLayout::complex(inputs, outputs);
         Ok(Self {
-            kernel: SymjitPlaneKernel::load_bytes(bytes, "<loop v2 tree kernel>", layout)?,
+            kernel: std::sync::Arc::new(SymjitPlaneKernel::load_bytes(
+                bytes,
+                "<loop v2 tree kernel>",
+                layout,
+            )?),
             inputs,
             outputs,
             planes: Vec::new(),
@@ -1512,6 +1674,16 @@ impl PlaneRows<f64> for BinaryPlane {
         self.kernel.execute_table(&mut table, 0, padded)?;
         drop(table);
         Ok(&self.planes[..total])
+    }
+
+    fn fork(&self) -> Option<Box<dyn PlaneRows<f64> + Send>> {
+        Some(Box::new(Self {
+            kernel: self.kernel.clone(),
+            inputs: self.inputs,
+            outputs: self.outputs,
+            planes: Vec::new(),
+            stride: 0,
+        }))
     }
 }
 
@@ -2909,6 +3081,8 @@ impl TreeProgram {
             average: cast(zero, &self.average),
             interference,
             columns,
+            forks: Forks::default(),
+            counterterm_forks: Forks::default(),
         })
     }
 
@@ -3407,6 +3581,7 @@ impl TreeProgram {
                 &self.interactions,
                 layout,
                 &mut runtime.kernels,
+                Some(&mut runtime.forks),
                 &runtime.edge_weights,
                 states,
                 points,
@@ -3452,6 +3627,7 @@ impl TreeProgram {
                     &ct.interactions,
                     ct.layout,
                     &mut runtime.counterterm_kernels,
+                    Some(&mut runtime.counterterm_forks),
                     &runtime.counterterm_edge_weights,
                     &mut ct_states,
                     points,
@@ -3542,11 +3718,29 @@ impl TreeProgram {
         out.seconds
             .push(("trees: closures", started.elapsed().as_secs_f64()));
         let started = std::time::Instant::now();
-        for (index, state) in loop_side.0.chunks_exact(self.state_size).enumerate() {
-            let mut amplitudes = std::mem::take(&mut amplitudes[index]);
-            let mut loop_amplitudes = loop_amplitudes
-                .as_mut()
-                .map(|loop_amplitudes| std::mem::take(&mut loop_amplitudes[index]));
+        // Per point its columns, block rows, counterterm interferences, Born
+        // components, kets and |A0|² (`point_inputs`), then pushed in point
+        // order: on several threads the points run in parallel (each point's
+        // operations are its own, so the values do not depend on the count).
+        let shared = SharedRuntime {
+            columns: &runtime.columns,
+            interference: runtime.interference.as_ref(),
+            metric: runtime.metric.as_deref(),
+            average: &runtime.average,
+        };
+        let wanted = Wanted {
+            columns: out.columns.is_some(),
+            counterterms: out.counterterms.is_some(),
+            kets: out.kets.is_some(),
+            born_squared: out.born_squared.is_some(),
+            loop_born: out.loop_born.is_some(),
+        };
+        let kets = &kets;
+        let point_inputs = |index: usize,
+                            state: &[Complex<T>],
+                            mut amplitudes: Vec<Complex<T>>,
+                            mut loop_amplitudes: Option<Vec<Complex<T>>>|
+         -> PointInputs<T> {
             let kept_rows = sources.and_then(|sources| sources[index].rows.as_deref());
             let kept_basis = sources.and_then(|sources| sources[index].basis.as_deref());
             if let Some(kept) = kept_rows {
@@ -3563,9 +3757,10 @@ impl TreeProgram {
                     }
                 }
             }
-            if let (Some(columns), Some(out)) = (
+            let mut columns_out = None;
+            if let (Some(columns), true) = (
                 self.columns.as_ref().filter(|c| !c.columns.is_empty()),
-                &mut out.columns,
+                wanted.columns,
             ) {
                 let ct = self
                     .counterterms
@@ -3596,7 +3791,7 @@ impl TreeProgram {
                     };
                     let evaluate = |program: usize| {
                         columns.programs[program].evaluate_complex(
-                            &runtime.columns[program],
+                            &shared.columns[program],
                             &amplitudes,
                             None,
                             self.components,
@@ -3625,13 +3820,13 @@ impl TreeProgram {
                         };
                         *value += conjugate;
                         *value = Complex::new(
-                            value.re.clone() / runtime.average.clone(),
-                            value.im.clone() / runtime.average.clone(),
+                            value.re.clone() / shared.average.clone(),
+                            value.im.clone() / shared.average.clone(),
                         );
                     }
                     values.push(column_values);
                 }
-                out.push(values);
+                columns_out = Some(values);
             }
             let mut rows = Vec::new();
             for &(start, dimension, sign) in &self.block_rows {
@@ -3657,12 +3852,11 @@ impl TreeProgram {
                     };
                 }
             }
-            out.block_rows.push(rows);
-            if let (Some(ct), Some(interference), Some(out)) = (
-                &self.counterterms,
-                &runtime.interference,
-                &mut out.counterterms,
-            ) {
+            let block_rows = rows;
+            let mut counterterms_out = None;
+            if let (Some(ct), Some(interference), true) =
+                (&self.counterterms, shared.interference, wanted.counterterms)
+            {
                 let couplings = &batch.counterterm_couplings[index];
                 let values = ct.interference.evaluate(
                     interference,
@@ -3676,10 +3870,10 @@ impl TreeProgram {
                     poles,
                     zero,
                 );
-                out.push(
+                counterterms_out = Some(
                     values
                         .into_iter()
-                        .map(|value| value / runtime.average.clone())
+                        .map(|value| value / shared.average.clone())
                         .collect(),
                 );
             }
@@ -3696,19 +3890,57 @@ impl TreeProgram {
                     }
                 }
             }
-            out.born.push(born);
-            if let Some(out) = &mut out.kets {
-                out.push(kets.get(index).cloned().unwrap_or_default());
+            let kets_out = wanted
+                .kets
+                .then(|| kets.get(index).cloned().unwrap_or_default());
+            let born_squared = wanted.born_squared.then(|| {
+                let metric = shared.metric.expect("a runtime Born metric");
+                self.squared(shared.average, metric, &amplitudes, &amplitudes, zero)
+            });
+            let loop_born = match (wanted.loop_born, &loop_amplitudes) {
+                (true, Some(ket)) => {
+                    let metric = shared.metric.expect("a runtime Born metric");
+                    Some(self.squared(shared.average, metric, &amplitudes, ket, zero))
+                }
+                _ => None,
+            };
+            PointInputs {
+                columns: columns_out,
+                block_rows,
+                counterterms: counterterms_out,
+                born,
+                kets: kets_out,
+                born_squared,
+                loop_born,
+                amplitudes,
             }
-            if let Some(squared) = &mut out.born_squared {
-                let metric = runtime.metric.as_ref().expect("a runtime Born metric");
-                squared.push(self.squared(runtime, metric, &amplitudes, &amplitudes, zero));
+        };
+        if rayon::current_num_threads() > 1 && points > 1 {
+            let loops: Vec<Option<Vec<Complex<T>>>> = match loop_amplitudes {
+                Some(loop_amplitudes) => loop_amplitudes.into_iter().map(Some).collect(),
+                None => vec![None; points],
+            };
+            let records: Vec<PointInputs<T>> = loop_side
+                .0
+                .par_chunks_exact(self.state_size)
+                .zip(amplitudes)
+                .zip(loops)
+                .enumerate()
+                .map(|(index, ((state, amplitudes), loop_amplitudes))| {
+                    point_inputs(index, state, amplitudes, loop_amplitudes)
+                })
+                .collect();
+            for record in records {
+                out.push_point(record);
             }
-            if let (Some(loop_born), Some(ket)) = (&mut out.loop_born, &loop_amplitudes) {
-                let metric = runtime.metric.as_ref().expect("a runtime Born metric");
-                loop_born.push(self.squared(runtime, metric, &amplitudes, ket, zero));
+        } else {
+            for (index, state) in loop_side.0.chunks_exact(self.state_size).enumerate() {
+                let amplitudes = std::mem::take(&mut amplitudes[index]);
+                let loop_amplitudes = loop_amplitudes
+                    .as_mut()
+                    .map(|loop_amplitudes| std::mem::take(&mut loop_amplitudes[index]));
+                out.push_point(point_inputs(index, state, amplitudes, loop_amplitudes));
             }
-            out.amplitudes.push(amplitudes);
         }
         out.seconds
             .push(("trees: interferences", started.elapsed().as_secs_f64()));
@@ -3962,7 +4194,7 @@ impl TreeProgram {
     /// `bra = ket` (the loop-side Born interference otherwise).
     fn squared<T: Carrier>(
         &self,
-        runtime: &TreeRuntime<T>,
+        average: &T,
         metric: &[MetricValue<T>],
         bra: &[Complex<T>],
         ket: &[Complex<T>],
@@ -3979,7 +4211,7 @@ impl TreeProgram {
             }
         }
         out.into_iter()
-            .map(|value| value / runtime.average.clone())
+            .map(|value| value / average.clone())
             .collect()
     }
 }
@@ -4258,6 +4490,7 @@ fn run_interactions<T: Carrier>(
     program: &Interactions,
     layout: StateLayout,
     kernels: &mut [Kernel<T>],
+    forks: Option<&mut Forks<T>>,
     edge_weights: &[Complex<T>],
     states: &mut [Complex<T>],
     points: usize,
@@ -4273,7 +4506,6 @@ where
     // current reads them, and kernel rows are independent, so every other
     // value is bitwise unchanged. So are those a call's row liveness
     // (`live`, `rows::TreeRows`) drops: nothing it keeps reads them.
-    const ROWS: usize = 4096;
     let model = |kernel: usize| {
         program.models[kernel]
             .iter()
@@ -4291,6 +4523,14 @@ where
         live.is_none_or(|live| live.steps.len() == program.steps.len()),
         "a row liveness of another interaction program",
     )?;
+    // On several threads a step large enough runs its kernel calls on the
+    // workers' kernel copies (`parallel_step`): the same rows, accumulated
+    // in the same order, so every value is bitwise the one-thread value.
+    let workers = rayon::current_num_threads();
+    let forks = match forks {
+        Some(forks) if workers > 1 => forks.prepare(kernels, workers).then_some(&*forks),
+        _ => None,
+    };
     for (s, step) in program.steps.iter().enumerate() {
         let kept = live.map(|live| &live.steps[s]);
         if kept.is_some_and(|(groups, outputs)| {
@@ -4299,6 +4539,24 @@ where
             continue;
         }
         let mut sums = vec![czero.clone(); points * step.width];
+        if let Some(forks) = forks.filter(|_| parallel_worth(step, points))
+            && parallel_step(
+                program,
+                layout,
+                kernels,
+                forks,
+                edge_weights,
+                (states, points),
+                poles,
+                kept,
+                step,
+                &mut sums,
+                czero,
+                workers,
+            )?
+        {
+            continue;
+        }
         for (g, (kernel, edges)) in step.groups.iter().enumerate() {
             let active: Vec<(&Edge, &Complex<T>)> = edges
                 .iter()
@@ -4326,7 +4584,7 @@ where
                 continue;
             }
             let width = evaluator.output_len();
-            let per_call = (ROWS / points.max(1)).max(1);
+            let per_call = (EXACT_ROWS / points.max(1)).max(1);
             for chunk in active.chunks(per_call) {
                 let rows = chunk.len() * points;
                 parameters.clear();
@@ -4415,6 +4673,381 @@ where
 /// Rows (interaction x point) per plane-kernel call: a call's planes stay in
 /// the core's L2 cache.
 const PLANE_ROWS: usize = 1024;
+
+/// Rows (interaction x point) per exact-kernel call (`run_interactions`).
+const EXACT_ROWS: usize = 4096;
+
+/// The fewest rows a parallel task of a step evaluates (a few SIMD blocks):
+/// smaller tasks cost more in scheduling than they gain.
+const TASK_ROWS: usize = 64;
+
+/// Whether a step has rows enough for its kernel calls to run on several
+/// workers (`parallel_step`): at least two tasks.
+fn parallel_worth(step: &Step, points: usize) -> bool {
+    let edges: usize = step.groups.iter().map(|(_, edges)| edges.len()).sum();
+    (edges + step.outputs.len()) * points >= 2 * TASK_ROWS
+}
+
+/// One step of `run_interactions` on several workers, each on its own copies
+/// of the kernels (`forks`), bitwise the serial step: the vertex kernels'
+/// rows are cut into tasks of whole interactions at every point (rows are
+/// independent, and a plane application pads every call to whole SIMD
+/// blocks, so a row's value does not depend on its call), the tasks'
+/// outputs are accumulated per point in the serial order (kernel group,
+/// interaction, output component; the points in parallel: their sums are
+/// disjoint), then each output's propagator runs as its own task on the
+/// states before any of the step's outputs is written (it reads the step's
+/// sums, momenta and model parameters only: no current slot) and the
+/// outputs are written in order. Returns false, having done nothing, for a
+/// step whose propagators would read a state component the step writes
+/// (`propagators_read_outputs`): the serial step runs it.
+#[allow(clippy::too_many_arguments)]
+fn parallel_step<T: Carrier>(
+    program: &Interactions,
+    layout: StateLayout,
+    kernels: &mut [Kernel<T>],
+    forks: &Forks<T>,
+    edge_weights: &[Complex<T>],
+    (states, points): (&mut [Complex<T>], usize),
+    poles: bool,
+    kept: Option<&(Vec<Vec<bool>>, Vec<bool>)>,
+    step: &Step,
+    sums: &mut [Complex<T>],
+    czero: &Complex<T>,
+    workers: usize,
+) -> RusticolResult<bool>
+where
+    Complex<T>: Real + EvaluationDomain,
+{
+    // The outputs this call writes.
+    let written: Vec<usize> = step
+        .outputs
+        .iter()
+        .enumerate()
+        .filter(|&(o, &(.., pole))| !((pole && !poles) || kept.is_some_and(|(_, out)| !out[o])))
+        .map(|(o, _)| o)
+        .collect();
+    if propagators_read_outputs(program, layout, step, &written) {
+        return Ok(false);
+    }
+    // The tasks: per kernel group its active interactions (as the serial
+    // step filters them), cut into runs of about a share of the step's rows
+    // per worker, within one kernel call's rows.
+    let mut active: Vec<(usize, Vec<(&Edge, &Complex<T>)>)> = Vec::with_capacity(step.groups.len());
+    for (g, (kernel, edges)) in step.groups.iter().enumerate() {
+        let edges: Vec<(&Edge, &Complex<T>)> = edges
+            .iter()
+            .enumerate()
+            .filter(|(e, edge)| {
+                (poles || !edge.pole) && kept.is_none_or(|(groups, _)| groups[g][*e])
+            })
+            .map(|(_, edge)| (edge, &edge_weights[edge.weight as usize]))
+            .collect();
+        if !edges.is_empty() {
+            active.push((*kernel, edges));
+        }
+    }
+    let total: usize = active.iter().map(|(_, edges)| edges.len()).sum::<usize>() * points;
+    let share = total.div_ceil(4 * workers).max(TASK_ROWS);
+    let mut tasks: Vec<(usize, &[(&Edge, &Complex<T>)])> = Vec::new();
+    for (kernel, edges) in &active {
+        let call = match kernels[*kernel] {
+            Kernel::Plane(_) => PLANE_ROWS,
+            Kernel::Exact(_) => EXACT_ROWS,
+        };
+        let per_task = (share.min(call) / points.max(1)).max(1);
+        tasks.extend(edges.chunks(per_task).map(|chunk| (*kernel, chunk)));
+    }
+    let base = std::sync::Mutex::new(&mut *kernels);
+    let shared: &[Complex<T>] = states;
+    let outputs: Vec<Vec<Complex<T>>> = tasks
+        .par_iter()
+        .map(|&(kernel, edges)| {
+            forks.with(&base, kernel, |evaluator| {
+                vertex_rows(
+                    evaluator,
+                    &program.models[kernel],
+                    layout,
+                    edges,
+                    shared,
+                    points,
+                    czero,
+                )
+            })
+        })
+        .collect::<RusticolResult<_>>()?;
+    if step.width > 0 {
+        sums.par_chunks_mut(step.width)
+            .enumerate()
+            .for_each(|(point, target)| {
+                for (&(_, edges), rows) in tasks.iter().zip(&outputs) {
+                    let width = rows.len() / (edges.len() * points).max(1);
+                    for (e, &(edge, weight)) in edges.iter().enumerate() {
+                        let values = &rows[(e * points + point) * width..][..width];
+                        let target = &mut target[edge.accumulator as usize..];
+                        for (sum, value) in target.iter_mut().zip(values) {
+                            *sum += weight.clone() * value.clone();
+                        }
+                    }
+                }
+            });
+    }
+    // The propagators' rows, then the outputs in order.
+    let sums = &*sums;
+    let propagated: Vec<Option<Vec<Complex<T>>>> = written
+        .par_iter()
+        .map(|&o| {
+            let (accumulator, propagator, momentum, _, dimension, _) = step.outputs[o];
+            let Some(kernel) = propagator else {
+                return Ok(None);
+            };
+            forks
+                .with(&base, kernel, |evaluator| {
+                    propagator_rows(
+                        evaluator,
+                        &program.models[kernel],
+                        layout,
+                        (sums, step.width, accumulator),
+                        (momentum, dimension),
+                        shared,
+                        points,
+                        czero,
+                    )
+                })
+                .map(Some)
+        })
+        .collect::<RusticolResult<_>>()?;
+    for (&o, rows) in written.iter().zip(propagated) {
+        let (accumulator, _, _, start, dimension, _) = step.outputs[o];
+        for (point, state) in states.chunks_exact_mut(layout.size).enumerate() {
+            let values = match &rows {
+                Some(rows) => &rows[point * dimension..][..dimension],
+                None => &sums[point * step.width + accumulator..][..dimension],
+            };
+            state[start..start + dimension].clone_from_slice(values);
+        }
+    }
+    Ok(true)
+}
+
+/// Whether a propagator of the outputs `written` of `step` reads a state
+/// component one of them writes (its momentum or model parameters): then
+/// the outputs could not run before any is written (`parallel_step`).
+fn propagators_read_outputs(
+    program: &Interactions,
+    layout: StateLayout,
+    step: &Step,
+    written: &[usize],
+) -> bool {
+    let mut ranges: Vec<(usize, usize)> = written
+        .iter()
+        .map(|&o| {
+            let (_, _, _, start, dimension, _) = step.outputs[o];
+            (start, start + dimension)
+        })
+        .collect();
+    ranges.sort_unstable();
+    let hit = |at: usize| {
+        let k = ranges.partition_point(|&(start, _)| start <= at);
+        k > 0 && at < ranges[k - 1].1
+    };
+    written.iter().any(|&o| {
+        let (_, propagator, momentum, _, _, _) = step.outputs[o];
+        propagator.is_some_and(|kernel| {
+            (momentum..momentum + 4).any(hit)
+                || program.models[kernel]
+                    .iter()
+                    .any(|&index| hit(layout.model_offset + index))
+        })
+    })
+}
+
+/// The rows of a vertex kernel on the interactions `edges` at every point
+/// of `states`, row-major (row `e * points + point`), as the serial step
+/// evaluates them (`plane_interactions` on a plane application, the
+/// row-major parameters otherwise).
+fn vertex_rows<T: Carrier>(
+    kernel: &mut Kernel<T>,
+    models: &[usize],
+    layout: StateLayout,
+    edges: &[(&Edge, &Complex<T>)],
+    states: &[Complex<T>],
+    points: usize,
+    czero: &Complex<T>,
+) -> RusticolResult<Vec<Complex<T>>>
+where
+    Complex<T>: Real + EvaluationDomain,
+{
+    let rows = edges.len() * points;
+    let size = layout.size;
+    match kernel {
+        Kernel::Plane(plane) => {
+            let Some(&(first, _)) = edges.first() else {
+                return Ok(Vec::new());
+            };
+            let (left, right) = (first.left_dimension, first.right_dimension);
+            require(
+                edges
+                    .iter()
+                    .all(|(edge, _)| edge.left_dimension == left && edge.right_dimension == right),
+                "interaction kernel inputs",
+            )?;
+            let (left, right) = (left as usize, right as usize);
+            let inputs = left + right + 8 + models.len();
+            require(plane.input_len() == inputs, "interaction kernel inputs")?;
+            let width = plane.output_len();
+            let (planes, stride) = plane.planes(rows);
+            fill_planes(planes, stride, 0, left, edges, states, size, |edge| {
+                edge.left as usize
+            });
+            fill_planes(planes, stride, left, right, edges, states, size, |edge| {
+                edge.right as usize
+            });
+            let momenta = left + right;
+            fill_planes(planes, stride, momenta, 4, edges, states, size, |edge| {
+                edge.left_momentum as usize
+            });
+            fill_planes(
+                planes,
+                stride,
+                momenta + 4,
+                4,
+                edges,
+                states,
+                size,
+                |edge| edge.right_momentum as usize,
+            );
+            for (k, &index) in models.iter().enumerate() {
+                fill_planes(
+                    planes,
+                    stride,
+                    momenta + 8 + k,
+                    1,
+                    edges,
+                    states,
+                    size,
+                    |_| layout.model_offset + index,
+                );
+            }
+            let planes = plane
+                .run(rows)
+                .map_err(|e| invalid(format!("interaction kernel: {}", e.message())))?;
+            let base = 2 * inputs * stride;
+            let mut out = Vec::with_capacity(rows * width);
+            for row in 0..rows {
+                out.extend((0..width).map(|output| {
+                    let at = base + 2 * output * stride + row;
+                    Complex::new(planes[at].clone(), planes[at + stride].clone())
+                }));
+            }
+            Ok(out)
+        }
+        Kernel::Exact(_) => {
+            let width = kernel.output_len();
+            let mut parameters = Vec::new();
+            for (edge, _) in edges {
+                for state in states.chunks_exact(size) {
+                    let (left, right) = (edge.left as usize, edge.right as usize);
+                    let (pl, pr) = (edge.left_momentum as usize, edge.right_momentum as usize);
+                    parameters.extend_from_slice(&state[left..left + edge.left_dimension as usize]);
+                    parameters
+                        .extend_from_slice(&state[right..right + edge.right_dimension as usize]);
+                    parameters.extend_from_slice(&state[pl..pl + 4]);
+                    parameters.extend_from_slice(&state[pr..pr + 4]);
+                    parameters.extend(
+                        models
+                            .iter()
+                            .map(|&index| state[layout.model_offset + index].clone()),
+                    );
+                }
+            }
+            let mut out = vec![czero.clone(); rows * width];
+            kernel
+                .evaluate_batch(&parameters, &mut out, rows)
+                .map_err(|e| invalid(format!("interaction kernel: {e}")))?;
+            Ok(out)
+        }
+    }
+}
+
+/// A propagator kernel's first `dimension` outputs at every point
+/// (`dimension` values per point), from the step's sums at `accumulator`,
+/// the momentum at `momentum` and the kernel's model parameters, as the
+/// serial step evaluates them (`plane_propagator`, or the row-major
+/// parameters).
+#[allow(clippy::too_many_arguments)]
+fn propagator_rows<T: Carrier>(
+    kernel: &mut Kernel<T>,
+    models: &[usize],
+    layout: StateLayout,
+    (sums, sum_width, accumulator): (&[Complex<T>], usize, usize),
+    (momentum, dimension): (usize, usize),
+    states: &[Complex<T>],
+    points: usize,
+    czero: &Complex<T>,
+) -> RusticolResult<Vec<Complex<T>>>
+where
+    Complex<T>: Real + EvaluationDomain,
+{
+    if let Kernel::Plane(plane) = kernel {
+        let inputs = plane.input_len();
+        let value = inputs
+            .checked_sub(4 + models.len())
+            .ok_or_else(|| invalid("propagator kernel inputs"))?;
+        require(dimension <= plane.output_len(), "propagator kernel outputs")?;
+        let (planes, stride) = plane.planes(points);
+        for k in 0..value {
+            let (re, im) = planes[2 * k * stride..][..2 * stride].split_at_mut(stride);
+            for point in 0..points {
+                let sum = &sums[point * sum_width + accumulator + k];
+                re[point] = sum.re.clone();
+                im[point] = sum.im.clone();
+            }
+        }
+        let state_inputs = (0..4)
+            .map(|mu| momentum + mu)
+            .chain(models.iter().map(|&index| layout.model_offset + index));
+        for (k, at) in state_inputs.enumerate() {
+            let (re, im) = planes[2 * (value + k) * stride..][..2 * stride].split_at_mut(stride);
+            for (point, state) in states.chunks_exact(layout.size).enumerate() {
+                re[point] = state[at].re.clone();
+                im[point] = state[at].im.clone();
+            }
+        }
+        let planes = plane
+            .run(points)
+            .map_err(|e| invalid(format!("propagator kernel: {}", e.message())))?;
+        let base = 2 * inputs * stride;
+        let mut out = Vec::with_capacity(points * dimension);
+        for point in 0..points {
+            out.extend((0..dimension).map(|output| {
+                let at = base + 2 * output * stride + point;
+                Complex::new(planes[at].clone(), planes[at + stride].clone())
+            }));
+        }
+        return Ok(out);
+    }
+    let width = kernel.output_len();
+    let value = kernel.input_len() - 4 - models.len();
+    let mut parameters = Vec::with_capacity(points * kernel.input_len());
+    for (point, state) in states.chunks_exact(layout.size).enumerate() {
+        parameters.extend_from_slice(&sums[point * sum_width + accumulator..][..value]);
+        parameters.extend_from_slice(&state[momentum..momentum + 4]);
+        parameters.extend(
+            models
+                .iter()
+                .map(|&index| state[layout.model_offset + index].clone()),
+        );
+    }
+    let mut rows = vec![czero.clone(); points * width];
+    kernel
+        .evaluate_batch(&parameters, &mut rows, points)
+        .map_err(|e| invalid(format!("propagator kernel: {e}")))?;
+    Ok(rows
+        .chunks_exact(width)
+        .flat_map(|row| row[..dimension].iter().cloned())
+        .collect())
+}
 
 /// Fill input planes `first..first + count` of a plane call: row (edge,
 /// point) of input `first + k` is the point's state value at
