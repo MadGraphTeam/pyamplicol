@@ -72,6 +72,7 @@ from pyamplicol.api.virtual_results import (
     splits_poles,
     uncertified_detail,
 )
+from pyamplicol.kinematics import is_shell_reason
 from pyamplicol.loops.v2.stability import relative_text
 
 # One level's evaluation of the points at the given batch indices (in that
@@ -206,7 +207,13 @@ def rescue(
                 # met: the policy escalates, or keeps it not established.
                 met = (
                     diagnostic.valid
-                    and not getattr(diagnostic, "uncertified", ())
+                    # (The shell-consistency screen's mark never escalates by
+                    # itself: a higher carrier serves the same kinematics.)
+                    and not [
+                        reason
+                        for reason in getattr(diagnostic, "uncertified", ())
+                        if not is_shell_reason(reason)
+                    ]
                     and attempt.estimate is not None
                     and attempt.estimate <= level.target
                 )

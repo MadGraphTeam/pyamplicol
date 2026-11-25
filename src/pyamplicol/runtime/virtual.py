@@ -50,7 +50,6 @@ from pyamplicol.correlators import (
     CorrelatedRequest,
     CorrelatedValue,
 )
-from pyamplicol.kinematics import failure_diagnostic
 from pyamplicol.loops.orders import BornLoopPair, VirtualOrderSector, canonical_order
 from pyamplicol.loops.strategy import R2Selection
 from pyamplicol.runtime.correlated_exact import (
@@ -615,9 +614,9 @@ class V2ObservablesRuntime:
     # bound masses; None: the masses the slice's native column executors
     # bind from their Python inputs (``assemble._leg_masses``).
     kinematics_masses: Any = None
-    # The mass-shell guard's masses (``kinematics.shell_check``'s provider;
-    # an artifact runtime's ``_shell_masses``, which builds no executor):
-    # None, the slice's (``_slice_masses``).
+    # The shell-consistency screen's masses (``kinematics.shell_check``'s
+    # provider; an artifact runtime's ``_shell_masses``, which builds no
+    # executor): None, the slice's (``_slice_masses``).
     shell_masses: Any = None
 
     def __init__(
@@ -794,7 +793,6 @@ class V2ObservablesRuntime:
         reduction: VirtualReduction | None = None,
         best_effort: bool = False,
         kinematics: tuple[str | None, bool | None] | None = None,
-        refused: Mapping[int, list[str]] | None = None,
     ) -> tuple[list[Any], dict[int, list[str]], dict[int, VirtualReduction]]:
         """Per-point outputs (``None`` for a failed point), the failures and
         the per-point fallback's records; ``reduction`` is the call's backend
@@ -819,31 +817,6 @@ class V2ObservablesRuntime:
             if kinematics is not None and self._executor == "native"
             else None
         )
-        if refused:
-            # The points the mass-shell guard refused (``_shell``) are not
-            # evaluated: each fails with its refusal.
-            kept = [i for i in range(len(points)) if i not in refused]
-            found, failed, served = self._run(
-                native_key,
-                python,
-                [points[i] for i in kept],
-                [scales[i] for i in kept],
-                [spins[i] for i in kept],
-                options,
-                reduction,
-                best_effort,
-                kinematics,
-            )
-            results: list[Any] = [None] * len(points)
-            failures = {index: list(reasons) for index, reasons in refused.items()}
-            records: dict[int, VirtualReduction] = {}
-            for local, index in enumerate(kept):
-                results[index] = found[local]
-                if local in failed:
-                    failures[index] = failed[local]
-                if local in served:
-                    records[index] = served[local]
-            return results, failures, records
         with calling(text):
             return self._run_in(
                 native_key,
@@ -976,15 +949,38 @@ class V2ObservablesRuntime:
         improver = LevelImprover(settings, initial_count(legs), provider)
         return improver.level(points, scales, precision)
 
-    def _shell(self, points: list[Any], scales: list[str], precision: Any) -> Any:
-        """The mass-shell guard (``kinematics.shell_check``) on one carrier's
-        points of a call (the caller's legs, after ``_improve``), against the
-        masses the evaluation binds (the improvement's provider)."""
+    def _shell(
+        self,
+        momenta: Any,
+        points: list[Any],
+        scales: list[str],
+        precision: Any,
+        reduction: VirtualReduction | None,
+    ) -> Any:
+        """The shell-consistency screen (``kinematics.shell_check``) on one
+        carrier's points of a call (the caller's legs, after ``_improve``;
+        ``momenta`` as supplied) against the masses the call binds, at the
+        call's point target; None in the unchecked mode (nothing measured)."""
 
-        from pyamplicol.kinematics import shell_check
+        from pyamplicol.kinematics import input_roundoff, shell_check
+        from pyamplicol.loops.v2.reduction import default_target
 
+        if reduction is not None and reduction.unchecked:
+            return None
+        target = (
+            default_target()
+            if reduction is None or reduction.target is None
+            else reduction.target
+        )
         provider = self.shell_masses or self._slice_masses
-        return shell_check(points, scales, precision, provider)
+        return shell_check(
+            points,
+            scales,
+            precision,
+            provider,
+            float(target),
+            input_roundoff(momenta),
+        )
 
     def _slice_masses(
         self, precision: Any, point: Any, scale: Any, count: int
@@ -1122,9 +1118,14 @@ class V2ObservablesRuntime:
         added: bool = False,
         shell: Any = None,
     ) -> VirtualLaneDiagnostic:
-        # The mass-shell guard's measure of the point (``kinematics.
-        # shell_check``), in every lane as it is built.
+        # The shell-consistency screen's measure and mark of the point
+        # (``kinematics.shell_check``), in every lane as it is built.
         mass_shell = None if shell is None else shell.defects[index]
+        mark = (
+            ()
+            if shell is None or index not in shell.reasons
+            else (shell.reasons[index],)
+        )
         bits = {"double": 53, "double-double": 106}.get(arithmetic) or math.ceil(
             precision.digits * math.log2(10)
         )
@@ -1143,7 +1144,11 @@ class V2ObservablesRuntime:
                 bits,
                 False,
                 f"v2 {executor} executor: {reason}",
-                failures=(failure_diagnostic(index, reason),),
+                failures=(
+                    VirtualFailureDiagnostic(
+                        index, None, None, None, "v2-evaluation", reason
+                    ),
+                ),
                 reduction=reduction,
                 mass_shell=mass_shell,
             )
@@ -1156,7 +1161,8 @@ class V2ObservablesRuntime:
                 arithmetic,  # type: ignore[arg-type]
                 bits,
                 False,
-                f"v2 {executor} executor; {best_effort_detail(best)}",
+                f"v2 {executor} executor; {best_effort_detail(best)}"
+                + "".join(f"; accuracy not established: {r}" for r in mark),
                 failures=(
                     VirtualFailureDiagnostic(
                         index, None, None, None, "v2-evaluation", best.refusal
@@ -1164,6 +1170,7 @@ class V2ObservablesRuntime:
                 ),
                 reduction=reduction,
                 mass_shell=mass_shell,
+                uncertified=mark,
             )
         from pyamplicol.api.virtual_results import (
             VirtualReductionRescue,
@@ -1189,6 +1196,7 @@ class V2ObservablesRuntime:
             # the reduction's own record of lanes served without accuracy
             # evidence: its values are returned, never certified.
             uncertified = (*uncertified, PYTHON_REFERENCE_UNCERTIFIED)
+        uncertified = (*uncertified, *mark)
         return VirtualLaneDiagnostic(
             "success",
             arithmetic,  # type: ignore[arg-type]
@@ -1622,7 +1630,13 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
-        shell = self._shell(points, scales, carrier)
+        shell = self._shell(
+            momenta,
+            points,
+            scales,
+            carrier,
+            None if reductions is None else reductions[arithmetic],
+        )
         with self._lock:
             parameters = dict(self._parameters)
         settings = {
@@ -1655,7 +1669,6 @@ class V2ObservablesRuntime:
             None if reductions is None else reductions[arithmetic],
             best_effort=on_failure == "best-effort",
             kinematics=(kinematics_improvement, kinematics_improvement_binary64),
-            refused=shell.refused,
         )
         self._failed(failures, on_failure)
         return with_kinematics(
@@ -1714,7 +1727,13 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
-        shell = self._shell(points, scales, carrier)
+        shell = self._shell(
+            momenta,
+            points,
+            scales,
+            carrier,
+            None if reductions is None else reductions[arithmetic],
+        )
         groups, sources = self._spin_groups(requests, len(points))
         with self._lock:
             parameters = dict(self._parameters)
@@ -1739,7 +1758,6 @@ class V2ObservablesRuntime:
                 reduction,
                 best_effort=on_failure == "best-effort",
                 kinematics=(kinematics_improvement, kinematics_improvement_binary64),
-                refused=shell.refused,
             )
             self._failed(failures, on_failure)
             for label, output in labels:
@@ -1879,7 +1897,13 @@ class V2ObservablesRuntime:
             kinematics_improvement,
             kinematics_improvement_binary64,
         )
-        shell = self._shell(points, scales, carrier)
+        shell = self._shell(
+            momenta,
+            points,
+            scales,
+            carrier,
+            None if reductions is None else reductions[arithmetic],
+        )
         rows = observables.rows
         if self._member is not None:
             # The member's rows in its own catalogue order.
@@ -1922,7 +1946,6 @@ class V2ObservablesRuntime:
             None if reductions is None else reductions[arithmetic],
             best_effort=on_failure == "best-effort",
             kinematics=(kinematics_improvement, kinematics_improvement_binary64),
-            refused=shell.refused,
         )
         self._failed(failures, on_failure)
         born_orders = self._default_born_orders()

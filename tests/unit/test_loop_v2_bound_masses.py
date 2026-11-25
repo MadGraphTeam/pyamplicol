@@ -93,18 +93,29 @@ def _assert_on_shell(point, masses) -> None:
         )
 
 
-def _double_poles(artifact: Path, points: list, scales: list, backend: str):
-    """dp / Born per point on ``backend`` in binary64."""
+def _double_poles(
+    artifact: Path,
+    points: list,
+    scales: list,
+    backend: str,
+    parameters: dict | None = None,
+    process: str | None = None,
+):
+    """dp / Born per point on ``backend`` in binary64 (each point a success
+    without a shell-consistency mark)."""
 
     from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import is_shell_reason
 
-    runtime = Runtime.load(artifact)
+    runtime = Runtime.load(artifact, process=process, model_parameters=parameters)
     result = runtime.evaluate(
         points, mu_r2=scales, reduction=backend, arithmetic="double"
     )
     out = []
     for index in range(len(points)):
         assert str(result.statuses[index]) == "success", result.statuses[index]
+        marks = result.diagnostics[index].uncertified
+        assert not any(is_shell_reason(reason) for reason in marks), marks
         born = sum(complex(value).real for value in result.born_values[index])
         pole = sum(complex(v.double_pole).real for v in result.values[index])
         out.append(pole / born)
@@ -232,38 +243,96 @@ def test_the_campaign_gg_ttxh_card_is_on_its_bound_shells(tmp_path):
             assert abs(ratio / expected - 1) <= POLE_TOLERANCE, (backend, ratio)
 
 
-# ------------------------------------------------------------- the shell guard
+# ------------------------------------------- the shell-consistency screen
+
+
+def _point(*legs):
+    return [list(map(float, leg)) for leg in legs]
+
+
+def _screen(points, masses2, *, target=1e-5, roundoff=None, arithmetic="double"):
+    from pyamplicol.kinematics import shell_check
+    from pyamplicol.loops.v2.assemble import Precision
+
+    precision = {
+        "double": Precision.double,
+        "double-double": Precision.double_double,
+    }[arithmetic]()
+    return shell_check(
+        points,
+        ["1"] * len(points),
+        precision,
+        lambda *_: masses2,
+        target,
+        [2.0**-53] * len(points) if roundoff is None else roundoff,
+    )
 
 
 @pytest.mark.loop_fast
-def test_the_shell_measure_is_exact_and_its_bound_the_binary64_rounding():
-    from pyamplicol.kinematics import shell_bound, shell_defects, shell_refusals
+def test_the_screen_measures_every_leg_on_its_own_scale():
+    """A soft massive leg off its shell at order one beside a hard spectator
+    is marked (a per-leg normalisation, not the point's energy sum), so is a
+    massless leg off its shell; a point drawn on its shells in binary64 is
+    not; a measurement that cannot be made marks the point."""
 
-    point = [list(map(float, leg)) for leg in _UNCHANGED_POINT]
+    from pyamplicol.kinematics import SHELL_REASON, is_shell_reason
+
+    hard = 1.0e6
+    # A massive leg at rest with E = 2 m (p^2 = 4 m^2) beside two hard
+    # massless legs.
+    soft = _point(
+        (hard, 0, 0, hard), (hard, 0, 0, -hard), (2.0, 0, 0, 0), (hard, hard, 0, 0)
+    )
+    masses = [Fraction(0), Fraction(0), Fraction(1), Fraction(0)]
+    found = _screen([soft], masses)
+    (reason,) = found.reasons.values()
+    assert reason.startswith(SHELL_REASON) and is_shell_reason(reason)
+    assert "external leg 3" in reason and "bound m^2 = 1.0" in reason
+    assert found.defects[0][2] == 3.0
+    # A massless leg with p^2 = E^2 / 10.
+    light = _point((10.0, 0, 0, 3.0))
+    assert set(_screen([light], [Fraction(0)]).reasons) == {0}
+    # On its shells (the unchanged validation point of u u~ > t t~ at 173):
+    on_shell = [list(map(float, leg)) for leg in _UNCHANGED_POINT]
     masses = [Fraction(0), Fraction(0), Fraction(29929), Fraction(29929)]
-    (fast,) = shell_defects([point], [masses], binary64=True)
-    binary = [[Fraction(x) for x in leg] for leg in point]
-    (exact,) = shell_defects([binary], [masses], binary64=False)
-    # The binary64 path measures the binary64 values exactly (double-double).
-    assert fast == pytest.approx(exact, rel=1e-12, abs=1e-30)
-    assert max(exact) <= shell_bound(4) == 13 * 2.0**-53
-    other = [Fraction(0), Fraction(0), Fraction(25600), Fraction(25600)]
-    (defects,) = shell_defects([point], [other], binary64=True)
-    refused = shell_refusals([point], [other], [defects])
-    assert set(refused) == {0}
-    (reason,) = refused[0]
-    assert reason.startswith("external-mass-shell: external leg ")
-    assert "bound m^2 = 25600.0" in reason
-    # A leg without a bound mass takes its own p^2; a non-finite component is
-    # left to the evaluation.
-    unknown = [None, None, None, None]
-    assert shell_defects([point], [unknown], binary64=True) == [(0.0,) * 4]
-    broken = [list(leg) for leg in point]
+    clean = _screen([on_shell], masses)
+    assert clean.reasons == {} and max(clean.defects[0]) < 1e-14
+    # The same point against tops of 160 GeV, below and above the target.
+    stale = [Fraction(0), Fraction(0), Fraction(25600), Fraction(25600)]
+    assert set(_screen([on_shell], stale).reasons) == {0}
+    assert _screen([on_shell], stale, target=0.5).reasons == {}
+    # A tighter target than binary64's rounding: the rounding allowance
+    # (8 u (E^2 + |p|^2 + m^2) of the supplied carrier) keeps a binary64
+    # point on its shells unmarked.
+    assert _screen([on_shell], masses, target=1e-30).reasons == {}
+    # Supplied exactly and evaluated in double-double: the binary64 rounding
+    # of the point is no longer within the allowance.
+    exact = _screen(
+        [on_shell], masses, target=1e-30, roundoff=[0.0], arithmetic="double-double"
+    )
+    assert set(exact.reasons) == {0}
+    # Not measurable: a non-finite component, a mass nothing binds.
+    broken = [list(leg) for leg in on_shell]
     broken[2][0] = math.nan
-    for binary64 in (True, False):
-        (nan,) = shell_defects([broken], [masses], binary64=binary64)
-        assert all(math.isnan(value) for value in nan)
-        assert shell_refusals([broken], [masses], [nan]) == {}
+    (unmeasured,) = _screen([broken], masses).reasons.values()
+    assert "cannot be measured" in unmeasured
+    unbound = [Fraction(0), Fraction(0), None, Fraction(29929)]
+    assert set(_screen([on_shell], unbound).reasons) == {0}
+
+
+@pytest.mark.loop_fast
+def test_the_supplied_carrier_sets_the_rounding_allowance():
+    from decimal import Decimal
+
+    from pyamplicol.kinematics import input_roundoff
+
+    floats = [[[1.5, 0.0, 0.0, 0.1]]]
+    texts = [[["1.5", "0", "0", "0.123456789012"]]]
+    exact = [[[Fraction(3, 2), 0, 0, 1]]]
+    assert input_roundoff(floats) == [2.0**-53]
+    assert input_roundoff(texts) == [0.5 * 10.0**-11]
+    assert input_roundoff(exact) == [0.0]
+    assert input_roundoff([[[Decimal("NaN"), 0, 0, 0]]]) == [math.inf]
 
 
 def _flat_point(artifact: Path, seed: int = 7):
@@ -273,57 +342,157 @@ def _flat_point(artifact: Path, seed: int = 7):
     return [list(leg) for leg in flat.points[0]], flat.mu_r2()[0]
 
 
+def _stale_point():
+    """The point the generation drew before the bound masses: tops at the
+    model's 173 GeV while the uux_ttx amplitude binds 160."""
+
+    return [list(map(float, leg)) for leg in _UNCHANGED_POINT], "1000000"
+
+
 @pytest.mark.loop_physics
-def test_an_off_shell_point_is_refused(uux_ttx):
+@pytest.mark.parametrize("arithmetic", ("double", "double-double"))
+def test_an_off_shell_point_is_served_marked_uncertified(uux_ttx, arithmetic):
     from pyamplicol.api import Runtime
-    from pyamplicol.api.errors import EvaluationError
-    from pyamplicol.kinematics import SHELL_STAGE, shell_bound
+    from pyamplicol.kinematics import is_shell_reason
 
     runtime = Runtime.load(uux_ttx)
     good, scale = _flat_point(uux_ttx)
-    # The point the generation drew before the bound masses: tops at the
-    # model's 173, the amplitude binds 160.
-    stale = [list(map(float, leg)) for leg in _UNCHANGED_POINT]
-    for arithmetic in ("double", "double-double"):
-        result = runtime.evaluate(
-            [good, stale], mu_r2=[scale, "1000000"], arithmetic=arithmetic
-        )
-        assert [str(status) for status in result.statuses] == ["success", "failed"]
-        assert result.values[1] is None
-        lane = result.diagnostics[1]
-        (failure,) = lane.failures
-        assert failure.stage == SHELL_STAGE and failure.external_leg in (2, 3)
-        assert "bound m^2 = 25600.0" in lane.detail
-        assert max(lane.mass_shell) > shell_bound(4)
-        assert max(result.diagnostics[0].mass_shell) <= shell_bound(4)
-    with pytest.raises(EvaluationError, match=SHELL_STAGE):
-        runtime.evaluate([stale], mu_r2="1000000", on_failure="raise")
-    # The resolved outputs take the same guard.
-    resolved = runtime.evaluate_resolved([good, stale], mu_r2=[scale, "1000000"])
-    assert resolved.diagnostics[0].status == "success"
-    assert resolved.diagnostics[1].failures[0].stage == SHELL_STAGE
+    stale, stale_scale = _stale_point()
+    result = runtime.evaluate(
+        [good, stale], mu_r2=[scale, stale_scale], arithmetic=arithmetic
+    )
+    assert [str(status) for status in result.statuses] == ["success", "success"]
+    assert result.values[1] is not None
+    clean, marked = result.diagnostics
+    assert not clean.uncertified and max(clean.mass_shell) < 1e-14
+    (reason,) = [r for r in marked.uncertified if is_shell_reason(r)]
+    assert "bound m^2 = 25600.0" in reason and "p^2 = 29929" in reason
+    assert not marked.accuracy_established and not marked.failures
+    assert "accuracy not established" in marked.detail
+    resolved = runtime.evaluate_resolved(
+        [good, stale], mu_r2=[scale, stale_scale], arithmetic=arithmetic
+    )
+    assert [lane.status for lane in resolved.diagnostics] == ["success", "success"]
+    assert not resolved.diagnostics[0].uncertified
+    assert any(is_shell_reason(r) for r in resolved.diagnostics[1].uncertified)
 
 
 @pytest.mark.loop_physics
-def test_a_point_off_shell_by_its_inputs_digits_is_refused_unless_improved(uux_ttx):
+def test_a_point_within_the_target_is_evaluated_as_before(uux_ttx, monkeypatch):
+    """A point off its shells by 1e-10 (a momentum component to ten digits)
+    is served at binary64 cost, unmarked, its value the evaluation's without
+    the screen, bit for bit."""
+
+    from pyamplicol import kinematics
     from pyamplicol.api import Runtime
-    from pyamplicol.kinematics import SHELL_STAGE
 
     runtime = Runtime.load(uux_ttx)
     point, scale = _flat_point(uux_ttx)
-    # A top momentum component to ten digits: off its shell by about 1e-10
-    # of E^2, far beyond binary64's rounding, well within the improvement's
-    # input test.
     point[2][1] = float(f"{point[2][1]:.10g}")
+    screened = runtime.evaluate([point], mu_r2=scale, arithmetic="double")
+    lane = screened.diagnostics[0]
+    assert str(screened.statuses[0]) == "success" and not lane.uncertified
+    assert lane.kinematics is None and 1e-13 < max(lane.mass_shell) < 1e-5
+    monkeypatch.setattr(
+        kinematics,
+        "shell_check",
+        lambda points, *_: kinematics.ShellCheck(tuple(() for _ in points), {}),
+    )
     plain = runtime.evaluate([point], mu_r2=scale, arithmetic="double")
-    assert plain.diagnostics[0].failures[0].stage == SHELL_STAGE
+    assert plain.values == screened.values
+    assert plain.born_values == screened.born_values
+
+
+@pytest.mark.loop_physics
+def test_the_unchecked_mode_measures_nothing(uux_ttx, monkeypatch):
+    from pyamplicol import kinematics
+    from pyamplicol.api import Runtime
+
+    runtime = Runtime.load(uux_ttx, reduction_unchecked=True)
+    stale, stale_scale = _stale_point()
+
+    def never(*_args, **_kwargs):
+        raise AssertionError("the unchecked mode ran the shell screen")
+
+    monkeypatch.setattr(kinematics, "shell_check", never)
+    for call in (runtime.evaluate, runtime.evaluate_resolved):
+        result = call([stale], mu_r2=stale_scale)
+        (lane,) = result.diagnostics
+        assert lane.mass_shell is None and not lane.uncertified
+
+
+@pytest.mark.loop_physics
+def test_a_point_improved_onto_its_shells_is_not_marked(uux_ttx):
+    """A top three-momentum scaled by 1 + 3e-6: 5e-5 off its shell (above
+    the target) and within MadLoop's input test: marked as given, unmarked
+    once the requested improvement moved it onto the shells."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import is_shell_reason
+
+    runtime = Runtime.load(uux_ttx)
+    point, scale = _flat_point(uux_ttx)
+    point[2] = [point[2][0], *(x * (1 + 3e-6) for x in point[2][1:])]
+    given = runtime.evaluate([point], mu_r2=scale, arithmetic="double")
+    assert any(is_shell_reason(r) for r in given.diagnostics[0].uncertified)
     improved = runtime.evaluate(
         [point], mu_r2=scale, arithmetic="double", kinematics_improvement_binary64=True
     )
-    assert str(improved.statuses[0]) == "success"
-    assert improved.diagnostics[0].kinematics.status == "improved"
-    extended = runtime.evaluate([point], mu_r2=scale, arithmetic="double-double")
-    assert str(extended.statuses[0]) == "success"
+    lane = improved.diagnostics[0]
+    assert lane.kinematics.status == "improved"
+    assert not any(is_shell_reason(r) for r in lane.uncertified)
+
+
+@pytest.mark.loop_physics
+def test_the_mark_accumulates_and_never_hides_a_failure(uux_ttx, monkeypatch):
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescuePolicy
+    from pyamplicol.kinematics import is_shell_reason
+    from pyamplicol.loops.v2 import artifact as stored
+
+    runtime = Runtime.load(uux_ttx)
+    stale, stale_scale = _stale_point()
+    # Another reason of the same lane (as the reduction records them).
+    monkeypatch.setattr(
+        stored, "uncertified_reasons", lambda _counts: ("a lane below resolution",)
+    )
+    (lane,) = runtime.evaluate([stale], mu_r2=stale_scale).diagnostics
+    assert lane.uncertified[0] == "a lane below resolution"
+    assert is_shell_reason(lane.uncertified[1])
+    monkeypatch.undo()
+    # The mark alone escalates no rescue level (an on-shell point, marked).
+    from pyamplicol import kinematics
+
+    good, scale = _flat_point(uux_ttx)
+    screen = kinematics.shell_check
+
+    def marking(points, *args):
+        found = screen(points, *args)
+        return kinematics.ShellCheck(
+            found.defects,
+            {i: f"{kinematics.SHELL_REASON}: forced" for i in range(len(points))},
+        )
+
+    monkeypatch.setattr(kinematics, "shell_check", marking)
+    rescued = runtime.evaluate([good], mu_r2=scale, stability=VirtualRescuePolicy())
+    assert rescued.rescue[0].level == 0 and rescued.rescue[0].met
+    assert any(is_shell_reason(r) for r in rescued.diagnostics[0].uncertified)
+    assert not rescued.diagnostics[0].accuracy_established
+    monkeypatch.undo()
+    # An independent failure of the evaluation stays a failure.
+    backend = runtime._backend
+    original = backend._run
+
+    def failing(points, scales, *args):
+        original(points, scales, *args)
+        return [None] * len(points), {i: ["a refused lane"] for i in range(len(points))}
+
+    monkeypatch.setattr(backend, "_run", failing)
+    failed = runtime.evaluate([stale], mu_r2=stale_scale, on_failure="return")
+    (lane,) = failed.diagnostics
+    assert lane.status == "failed" and failed.values[0] is None
+    assert lane.failures[0].stage == "v2-evaluation"
+    assert "a refused lane" in lane.detail
 
 
 @pytest.mark.loop_physics
@@ -332,6 +501,8 @@ def test_an_artifact_with_a_stale_validation_point_is_refused(uux_ttx, tmp_path)
 
     from pyamplicol.api import Runtime
     from pyamplicol.api.errors import ArtifactError
+    from pyamplicol.cli.flat_points import draw_flat_points
+    from pyamplicol.config import ConfigurationError
 
     copy = tmp_path / "stale"
     shutil.copytree(uux_ttx, copy)
@@ -351,5 +522,9 @@ def test_an_artifact_with_a_stale_validation_point_is_refused(uux_ttx, tmp_path)
     path.write_text(json.dumps(record))
     with pytest.raises(ArtifactError, match="regenerate the artifact"):
         Runtime.load(copy)
+    # The standalone drawer cannot tell the masses of a loop record without
+    # them: it refuses too.
+    with pytest.raises(ConfigurationError, match="regenerate the artifact"):
+        draw_flat_points(copy, process=None, points=1, seed=1, sqrt_s=None)
     # The artifact as generated loads.
     Runtime.load(uux_ttx)

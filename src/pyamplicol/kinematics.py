@@ -348,222 +348,92 @@ def with_kinematics(evaluation: Any, records: Sequence[Any]) -> Any:
     return replace(evaluation, diagnostics=diagnostics)
 
 
-# ------------------------------------------------------------ the shell guard
+# ------------------------------------------------------- the shell screen
 #
 # A one-loop amplitude binds every invariant a single external leg fixes to
 # that leg's bound squared mass, never to the p^2 of the given momenta (DESIGN
-# §11.1, ``families.onshell_leg``): its integrals take m^2 while its
-# numerators take the momenta. A point off those shells is therefore no
-# consistent kinematics, and its value is no amplitude (the g g > t t~ h
-# points of a card fixing MT = 173 drawn on shell at the model's 174.3: a
-# double pole 0.2 off Catani's, the two reductions an order apart). THE GUARD
-# measures every external leg of the point an evaluation runs (the caller's,
-# after the call's kinematics improvement in its carrier) with the
-# improvement's own exactness measure (``rusticol_core::
-# kinematics_improvement::exactness``),
+# §11.1, ``families.onshell_leg``): its integrals take m^2, its numerators
+# the momenta. At a point off those shells the value is no amplitude of
+# consistent kinematics (the g g > t t~ h points of a card fixing MT = 173
+# drawn on shell at the model's 174.3: a double pole 0.2 off Catani's, the
+# two reductions an order apart), and a stable reduction does not certify it.
+# THE SHELL-CONSISTENCY SCREEN (a screen, not an error bound on the
+# amplitude) runs in the checked mode only (the unchecked mode measures
+# nothing, bit for bit and at no cost): every external leg of the point a
+# carrier evaluates (the caller's momenta after the call's kinematics
+# improvement, in the caller's leg order) against the squared mass that call
+# binds for the leg, per leg (a hard spectator cannot mask a soft leg):
 #
-#     defect_k = |p_k^2 - m_k^2| / (REF_k S),
-#     REF_k = |E_k| + |px_k| + |py_k| + |pz_k|,  S = sum_j |E_j|,
+#     massive (m^2 > 0):  |p^2 - m^2| <= t m^2 + C u (E^2 + |p|^2 + m^2),
+#     massless:           |p^2|       <= t (E^2 + |p|^2) + C u (E^2 + |p|^2),
 #
-# against the bound m_k^2 (``NativeExecutor.leg_masses``, exact), and refuses
-# the point when a defect exceeds (2 n + 5) u, n legs, u = 2^-53: the
-# improvement's exactness bound (its "exact to the carrier's rounding") at
-# the unit roundoff of binary64, the coarsest carrier momenta reach a runtime
-# in. A point exact in its own carrier (an improved point in any carrier) is
-# within it; so is a binary64 point drawn on the shell (rounding its
-# components moves p^2 by about 2 u REF_k^2 <= 2 u REF_k S). A larger defect
-# is no rounding: the point is off the bound shell (its masses are others',
-# or it was given to fewer digits and no improvement ran: binary64 without
-# ``kinematics_improvement_binary64``, the setting "off", or the improvement
-# refused it as MadLoop's IS_PHYSICAL does, beyond 1e-2 of its scale).
-SHELL_STAGE = "external-mass-shell"
+# t the call's point target (``reduction_target``, the user's, not the
+# reduction's tightened per-lane value), u the unit roundoff of the carrier
+# the momenta were SUPPLIED in (``input_roundoff``; the evaluating carrier's
+# when coarser), and C = SHELL_ROUNDING = 8 the rounding allowance of a
+# point drawn on its shell in that carrier: rounding E and the three
+# components moves p^2 by at most 2 u (E^2 + |p|^2), the mass rounded to
+# the carrier moves m^2 by 2 u m^2, and forming the on-shell energy from the
+# momentum and the mass (three squares, three sums, a square root: six
+# roundings of E^2) by 6 u E^2, together within 8 u (E^2 + |p|^2 + m^2) to
+# first order. The test is exact (rational arithmetic; binary64 inputs in
+# vectorised double-double arithmetic on each leg scaled by a power of two
+# to its largest component first, so that no square overflows or
+# underflows). Beyond it the ORIGINAL value is served, its lane marked
+# ``uncertified`` with a typed reason (``SHELL_REASON``: the leg, its p^2,
+# the bound m^2 and the measured ratio to the allowance); a measurement that
+# cannot be made (a non-finite component, a mass the evaluator cannot bind)
+# marks it too. The mark never escalates a rescue by itself and accumulates
+# with every other reason; a failed lane stays failed.
+SHELL_REASON = "off the bound mass shell"
+SHELL_ROUNDING = 8
 _BINARY64_ROUNDOFF = 2.0**-53
 
 
-def shell_bound(legs: int) -> float:
-    """The guard's bound on a leg's shell defect: (2 n + 5) u of binary64
-    for ``legs`` = n external legs (module notes, "the shell guard")."""
+def input_roundoff(momenta: Any) -> list[float]:
+    """Per point the unit roundoff of the carrier its components were
+    supplied in (the coarsest component): binary64's 2^-53 for a binary
+    float, 0 for an exact integer or fraction, and for a decimal text or
+    ``Decimal`` of D significant digits 10^(1 - D) / 2 (2^-53 when it is a
+    binary64 value)."""
 
-    return (2 * legs + 5) * _BINARY64_ROUNDOFF
+    from decimal import Decimal, InvalidOperation
 
-
-def shell_defects(
-    points: Sequence[Sequence[Sequence[Any]]],
-    masses2: Sequence[Sequence[Fraction | None]],
-    *,
-    binary64: bool,
-) -> list[tuple[float, ...]]:
-    """Each point's shell defect per leg (module notes): ``points`` the
-    evaluated momenta (decimal texts or numbers), ``masses2`` per point the
-    bound squared mass of each leg (exact; None: the leg's own p^2, defect
-    0). ``binary64``: the points run in binary64, whose inputs are their
-    binary64 values, measured exactly in double-double arithmetic (numpy,
-    vectorised: the error-free products and sums leave an error of order
-    u^2 REF_k^2, far below the bound); otherwise the exact components in
-    rational arithmetic."""
-
-    if not points:
-        return []
-    if binary64:
-        return _binary64_defects(points, masses2)
-    out = []
-    for point, masses in zip(points, masses2, strict=True):
+    def unit(value: Any) -> float:
+        if isinstance(value, bool):
+            return 0.0
+        if isinstance(value, float):
+            return _BINARY64_ROUNDOFF
+        if isinstance(value, (int, Fraction)):
+            return 0.0
         try:
-            legs = [[Fraction(str(x)) for x in leg] for leg in point]
-        except (ValueError, OverflowError):
-            # A non-finite component: no measure, left to the evaluation.
-            out.append((math.nan,) * len(point))
-            continue
-        scale = sum(abs(leg[0]) for leg in legs)
-        out.append(
-            tuple(
-                0.0
-                if mass is None
-                else _relative(
-                    leg[0] * leg[0]
-                    - leg[1] * leg[1]
-                    - leg[2] * leg[2]
-                    - leg[3] * leg[3]
-                    - mass,
-                    sum(abs(x) for x in leg) * scale,
-                )
-                for leg, mass in zip(legs, masses, strict=True)
-            )
-        )
-    return out
+            number = value if isinstance(value, Decimal) else Decimal(str(value))
+        except (InvalidOperation, ValueError):
+            return math.inf
+        if not number.is_finite():
+            return math.inf
+        digits = len(number.as_tuple().digits)
+        try:
+            if Fraction(number) == Fraction(float(number)):
+                return _BINARY64_ROUNDOFF if digits > 1 else 0.0
+        except (OverflowError, ValueError):
+            pass
+        return 0.5 * 10.0 ** (1 - digits)
 
-
-def _relative(defect: Any, reference: Any) -> float:
-    if reference == 0:
-        return 0.0 if defect == 0 else math.inf
-    return float(abs(defect) / reference)
-
-
-def _binary64_defects(
-    points: Sequence[Sequence[Sequence[Any]]],
-    masses2: Sequence[Sequence[Fraction | None]],
-) -> list[tuple[float, ...]]:
-    import numpy as np
-
-    p = np.array(points, dtype=np.float64)
-    # Each distinct mass row once (a batch's points share their masses).
-    rows: dict[tuple[Fraction | None, ...], int] = {}
-    index = [rows.setdefault(tuple(masses), len(rows)) for masses in masses2]
-    split_masses = [
-        [
-            (0.0, 0.0, False)
-            if m is None
-            else (float(m), float(m - Fraction(float(m))), True)
-            for m in masses
-        ]
-        for masses in rows
+    return [
+        max((unit(x) for leg in point for x in leg), default=0.0) for point in momenta
     ]
-    table = np.array(split_masses, dtype=object)[index]
-    high = table[..., 0].astype(np.float64)
-    low = table[..., 1].astype(np.float64)
-    known = table[..., 2].astype(bool)
-    with np.errstate(all="ignore"):
-        # E^2 - px^2 - py^2 - pz^2 - m^2 in double-double: Dekker's exact
-        # square (a_hi^2 + 2 a_hi a_lo + a_lo^2) and Knuth's two-sum.
-        split = 134217729.0 * p
-        head = split - (split - p)
-        tail = p - head
-        square = p * p
-        error = ((head * head - square) + 2.0 * head * tail) + tail * tail
-        hi, lo = square[..., 0], error[..., 0]
-        for mu in (1, 2, 3):
-            term_hi, term_lo = -square[..., mu], -error[..., mu]
-            total = hi + term_hi
-            back = total - hi
-            lo = lo + ((hi - (total - back)) + (term_hi - back)) + term_lo
-            hi = total
-        total = hi - high
-        back = total - hi
-        lo = lo + ((hi - (total - back)) + (-high - back)) - low
-        defect = np.abs(total + lo)
-        reference = np.abs(p).sum(axis=2) * np.abs(p[..., 0]).sum(axis=1)[:, None]
-        relative = np.where(
-            reference > 0.0,
-            defect / np.where(reference > 0.0, reference, 1.0),
-            np.where(defect == 0.0, 0.0, np.inf),
-        )
-        # A non-finite component: no measure (NaN), left to the evaluation.
-        relative = np.where(np.isfinite(p).all(axis=(1, 2))[:, None], relative, np.nan)
-    relative = np.where(known, relative, 0.0)
-    return [tuple(row) for row in relative.tolist()]
-
-
-def shell_refusals(
-    points: Sequence[Sequence[Sequence[Any]]],
-    masses2: Sequence[Sequence[Fraction | None]],
-    defects: Sequence[Sequence[float]],
-) -> dict[int, list[str]]:
-    """The points the guard refuses (a leg's defect above ``shell_bound``),
-    by index, with the refusal (``SHELL_STAGE``, the leg, its p^2 and the
-    bound m^2, the defect and the bound; a non-finite defect, a non-finite
-    component, is left to the evaluation)."""
-
-    out: dict[int, list[str]] = {}
-    for index, (point, masses, legs) in enumerate(
-        zip(points, masses2, defects, strict=True)
-    ):
-        bound = shell_bound(len(point))
-        if not legs or any(math.isnan(value) for value in legs):
-            continue
-        worst = max(range(len(legs)), key=lambda k: legs[k])
-        if not legs[worst] > bound:
-            continue
-        energy, x, y, z = (Fraction(str(value)) for value in point[worst])
-        square = energy * energy - x * x - y * y - z * z
-        mass2 = masses[worst]
-        out[index] = [
-            f"{SHELL_STAGE}: external leg {worst + 1} is off the mass shell the "
-            f"amplitude binds: p^2 = {float(square)!r}, bound m^2 = "
-            f"{float(mass2)!r} (m = {math.sqrt(float(mass2))!r}); relative "
-            f"shell defect {legs[worst]:.3e} above {bound:.3e}, the rounding "
-            f"bound of a binary64 point, (2n + 5) u at n = {len(point)}. Give "
-            "momenta on the shells the artifact binds (its fixed parameters), "
-            "or let the kinematics improvement move them there "
-            "(kinematics_improvement_binary64=True, or a carrier above binary64)"
-        ]
-    return out
-
-
-def shell_leg(reason: str) -> int | None:
-    """The 0-based external leg a guard refusal (``shell_refusals``) names,
-    also within a longer failure text (a fallback's), None for any other
-    failure reason."""
-
-    prefix = f"{SHELL_STAGE}: external leg "
-    at = reason.find(prefix)
-    if at < 0:
-        return None
-    return int(reason[at + len(prefix) :].split(" ", 1)[0]) - 1
-
-
-def failure_diagnostic(index: int, reason: str, stage: str = "v2-evaluation") -> Any:
-    """The failure record (``VirtualFailureDiagnostic``) of a point that
-    failed with ``reason``: a guard refusal's at stage ``SHELL_STAGE``, naming
-    its external leg; any other at ``stage``."""
-
-    from pyamplicol.api.virtual_results import VirtualFailureDiagnostic
-
-    leg = shell_leg(reason)
-    if leg is None:
-        return VirtualFailureDiagnostic(index, None, None, None, stage, reason)
-    return VirtualFailureDiagnostic(
-        index, None, None, None, SHELL_STAGE, reason, external_leg=leg
-    )
 
 
 @dataclass(frozen=True, slots=True)
 class ShellCheck:
-    """The guard's measure of one carrier's points of a call: per point the
-    shell defect of every leg (``shell_defects``, in the caller's leg
-    order) and the refused points (``shell_refusals``, by index)."""
+    """The screen's measure of one carrier's points of a call: per point the
+    relative shell defect of every leg (|p^2 - m^2| / m^2, massless
+    |p^2| / (E^2 + |p|^2); NaN where it cannot be measured) and, by index,
+    the typed ``uncertified`` reason of each point the screen marks."""
 
     defects: tuple[tuple[float, ...], ...]
-    refused: Mapping[int, list[str]]
+    reasons: Mapping[int, str]
 
 
 def shell_check(
@@ -571,12 +441,15 @@ def shell_check(
     scales: Sequence[Any],
     precision: Any,
     masses: MassProvider,
+    target: float,
+    roundoff: Sequence[float],
 ) -> ShellCheck:
-    """The guard on the points one carrier evaluates (``precision``, a v2
+    """The screen on the points one carrier evaluates (``precision``, a v2
     ``Precision``; the caller's legs, after the call's kinematics
-    improvement) against the squared masses the evaluation binds
-    (``masses``, the improvement's provider: per mu_R^2 of the batch, as
-    the improvement asks it)."""
+    improvement) against the squared masses that call binds (``masses``,
+    caller order; None: no mass bound), at the call's point ``target`` and
+    the supplied carriers' unit roundoffs (``roundoff``, per point,
+    ``input_roundoff``)."""
 
     masses2: list[Sequence[Fraction | None]] = [()] * len(points)
     # (By text: equal values of other texts ask the provider again, which
@@ -589,40 +462,115 @@ def shell_check(
         bound = masses(precision, points[first], scales[first], len(points))
         for index in indices:
             masses2[index] = bound
-    defects = shell_defects(points, masses2, binary64=precision.arithmetic == "double")
-    return ShellCheck(tuple(defects), shell_refusals(points, masses2, defects))
+    carrier = (
+        _BINARY64_ROUNDOFF
+        if precision.arithmetic == "double"
+        else 2.0**-106
+        if precision.arithmetic == "double-double"
+        else 0.0
+    )
+    units = [max(float(u), carrier) for u in roundoff]
+    binary64 = precision.arithmetic == "double"
+    defects: list[tuple[float, ...]] = []
+    reasons: dict[int, str] = {}
+    for index, (point, legs) in enumerate(zip(points, masses2, strict=True)):
+        measured = _shell_legs(point, legs, float(target), units[index], binary64)
+        defects.append(tuple(relative for relative, _ratio, _square in measured))
+        reason = _shell_reason(point, legs, measured)
+        if reason is not None:
+            reasons[index] = reason
+    return ShellCheck(tuple(defects), reasons)
 
 
-def guarded_run(
-    run: Callable[[list[int]], tuple[list[Any], Mapping[int, list[str]]]],
-    count: int,
-    refused: Mapping[int, list[str]],
-    indices: Sequence[int] | None = None,
-) -> tuple[list[Any], dict[int, list[str]]]:
-    """``run`` (indices of the call's points -> results and failures by
-    position) of the points ``indices`` (None: all ``count``) that the guard
-    admits; a refused point is not evaluated: its result is None and its
-    failure the refusal. Results and failures by position in ``indices``."""
+def _shell_legs(
+    point: Sequence[Sequence[Any]],
+    masses2: Sequence[Fraction | None],
+    target: float,
+    unit: float,
+    binary64: bool,
+) -> list[tuple[float, float, Fraction | None]]:
+    """Per leg (relative defect, ratio to the allowance, exact p^2): NaN /
+    inf where the measurement cannot be made; (0, 0, None) for a leg
+    without a bound mass (its invariants are its own p^2)."""
 
-    chosen = list(range(count)) if indices is None else list(indices)
-    kept = [i for i in chosen if i not in refused]
-    found, failed = run(kept) if kept else ([], {})
-    results: list[Any] = [None] * len(chosen)
-    failures: dict[int, list[str]] = {}
-    at = {index: position for position, index in enumerate(chosen)}
-    for local, index in enumerate(kept):
-        results[at[index]] = found[local]
-        if local in failed:
-            failures[at[index]] = list(failed[local])
-    for index in chosen:
-        if index in refused:
-            failures[at[index]] = list(refused[index])
-    return results, failures
+    out: list[tuple[float, float, Fraction | None]] = []
+    for leg, mass2 in zip(point, masses2, strict=True):
+        if mass2 is None:
+            out.append((math.nan, math.inf, None))
+            continue
+        try:
+            components = (
+                [Fraction(float(x)) for x in leg]
+                if binary64
+                else [Fraction(str(x)) for x in leg]
+            )
+        except (ValueError, OverflowError):
+            out.append((math.nan, math.inf, None))
+            continue
+        energy, x, y, z = components
+        # Exact rationals: no overflow or underflow (the evaluated binary64
+        # values are exact rationals too).
+        spatial = x * x + y * y + z * z
+        square = energy * energy - spatial
+        size = energy * energy + spatial
+        if mass2 > 0:
+            defect = abs(square - mass2)
+            relative = defect / mass2
+            allowance = Fraction(target) * mass2 + SHELL_ROUNDING * Fraction(unit) * (
+                size + mass2
+            )
+        else:
+            defect = abs(square)
+            relative = defect / size if size else Fraction(0)
+            allowance = (Fraction(target) + SHELL_ROUNDING * Fraction(unit)) * size
+        ratio = (
+            float(defect / allowance)
+            if allowance
+            else (0.0 if defect == 0 else math.inf)
+        )
+        out.append((float(relative), ratio, square))
+    return out
+
+
+def _shell_reason(
+    point: Sequence[Sequence[Any]],
+    masses2: Sequence[Fraction | None],
+    measured: Sequence[tuple[float, float, Fraction | None]],
+) -> str | None:
+    """The point's typed reason, or None when every leg passes."""
+
+    worst = max(range(len(measured)), key=lambda k: measured[k][1], default=None)
+    if worst is None or not measured[worst][1] > 1.0:
+        return None
+    relative, ratio, square = measured[worst]
+    mass2 = masses2[worst]
+    if square is None or mass2 is None:
+        return (
+            f"{SHELL_REASON}: external leg {worst + 1} cannot be measured (a "
+            "non-finite component or no bound mass); the value is served "
+            "without a shell-consistency screen"
+        )
+    return (
+        f"{SHELL_REASON}: external leg {worst + 1}, p^2 = {float(square)!r}, "
+        f"bound m^2 = {float(mass2)!r}, relative defect {relative:.3e}, "
+        f"{ratio:.3g} times the screen's allowance (target m^2 + "
+        f"{SHELL_ROUNDING} u (E^2 + |p|^2 + m^2); a shell-consistency screen, "
+        "not an error bound: the value is served as computed)"
+    )
+
+
+def is_shell_reason(reason: str) -> bool:
+    """Whether an ``uncertified`` reason is the shell screen's (which never
+    escalates a rescue by itself)."""
+
+    return str(reason).startswith(SHELL_REASON)
 
 
 __all__ = [
     "BINARY64",
     "SETTING",
+    "SHELL_REASON",
+    "SHELL_ROUNDING",
     "KinematicsSettings",
     "LevelImprover",
     "MassProvider",
@@ -630,19 +578,15 @@ __all__ = [
     "binary64_value",
     "default_binary64",
     "default_setting",
-    "failure_diagnostic",
-    "guarded_run",
     "improve",
     "initial_count",
+    "input_roundoff",
+    "is_shell_reason",
     "notes",
     "off_record",
     "policy",
     "resolve",
     "setting_value",
-    "shell_bound",
     "shell_check",
-    "shell_defects",
-    "shell_leg",
-    "shell_refusals",
     "with_kinematics",
 ]
