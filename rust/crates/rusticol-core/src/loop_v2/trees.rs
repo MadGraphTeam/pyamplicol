@@ -4921,13 +4921,18 @@ where
         .collect::<RusticolResult<_>>()?;
     let mut done: Vec<(usize, Vec<Complex<T>>)> = done.into_iter().flatten().collect();
     done.sort_unstable_by_key(|(o, _)| *o);
-    for (o, values) in done {
-        let (_, _, _, start, dimension, _) = step.outputs[o];
-        for (point, state) in states.chunks_exact_mut(layout.size).enumerate() {
-            state[start..start + dimension]
-                .clone_from_slice(&values[point * dimension..][..dimension]);
-        }
-    }
+    // The outputs in order, each point's on its own (their states are
+    // disjoint).
+    states
+        .par_chunks_exact_mut(layout.size)
+        .enumerate()
+        .for_each(|(point, state)| {
+            for (o, values) in &done {
+                let (_, _, _, start, dimension, _) = step.outputs[*o];
+                state[start..start + dimension]
+                    .clone_from_slice(&values[point * dimension..][..dimension]);
+            }
+        });
     Ok(true)
 }
 
@@ -4998,37 +5003,32 @@ where
             require(plane.input_len() == inputs, "interaction kernel inputs")?;
             let width = plane.output_len();
             let (planes, stride) = plane.planes(rows);
-            fill_planes(planes, stride, 0, left, edges, states, size, |edge| {
-                edge.left as usize
-            });
-            fill_planes(planes, stride, left, right, edges, states, size, |edge| {
-                edge.right as usize
-            });
-            let momenta = left + right;
-            fill_planes(planes, stride, momenta, 4, edges, states, size, |edge| {
-                edge.left_momentum as usize
-            });
-            fill_planes(
-                planes,
-                stride,
-                momenta + 4,
-                4,
-                edges,
-                states,
-                size,
-                |edge| edge.right_momentum as usize,
-            );
-            for (k, &index) in models.iter().enumerate() {
-                fill_planes(
-                    planes,
-                    stride,
-                    momenta + 8 + k,
-                    1,
-                    edges,
-                    states,
-                    size,
-                    |_| layout.model_offset + index,
-                );
+            // One row at a time: each state's inputs read once, contiguously
+            // (the same values as `fill_planes`, one plane at a time).
+            let mut row = 0;
+            for (edge, _) in edges {
+                let (l, r) = (edge.left as usize, edge.right as usize);
+                let (pl, pr) = (edge.left_momentum as usize, edge.right_momentum as usize);
+                for state in states.chunks_exact(size) {
+                    let mut put = |k: usize, value: &Complex<T>| {
+                        planes[2 * k * stride + row] = value.re.clone();
+                        planes[(2 * k + 1) * stride + row] = value.im.clone();
+                    };
+                    let inputs = state[l..l + left]
+                        .iter()
+                        .chain(&state[r..r + right])
+                        .chain(&state[pl..pl + 4])
+                        .chain(&state[pr..pr + 4])
+                        .chain(
+                            models
+                                .iter()
+                                .map(|&index| &state[layout.model_offset + index]),
+                        );
+                    for (k, value) in inputs.enumerate() {
+                        put(k, value);
+                    }
+                    row += 1;
+                }
             }
             let planes = plane
                 .run(rows)
