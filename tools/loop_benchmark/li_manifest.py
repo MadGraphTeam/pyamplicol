@@ -964,9 +964,15 @@ def _unnormalised(narrow: Any, wide: Any, narrow_u: float, wide_u: float) -> boo
 
     from pyamplicol.loops.v2.checks import tolerance
 
-    p0, e0, p1 = narrow.physical, narrow.physical_error, wide.physical
-    if p0 is None or p1 is None or wide.residue is None or not wide.terms:
+    def complete(m: Any) -> bool:
+        return m.complete and all(
+            x is not None and math.isfinite(x) and x >= 0
+            for x in (m.residue, m.physical, m.terms)
+        )
+
+    if not (complete(narrow) and complete(wide)) or not wide.terms:
         return False
+    p0, e0, p1 = narrow.physical, narrow.physical_error, wide.physical
     noise = p0 == 0 or (e0 is not None and p0 <= 10 * e0)
     collapse = (p0 == 0 and p1 == 0) or (
         p0 > 0 and p1 <= math.sqrt(wide_u / narrow_u) * p0
@@ -1008,12 +1014,30 @@ def _ladder_row(final: Any, runs: list, narrow: Any = None) -> dict:
             for key, cell in final.final.items()
             if cell.verdict == "inconclusive"
         ]
+        from pyamplicol.loops.v2.induced import BELOW_RESOLUTION
+
+        # Both measures from the carriers' own results at the same key: a row
+        # double-double did not measure (missing or refused) never qualifies,
+        # nor one deferred below numerical resolution.
+        wide_carrier, wide = next(
+            (
+                (carrier, result)
+                for carrier, result in reversed(runs)
+                if carrier.arithmetic == "double-double" and not isinstance(result, str)
+            ),
+            (None, None),
+        )
         evidence = [
-            (narrow.cells[key].measure, cell.measure, cell.unit_roundoff)
+            (
+                narrow.cells[key].measure,
+                wide.cells[key].measure,
+                wide_carrier.unit_roundoff,
+            )
             for key, cell in open_
-            if key in narrow.cells
-            and cell.carrier == "double-double"
-            and cell.unit_roundoff is not None
+            if wide is not None
+            and key in narrow.cells
+            and key in wide.cells
+            and not (cell.reason or "").startswith(BELOW_RESOLUTION)
         ]
         if (
             open_
@@ -1045,7 +1069,7 @@ def _ward_row(per_leg: dict[str, dict]) -> dict:
 
     verdict = combined_verdict([r["verdict"] for r in per_leg.values()])
     row: dict[str, Any] = {
-        "worst": {leg: r["worst"] for leg, r in per_leg.items()},
+        "worst": {leg: r["worst"] for leg, r in per_leg.items() if "worst" in r},
         "passed": all(r["passed"] for r in per_leg.values()),
         "verdict": verdict,
         "rows": sum(r["rows"] for r in per_leg.values()),
@@ -1054,6 +1078,9 @@ def _ward_row(per_leg: dict[str, dict]) -> dict:
     for r in per_leg.values():
         for carrier, n in r["decided_in"].items():
             row["decided_in"][carrier] = row["decided_in"].get(carrier, 0) + n
+    refused = [leg for leg, r in per_leg.items() if r.get("refused")]
+    if refused:
+        row["refused_legs"] = refused
     if all("binary64" in r for r in per_leg.values()):
         row["binary64"] = {leg: r["binary64"] for leg, r in per_leg.items()}
     open_ = {leg: r for leg, r in per_leg.items() if r["verdict"] == "inconclusive"}
@@ -1253,16 +1280,29 @@ def ward_probes(
                     for leg, (_final, runs) in zip(legs, found, strict=True):
                         pinned[(backend, index, leg)] = runs[0][1]
                 refused = [final for final, _runs in found if isinstance(final, str)]
-                if refused:
+                if len(refused) == len(found):
+                    # every leg refused: the point's typed refusal (the arm's
+                    # policy for refused points)
                     rows.append(
                         {"error": compact_detail(f"ProbePointRefused: {refused[0]}")}
                     )
                     continue
+                # One result per leg: a refused leg is an unaccepted
+                # inconclusive, aggregated with a failing leg first.
                 per_leg = {
-                    str(leg): _ladder_row(
-                        final,
-                        runs,
-                        _narrow(pinned, (backend, index, leg)),
+                    str(leg): (
+                        {
+                            "verdict": "inconclusive",
+                            "passed": False,
+                            "rows": 0,
+                            "decided_in": {},
+                            "reason": compact_detail(f"refused: {final}"),
+                            "refused": True,
+                        }
+                        if isinstance(final, str)
+                        else _ladder_row(
+                            final, runs, _narrow(pinned, (backend, index, leg))
+                        )
                     )
                     for leg, (final, runs) in zip(legs, found, strict=True)
                 }

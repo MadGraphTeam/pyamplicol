@@ -1828,3 +1828,144 @@ def test_a_generation_ward_record_without_a_leg_holds_no_verdict(entries):
             "verdict": "inconclusive",
         }
         assert lm.judge(record, entry)["L4"]["status"] == "inconclusive"
+
+
+def _scripted(monkeypatch, outcome):
+    """``induced.probe_results`` scripted per probe and carrier:
+    ``outcome(ward, carrier name)`` gives (R, P, E_P, T), None (the carrier
+    has no such row: an empty result) or a refusal text."""
+
+    from pyamplicol.loops.v2 import checks, induced
+
+    def probe_results(_executor, _point, _scale, wards, *, precision, **_options):
+        k = checks.tolerance()
+        out = []
+        for ward in wards:
+            found = outcome(ward, precision.arithmetic)
+            if isinstance(found, str):
+                out.append(found)
+                continue
+            cells = {}
+            if found is not None:
+                r, p, e, t = found
+                measure = checks.Measure("row", r, p, t, physical_error=e)
+                cells = {("row", 0): checks.judge(measure, k)}
+            out.append(
+                induced.ProbeResult(
+                    "finiteness" if ward is None else "ward", cells, tolerance=k
+                )
+            )
+        return out
+
+    monkeypatch.setattr(induced, "probe_results", probe_results)
+
+
+def test_a_row_double_double_did_not_measure_is_never_accepted(entries, monkeypatch):
+    """The review's reproduction: binary64 P = 0, R = 1e-9, T = 1 at K =
+    1e-5 (ambiguous) and an empty double-double result. The ladder leaves
+    the row inconclusive ("double-double has no such row", the binary64
+    measure kept in the cell); the acceptance reads both measures from the
+    carriers' own results, so a row double-double did not measure never
+    has "no physical normalisation": a plain inconclusive, which fails a
+    campaign run."""
+
+    from types import SimpleNamespace as NS
+
+    from pyamplicol.loops.v2 import checks
+
+    _scripted(
+        monkeypatch,
+        lambda _ward, carrier: (1e-9, 0.0, 1e-16, 1.0) if carrier == "double" else None,
+    )
+    runtime = NS(_backend=NS(_executor=None))
+    data = {"points": [[["1", "0", "0", "1"]]] * 3, "mu_r": ["1"] * 3}
+    with checks.tolerating(1e-5):
+        out = lm.finiteness_probes(runtime, data, {}, ("double", "double-double"))
+        row = out["ninjars/double"][0]
+        assert row["verdict"] == "inconclusive" and "accepted" not in row, row
+        assert "double-double has no such row" in row["reason"]
+        l3 = _judged_l3(entries, out)
+    assert l3["ninjars/double"]["status"] == "inconclusive"
+    assert lm.unaccepted([l3["status"]])
+
+
+def _ward_arms(monkeypatch, tmp_path, outcome):
+    """``ward_probes`` on two gauge legs with the ladder's carrier outcomes
+    scripted per leg (``_scripted``); the slice and executor stand-ins."""
+
+    from dataclasses import make_dataclass
+
+    import pyamplicol.loops.native
+    import pyamplicol.loops.v2.artifact
+    import pyamplicol.loops.v2.ew_policy
+    import pyamplicol.loops.v2.plan_export
+    import pyamplicol.loops.v2.ward
+
+    _scripted(monkeypatch, outcome)
+    load = lm._load
+    monkeypatch.setattr(
+        lm,
+        "_load",
+        lambda path: {"request": {}} if path.name == "execution.json" else load(path),
+    )
+    request = make_dataclass("Request", [("fixed_parameters", dict)])
+    monkeypatch.setattr(
+        pyamplicol.loops.v2.artifact,
+        "request_from_record",
+        lambda _r: request({}),
+    )
+    monkeypatch.setattr(
+        pyamplicol.loops.v2.ew_policy, "probe_widths", lambda _c, _f: ({}, ())
+    )
+    monkeypatch.setattr(pyamplicol.loops.native, "load_loop_native", lambda: None)
+    monkeypatch.setattr(pyamplicol.loops.v2.ward, "ward_slice", lambda *a, **k: None)
+    monkeypatch.setattr(pyamplicol.loops.v2.ward, "gauge_legs", lambda _t: [1, 2])
+    monkeypatch.setattr(pyamplicol.loops.v2.ward, "gauge_ward", lambda leg, *_a: leg)
+    monkeypatch.setattr(
+        pyamplicol.loops.v2.plan_export, "NativeExecutor", lambda *a, **k: None
+    )
+    monkeypatch.setattr(lm, "_native", lambda: None)
+    data = {"points": [[["1", "0", "0", "1"]]] * 3, "mu_r": ["1"] * 3}
+    return lm.ward_probes(
+        "li_gg_hh", tmp_path, data, None, {}, ("double", "double-double")
+    )
+
+
+def test_a_refused_ward_leg_never_hides_another_legs_failure(
+    entries, monkeypatch, tmp_path
+):
+    """The review's reproduction: one Ward leg fails decisively (R / P =
+    1e-3 with a resolved reference in both carriers) and the other is
+    refused. Each leg keeps its own result, the refusal an unaccepted
+    inconclusive, aggregated with the failure first: the arms fail. With a
+    passing leg beside the refusal the arms stay inconclusive, visible to
+    the campaign (never "not run" or "partial")."""
+
+    from pyamplicol.loops.v2 import checks
+
+    entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
+
+    def judged(wards):
+        record = _after_tir_mp(_record("li_gg_hh"))
+        record["ward_probes"] = wards
+        return lm.judge(record, entry)["L4"]
+
+    def failing(leg, _carrier):
+        return (1e-3, 1.0, 1e-17, 1.0) if leg == 1 else "TIRust refused the lane"
+
+    def passing(leg, _carrier):
+        return (1e-12, 1.0, 1e-17, 1.0) if leg == 1 else "TIRust refused the lane"
+
+    with checks.tolerating(1e-5):
+        wards = _ward_arms(monkeypatch, tmp_path, failing)
+        row = wards["arms"]["ninjars/double"][0]
+        assert row["verdict"] == "fail" and row["refused_legs"] == ["2"]
+        l4 = judged(wards)
+        assert {l4[a]["status"] for a in wards["arms"]} == {"fail"}
+        assert l4["status"] == "fail"
+        wards = _ward_arms(monkeypatch, tmp_path, passing)
+        row = wards["arms"]["tirust/double"][0]
+        assert row["verdict"] == "inconclusive" and "accepted" not in row
+        l4 = judged(wards)
+        assert {l4[a]["status"] for a in wards["arms"]} == {"inconclusive"}
+        assert lm.unaccepted([l4["status"]])
