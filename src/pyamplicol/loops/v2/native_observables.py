@@ -894,6 +894,11 @@ class _Selection:
         self.masks = masks
         self.rename = rename
 
+    def leg_masses(self, point, scale, parameters, precision):
+        """``StoredColumns.leg_masses`` of the columns it reads."""
+
+        return self.columns.leg_masses(point, scale, parameters, precision)
+
     def evaluate(self, points, scales, **options):
         return self.columns.evaluate(
             points,
@@ -1863,6 +1868,15 @@ def _plan_class():
     return _StoredPlan
 
 
+def _caller_masses(member: Any, legs: Any) -> list[Any]:
+    """Representative-order squared masses on a member's caller legs."""
+
+    from fractions import Fraction
+
+    found = [None if m is None else Fraction(m) for m in legs]
+    return found if member is None else [found[leg] for leg in member.legs]
+
+
 class StoredColumns:
     """``observables.NativeObservables`` for a loaded process: one stored
     column set (every column dressed and reduced per batch: the set's plan
@@ -2058,6 +2072,41 @@ class StoredColumns:
         return found
 
     # -- evaluation ---------------------------------------------------------------
+
+    def leg_masses(self, point, scale, parameters, precision):
+        """The squared mass each caller leg of ``point`` binds in this column
+        set's own native executor at ``precision`` (``bound_masses``: the
+        tree program's binding, the masses its amplitude takes), at
+        ``parameters`` and ``scale`` (mu_R^2): the shell-consistency
+        screen's masses, read, never recomputed (no other executor built)."""
+
+        from .assemble import _fraction, _NativePoint, _Numbers
+        from .native_trees import batch_parameters
+        from .plan_export import NativeExecutor, _fraction_text
+
+        view = self.observables.slice
+        process = self.observables.process
+        member = self.member
+        representative = point if member is None else member.point(point)
+        scale = _fraction(scale)
+        values = view._point_parameters(dict(parameters or {}), scale, precision)
+        evaluation = _NativePoint(
+            view,
+            tuple(tuple(_fraction(x) for x in p) for p in representative),
+            scale,
+            values,
+            _Numbers(precision),
+        )
+        arithmetic, digits = NativeExecutor._arithmetic(precision, False)
+        inputs = {
+            "momenta": [[_fraction_text(x) for p in evaluation.incoming for x in p]],
+            "scales": [_fraction_text(evaluation.scale)],
+            "parameters": batch_parameters(process.trees, [evaluation]),
+        }
+        _plan, legs, _imaginary = self._executor(
+            arithmetic, digits, 1, False
+        ).bound_masses(inputs)
+        return _caller_masses(member, legs)
 
     def evaluate(
         self,

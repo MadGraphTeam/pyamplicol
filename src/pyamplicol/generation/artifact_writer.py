@@ -14,6 +14,7 @@ import time
 import zipfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
+from decimal import Decimal
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
@@ -1136,7 +1137,10 @@ def write_schema_v3_artifact(
                 compiled_model=compiled_model,
                 requested_bytes=requested_bytes,
                 effective_bytes=effective_bytes,
+                bound_parameters=_bound_parameters(loop_processes),
             )
+        else:
+            _require_stored_bound_parameters(output, _bound_parameters(loop_processes))
         retain_recurrence_templates = (
             RECURRENCE_DIRECT_ARENA_RUNTIME_CAPABILITY in required_runtime_capabilities
             or ON_THE_FLY_RUNTIME_CAPABILITY in required_runtime_capabilities
@@ -1418,13 +1422,60 @@ def _write_process_groups(
     return group_map
 
 
+def _bound_parameters(
+    processes: Sequence[LoopV2ProcessArtifact],
+) -> dict[str, str]:
+    """The external parameters the loop processes' amplitudes bind at fixed
+    values (``LoopV2ProcessArtifact.fixed_parameters``, exact decimal texts),
+    which every process of one artifact shares (one model, one preparation);
+    a parameter fixed to two values is refused."""
+
+    bound: dict[str, str] = {}
+    for process in processes:
+        for name, value in process.fixed_parameters.items():
+            found = bound.setdefault(name, value)
+            if Decimal(found) != Decimal(value):
+                raise ValueError(
+                    f"the loop processes of one artifact fix {name!r} to "
+                    f"{found} and {value}"
+                )
+    return bound
+
+
+def _require_stored_bound_parameters(output: Path, bound: Mapping[str, str]) -> None:
+    """An append to ``output`` binds the parameters its model parameter record
+    states (``model/parameters.json``, ``_write_global_payloads``): a value
+    fixed now (``bound``) that the record states otherwise is refused."""
+
+    if not bound:
+        return
+    record = json.loads((output / _MODEL_PARAMETERS_PATH).read_text(encoding="utf-8"))
+    stored = record.get("parameters", {})
+    for name, value in sorted(bound.items()):
+        if name in stored and float(stored[name][0]) != float(value):
+            raise ValueError(
+                f"cannot append: the processes bind {name} = {value}, the "
+                f"artifact's model parameters state {stored[name][0]} "
+                "(model/parameters.json); regenerate the artifact"
+            )
+
+
 def _write_global_payloads(
     builder: ArtifactBuilder,
     *,
     compiled_model: CompiledModel,
     requested_bytes: bytes,
     effective_bytes: bytes,
+    bound_parameters: Mapping[str, str] | None = None,
 ) -> None:
+    """The artifact's global payloads: the configurations, the compiled
+    model and the model parameter record (``model/parameters.json``): every
+    external parameter's value, the model's own (its restriction applied)
+    except where the amplitudes bind a fixed value (``bound_parameters``:
+    a loop artifact's ``[loop.preparation] fixed_parameters``, stable
+    external widths and the model preparation's constants), which it states
+    instead."""
+
     builder.add_bytes(
         _CONFIG_REQUESTED_PATH,
         requested_bytes,
@@ -1442,13 +1493,18 @@ def _write_global_payloads(
         compiled_model.to_dict(),
         role="compiled-model",
     )
+    bound = dict(bound_parameters or {})
     builder.add_json(
         _MODEL_PARAMETERS_PATH,
         {
             "schema_version": 1,
             "kind": "pyamplicol-model-parameter-defaults",
             "parameters": {
-                name: [float(value[0]), float(value[1])]
+                name: (
+                    [float(bound[name]), 0.0]
+                    if name in bound
+                    else [float(value[0]), float(value[1])]
+                )
                 for name, value in sorted(compiled_model.parameter_defaults.items())
             },
         },

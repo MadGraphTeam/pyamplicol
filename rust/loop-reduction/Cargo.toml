@@ -49,12 +49,14 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The runtime-options TOML reader (`runtime_options`); the lock's toml (symjit's).
 toml = "1.1"
-# A commit of TIRust's main line (after its one history rewrite;
-# 1c130a81 = main a8dba684 (2b9ba961, the Symbolica community
+# TIRust feature/parallel-engines 780410ce (pull request #63: optional
+# lane-independent direct workspaces, `DirectWorkspace::set_lane_independent`,
+# and stored-entry counts of the tensor store) on main 1c130a81 (after its one
+# history rewrite; 1c130a81 = main a8dba684 (2b9ba961, the Symbolica community
 # d0424f9e / oneloopmaster 07fc754f re-pin, + PRs #41 and #42) + PR #43 (MPFR
 # rounded at the working precision in the direct engine's kernels, issue #40));
 # its oneloop revision and feature set are this manifest's,
 # its Symbolica requirement ("3.0") resolves to the root [patch.crates-io]
 # revision. Its own manifests' gammaloop crates are not in this graph.
-iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "1c130a81c4d1145ad5368664b580070eab9ebd7c", optional = true }
-iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "1c130a81c4d1145ad5368664b580070eab9ebd7c", optional = true }
+iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "780410ce7fb62e3362ef7311e220ebbcbee7f283", optional = true }
+iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "780410ce7fb62e3362ef7311e220ebbcbee7f283", optional = true }
