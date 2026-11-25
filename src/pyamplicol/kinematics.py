@@ -448,7 +448,13 @@ def shell_check(
         groups.setdefault(str(scale), []).append(index)
     for indices in groups.values():
         first = indices[0]
-        bound = masses(precision, points[first], scales[first], len(points))
+        try:
+            bound = masses(precision, points[first], scales[first], len(points))
+        except Exception:  # a diagnostic never raises
+            # A binding the evaluation itself cannot form at this scale (e.g.
+            # a counterterm coupling outside its domain): its points are not
+            # measured (the evaluation decides them, typically failing them).
+            bound = [None] * len(points[first])
         for index in indices:
             masses2[index] = bound
     carrier = (
