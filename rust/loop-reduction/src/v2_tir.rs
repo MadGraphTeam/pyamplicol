@@ -209,8 +209,12 @@
 //! next calls ([`lane_slices::EnginePool`]).
 //! Every pass of a row (direct, rotation copy, check frame, method choice,
 //! last resort, acceptance frame) stays in its slice, then the lanes are
-//! contracted per slice. A row's moments are a pure function of the row
-//! (T6: no dependence on the rows it is batched with), so every value,
+//! contracted per slice. Every workspace is lane-independent
+//! (`DirectWorkspace::set_lane_independent`, at every thread count): each
+//! lane starts from the plan's base variant, not from the variant the lane
+//! before it selected; a row's moments are then a pure function of the row
+//! (T6: no dependence on the rows it is batched with, the calls before it,
+//! the workspace or the thread), so every value,
 //! reason, measure and count is that of the one-thread call: outcomes and
 //! measures are concatenated in slice order (row order), counts summed;
 //! the stages' seconds are their wall time. The capability query of every
@@ -669,9 +673,11 @@ impl Bin {
     }
 }
 
-/// A new workspace of `plan` at the precision of `prototype` (TIRust's
-/// capability query of the plan at that precision first), with the options'
-/// profiling and the backend's `store`.
+/// A new lane-independent workspace of `plan` at the precision of
+/// `prototype` (TIRust's capability query of the plan at that precision
+/// first), with the options' profiling and the backend's `store`. Lane
+/// independence holds on one thread too, so that one thread and many reduce
+/// every row from the same start.
 fn new_workspace<T: TirCarrier>(
     plan: &DirectReductionPlan,
     options: &TirOptions,
@@ -685,6 +691,7 @@ where
     let mut workspace = plan
         .workspace(prototype.clone())
         .map_err(|e| RusticolError::unsupported_runtime_capability("tirust", e.to_string()))?;
+    workspace.set_lane_independent(true);
     if options.profile {
         workspace.set_profiling(true);
     }
