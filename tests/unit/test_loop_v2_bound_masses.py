@@ -1103,3 +1103,35 @@ def test_a_huge_component_is_reported_without_raising(uux_ttx):
     point[0] = [1e155, 0.0, 0.0, 0.0]
     result = runtime.evaluate([point], mu_r2=scale, on_failure="return")
     assert len(result.diagnostics) == 1
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("spelling", (float, repr), ids=("float", "text"))
+@pytest.mark.parametrize("route", ("summed", "selected", "resolved"))
+def test_a_grossly_off_shell_point_never_establishes_accuracy(uux_ttx, spelling, route):
+    """The reviewer's 3.9 % point under a one-level policy at target 1e-3
+    (summed and selected helicities) and in the resolved outputs, float and
+    text spellings: served, marked, accuracy never established."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+    from pyamplicol.kinematics import is_shell_reason
+
+    runtime = Runtime.load(uux_ttx)
+    point, scale = _reviewer_point(uux_ttx, float)
+    point = [[spelling(float(x)) for x in leg] for leg in point]
+    policy = VirtualRescuePolicy((VirtualRescueLevel("double", target=1e-3),))
+    if route == "resolved":
+        result = runtime.evaluate_resolved([point], mu_r2=scale)
+    else:
+        result = runtime.evaluate(
+            [point],
+            mu_r2=scale,
+            stability=policy,
+            helicities=runtime.physics.helicity_ids[:1]
+            if route == "selected"
+            else None,
+        )
+    (lane,) = result.diagnostics
+    assert lane.has_value and not lane.accuracy_established
+    assert any(is_shell_reason(reason) for reason in lane.uncertified)

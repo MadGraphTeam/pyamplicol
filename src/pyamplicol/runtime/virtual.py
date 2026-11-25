@@ -1498,10 +1498,15 @@ class V2ObservablesRuntime:
                 for item in policy.levels
             }
 
+        # Every level from the caller's own representation (a float stays a
+        # binary64 for the shell screen's input roundoff, ``kinematics.
+        # input_roundoff``; the values are those of ``points``).
+        supplied = list(momenta)
+
         def level(indices: tuple[int, ...], rung: Any) -> VirtualEvaluation:
             chosen = None if reductions is None else reductions[rung]
             return self.evaluate(
-                [points[i] for i in indices],
+                [supplied[i] for i in indices],
                 mu_r2=[scales[i] for i in indices],
                 arithmetic=rung.arithmetic,
                 precision=rung.precision,
