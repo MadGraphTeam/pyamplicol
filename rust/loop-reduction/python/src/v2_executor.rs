@@ -669,6 +669,11 @@ struct Evaluation {
     dipoles: Option<Vec<Values>>,
     families: Vec<Lanes>,
     check: Option<Vec<Lanes>>,
+    /// Per point and numerator column that has lanes, `(column, lanes,
+    /// sums)`: the column's lane integrals summed per Laurent coefficient in
+    /// lane order (`families`' order, from zero), the sums the Python
+    /// assembly forms from `families` (`lane_sums`).
+    lane_sums: Vec<Vec<(usize, usize, Values)>>,
     bare: Vec<Vec<Values>>,
     budget: Vec<Option<Vec<Reals>>>,
     /// Amplitude-mode plans (loop-induced): per point and (loop order,
@@ -741,6 +746,36 @@ fn real_values<T: Exchanged + Real>(values: &[T], zero: &T, bits: u32) -> Values
     )
 }
 
+/// Per numerator column that has lanes, `(column, lanes, sums)`: the
+/// column's lane integrals summed per Laurent coefficient in the lanes'
+/// order, each sum starting from zero, so that the sums are exactly those of
+/// adding the exported lanes one after another (`Evaluation::lane_sums`);
+/// columns in ascending order. A lane whose coefficient count differs from
+/// its column's first lane adds its common coefficients only.
+fn lane_sums<T: Exchanged + Real>(
+    lanes: &[(rusticol_core::loop_execution::v2::LaneKey, Vec<Complex<T>>)],
+    bits: u32,
+) -> Vec<(usize, usize, Values)> {
+    let mut columns: BTreeMap<usize, (usize, Vec<Complex<T>>)> = BTreeMap::new();
+    for (key, value) in lanes {
+        let (count, sums) = columns.entry(key.column).or_insert_with(|| {
+            let sums = value
+                .iter()
+                .map(|z| Complex::new(z.re.zero(), z.re.zero()))
+                .collect();
+            (0, sums)
+        });
+        *count += 1;
+        for (s, z) in sums.iter_mut().zip(value) {
+            *s += z;
+        }
+    }
+    columns
+        .into_iter()
+        .map(|(column, (count, sums))| (column, count, T::export(&sums, bits)))
+        .collect()
+}
+
 fn export_evaluation<T: Exchanged + Real>(
     results: Vec<PointResult<T>>,
     report: Report,
@@ -803,6 +838,10 @@ fn export_evaluation<T: Exchanged + Real>(
         columns,
         dipoles: None,
         families: results.iter().map(|r| lanes(&r.families)).collect(),
+        lane_sums: results
+            .iter()
+            .map(|r| lane_sums(&r.families, bits))
+            .collect(),
         check: checked.then(|| {
             results
                 .iter()
@@ -1170,12 +1209,14 @@ where
                 "selection masks need the executor's tree program (native inputs)",
             ));
         }
-        let (results, report) = py
-            .detach(|| executor.evaluate(&batch, &zero, backend, options))
-            .map_err(error)?;
-        return Ok(export_evaluation(
-            results, report, bits, None, None, None, None,
-        ));
+        return py.detach(|| {
+            let (results, report) = executor
+                .evaluate(&batch, &zero, backend, options)
+                .map_err(error)?;
+            Ok(export_evaluation(
+                results, report, bits, None, None, None, None,
+            ))
+        });
     }
     let trees = trees.ok_or_else(|| error("the executor has no tree program"))?;
     // The counterterm pole outputs are formed unless finite-only (the
@@ -1263,15 +1304,18 @@ where
             born: Vec::new(),
         };
         let started = std::time::Instant::now();
-        let native = trees.fill_part(
-            executor,
-            &filling,
-            range,
-            &mut sub,
-            poles,
-            bounds.fill_points,
-            &zero,
-        )?;
+        let fill_points = bounds.fill_points;
+        let native = py.detach(|| {
+            trees.fill_part(
+                executor,
+                &filling,
+                range,
+                &mut sub,
+                poles,
+                fill_points,
+                &zero,
+            )
+        })?;
         tree_seconds += started.elapsed().as_secs_f64();
         for (stage, seconds) in &native.seconds {
             match tree_parts.iter_mut().find(|(name, _)| name == stage) {
@@ -1361,15 +1405,17 @@ where
             kept.restrict(result);
         }
     }
-    let mut evaluation = export_evaluation(
-        results,
-        report,
-        bits,
-        born,
-        loop_born,
-        counterterms,
-        columns,
-    );
+    let mut evaluation = py.detach(|| {
+        export_evaluation(
+            results,
+            report,
+            bits,
+            born,
+            loop_born,
+            counterterms,
+            columns,
+        )
+    });
     evaluation.dipoles = correlations;
     evaluation.counterterm_kets = kets;
     evaluation.amplitude_rows = kept.map(|kept| kept.rows);

@@ -3939,8 +3939,102 @@ def require_tracked_precision(reducer: Any, direct: Sequence[Any]) -> None:
         raise ArithmeticError(refusal)
 
 
+class _Formed:
+    """A value formed on first call and kept (``_LaneAttribute``)."""
+
+    __slots__ = ("_make", "_value")
+
+    def __init__(self, make: Callable[[], Any]):
+        self._make = make
+        self._value: Any = None
+
+    def __call__(self) -> Any:
+        if self._make is not None:
+            self._value = self._make()
+            self._make = None
+        return self._value
+
+
+class _LaneAttribute:
+    """A point's reduced lanes (``families``, ``retest_families``): a plain
+    attribute, which a native binary64 evaluation may set as a pending
+    ``_Formed`` (``set_native_lanes``) that forms the same dict on its first
+    read, so that a call whose assembly needs only the lanes' sums never
+    builds one Python object per lane."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.pending = f"_pending_{name}"
+
+    def __get__(self, owner: Any, kind: Any = None) -> Any:
+        if owner is None:
+            return self
+        found = owner.__dict__
+        if self.name in found:
+            return found[self.name]
+        pending = found.pop(self.pending, None)
+        if pending is None:
+            raise AttributeError(self.name)
+        value = found[self.name] = pending()
+        return value
+
+    def __set__(self, owner: Any, value: Any) -> None:
+        found = owner.__dict__
+        found.pop(self.pending, None)
+        if self.name == "families":
+            # The executor's sums are those of the pending lanes only.
+            found.pop("native_lane_sums", None)
+        found[self.name] = value
+
+
+class LazyLanes(Mapping):
+    """A copy of a point's pending lanes (``PointResult.families`` of a
+    native binary64 evaluation, ``set_native_lanes``), formed on first use:
+    the same keys, values and order as the copy of the formed dict."""
+
+    __slots__ = ("_formed", "_lanes")
+
+    def __init__(self, formed: _Formed):
+        self._formed = formed
+        self._lanes: dict | None = None
+
+    def _get(self) -> dict:
+        if self._lanes is None:
+            self._lanes = dict(self._formed())
+            self._formed = None
+        return self._lanes
+
+    def __getitem__(self, key: Any) -> Any:
+        return self._get()[key]
+
+    def __iter__(self):
+        return iter(self._get())
+
+    def __len__(self) -> int:
+        return len(self._get())
+
+    def __contains__(self, key: object) -> bool:
+        return key in self._get()
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LazyLanes):
+            other = other._get()
+        return self._get() == other
+
+    __hash__ = None  # type: ignore[assignment]
+
+    def __repr__(self) -> str:
+        return repr(self._get())
+
+    def copy(self) -> dict:
+        return dict(self._get())
+
+
 class _PointEvaluation:
     """All per-point work of ``LoopSlice.evaluate`` in one carrier."""
+
+    families = _LaneAttribute("families")
+    retest_families = _LaneAttribute("retest_families")
 
     def __init__(
         self,
@@ -4725,6 +4819,65 @@ class _PointEvaluation:
             else {lane: laurent(values) for lane, values in check.items()}
         )
 
+    def set_native_lanes(
+        self,
+        direct: Callable[[], Mapping],
+        check: Callable[[], Mapping] | None,
+        sums: Mapping[Orders, list[Any]] | None,
+    ) -> None:
+        """``set_lanes`` of a native binary64 point in the "all" or "none"
+        pole mode without a scaleless companion, formed on first read:
+        ``direct`` and ``check`` return the lanes ``set_lanes`` takes.
+        ``sums`` are, per sector with lanes, the executor's sums of its
+        lanes per Laurent coefficient in lane order from zero
+        (``V2Executor.evaluate``'s ``lane_sums``): exactly the sums
+        ``_bare`` forms from ``families``, which it then reads instead."""
+
+        if splits(self.mode):
+            raise ValueError("pending lanes are for the 'all' and 'none' pole modes")
+
+        def laurents(read: Callable[[], Mapping]) -> Callable[[], dict]:
+            return lambda: {lane: Laurent(*values) for lane, values in read().items()}
+
+        self.split_lanes = None
+        found = self.__dict__
+        found.pop("families", None)
+        found["_pending_families"] = _Formed(laurents(direct))
+        found.pop("retest_families", None)
+        found.pop("_pending_retest_families", None)
+        if check is None:
+            found["retest_families"] = None
+        else:
+            found["_pending_retest_families"] = _Formed(laurents(check))
+        found["native_lane_sums"] = sums
+
+    def _lanes_source(self) -> Any:
+        """``families`` as formed, or its pending former (``_Formed``)."""
+
+        found = self.__dict__
+        if "families" in found:
+            return found["families"]
+        return found.get("_pending_families") or self.families
+
+    def _lanes_copy(self) -> Mapping:
+        """``dict(self.families)``, or the copy formed on first use while
+        the lanes are pending (``LazyLanes``)."""
+
+        source = self._lanes_source()
+        return LazyLanes(source) if isinstance(source, _Formed) else dict(source)
+
+    def _lane_coefficients(self) -> Callable[[], dict]:
+        """The ``_absolute_from`` lanes, {lane: coefficients}, formed when
+        the absolute budget is first read."""
+
+        source = self._lanes_source()
+
+        def coefficients() -> dict:
+            lanes = source() if isinstance(source, _Formed) else source
+            return {lane: value.coefficients for lane, value in lanes.items()}
+
+        return coefficients
+
     # -- assembly --------------------------------------------------------------------
 
     def _bare(self, families) -> dict[Orders, Laurent]:
@@ -4738,6 +4891,23 @@ class _PointEvaluation:
             terms = out.setdefault(sector, [numbers.zero] * len(value.coefficients))
             for k, coefficient in enumerate(value.coefficients):
                 terms[k] = terms[k] + coefficient
+        return self._bare_of(out, factor)
+
+    def _own_bare(self) -> dict[Orders, Laurent]:
+        """``_bare(self.families)``; from the executor's lane sums while the
+        lanes are pending (``set_native_lanes``: the same sums)."""
+
+        sums = self.__dict__.get("native_lane_sums")
+        if sums is None:
+            return self._bare(self.families)
+        numbers = self.numbers
+        factor = numbers.pair(0, 1) * (
+            1 / (LOOP_FACTOR_DENOMINATOR * numbers.pi * numbers.pi * self.average)
+        )
+        return self._bare_of(sums, factor)
+
+    @staticmethod
+    def _bare_of(out: Mapping[Orders, list[Any]], factor: Any) -> dict[Orders, Laurent]:
         return {
             sector: Laurent(*[2 * (factor * value).real for value in terms])
             for sector, terms in out.items()
@@ -4752,7 +4922,7 @@ class _PointEvaluation:
         zero = numbers.real(0)
         split = self.split_lanes
         if split is None:
-            bare = self._bare(self.families)
+            bare = self._own_bare()
             origins = None
         else:
             # The combined Laurent of every lane, and its UV part (``poles``).
@@ -4827,7 +4997,7 @@ class _PointEvaluation:
             dict(self.born),
             components,
             tuple(totals),
-            dict(self.families),
+            self._lanes_copy(),
             ir_poles,
             colour_contraction=self.colour_contraction,
             poles=self.mode,
@@ -4835,7 +5005,7 @@ class _PointEvaluation:
             loop_born=self.loop_born,
         )
         self._absolute_from(
-            {lane: value.coefficients for lane, value in self.families.items()},
+            self._lane_coefficients(),
             [components[name] for name in LOCAL_COMPONENTS],
         )
         self.retest_budget = None
@@ -4865,6 +5035,9 @@ class _PointEvaluation:
         pending = self.__dict__.pop("_absolute_pending", None)
         if pending is not None:
             lanes, local, context = pending
+            if callable(lanes):
+                # The lanes' coefficients, formed now (``_lane_coefficients``).
+                lanes = lanes()
             # In the Decimal context of the assembly that set it.
             with localcontext(context):
                 self.__dict__["_absolute"] = self._lane_budget(lanes, local)
@@ -5551,7 +5724,7 @@ class _NativePoint(_PointEvaluation):
         slice_, numbers = self.slice, self.numbers
         width = 3 if self.poles else 1
         zero = numbers.real(0)
-        bare = self._bare(self.families)
+        bare = self._own_bare()
         components = {
             "bare": {
                 sector: bare.get(sector, Laurent(*[zero] * width))
@@ -5573,14 +5746,12 @@ class _NativePoint(_PointEvaluation):
             dict(self.born),
             components,
             tuple(totals),
-            dict(self.families),
+            self._lanes_copy(),
             None,
             colour_contraction=self.colour_contraction,
             loop_born=self.loop_born,
         )
-        self._absolute_from(
-            {lane: value.coefficients for lane, value in self.families.items()}
-        )
+        self._absolute_from(self._lane_coefficients())
         self.retest_budget = None
         self.family_deviations = None
         if self.retest_families is not None:
