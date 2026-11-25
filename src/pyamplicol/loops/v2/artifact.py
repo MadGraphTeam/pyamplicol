@@ -2094,11 +2094,14 @@ class V2VirtualRuntime:
         scales: list[str],
         precision: Any,
         choice: VirtualReduction,
+        parameters: Mapping[str, str] | None = None,
     ) -> Any:
         """The shell-consistency screen (``kinematics.shell_check``) of one
         carrier's points (``points``, the caller's legs after the
         improvement; ``momenta`` as supplied) at the call's point target, or
         None in the unchecked mode (which measures nothing)."""
+
+        from functools import partial
 
         from pyamplicol.kinematics import input_roundoff, shell_check
 
@@ -2111,7 +2114,7 @@ class V2VirtualRuntime:
             points,
             scales,
             precision,
-            self._shell_masses,
+            partial(self._shell_masses, parameters=parameters),
             float(target),
             input_roundoff(momenta),
         )
@@ -2246,8 +2249,11 @@ class V2VirtualRuntime:
         n_initial = initial_count(self._executor.slice.blocks.process.legs)
         out: list[Any] = list(points)
         records: list[Any] = [None] * len(points)
+        # One parameter snapshot for the call.
+        with self._lock:
+            parameters = dict(self._parameters)
         for index, (point, scale) in enumerate(zip(points, scales, strict=True)):
-            masses = self._kinematics_masses(setting, point, scale, 1)
+            masses = self._kinematics_masses(setting, point, scale, 1, parameters)
             digits = setting.working_digits if carrier == "arbitrary" else None
             (improved,), (record,) = improve(
                 [point], n_initial, masses, carrier, digits, chosen, fallback=fallback
@@ -2256,16 +2262,21 @@ class V2VirtualRuntime:
             records[index] = VirtualKinematics.from_record(record)
         return out, records
 
-    def _improver(self, settings: Any) -> Any:
+    def _improver(
+        self, settings: Any, parameters: Mapping[str, str] | None = None
+    ) -> Any:
         """A call's level-by-level improvement (``kinematics.LevelImprover``)
-        of its caller-order points."""
+        of its caller-order points, at the call's parameter snapshot
+        (``parameters``; None: the runtime's current ones)."""
+
+        from functools import partial
 
         from pyamplicol.kinematics import LevelImprover, initial_count
 
         return LevelImprover(
             settings,
             initial_count(self._executor.slice.blocks.process.legs),
-            self._kinematics_masses,
+            partial(self._kinematics_masses, parameters=parameters),
         )
 
     def _executor_for(self, poles: PoleSelection) -> Any:
@@ -2647,6 +2658,12 @@ class V2VirtualRuntime:
         kinematics = self._kinematics(
             kinematics_improvement, kinematics_improvement_binary64
         )
+        # ONE immutable parameter snapshot for the whole call, taken at its
+        # entry: every route (the selected one passes it down) and every
+        # rescue level, the improvement, the screen and the evaluation take
+        # it (a concurrent set_model_parameters acts on later calls only).
+        with self._lock:
+            entry_parameters = dict(self._parameters)
 
         policy = rescue_policy(
             stability,
@@ -2702,6 +2719,7 @@ class V2VirtualRuntime:
                     reductions=choices,
                     kinematics_improvement=kinematics.setting,
                     kinematics_improvement_binary64=kinematics.binary64,
+                    _parameters=entry_parameters,
                     **carrier_options,
                 ),
             )
@@ -2728,7 +2746,7 @@ class V2VirtualRuntime:
         # improves them (m-lit lit-psimprove) before the member's map to the
         # representative's legs.
         caller, scales = _inputs(momenta, mu_r2, self.external_count)
-        improver = self._improver(kinematics)
+        improver = self._improver(kinematics, entry_parameters)
 
         def mapped(points: list[Any]) -> list[Any]:
             if self._member is None:
@@ -2736,13 +2754,15 @@ class V2VirtualRuntime:
             return [self._member.point(point) for point in points]
 
         with self._lock:
-            parameters = dict(self._parameters)
+            parameters = entry_parameters
             if policy is None:
                 points, records = improver.level(caller, scales, setting)
                 # The shell-consistency screen on the points this carrier
                 # evaluates (``kinematics``), in the caller's legs.
                 choice = choices[cast(str, carrier)]
-                shell = self._shell(momenta, points, scales, setting, choice)
+                shell = self._shell(
+                    momenta, points, scales, setting, choice, parameters
+                )
                 return with_kinematics(
                     self._evaluate_level(
                         mapped(points),
@@ -2776,6 +2796,7 @@ class V2VirtualRuntime:
                     level_scales,
                     setting,
                     choices[rung],
+                    parameters,
                 )
                 return with_kinematics(
                     self._evaluate_level(

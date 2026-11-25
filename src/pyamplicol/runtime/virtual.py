@@ -1501,6 +1501,8 @@ class V2ObservablesRuntime:
                 stability_checks=options.pop("stability_checks", None),
             ),
         )
+        # The entry's parameter snapshot (``_snapshot``), if passed down.
+        given = options.pop("_parameters", None)
         v2_options(on_failure=on_failure, **options)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
         if reductions is None and any(
@@ -1534,8 +1536,11 @@ class V2ObservablesRuntime:
 
         # Every level from the caller's own representation (a float stays a
         # binary64 for the shell screen's input roundoff, ``kinematics.
-        # input_roundoff``; the values are those of ``points``).
+        # input_roundoff``; the values are those of ``points``), and on ONE
+        # parameter snapshot taken at the policy's entry (every rung, every
+        # route: a concurrent set_model_parameters acts on later calls only).
         supplied = list(momenta)
+        snapshot = self._snapshot(given)
 
         def level(indices: tuple[int, ...], rung: Any) -> VirtualEvaluation:
             chosen = None if reductions is None else reductions[rung]
@@ -1559,10 +1564,22 @@ class V2ObservablesRuntime:
                 reductions=None if chosen is None else {rung.arithmetic: chosen},
                 kinematics_improvement=kinematics_improvement,
                 kinematics_improvement_binary64=kinematics_improvement_binary64,
+                _parameters=snapshot,
                 **options,
             )
 
         return rescue(policy, len(points), level, on_failure=on_failure)
+
+    def _snapshot(self, given: Mapping[str, str] | None = None) -> dict[str, str]:
+        """The call's one immutable parameter snapshot: the one taken at the
+        public entry (``given``: an artifact runtime's, or a rescue
+        policy's, passed down as the private option ``_parameters`` to every
+        level), else the runtime's current parameters."""
+
+        if given is not None:
+            return dict(given)
+        with self._lock:
+            return dict(self._parameters)
 
     def _refuse_member_selection(self) -> None:
         member = self._member
@@ -1654,6 +1671,8 @@ class V2ObservablesRuntime:
 
         from pyamplicol.loops.v2 import selection as lc
 
+        # The entry's parameter snapshot (``_snapshot``), if passed down.
+        given = options.pop("_parameters", None)
         poles, checks = v2_options(on_failure=on_failure, **options)
         observables = self._observables
         self._require_selection(helicities, color_flows)
@@ -1662,10 +1681,10 @@ class V2ObservablesRuntime:
         column = lc.column(rows, basis)
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
-        # One immutable parameter snapshot for the call: the improvement,
-        # the screen and the evaluation all take it.
-        with self._lock:
-            parameters = dict(self._parameters)
+        # One immutable parameter snapshot for the call (the entry's, passed
+        # down, else taken here): the improvement, the screen and the
+        # evaluation all take it.
+        parameters = self._snapshot(given)
         points, kinematics = self._improve(
             points,
             scales,
@@ -1761,13 +1780,15 @@ class V2ObservablesRuntime:
         their seed columns (one dressing per point and source assignment; one
         native batch per source assignment, ``_correlated_batches``)."""
 
+        # The entry's parameter snapshot (``_snapshot``), if passed down.
+        given = options.pop("_parameters", None)
         selection, checks = v2_options(on_failure=on_failure, **options)
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
-        # One immutable parameter snapshot for the call: the improvement,
-        # the screen and the evaluation all take it.
-        with self._lock:
-            parameters = dict(self._parameters)
+        # One immutable parameter snapshot for the call (the entry's, passed
+        # down, else taken here): the improvement, the screen and the
+        # evaluation all take it.
+        parameters = self._snapshot(given)
         points, kinematics = self._improve(
             points,
             scales,
@@ -1937,16 +1958,18 @@ class V2ObservablesRuntime:
         ``color_resolution`` is a loop-induced process's colour axis
         (``V2InducedObservablesRuntime``)."""
 
+        # The entry's parameter snapshot (``_snapshot``), if passed down.
+        given = options.pop("_parameters", None)
         selection, checks = v2_options(on_failure=on_failure, **options)
         with_poles = computes_poles(selection)
         split = splits_poles(selection)
         observables = self._observables
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
-        # One immutable parameter snapshot for the call: the improvement,
-        # the screen and the evaluation all take it.
-        with self._lock:
-            parameters = dict(self._parameters)
+        # One immutable parameter snapshot for the call (the entry's, passed
+        # down, else taken here): the improvement, the screen and the
+        # evaluation all take it.
+        parameters = self._snapshot(given)
         points, kinematics = self._improve(
             points,
             scales,

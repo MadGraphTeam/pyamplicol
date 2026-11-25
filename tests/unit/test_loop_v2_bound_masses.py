@@ -1265,7 +1265,7 @@ def test_an_arbitrary_precision_point_is_screened_at_its_working_roundoff(
     (u = 0 marked it at 25,200 allowances), so it is not marked."""
 
     from pyamplicol.api import Runtime
-    from pyamplicol.kinematics import carrier_roundoff, is_shell_reason
+    from pyamplicol.kinematics import is_shell_reason
     from pyamplicol.loops.v2.assemble import Precision
 
     energy = "5385164807134504031.250710491540332335133"
@@ -1289,4 +1289,119 @@ def test_an_arbitrary_precision_point_is_screened_at_its_working_roundoff(
     assert not any(is_shell_reason(r) for r in lane.uncertified)
     # Exponent-safe: a 500-digit carrier's roundoff is far below the float
     # range and still nonzero.
+    from pyamplicol.kinematics import carrier_roundoff
+
     assert carrier_roundoff(Precision.arbitrary(500)) > 0
+
+
+@pytest.mark.loop_physics
+def test_one_parameter_snapshot_for_every_rescue_level(uux_ttx_free, monkeypatch):
+    """The review of 80403dc7c: selected helicities (all of them) under a
+    two-level policy (binary64 at 1e-25, double-double at 1e-3), the
+    improvement off, an MT = 160 point on a runtime at 173, and
+    set_model_parameters(MT = 160) after the first screen. Every level
+    evaluates on the entry's snapshot (173): the values are the control's,
+    the shell is flagged and accuracy is not established."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+    from pyamplicol.cli.flat_points import FlatBinding, draw_flat_points
+    from pyamplicol.kinematics import is_shell_reason
+    from pyamplicol.runtime.virtual import V2ObservablesRuntime
+
+    flat = draw_flat_points(
+        uux_ttx_free,
+        process=None,
+        points=1,
+        seed=7,
+        sqrt_s=None,
+        binding=FlatBinding("p", (0.0, 0.0, 160.0, 160.0)),
+    )
+    point = [list(leg) for leg in flat.points[0]]
+    policy = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=1e-25),
+            VirtualRescueLevel("double-double", target=1e-3),
+        )
+    )
+
+    def call(runtime):
+        return runtime.evaluate(
+            [point],
+            mu_r2=flat.mu_r2(),
+            helicities=runtime.physics.helicity_ids,
+            stability=policy,
+            kinematics_improvement="off",
+        )
+
+    control = call(Runtime.load(uux_ttx_free))
+    runtime = Runtime.load(uux_ttx_free)
+    original = V2ObservablesRuntime._shell
+    fired = []
+
+    def interleaved(self, *args, **kwargs):
+        found = original(self, *args, **kwargs)
+        if not fired:
+            fired.append(True)
+            runtime.set_model_parameters({"MT": "160"})
+        return found
+
+    monkeypatch.setattr(V2ObservablesRuntime, "_shell", interleaved)
+    result = call(runtime)
+    assert fired and len(result.rescue[0].attempts) == 2
+    assert result.values == control.values
+    (lane,) = result.diagnostics
+    assert not lane.accuracy_established
+    assert any(is_shell_reason(r) for r in lane.uncertified)
+
+
+@pytest.mark.loop_physics
+def test_one_parameter_snapshot_for_a_rescued_batch(uux_ttx_free, monkeypatch):
+    """The review of 80403dc7c: two seed-7 top-pair points with every
+    helicity selected, TIRust in binary64 at 2.17e-14 then in double-double
+    at 1e-3, and aS set to 0.15 after the first screen. The point that
+    retries and the point that does not are both evaluated at the entry's
+    aS: the batch equals its control point by point."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+    from pyamplicol.cli.flat_points import draw_flat_points
+    from pyamplicol.runtime.virtual import V2ObservablesRuntime
+
+    flat = draw_flat_points(uux_ttx_free, process=None, points=2, seed=7, sqrt_s=None)
+    points = [[list(leg) for leg in point] for point in flat.points]
+    policy = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=2.17e-14, reduction="tirust"),
+            VirtualRescueLevel("double-double", target=1e-3, reduction="tirust"),
+        )
+    )
+
+    def call(runtime):
+        return runtime.evaluate(
+            points,
+            mu_r2=flat.mu_r2(),
+            helicities=runtime.physics.helicity_ids,
+            stability=policy,
+        )
+
+    control = call(Runtime.load(uux_ttx_free))
+    runtime = Runtime.load(uux_ttx_free)
+    original = V2ObservablesRuntime._shell
+    fired = []
+
+    def interleaved(self, *args, **kwargs):
+        found = original(self, *args, **kwargs)
+        if not fired:
+            fired.append(True)
+            runtime.set_model_parameters({"aS": "0.15"})
+        return found
+
+    monkeypatch.setattr(V2ObservablesRuntime, "_shell", interleaved)
+    result = call(runtime)
+    assert fired
+    assert sorted(outcome.level for outcome in result.rescue) == [0, 1]
+    assert result.values == control.values
+    assert [lane.accuracy_established for lane in result.diagnostics] == [
+        lane.accuracy_established for lane in control.diagnostics
+    ]
