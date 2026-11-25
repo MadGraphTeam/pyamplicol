@@ -54,6 +54,7 @@ import math
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from decimal import Decimal
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Any
@@ -2773,19 +2774,78 @@ def _point_scale(point: Sequence[Sequence[str]], initial: int) -> Fraction:
 
 
 def g_norm(vector: Sequence[Any], gram: Sequence[Sequence[Any]], numbers: Any) -> Any:
-    """||x||_G = sqrt(x^dag G x) (G positive semidefinite)."""
+    """||x||_G = sqrt(x^dag G x) (G positive semidefinite), stable against a
+    cancelled contraction: in a redundant colour basis the form can cancel
+    far below its terms (G = [[9, 3], [3, 1]] and x = (1, -2.999999997): the
+    norm is |3 x_1 + x_2| = 3e-9 while the terms are of order 9). Where the
+    carrier's form is not above n^2 u times the sum of its terms'
+    magnitudes (the summation's own rounding bound, n the basis size, u the
+    carrier's unit roundoff; or not a positive finite number), the form is
+    recomputed exactly from the carrier values as rationals and its root
+    taken at the carrier's precision: a cancelled norm is never returned as
+    zero. A form below zero by the metric's own rounding returns the root of
+    its magnitude (its size), never a clipped zero. A value that is not a
+    finite number gives a NaN norm (the row cannot be computed)."""
 
     zero = numbers.zero
     total = zero
+    size = 0.0
     for t, x in enumerate(vector):
         inner = zero
         for u, y in enumerate(vector):
             inner = inner + gram[t][u] * y
+            size += _term_size(x, gram[t][u], y)
         total = total + x.conjugate() * inner
     value = total.real
-    if value <= 0:
-        return numbers.real(0)
-    return value.sqrt() if hasattr(value, "sqrt") else value**0.5
+    resolved = len(vector) ** 2 * numbers.precision.unit_roundoff * size
+    if value == value and value > resolved and size < math.inf:
+        return value.sqrt() if hasattr(value, "sqrt") else value**0.5
+    exact = _exact_form(vector, gram)
+    if exact is None:
+        return numbers.real(math.nan) if numbers.double else Decimal("NaN")
+    magnitude_ = abs(exact)
+    if numbers.double:
+        return math.sqrt(float(magnitude_))
+    with numbers.scope():
+        return (Decimal(magnitude_.numerator) / Decimal(magnitude_.denominator)).sqrt()
+
+
+def _term_size(x: Any, g: Any, y: Any) -> float:
+    """|x| |g| |y| in binary64 (inf where it overflows or cannot be formed)."""
+
+    try:
+        return abs(complex(x)) * abs(complex(g)) * abs(complex(y))
+    except (ArithmeticError, TypeError, ValueError):
+        return math.inf
+
+
+def _exact_pair(value: Any) -> tuple[Fraction, Fraction]:
+    """(Re, Im) of a carrier value as exact rationals (raises for a value
+    that is not a finite number)."""
+
+    if isinstance(value, (complex, float, int)):
+        value = complex(value)
+    return Fraction(value.real), Fraction(value.imag)
+
+
+def _exact_form(
+    vector: Sequence[Any], gram: Sequence[Sequence[Any]]
+) -> Fraction | None:
+    """Re(x^dag G x) exactly from the carrier values (None where one is not a
+    finite number)."""
+
+    try:
+        xs = [_exact_pair(x) for x in vector]
+        total = Fraction(0)
+        for t, (ar, ai) in enumerate(xs):
+            for u, (br, bi) in enumerate(xs):
+                gr, gi = _exact_pair(gram[t][u])
+                # Re(conj(a) g b) = Re((ar - i ai)(gr + i gi)(br + i bi)).
+                pr, pi = ar * gr + ai * gi, ar * gi - ai * gr
+                total += pr * br - pi * bi
+    except (ArithmeticError, TypeError, ValueError):
+        return None
+    return total
 
 
 __all__ = [
