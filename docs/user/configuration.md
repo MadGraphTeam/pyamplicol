@@ -1427,6 +1427,41 @@ as given) and `kinematics-inexact` (the produced point misses exactness:
 the projection stopped at its rounding floor, or the finish refused after a
 MadLoop point; the point is used).
 
+**The shell-consistency screen.** A one-loop amplitude binds every invariant
+that one external leg fixes to that leg's bound squared mass, never to the p^2
+of the given momenta (its integrals see m^2, its numerators the momenta): at a
+point off those shells the value is no amplitude of consistent kinematics, and
+a stable reduction does not certify it. In the checked mode (the default;
+`reduction_unchecked` measures nothing, bit for bit and at no cost) every
+virtual evaluation (summed, correlated, resolved and selected outputs, every
+carrier) screens each external leg of the point it evaluates (the caller's
+momenta after the requested improvement) against the mass that call binds,
+leg by leg: a massive leg passes when |p^2 - m^2| <= t m^2 + 8 u
+(E^2 + |p|^2 + m^2), a massless one when |p^2| <= (t + 8 u)(E^2 + |p|^2),
+with t the call's point target (`reduction_target`, default 1e-5) and u the
+unit roundoff of the carrier each leg's components were supplied in, by
+their input contract (binary64's 2^-53 for a Python float; 0 for an exact
+spelling: an integer, a decimal text or `Decimal` at any number of digits;
+nothing is inferred from a text's spelling), or the evaluating carrier's when
+coarser; 8 u is the first-order rounding of a point whose energy is formed
+on its shell in that carrier (its components, its mass and the on-shell
+energy formed from them). A generator that boosts its momenta adds rounding
+of its own: at targets near the carrier's rounding (t = 1e-25 in
+double-double) a few of its points (20 of 2,000 native draws with three
+massless final legs) are marked; the allowance is not widened for them. A leg beyond it marks the point: its ORIGINAL value is served, its lane
+carries the typed reason in `VirtualLaneDiagnostic.uncertified` ("off the
+bound mass shell: external leg k, p^2 = ..., bound m^2 = ..., relative defect
+..., ... times the screen's allowance") and its accuracy is not established;
+a leg that cannot be measured (a non-finite component) marks it too. The mark
+accumulates with every other reason, never fails a lane, never raises, never
+escalates a rescue level by itself, and never hides a failure of the
+evaluation. Every lane records the per-leg relative defect
+(`VirtualLaneDiagnostic.mass_shell`: |p^2 - m^2| / m^2, massless
+|p^2| / (E^2 + |p|^2)). This is a shell-consistency screen, not an error
+bound on the amplitude. Points on their shells are served unchanged, bit for
+bit; a point supplied to 1e-10 is served as before at binary64 cost. The
+native SDKs do not run the screen yet (their diagnostics carry no such mark).
+
 What counts as a double-precision evaluation is the carrier: binary64
 evaluations are improved only with `kinematics_improvement_binary64 = true`
 (off by default, so binary64 results are bitwise unchanged); double-double
@@ -1941,6 +1976,38 @@ records and the requested legs, for any process: in the complex-mass scheme it
 is the generic remedy of `cms-external-width`, in the real on-shell scheme of
 the external particles' own `coloured-width` / `electroweak-width`. The
 default `"model"` keeps the model's widths.
+
+Fixed parameters also define the kinematics. The external masses an amplitude
+binds are those of its own native binding (the tree program's, in the
+evaluation's carrier) at the effective fixed parameters: `fixed_parameters`,
+the widths `external_widths` fixes and the model preparation's constants, in
+place of the model's own values, its restriction applied; a derived mass such
+as loop_sm's W mass is the value that binding computes in binary64. Every
+point pyAmpliCol generates for a loop artifact takes them: its validation point,
+whose record states them (`processes/<id>/validation-momenta.json`,
+`"masses"`), the points of `pyamplicol check` and of the generation's own
+probes (check's starting momenta take the slice's exact evaluator of the
+same parameters, and are put on the slice's shells by check itself), and the
+flat phase-space points of `evaluate`, `profile` and the benchmark runner
+without a momenta file, which take the masses the LOADED runtime's executor
+binds (`evaluate --model-parameters` included: MT = 160 at evaluation
+draws tops of 160 GeV; the thresholds and the cuts' massless legs follow) in
+the requested leg order (a permuted selector or a process-group member);
+`model/parameters.json` states the bound values. `profile` and the benchmark
+runner evaluate at the artifact's own parameters and refuse
+`evaluation.model_parameters`. A card fixing `MT = "173"` on a restriction
+whose top mass is 174.3 thus gives points on the 173 shell. In the
+complex-mass scheme an external state is stable and its shell is its real
+mass parameter squared (the complex pole mass is only propagated). An
+external mass that runs with the renormalisation scale (none in the shipped
+models) has no shell before the point's scale is known: automatic point
+generation is refused for it (give the momenta). Loading an artifact whose
+stored validation point is off the masses it binds (generated by 1.0.3 or
+older with an external mass fixed to another value than the model's) is
+refused by the Python runtime (`Runtime.load`) with a request to regenerate
+it, and the standalone flat-point drawer refuses a loop validation record
+without bound masses; the native SDKs' open performs no such check (an old
+bundle must be regenerated by its owner).
 
 A resonant particle needs the complex-mass scheme, MG5_aMC's `set
 complex_mass_scheme True`:
