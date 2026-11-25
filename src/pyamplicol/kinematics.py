@@ -471,15 +471,118 @@ def shell_check(
     )
     units = [max(float(u), carrier) for u in roundoff]
     binary64 = precision.arithmetic == "double"
-    defects: list[tuple[float, ...]] = []
+    if binary64 and points:
+        # The binary64 values, measured in vectorised double-double
+        # arithmetic (``_binary64_legs``); a point it marks is measured
+        # again exactly for its reason.
+        relative, ratio = _binary64_legs(points, masses2, float(target), units)
+        defects = [tuple(row) for row in relative]
+        candidates = [
+            index for index, row in enumerate(ratio) if not max(row, default=0.0) <= 1.0
+        ]
+    else:
+        defects = [()] * len(points)
+        candidates = list(range(len(points)))
     reasons: dict[int, str] = {}
-    for index, (point, legs) in enumerate(zip(points, masses2, strict=True)):
+    for index in candidates:
+        point, legs = points[index], masses2[index]
         measured = _shell_legs(point, legs, float(target), units[index], binary64)
-        defects.append(tuple(relative for relative, _ratio, _square in measured))
+        if not binary64:
+            defects[index] = tuple(relative for relative, _ratio, _sq in measured)
         reason = _shell_reason(point, legs, measured)
         if reason is not None:
             reasons[index] = reason
     return ShellCheck(tuple(defects), reasons)
+
+
+def _binary64_legs(
+    points: Sequence[Sequence[Sequence[Any]]],
+    masses2: Sequence[Sequence[Fraction | None]],
+    target: float,
+    units: Sequence[float],
+) -> tuple[list[list[float]], list[list[float]]]:
+    """Per point and leg the relative defect and the ratio to the screen's
+    allowance (``_shell_legs``) of binary64 values, vectorised: each leg
+    scaled by a power of two to its largest component (and mass) first, so
+    that no square overflows or underflows, then p^2 - m^2 in double-double
+    (Dekker's exact square, Knuth's two-sum: an error of order u^2 of the
+    leg's scale, far below any allowance). A non-finite component or a leg
+    without a bound mass: NaN defect, infinite ratio (the exact pass marks
+    it)."""
+
+    import numpy as np
+
+    p = np.array(points, dtype=np.float64)
+    rows: dict[tuple[Fraction | None, ...], int] = {}
+    index = [rows.setdefault(tuple(masses), len(rows)) for masses in masses2]
+    known = np.array([[m is not None for m in masses] for masses in rows], dtype=bool)[
+        index
+    ]
+    # Each mass as an exact (mantissa high, mantissa low, binary exponent).
+    parts = [[_split_exponent(m) for m in masses] for masses in rows]
+    m_hi = np.array([[part[0] for part in row] for row in parts])[index]
+    m_lo = np.array([[part[1] for part in row] for row in parts])[index]
+    m_exp = np.array([[part[2] for part in row] for row in parts])[index]
+    with np.errstate(all="ignore"):
+        finite = np.isfinite(p).all(axis=2)
+        largest = np.abs(np.where(np.isfinite(p), p, 0.0)).max(axis=2)
+        _mant, exponent = np.frexp(largest)
+        # The mass's own exponent (m^2 = hi 2^e): its root's is about e / 2.
+        exponent = np.maximum(exponent, (m_exp + 1) // 2 + 1)
+        q = np.ldexp(p, -exponent[..., None])
+        mh = np.ldexp(m_hi, m_exp - 2 * exponent)
+        ml = np.ldexp(m_lo, m_exp - 2 * exponent)
+        split = 134217729.0 * q
+        head = split - (split - q)
+        tail = q - head
+        square = q * q
+        error = ((head * head - square) + 2.0 * head * tail) + tail * tail
+        hi, lo = square[..., 0], error[..., 0]
+        for mu in (1, 2, 3):
+            term_hi, term_lo = -square[..., mu], -error[..., mu]
+            total = hi + term_hi
+            back = total - hi
+            lo = lo + ((hi - (total - back)) + (term_hi - back)) + term_lo
+            hi = total
+        size = square.sum(axis=2)
+        total = hi - mh
+        back = total - hi
+        lo = lo + ((hi - (total - back)) + (-mh - back)) - ml
+        defect = np.abs(total + lo)
+        mass2 = mh + ml
+        u = np.array(units, dtype=np.float64)[:, None]
+        massive = mass2 > 0.0
+        allowance = np.where(
+            massive,
+            target * mass2 + SHELL_ROUNDING * u * (size + mass2),
+            (target + SHELL_ROUNDING * u) * size,
+        )
+        reference = np.where(massive, mass2, size)
+        relative = np.where(reference > 0.0, defect / reference, 0.0)
+        ratio = np.where(
+            allowance > 0.0,
+            defect / np.where(allowance > 0.0, allowance, 1.0),
+            np.where(defect == 0.0, 0.0, np.inf),
+        )
+        bad = ~(finite & known)
+        relative = np.where(bad, np.nan, relative)
+        ratio = np.where(bad, np.inf, ratio)
+    return relative.tolist(), ratio.tolist()
+
+
+def _split_exponent(mass2: Fraction | None) -> tuple[float, float, int]:
+    """An exact squared mass as (high, low, e) with mass2 = (high + low) 2^e
+    to double-double accuracy, high in [0.5, 1) (0 for 0; NaN for None)."""
+
+    if mass2 is None:
+        return (math.nan, 0.0, 0)
+    if mass2 == 0:
+        return (0.0, 0.0, 0)
+    e = mass2.numerator.bit_length() - mass2.denominator.bit_length()
+    scaled = mass2 / (Fraction(2) ** e) if e >= 0 else mass2 * (Fraction(2) ** -e)
+    high = float(scaled)
+    low = float(scaled - Fraction(high))
+    return (high, low, e)
 
 
 def _shell_legs(
