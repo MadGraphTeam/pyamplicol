@@ -1439,9 +1439,11 @@ momenta after the requested improvement) against the mass that call binds,
 leg by leg: a massive leg passes when |p^2 - m^2| <= t m^2 + 8 u
 (E^2 + |p|^2 + m^2), a massless one when |p^2| <= (t + 8 u)(E^2 + |p|^2),
 with t the call's point target (`reduction_target`, default 1e-5) and u the
-unit roundoff of the carrier the momenta were supplied in (binary64's 2^-53
-for numbers, 10^(1-D)/2 for a decimal text of D digits; the evaluating
-carrier's when coarser); 8 u bounds the rounding of a point drawn on its shell
+unit roundoff of the carrier each leg's components were supplied in, by
+their input contract (binary64's 2^-53 for a Python float; 0 for an exact
+spelling: an integer, a decimal text or `Decimal` at any number of digits;
+nothing is inferred from a text's spelling), or the evaluating carrier's when
+coarser; 8 u bounds the rounding of a point drawn on its shell
 in that carrier (its components, its mass and the on-shell energy formed from
 them). A leg beyond it marks the point: its ORIGINAL value is served, its lane
 carries the typed reason in `VirtualLaneDiagnostic.uncertified` ("off the

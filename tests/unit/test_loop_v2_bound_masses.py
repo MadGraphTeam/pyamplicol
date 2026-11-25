@@ -348,18 +348,18 @@ def test_the_screen_measures_every_leg_on_its_own_scale():
 
 
 @pytest.mark.loop_fast
-def test_the_supplied_carrier_sets_the_rounding_allowance():
+def test_the_input_contract_sets_the_rounding_allowance_per_leg():
+    """u comes from each component's input contract (a Python float is a
+    binary64, every exact spelling is exact), per leg, never from a text's
+    spelling."""
+
     from decimal import Decimal
 
     from pyamplicol.kinematics import input_roundoff
 
-    floats = [[[1.5, 0.0, 0.0, 0.1]]]
-    texts = [[["1.5", "0", "0", "0.123456789012"]]]
-    exact = [[[Fraction(3, 2), 0, 0, 1]]]
-    assert input_roundoff(floats) == [2.0**-53]
-    assert input_roundoff(texts) == [0.5 * 10.0**-11]
-    assert input_roundoff(exact) == [0.0]
-    assert input_roundoff([[[Decimal("NaN"), 0, 0, 0]]]) == [math.inf]
+    point = [[1.5, 0, 0, 0.1], ["1.5", "0", "0", "0.1"], [Decimal("2"), 0, 0, 1]]
+    assert input_roundoff([point]) == [(2.0**-53, 0.0, 0.0)]
+    assert input_roundoff([[["0.123456789012", "1", "2", "3"]]]) == [(0.0,)]
 
 
 def _flat_point(artifact: Path, seed: int = 7):
@@ -845,3 +845,67 @@ def test_a_complex_mass_scheme_leg_takes_its_real_mass(tmp_path):
     result = runtime.evaluate(flat.as_inputs(exact=False), mu_r2=flat.mu_r2())
     for lane in result.diagnostics:
         assert not any(is_shell_reason(r) for r in lane.uncertified)
+
+
+def _reviewer_point(artifact: Path, spelling):
+    """The reviewer's point (review of b9ae740d9): a flat point of uux_ttx
+    with the outgoing top energies shifted by +1 / -1 GeV and the incoming
+    px set to +0.1 / -0.1, the first incoming px spelled by ``spelling``."""
+
+    point, scale = _flat_point(artifact)
+    point[0][1], point[1][1] = spelling(0.1), -0.1
+    point[2][0] += 1.0
+    point[3][0] -= 1.0
+    return point, scale
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("arithmetic", ("double", "double-double"))
+def test_the_mark_does_not_depend_on_the_spelling(uux_ttx, arithmetic):
+    """The same values in other spellings (a float, its text, a Decimal, a
+    longer exact text, an integer for an integral component): identical
+    measured defects and marks; the allowance's u is at most the coarsest
+    carrier supplied for each leg (``input_roundoff``)."""
+
+    from decimal import Decimal
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.kinematics import input_roundoff, is_shell_reason
+
+    runtime = Runtime.load(uux_ttx)
+    spellings = (
+        float,
+        repr,
+        lambda x: Decimal(repr(x)),
+        lambda x: repr(x) + "0000000000000000",
+    )
+    found = []
+    for spelling in spellings:
+        point, scale = _reviewer_point(uux_ttx, spelling)
+        if spelling is not float:
+            # Every component in the same spelling, an integral one also
+            # as an integer.
+            point = [
+                [
+                    int(x)
+                    if float(x).is_integer() and spelling is repr
+                    else spelling(float(x))
+                    for x in leg
+                ]
+                for leg in point
+            ]
+        result = runtime.evaluate([point], mu_r2=scale, arithmetic=arithmetic)
+        (lane,) = result.diagnostics
+        found.append(
+            (
+                lane.mass_shell,
+                [r.split(", ")[:3] for r in lane.uncertified if is_shell_reason(r)],
+            )
+        )
+        ((leg_units),) = input_roundoff([point])
+        for leg, unit in zip(point, leg_units, strict=True):
+            assert unit == (2.0**-53 if any(isinstance(x, float) for x in leg) else 0.0)
+    assert all(item == found[0] for item in found), found
+    defects, marks = found[0]
+    assert 0.0390 < defects[2] < 0.0392 and 0.0389 < defects[3] < 0.0391
+    assert marks, "the reviewer's point is marked in every spelling"

@@ -390,38 +390,21 @@ SHELL_ROUNDING = 8
 _BINARY64_ROUNDOFF = 2.0**-53
 
 
-def input_roundoff(momenta: Any) -> list[float]:
-    """Per point the unit roundoff of the carrier its components were
-    supplied in (the coarsest component): binary64's 2^-53 for a binary
-    float, 0 for an exact integer or fraction, and for a decimal text or
-    ``Decimal`` of D significant digits 10^(1 - D) / 2 (2^-53 when it is a
-    binary64 value)."""
-
-    from decimal import Decimal, InvalidOperation
+def input_roundoff(momenta: Any) -> list[tuple[float, ...]]:
+    """Per point and leg the unit roundoff of the carrier the leg's
+    components were supplied in, by each component's INPUT CONTRACT
+    (``runtime.virtual._number``: a component is read as an exact decimal):
+    binary64's 2^-53 for a Python float (a binary64 value, whatever its
+    text), 0 for every exact spelling (an integer, a decimal text or
+    ``Decimal`` at any number of digits, a rational); a leg takes its
+    coarsest component's. Nothing is inferred from a text's spelling."""
 
     def unit(value: Any) -> float:
-        if isinstance(value, bool):
-            return 0.0
-        if isinstance(value, float):
-            return _BINARY64_ROUNDOFF
-        if isinstance(value, (int, Fraction)):
-            return 0.0
-        try:
-            number = value if isinstance(value, Decimal) else Decimal(str(value))
-        except (InvalidOperation, ValueError):
-            return math.inf
-        if not number.is_finite():
-            return math.inf
-        digits = len(number.as_tuple().digits)
-        try:
-            if Fraction(number) == Fraction(float(number)):
-                return _BINARY64_ROUNDOFF if digits > 1 else 0.0
-        except (OverflowError, ValueError):
-            pass
-        return 0.5 * 10.0 ** (1 - digits)
+        return _BINARY64_ROUNDOFF if isinstance(value, float) else 0.0
 
     return [
-        max((unit(x) for leg in point for x in leg), default=0.0) for point in momenta
+        tuple(max((unit(x) for x in leg), default=0.0) for leg in point)
+        for point in momenta
     ]
 
 
@@ -469,7 +452,20 @@ def shell_check(
         if precision.arithmetic == "double-double"
         else 0.0
     )
-    units = [max(float(u), carrier) for u in roundoff]
+    # Per point and leg: the leg's supplied carrier (``input_roundoff``; a
+    # number per point applies to each of its legs), the evaluating
+    # carrier's when coarser.
+    units = [
+        tuple(
+            max(float(u), carrier)
+            for u in (
+                [leg_unit] * len(point)
+                if isinstance(leg_unit, (int, float))
+                else leg_unit
+            )
+        )
+        for point, leg_unit in zip(points, roundoff, strict=True)
+    ]
     binary64 = precision.arithmetic == "double"
     if binary64 and points:
         # The binary64 values, measured in vectorised double-double
@@ -499,7 +495,7 @@ def _binary64_legs(
     points: Sequence[Sequence[Sequence[Any]]],
     masses2: Sequence[Sequence[Fraction | None]],
     target: float,
-    units: Sequence[float],
+    units: Sequence[Sequence[float]],
 ) -> tuple[list[list[float]], list[list[float]]]:
     """Per point and leg the relative defect and the ratio to the screen's
     allowance (``_shell_legs``) of binary64 values, vectorised: each leg
@@ -550,7 +546,7 @@ def _binary64_legs(
         lo = lo + ((hi - (total - back)) + (-mh - back)) - ml
         defect = np.abs(total + lo)
         mass2 = mh + ml
-        u = np.array(units, dtype=np.float64)[:, None]
+        u = np.array(units, dtype=np.float64)
         massive = mass2 > 0.0
         allowance = np.where(
             massive,
@@ -589,7 +585,7 @@ def _shell_legs(
     point: Sequence[Sequence[Any]],
     masses2: Sequence[Fraction | None],
     target: float,
-    unit: float,
+    units: Sequence[float],
     binary64: bool,
 ) -> list[tuple[float, float, Fraction | None]]:
     """Per leg (relative defect, ratio to the allowance, exact p^2): NaN /
@@ -597,7 +593,7 @@ def _shell_legs(
     without a bound mass (its invariants are its own p^2)."""
 
     out: list[tuple[float, float, Fraction | None]] = []
-    for leg, mass2 in zip(point, masses2, strict=True):
+    for leg, mass2, unit in zip(point, masses2, units, strict=True):
         if mass2 is None:
             out.append((math.nan, math.inf, None))
             continue
