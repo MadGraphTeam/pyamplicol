@@ -7,13 +7,17 @@ rules (``li_manifest.judge``). Local-only nightly ids (``loop_nightly``, run
 at the M-LIT close, slice-status DECISIONS 2026-11-07 ~13:34): one test id
 per run, the 6- and 7-leg rows take minutes to hours of generation.
 
-A run passes when no check fails: estimate misses, TIRust's failed points
-(partial, its typed reasons recorded) and TIRust arms of an extension before
-lit-tir-mp (waiting on it) are recorded, not failures (m-lit rulings (5),
-(8)); L6's verdict is the worst of its carriers, so a backend disagreement
-in binary64, double-double or AP fails the run, as does a Ward probe (L4,
-every fixture point and massless gauge leg) beyond ten times its estimate;
-a deviation below ~1e-5 relative is never a failure (precision lax).
+A run passes when no check fails and none is inconclusive: estimate misses,
+TIRust's failed points (partial, its typed reasons recorded) and TIRust arms
+of an extension before lit-tir-mp (waiting on it) are recorded, not
+failures (m-lit rulings (5), (8)); L6's verdict is the worst of its
+carriers, so a backend disagreement in binary64, double-double or AP fails
+the run, as does a probe row (L3 finiteness, L4 Ward at every fixture point
+and massless gauge leg) with R >= K P up the carrier ladder; a deviation
+below ~1e-5 relative is never a failure (precision lax). An inconclusive
+probe is accepted only on its record's evidence: an amplitude with no
+physical normalisation (at rounding level in every carrier) or an exact
+fold zero; it is recorded as inconclusive, never as a pass.
 
 With ``PYAMPLICOL_LI_CAMPAIGN_RECORDS=<dir>`` the records are kept there
 (``li_manifest.py lit --records <dir>`` writes data/lit.json from them).
@@ -56,6 +60,9 @@ def test_campaign_run_passes_its_rules(name, tmp_path_factory, loop_native):
     judged = lm.judge(record, entry)
     statuses = {c: judged[c]["status"] for c in lm.CHECKS if c in judged}
     assert "fail" not in statuses.values(), statuses
+    # An inconclusive check fails the run unless its record accepts it: the
+    # amplitude has no physical normalisation, or is an exact fold zero.
+    assert not lm.unaccepted(statuses.values()), statuses
     assert "effective_backend_switched" not in judged["L6"]["double"], judged["L6"]
     if record.get("transformed_points"):
         assert judged["L5"]["tirust"]["status"] != "not run", judged["L5"]

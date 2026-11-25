@@ -1435,14 +1435,17 @@ def test_a_resumed_probe_arm_without_the_current_provenance_is_re_evaluated(
 
     calls = []
 
-    def probe(*_args, **_options):
+    def probe_results(_executor, _point, _scale, wards, **_options):
         calls.append(1)
         measure = checks.Measure("x", 1e-12, 1.0, 1.0)
-        return induced.ProbeResult(
-            "finiteness", {("x", 1): checks.judge(measure, 1e-5)}, tolerance=1e-5
-        )
+        return [
+            induced.ProbeResult(
+                "finiteness", {("x", 1): checks.judge(measure, 1e-5)}, tolerance=1e-5
+            )
+            for _ward in wards
+        ]
 
-    monkeypatch.setattr(induced, "probe", probe)
+    monkeypatch.setattr(induced, "probe_results", probe_results)
     runtime = NS(_backend=NS(_executor=None))
     data = {"points": [[["1", "0", "0", "1"]]], "mu_r": ["1"]}
     old = {"ninjars/double": [{"worst": 0.5, "passed": True}]}
@@ -1526,9 +1529,9 @@ def test_one_k_through_run_resume_and_publication(tmp_path, monkeypatch, capsys)
             f"ninjars/{arithmetic}/checked", stored["ninjars/double/plain"]
         )
 
-    def probe(*_args, **_options):
+    def probe_results(_executor, _point, _scale, wards, **_options):
         calls["probe"].append(checks.tolerance())
-        return judged("finiteness")
+        return [judged("finiteness") for _ward in wards]
 
     def ward_probes(name, work, data, *_args, previous=None, **_options):
         # the fixture-point Ward probes (their own reuse is tested above):
@@ -1564,7 +1567,7 @@ def test_one_k_through_run_resume_and_publication(tmp_path, monkeypatch, capsys)
     monkeypatch.setattr(lm, "expression", lambda data, compiled: "g g > h h")
     monkeypatch.setattr(lm, "run_parameters", lambda data, compiled: {})
     monkeypatch.setattr(lm, "_call", call)
-    monkeypatch.setattr(induced, "probe", probe)
+    monkeypatch.setattr(induced, "probe_results", probe_results)
     monkeypatch.setattr(lm, "ward_probes", ward_probes)
     monkeypatch.setattr(lm, "_same_native", lambda record, backend=None: True)
     for helper, value in (
@@ -1639,3 +1642,189 @@ def test_one_k_through_run_resume_and_publication(tmp_path, monkeypatch, capsys)
         assert lm.judge(record, entry)["L3"]["ninjars/double"]["status"].startswith(
             "stale"
         )
+
+
+def _ladder_probes(monkeypatch, measures):
+    """``induced.probe_results`` scripted per carrier: ``measures`` maps the
+    carrier's name to the row's (R, P, E_P, T); every probe of a batch
+    returns that row."""
+
+    from pyamplicol.loops.v2 import checks, induced
+
+    calls = []
+
+    def probe_results(_executor, _point, _scale, wards, *, precision, **_options):
+        calls.append(precision.arithmetic)
+        residue, physical, error, terms = measures[precision.arithmetic]
+        measure = checks.Measure("row", residue, physical, terms, physical_error=error)
+        k = checks.tolerance()
+        return [
+            induced.ProbeResult(
+                "finiteness" if ward is None else "ward",
+                {("row", 0): checks.judge(measure, k)},
+                tolerance=k,
+            )
+            for ward in wards
+        ]
+
+    monkeypatch.setattr(induced, "probe_results", probe_results)
+    return calls
+
+
+def _probed(monkeypatch, measures):
+    from types import SimpleNamespace as NS
+
+    from pyamplicol.loops.v2 import checks
+
+    calls = _ladder_probes(monkeypatch, measures)
+    runtime = NS(_backend=NS(_executor=None))
+    data = {"points": [[["1", "0", "0", "1"]]] * 3, "mu_r": ["1"] * 3}
+    with checks.tolerating(1e-5):
+        out = lm.finiteness_probes(runtime, data, {}, ("double", "double-double"))
+    return out, calls
+
+
+def _judged_l3(entries, probes, generation=None):
+    entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
+    record = _after_tir_mp(_record("li_gg_hh"))
+    record["l3_probes"] = probes
+    if generation is not None:
+        record["generation"]["probes"] = generation
+    return lm.judge(record, entry)["L3"]
+
+
+def test_the_binary64_probe_arm_climbs_the_ladder_and_keeps_its_own_figures(
+    entries, monkeypatch
+):
+    """A row binary64 misses with a resolved physical reference (R / P =
+    1e-3 at K = 1e-5, TIRust's lost digits on g g > a a g) is decided by
+    double-double through the per-row ladder of ``pyamplicol check``: the
+    binary64 arm passes, its own binary64 verdict and ratio kept beside it
+    (and in the judged arm); the double-double arm runs double-double
+    alone."""
+
+    from pyamplicol.loops.v2 import checks
+
+    out, calls = _probed(
+        monkeypatch,
+        {
+            "double": (1e-3, 1.0, 1e-16, 2.0),
+            "double-double": (1e-20, 1.0, 1e-32, 2.0),
+        },
+    )
+    row = out["ninjars/double"][0]
+    assert row["verdict"] == "pass" and row["decided_in"] == {"double-double": 1}
+    assert row["binary64"]["verdict"] == "fail"
+    assert row["binary64"]["worst"] == pytest.approx(1e-3)
+    assert "binary64" not in out["ninjars/double-double"][0]
+    # Per backend and point: binary64, then double-double for the binary64
+    # arm; double-double alone for the other.
+    b64_arm = ["double", "double-double"] * 3
+    assert calls == (b64_arm + ["double-double"] * 3) * 2
+    with checks.tolerating(1e-5):
+        l3 = _judged_l3(entries, out)
+    assert l3["ninjars/double"]["status"] == "pass"
+    assert l3["ninjars/double"]["binary64_worst_ratio"] == pytest.approx(1e-3)
+    assert l3["ninjars/double"]["binary64_verdicts"] == ["fail"]
+    assert l3["ninjars/double"]["decided_in"] == {"double-double": 3}
+
+
+def test_an_amplitude_without_physical_normalisation_is_an_accepted_inconclusive(
+    entries, monkeypatch
+):
+    """g g > h a's Ward rows (a charge-conjugation zero): in binary64 R is of
+    the order of T and P within ten times its estimate, in double-double P
+    collapses by 1e-17 and R < K T. The binary64 arm's ladder settles the
+    row there (``checks.settle``: P collapses, term-relative pass), its own
+    binary64 failure kept beside it; the double-double arm alone has no
+    narrower measurement: inconclusive, accepted on the same row's binary64
+    evidence (never a pass, never a failure). A row whose binary64 P is
+    resolved keeps a plain inconclusive there, which fails a campaign
+    run."""
+
+    from pyamplicol.loops.v2 import checks
+
+    noise = {
+        "double": (1.5e-18, 3.6e-18, 2.2e-17, 4.7e-18),
+        "double-double": (2.0e-34, 1.8e-35, 3.0e-33, 4.7e-18),
+    }
+    out, _calls = _probed(monkeypatch, noise)
+    row = out["ninjars/double"][0]
+    assert row["verdict"] == "pass" and row["decided_in"] == {"double-double": 1}
+    assert row["binary64"]["verdict"] == "fail" and "accepted" not in row
+    row = out["ninjars/double-double"][0]
+    assert row["verdict"] == "inconclusive" and not row["passed"], row
+    assert row["accepted"] == lm.NO_NORMALISATION
+    assert row["evidence"]["binary64_P_max"] == pytest.approx(3.6e-18)
+    assert row["evidence"]["double_double_P_max"] == pytest.approx(1.8e-35)
+    with checks.tolerating(1e-5):
+        l3 = _judged_l3(entries, out)
+    assert l3["ninjars/double"]["status"] == "pass"
+    status = l3["ninjars/double-double"]["status"]
+    assert status == f"{lm.ACCEPTED}: {lm.NO_NORMALISATION}"
+    assert l3["status"] == status
+    assert not lm.unaccepted([status]) and lm._worst([status, "pass"]) == status
+    # A resolved physical reference (P = 1, E_P = 1e-17) with the same
+    # unresolved double-double row: not accepted.
+    resolved = {**noise, "double": (1e-3, 1.0, 1e-17, 1.0)}
+    out, _calls = _probed(monkeypatch, resolved)
+    assert "accepted" not in out["ninjars/double-double"][0]
+    with checks.tolerating(1e-5):
+        l3 = _judged_l3(entries, out)
+    assert l3["ninjars/double-double"]["status"] == "inconclusive"
+    assert lm.unaccepted([l3["status"]]) == [l3["status"]]
+
+
+def test_an_exact_fold_zero_has_nothing_to_compare_and_is_accepted(entries):
+    """An artifact the generator proved an exact fold zero (g g > h a, g g >
+    a a a) gives its finiteness probe no row: inconclusive ("nothing
+    compared"), accepted on the generation record's proof; the same empty
+    probe without that proof stays a plain inconclusive."""
+
+    from pyamplicol.loops.v2 import checks
+
+    empty = {
+        "worst": 0.0,
+        "passed": False,
+        "verdict": "inconclusive",
+        "rows": 0,
+        "decided_in": {},
+        **lm._provenance(),
+    }
+    probes = {label: [dict(empty)] * 3 for label in ("ninjars/double",)}
+    with checks.tolerating(None):
+        for proof in ("exact_fold_zero", "exact_colour_zero"):
+            l3 = _judged_l3(entries, probes, {proof: True})
+            status = l3["ninjars/double"]["status"]
+            assert status == f"{lm.ACCEPTED}: {lm.FOLD_ZERO}", proof
+        plain = _judged_l3(entries, probes)
+    assert plain["ninjars/double"]["status"] == "inconclusive"
+
+
+def test_a_generation_ward_record_without_a_leg_holds_no_verdict(entries):
+    """u u~ > d d~ h has no external gluon or photon: its generation-time
+    Ward record has no leg ("nothing tested"). L4 reads it as no verdict
+    (recorded), not as an inconclusive probe; a Ward record with a leg and
+    an inconclusive verdict stays inconclusive."""
+
+    from pyamplicol.loops.v2 import checks
+
+    entry = {e["fixture"]: e for e in entries}["li_gg_hh"]
+    record = _after_tir_mp(_record("li_gg_hh"))
+    record["ward_probes"] = {"legs": [], "arms": {}}
+    with checks.tolerating(None):
+        record["generation"]["probes"] = _generation(
+            {
+                "finiteness": {"passed": True, "verdict": "pass", "worst": 1e-13},
+                "ward": {"legs": [], "passed": True, "verdict": "nothing tested"},
+                "status": "run",
+            }
+        )
+        l4 = lm.judge(record, entry)["L4"]
+        assert l4["generation"]["status"] == "pass" and l4["status"] == "recorded"
+        record["generation"]["probes"]["ward"] = {
+            "legs": [1],
+            "passed": False,
+            "verdict": "inconclusive",
+        }
+        assert lm.judge(record, entry)["L4"]["status"] == "inconclusive"
