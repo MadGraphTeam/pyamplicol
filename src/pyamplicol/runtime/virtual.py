@@ -184,16 +184,13 @@ def _recording_executor(base: type) -> type:
 _EvaluationT = TypeVar("_EvaluationT")
 
 
-def with_kinematics(
-    evaluation: _EvaluationT, records: Sequence[Any], shell: Any = None
-) -> _EvaluationT:
+def with_kinematics(evaluation: _EvaluationT, records: Sequence[Any]) -> _EvaluationT:
     """``kinematics.with_kinematics`` (each lane diagnostic's kinematics
-    record and, with ``shell``, its mass-shell measure); the evaluation's
-    type is kept (``dataclasses.replace``)."""
+    record); the evaluation's type is kept (``dataclasses.replace``)."""
 
     from pyamplicol.kinematics import with_kinematics as attach
 
-    return cast(_EvaluationT, attach(evaluation, records, shell))
+    return cast(_EvaluationT, attach(evaluation, records))
 
 
 def _number(value: object, description: str) -> str:
@@ -1119,7 +1116,11 @@ class V2ObservablesRuntime:
         served: Mapping[int, VirtualReduction] | None = None,
         lane_rescue: tuple[tuple[str, int], ...] = (),
         added: bool = False,
+        shell: Any = None,
     ) -> VirtualLaneDiagnostic:
+        # The mass-shell guard's measure of the point (``kinematics.
+        # shell_check``), in every lane as it is built.
+        mass_shell = None if shell is None else shell.defects[index]
         bits = {"double": 53, "double-double": 106}.get(arithmetic) or math.ceil(
             precision.digits * math.log2(10)
         )
@@ -1140,6 +1141,7 @@ class V2ObservablesRuntime:
                 f"v2 {executor} executor: {reason}",
                 failures=(failure_diagnostic(index, reason),),
                 reduction=reduction,
+                mass_shell=mass_shell,
             )
         best = None if reduction is None else reduction.best_effort
         if best is not None:
@@ -1157,6 +1159,7 @@ class V2ObservablesRuntime:
                     ),
                 ),
                 reduction=reduction,
+                mass_shell=mass_shell,
             )
         from pyamplicol.api.virtual_results import (
             VirtualReductionRescue,
@@ -1198,6 +1201,7 @@ class V2ObservablesRuntime:
             + uncertified_detail(uncertified),
             reduction=reduction,
             lane_rescue=rescue,
+            mass_shell=mass_shell,
             reduction_rescue=own_rescue,
             uncertified=uncertified,
         )
@@ -1222,10 +1226,12 @@ class V2ObservablesRuntime:
         reductions: Mapping[str, VirtualReduction] | None = None,
         served: Mapping[int, VirtualReduction] | None = None,
         rescues: Sequence[Any] | None = None,
+        shell: Any = None,
     ) -> VirtualEvaluation:
         """``results``: one output per point; ``rescues``: per point its lane
         rescue when ``results`` are outputs taken from each point's mapping
-        (``plan_export.RescuedOutputs``; else read from the result)."""
+        (``plan_export.RescuedOutputs``; else read from the result);
+        ``shell``: the call's mass-shell measure (``kinematics.ShellCheck``)."""
 
         born_orders = self._default_born_orders()
         checked = checks is not None and checks.enabled
@@ -1251,6 +1257,7 @@ class V2ObservablesRuntime:
                         failures.get(index, ["failed"]),
                         reductions,
                         served,
+                        shell=shell,
                     )
                 )
                 continue
@@ -1300,6 +1307,7 @@ class V2ObservablesRuntime:
                     index,
                     reductions=reductions,
                     served=served,
+                    shell=shell,
                     lane_rescue=(
                         getattr(result, "lane_rescue", ())
                         if rescues is None
@@ -1661,9 +1669,9 @@ class V2ObservablesRuntime:
                 reductions,
                 served,
                 [getattr(result, "lane_rescue", ()) for result in per_point],
+                shell,
             ),
             kinematics,
-            shell,
         )
 
     def evaluate_correlated(
@@ -1746,9 +1754,9 @@ class V2ObservablesRuntime:
                         reductions,
                         served,
                         [getattr(results, "lane_rescue", ()) for results in per_point],
+                        shell,
                     ),
                     kinematics,
-                    shell,
                 )
         return {label: out[label] for label in requests}
 
@@ -1939,6 +1947,7 @@ class V2ObservablesRuntime:
                         failures.get(index, ["failed"]),
                         reductions,
                         served,
+                        shell=shell,
                     )
                 )
                 continue
@@ -1980,6 +1989,7 @@ class V2ObservablesRuntime:
                     served=served,
                     lane_rescue=getattr(result, "lane_rescue", ()),
                     added=_rescaled_added(checks),
+                    shell=shell,
                 )
             )
             estimates.append(
@@ -2043,7 +2053,7 @@ class V2ObservablesRuntime:
             pole_parts=tuple(parts) if split else None,
             contribution=self.contribution_kind,
         )
-        return with_kinematics(resolved, kinematics, shell)
+        return with_kinematics(resolved, kinematics)
 
 
 class V2InducedObservablesRuntime(V2ObservablesRuntime):

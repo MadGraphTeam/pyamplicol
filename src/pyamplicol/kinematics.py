@@ -333,28 +333,17 @@ def _key(point: Sequence[Sequence[Any]]) -> tuple[tuple[Fraction, ...], ...]:
     return tuple(tuple(Fraction(str(x)) for x in leg) for leg in point)
 
 
-def with_kinematics(
-    evaluation: Any, records: Sequence[Any], shell: ShellCheck | None = None
-) -> Any:
+def with_kinematics(evaluation: Any, records: Sequence[Any]) -> Any:
     """``evaluation`` (a ``VirtualEvaluation``) with each lane diagnostic's
-    kinematics record and, with ``shell``, its legs' shell defects
-    (``VirtualLaneDiagnostic.mass_shell``); unchanged when no point has a
-    record and no shell measure is given."""
+    kinematics record; unchanged when no point has one."""
 
     from dataclasses import replace
 
-    if all(record is None for record in records) and shell is None:
+    if all(record is None for record in records):
         return evaluation
-    defects = [None] * len(records) if shell is None else list(shell.defects)
     diagnostics = tuple(
-        replace(
-            diagnostic,
-            kinematics=record,
-            **({} if defect is None else {"mass_shell": defect}),
-        )
-        for diagnostic, record, defect in zip(
-            evaluation.diagnostics, records, defects, strict=True
-        )
+        replace(diagnostic, kinematics=record)
+        for diagnostic, record in zip(evaluation.diagnostics, records, strict=True)
     )
     return replace(evaluation, diagnostics=diagnostics)
 

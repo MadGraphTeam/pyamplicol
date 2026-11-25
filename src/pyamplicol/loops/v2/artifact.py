@@ -2617,10 +2617,9 @@ class V2VirtualRuntime:
                         checks,
                         on_failure,
                         choices[cast(str, carrier)],
-                        refused=shell.refused,
+                        shell=shell,
                     ),
                     records,
-                    shell,
                 )
 
             last = policy.levels[-1]
@@ -2655,10 +2654,9 @@ class V2VirtualRuntime:
                             else "return"
                         ),
                         choices[rung],
-                        refused=shell.refused,
+                        shell=shell,
                     ),
                     records,
-                    shell,
                 )
 
             return rescue(policy, len(caller), level, on_failure=on_failure)
@@ -2841,7 +2839,7 @@ class V2VirtualRuntime:
         checks: VirtualStabilityChecks,
         on_failure: str,
         reduction: VirtualReduction,
-        refused: Mapping[int, list[str]] | None = None,
+        shell: Any = None,
     ) -> VirtualEvaluation:
         """One batch of exact points in one carrier with one set of checks
         (the whole ``evaluate`` without a rescue policy, and each level of
@@ -2851,15 +2849,16 @@ class V2VirtualRuntime:
         refuses or fails again on NinjaRS at ``carrier``, each served one
         guarded by its reduction-direction check against the target,
         recorded per point; a fallback point's cross-backend check is not
-        run, m-lit R6). A point the mass-shell guard refused (``refused``,
-        ``kinematics.shell_check``) is not evaluated: it fails with its
-        refusal (no fallback or best-effort value serves it)."""
+        run, m-lit R6). A point the mass-shell guard refused (``shell``, the
+        call's ``kinematics.ShellCheck`` in this carrier, whose measure every
+        lane records) is not evaluated: it fails with its refusal (no
+        fallback or best-effort value serves it)."""
 
         from pyamplicol.kinematics import guarded_run
 
         from .reduction import with_fallback
 
-        refused = refused or {}
+        refused = {} if shell is None else shell.refused
 
         def run(
             indices: list[int] | None, own: VirtualStabilityChecks
@@ -2909,6 +2908,7 @@ class V2VirtualRuntime:
             checks,
             reduction,
             served,
+            shell,
         )
 
     def _run(
@@ -3021,9 +3021,11 @@ class V2VirtualRuntime:
         checks: VirtualStabilityChecks,
         reduction: VirtualReduction | None = None,
         served: Mapping[int, VirtualReduction] | None = None,
+        shell: Any = None,
     ) -> VirtualEvaluation:
         """The public result of a batch; ``served`` maps the points the
-        per-point fallback evaluated again to their own reduction record."""
+        per-point fallback evaluated again to their own reduction record;
+        ``shell`` the mass-shell measure every lane records."""
 
         from pyamplicol.runtime.virtual import v2_public_estimate
 
@@ -3091,6 +3093,7 @@ class V2VirtualRuntime:
                         failures=(failure_diagnostic(index, reason),),
                         primary_color_contraction=contraction,
                         reduction=(served or {}).get(index, reduction),
+                        mass_shell=None if shell is None else shell.defects[index],
                     )
                 )
                 continue
@@ -3174,6 +3177,7 @@ class V2VirtualRuntime:
                     lane_rescue=rescue,
                     reduction_rescue=own_rescue,
                     uncertified=uncertified,
+                    mass_shell=None if shell is None else shell.defects[index],
                 )
             )
         return VirtualEvaluation(
