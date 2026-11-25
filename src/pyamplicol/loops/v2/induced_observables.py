@@ -747,6 +747,7 @@ class PointOutputs:
         self.wanted: Sequence[Output] = ()
         self._values: dict[Any, dict[Orders, tuple]] = {}
         self._squared = False
+        self._rows_of: dict[int, tuple[Any, tuple[rx.Row, ...]]] = {}
         if spin:
             sources_json = (
                 json.dumps(list(sources))
@@ -802,7 +803,12 @@ class PointOutputs:
     def rows_of(self, output: Output) -> tuple[rx.Row, ...]:
         if output.rows is None:
             return self.rows
-        return tuple(row for row in self.rows if row in output.rows)
+        # Once per output's row set (an output is read several times).
+        found = self._rows_of.get(id(output.rows))
+        if found is None or found[0] is not output.rows:
+            kept = tuple(row for row in self.rows if row in output.rows)
+            found = self._rows_of[id(output.rows)] = (output.rows, kept)
+        return found[1]
 
     def value(self, output: Output) -> dict[Orders, tuple]:
         key = (output.metric, self.rows_of(output))
