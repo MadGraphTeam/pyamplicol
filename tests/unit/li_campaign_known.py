@@ -42,46 +42,109 @@ def _open(cells: Any) -> list[dict]:
     return [c for c in cells if c.get("verdict") not in ("pass", "vacuous")]
 
 
-def check_gg_z(statuses: dict, judged: dict, record: dict, report: Any) -> None:
-    """Raise ``KnownBelowResolution`` iff the run's only open item is exactly
-    the known g g > Z signature; any deviation fails an ordinary assertion.
-
-    * The campaign checks: no failure, and the only unaccepted inconclusive
-      is L4, from the generation-time probes alone.
-    * The generation record: generation completed (no decisive failure),
-      the finiteness probe inconclusive in double-double with exactly two
-      rows below numerical resolution, the Ward probe on leg 1 inconclusive.
-    * ``pyamplicol check`` on the artifact (exit 4): the finiteness row's
-      only open rows are the two known k = 1 helicities below numerical
-      resolution and the four known k = 1 helicities with an unresolved
-      physical normalisation, and the Ward row of leg 1 is open only with
-      complete operands and an unresolved physical normalisation; no
-      failing row."""
-
+# The known outcome's campaign statuses (``li_manifest.judge``): the checks
+# and every L3 / L4 arm, fixed; only L4's generation entry is open.
+def gg_z_statuses() -> dict[str, Any]:
     from tools.loop_benchmark import li_manifest as lm
 
-    assert "fail" not in statuses.values(), statuses
-    assert lm.unaccepted(statuses.values()) == [statuses.get("L4")], statuses
-    l4 = judged["L4"]
-    assert l4["generation"]["status"] == "inconclusive", l4["generation"]
-    for label, value in l4.items():
-        if label != "generation" and isinstance(value, dict) and "status" in value:
-            assert value["status"] != "fail", (label, value)
-            assert not lm.unaccepted([value["status"]]), (label, value)
+    accepted = f"{lm.ACCEPTED}: {lm.NO_NORMALISATION}"
+    arms = {
+        "ninjars/double": "pass",
+        "ninjars/double-double": accepted,
+        "tirust/double": "pass",
+        "tirust/double-double": accepted,
+    }
+    return {
+        "checks": {
+            "L1": "recorded",
+            "L3": accepted,
+            "L4": "inconclusive",
+            "L5": "recorded",
+            "L6": "pass",
+            "L7": "pass",
+            "L8": "pass",
+            "E": "pass",
+        },
+        "L3": dict(arms),
+        "L4": {"generation": "inconclusive", **arms},
+        "legs": [1, 2],
+    }
+
+
+# The ``pyamplicol check`` report's rows: (check, subject) -> verdict.
+GG_Z_REPORT = {
+    ("poles", "finiteness (every loop order and row)"): "inconclusive",
+    ("ward", "leg 1"): "inconclusive",
+    ("goldstone", "external massive vectors"): "not applicable",
+}
+# The Ward row of leg 1: its open rows, each with the current reason
+# ``UNRESOLVED`` in double-double.
+GG_Z_WARD_OPEN = 8
+
+
+def _arms(result: dict) -> dict[str, str]:
+    return {
+        label: value["status"]
+        for label, value in result.items()
+        if isinstance(value, dict) and "status" in value
+    }
+
+
+def _generation_entry(entry: dict, carrier: str = "double-double") -> None:
+    """A generation-time probe entry decided in ``carrier`` by its rows'
+    verdicts (no refusal in any carrier), its open rows' normalisation
+    unresolved."""
+
+    assert entry["verdict"] == "inconclusive" and not entry["passed"], entry
+    assert entry["carrier"] == carrier, entry
+    assert "refused" not in entry, entry
+    fallback = entry.get("fallback")
+    assert isinstance(fallback, dict), entry
+    assert fallback["carrier"] == "double" and fallback["reason"] == "verdict", entry
+    assert f": {UNRESOLVED}: " in entry.get("inconclusive", ""), entry
+
+
+def check_gg_z(statuses: dict, judged: dict, record: dict, report: Any) -> None:
+    """Raise ``KnownBelowResolution`` iff the run is exactly the known g g > Z
+    outcome; any deviation fails an ordinary assertion.
+
+    * The campaign: the statuses of every check and of every L3 / L4 arm are
+      the known ones (``gg_z_statuses``: the fixture-point arms pass in
+      binary64 and are accepted, no physical normalisation, in
+      double-double; only L4's generation entry is open).
+    * The generation record: completed without failure or refusal; the
+      finiteness probe and the Ward probe on leg 1 decided in double-double
+      after a binary64 verdict, inconclusive with an unresolved
+      normalisation, the finiteness probe with exactly two rows below
+      numerical resolution; no other probe.
+    * ``pyamplicol check`` on the artifact: exit 4 and exactly the known
+      rows (``GG_Z_REPORT``); the finiteness row open exactly on the two
+      known k = 1 helicities below numerical resolution and the four with
+      an unresolved normalisation; the Ward row of leg 1 open exactly on
+      its known rows, each with measured double-double operands and the
+      current reason an unresolved normalisation; no failing row."""
+
+    want = gg_z_statuses()
+    assert statuses == want["checks"], statuses
+    assert _arms(judged["L3"]) == want["L3"], judged["L3"]
+    assert _arms(judged["L4"]) == want["L4"], judged["L4"]
+    assert judged["L4"].get("legs") == want["legs"], judged["L4"]
     probes = record["generation"]["probes"]
     assert probes.get("status") == "run" and "failed" not in probes, probes
     entries = {(p["probe"], p.get("leg")): p for p in probes["probes"]}
     assert set(entries) == {("finiteness", None), ("ward", 1)}, sorted(entries)
-    finiteness = entries[("finiteness", None)]
-    assert finiteness["verdict"] == "inconclusive", finiteness
+    finiteness, ward_entry = entries[("finiteness", None)], entries[("ward", 1)]
+    _generation_entry(finiteness)
     assert finiteness.get("below_resolution") == 2, finiteness
-    assert finiteness["carrier"] == "double-double", finiteness
-    assert entries[("ward", 1)]["verdict"] == "inconclusive", entries[("ward", 1)]
+    _generation_entry(ward_entry)
+    assert "below_resolution" not in ward_entry, ward_entry
+    assert probes["ward"]["carriers"] == {"1": "double-double"}, probes["ward"]
     assert report.exit_code == 4, report.exit_code
     (process,) = report.processes
-    rows = {(row.check, row.subject): row for row in process.rows}
+    rows = {(row.check, row.subject): row.verdict for row in process.rows}
+    assert rows == GG_Z_REPORT, rows
+    assert len(process.rows) == len(GG_Z_REPORT), rows
     for row in process.rows:
-        assert row.verdict != "fail", (row.check, row.subject, row.verdict)
         for cell in row.cells:
             assert cell.get("verdict") != "fail", cell
     (poles,) = [row for row in process.rows if row.check == "poles"]
@@ -105,12 +168,12 @@ def check_gg_z(statuses: dict, judged: dict, record: dict, report: Any) -> None:
         assert cell["reason"].startswith(BELOW_RESOLUTION), cell
     for cell in unresolved:
         assert cell["reason"].startswith(UNRESOLVED), cell
-    ward = rows.get(("ward", "leg 1"))
-    assert ward is not None and ward.verdict == "inconclusive", sorted(rows)
-    assert [r for r in process.rows if r.check == "ward"] == [ward], sorted(rows)
+    (ward,) = [row for row in process.rows if row.check == "ward"]
     unresolved = _open(ward.cells)
-    assert unresolved, ward
+    assert len(unresolved) == GG_Z_WARD_OPEN, unresolved
     for cell in unresolved:
-        assert UNRESOLVED in (cell.get("reason") or ""), cell
+        assert cell["verdict"] == "inconclusive", cell
+        assert cell["carrier"] == "double-double", cell
+        assert (cell.get("reason") or "").startswith(UNRESOLVED), cell
         assert None not in (cell["residue"], cell["physical"], cell["terms"]), cell
     raise KnownBelowResolution(GG_Z_REASON)

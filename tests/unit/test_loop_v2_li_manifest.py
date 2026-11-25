@@ -1973,46 +1973,59 @@ def test_a_refused_ward_leg_never_hides_another_legs_failure(
 
 def _gg_z_outcome():
     """The known g g > Z campaign outcome, as the run records it: statuses,
-    judged L4, generation record and the ``pyamplicol check`` report."""
+    judged L3 / L4, generation record and the ``pyamplicol check`` report
+    (the operands, labels and reasons of the actual run)."""
 
     from types import SimpleNamespace as NS
 
-    from .li_campaign_known import BELOW_RESOLUTION, UNRESOLVED
+    from .li_campaign_known import BELOW_RESOLUTION, UNRESOLVED, gg_z_statuses
 
     order = "((('QCD', 2), ('QED', 1)), "
-    accepted = f"{lm.ACCEPTED}: {lm.NO_NORMALISATION}"
-    statuses = {"L1": "recorded", "L3": accepted, "L4": "inconclusive", "E": "pass"}
+    want = gg_z_statuses()
+    statuses = dict(want["checks"])
     judged = {
+        "L3": {
+            "status": statuses["L3"],
+            **{a: {"status": s} for a, s in want["L3"].items()},
+        },
         "L4": {
             "status": "inconclusive",
-            "generation": {"status": "inconclusive"},
-            "ninjars/double": {"status": "pass"},
-            "ninjars/double-double": {"status": accepted},
-        }
+            **{a: {"status": s} for a, s in want["L4"].items()},
+            "legs": [1, 2],
+        },
     }
+    unresolved = f"{UNRESOLVED}: P 1.35e-31 at double, 1.24e-31 at double-double"
+
+    def entry(probe, **extra):
+        return {
+            "probe": probe,
+            "verdict": "inconclusive",
+            "passed": False,
+            "carrier": "double-double",
+            "fallback": {"carrier": "double", "reason": "verdict", "verdict": "fail"},
+            "inconclusive": f"{order}((0, -1), (1, -1), (2, 1))) k=0: {unresolved}",
+            **extra,
+        }
+
     record = {
         "generation": {
             "probes": {
                 "status": "run",
+                "ward": {"carriers": {"1": "double-double"}, "legs": [1]},
                 "probes": [
-                    {
-                        "probe": "finiteness",
-                        "verdict": "inconclusive",
-                        "carrier": "double-double",
-                        "below_resolution": 2,
-                    },
-                    {"probe": "ward", "leg": 1, "verdict": "inconclusive"},
+                    entry("finiteness", below_resolution=2),
+                    entry("ward", leg=1),
                 ],
             }
         }
     }
 
-    def cell(label, verdict="pass", reason=None, carrier="double-double"):
+    def cell(label, verdict="pass", reason=None):
         return {
             "label": order + label,
             "verdict": verdict,
             "reason": reason,
-            "carrier": carrier,
+            "carrier": "double-double",
             "residue": 1e-31,
             "physical": 1e-31,
             "terms": 1e-30,
@@ -2028,7 +2041,7 @@ def _gg_z_outcome():
             cell("((0, -1), (1, 1), (2, -1))) k=1", "inconclusive", below),
             cell("((0, 1), (1, -1), (2, 1))) k=1", "inconclusive", below),
             *(
-                cell(row, "inconclusive", f"{UNRESOLVED}: P ...")
+                cell(row, "inconclusive", unresolved)
                 for row in (
                     "((0, -1), (1, -1), (2, -1))) k=1",
                     "((0, -1), (1, -1), (2, 1))) k=1",
@@ -2042,10 +2055,16 @@ def _gg_z_outcome():
         check="ward",
         subject="leg 1",
         verdict="inconclusive",
-        cells=[
-            cell(
-                "((0, -1), (1, -1), (2, 1))) k=0", "inconclusive", f"{UNRESOLVED}: ..."
+        cells=[cell("((0, -1), (1, -1), (2, 0))) k=0")]
+        + [
+            cell(f"{helicity} k={k}", "inconclusive", unresolved)
+            for helicity in (
+                "((0, -1), (1, -1), (2, 1)))",
+                "((0, -1), (1, 1), (2, -1)))",
+                "((0, 1), (1, -1), (2, 1)))",
+                "((0, 1), (1, 1), (2, -1)))",
             )
+            for k in (0, 1)
         ],
     )
     goldstone = NS(
@@ -2060,9 +2079,13 @@ def _gg_z_outcome():
 
 def test_the_known_g_g_to_z_outcome_is_recognised_exactly():
     """The campaign's strict expected failure of li_gg_z raises its dedicated
-    exception for the known signature only: an extra open row, a failing
-    row anywhere, a missing operand or a failed generation is an ordinary
-    assertion failure."""
+    exception for the known signature only. An ordinary assertion failure
+    for: an extra open row, a failing row anywhere, a missing operand, an
+    unresolved row turned deferred, the generation's Ward probe refused in
+    every carrier, the report's Goldstone row inconclusive, a fixture-point
+    L4 arm not run, a Ward row whose unresolved reason is only in its
+    history, a failed generation, another open check, a failure
+    elsewhere."""
 
     import copy
 
@@ -2087,11 +2110,29 @@ def test_the_known_g_g_to_z_outcome_is_recognised_exactly():
         report.processes[0].rows[1].cells[0]["verdict"] = "fail"
 
     def missing_operand(statuses, judged, record, report):
-        report.processes[0].rows[1].cells[0]["physical"] = None
+        report.processes[0].rows[1].cells[1]["physical"] = None
 
     def unresolved_turned_deferred(statuses, judged, record, report):
         cells = report.processes[0].rows[0].cells
         cells[3]["reason"] = cells[1]["reason"]
+
+    def refused_generation_ward(statuses, judged, record, report):
+        # the review's mutation (a): an all-carrier refusal, also inconclusive
+        ward = record["generation"]["probes"]["probes"][1]
+        ward["refused"] = "the probe point failed: ReductionUnavailable"
+        ward["inconclusive"] = "refused in double-double: the probe point failed"
+
+    def goldstone_inconclusive(statuses, judged, record, report):
+        # the review's mutation (b)
+        report.processes[0].rows[2].verdict = "inconclusive"
+
+    def fixture_arm_not_run(statuses, judged, record, report):
+        # the review's mutation (c)
+        judged["L4"]["ninjars/double"]["status"] = "not run"
+
+    def ward_reason_only_in_history(statuses, judged, record, report):
+        cell = report.processes[0].rows[1].cells[1]
+        cell["reason"] = "P reproduces (... physical normalisation unresolved ...)"
 
     def failed_generation(statuses, judged, record, report):
         record["generation"]["probes"]["failed"] = ["finiteness probe: ..."]
@@ -2107,6 +2148,10 @@ def test_the_known_g_g_to_z_outcome_is_recognised_exactly():
         failing_row,
         missing_operand,
         unresolved_turned_deferred,
+        refused_generation_ward,
+        goldstone_inconclusive,
+        fixture_arm_not_run,
+        ward_reason_only_in_history,
         failed_generation,
         another_open_check,
         a_failure,
