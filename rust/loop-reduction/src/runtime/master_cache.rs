@@ -351,6 +351,12 @@ impl<M: FastMasters> MasterCache<M> {
     pub fn take_statistics(&mut self) -> MasterStatistics {
         std::mem::take(&mut self.statistics)
     }
+
+    /// Add another cache's statistics to this one's (a parallel reduction's
+    /// worker copy, dropped after its call).
+    pub fn add_statistics(&mut self, statistics: MasterStatistics) {
+        self.statistics += statistics;
+    }
 }
 
 impl<M: FastMasters> FastMasters for MasterCache<M> {

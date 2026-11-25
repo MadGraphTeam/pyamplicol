@@ -565,6 +565,12 @@ trait BucketEngine<T>: Send + Sized {
     /// (the fast engine's exact engine); undone by [`Self::end_parallel`].
     fn begin_parallel(&mut self) {}
     fn end_parallel(&mut self) {}
+    /// Fold a worker copy's counters into this engine; the copy is dropped
+    /// after it (copies live for one parallel call only: their working
+    /// state is not kept between calls, [`retire_copies`]).
+    fn absorb(&mut self, copy: Self) {
+        let _ = copy;
+    }
     /// `source`: the lanes' rescue-precision kinematics on demand (the
     /// fast engine's cancellation rescue; others ignore it).
     fn reduce(
@@ -755,7 +761,7 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
             )
         },
     );
-    *engine.pool() = pool;
+    retire_copies(engine, pool);
     drop(settings);
     engine.end_parallel();
     let mut outcomes = empty_outcomes(groups, frames.len());
@@ -765,6 +771,16 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
         }
     }
     Ok(outcomes)
+}
+
+/// Drop the worker copies of a parallel call after folding their counters
+/// into the reducer's engine (invariant 5: between calls a reducer holds
+/// what the serial reducer holds; a copy's working state, its workspaces,
+/// its master provider and the rows it looked up, exist during one call).
+fn retire_copies<T, E: BucketEngine<T>>(engine: &mut E, mut pool: EnginePool<E>) {
+    for copy in pool.drain() {
+        engine.absorb(copy);
+    }
 }
 
 /// Empty outcome tables of `frames` frames.
@@ -842,7 +858,7 @@ fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
             Ok::<_, ExecutionError>(parts)
         },
     );
-    *engine.pool() = pool;
+    retire_copies(engine, pool);
     for (&(n, rank), slot) in keys.iter().zip(lent) {
         if let Some(template) = slot.into_inner().expect("a lent template") {
             engine.put_template(n, rank, template);
@@ -1236,6 +1252,12 @@ impl BucketEngine<f64> for FastEngine {
         if let Some(shared) = self.shared_exact.take() {
             self.exact = shared.lock().expect("the shared exact engine").take();
         }
+    }
+
+    fn absorb(&mut self, mut copy: Self) {
+        self.masters.add_statistics(copy.masters.take_statistics());
+        self.exact_lanes += copy.exact_lanes;
+        self.rescued_lanes += copy.rescued_lanes;
     }
 
     fn precision(&self) -> u32 {
