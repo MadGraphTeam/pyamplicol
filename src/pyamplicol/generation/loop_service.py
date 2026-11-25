@@ -1853,6 +1853,7 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                                     process_id=name,
                                     seed=validation.seed + index,
                                     fixed_parameters=process.slice.fixed_parameters,
+                                    scale_parameter=process.slice.scale_parameter,
                                     record_masses=True,
                                 ),
                                 generation_filters={
@@ -2113,6 +2114,7 @@ def check_loop_requests(
 
     from pyamplicol.loops.native import load_loop_native
     from pyamplicol.loops.preparation_cache import PreparationMemo, store_for
+    from pyamplicol.loops.v2.assemble import request_binding
     from pyamplicol.loops.v2.blocks import born_dag_scope
     from pyamplicol.loops.v2.checks import (
         CheckInterrupted,
@@ -2165,13 +2167,17 @@ def check_loop_requests(
         pairs = list(zip(context.expanded, requests, strict=True))
         for position, (entry, request) in enumerate(pairs):
             name = entry.request.name
+            # The effective binding of the slice the check generates (the
+            # request's fixed parameters and its preparation's constants).
+            fixed, scale_parameter = request_binding(compiled, request, memo=memo)
             momenta = _validation_momenta(
                 context,
                 entry,
                 seed=seed,
                 count=points,
                 unavailable=f"check momenta unavailable for {name}",
-                fixed=request.fixed_parameters,
+                fixed=fixed,
+                scale_parameter=scale_parameter,
                 sqrt_s=sqrt_s,
                 cuts=cuts,
             )
@@ -2269,20 +2275,32 @@ def _loop_induced_candidates(context, entry, process, validation, index):
         count=max(validation.samples, 1),
         unavailable="loop-induced probe momenta unavailable",
         fixed=slice_.fixed_parameters,
+        scale_parameter=slice_.scale_parameter,
     )
 
 
 def _validation_momenta(
-    context, entry, *, seed, count, unavailable, fixed=None, sqrt_s=None, cuts=None
+    context,
+    entry,
+    *,
+    seed,
+    count,
+    unavailable,
+    fixed=None,
+    scale_parameter=None,
+    sqrt_s=None,
+    cuts=None,
 ):
     """``count`` phase-space points of the generation's validation convention
     (``build_process_validation_point`` at seeds ``seed``, ``seed + 1``,
     ...; ``sqrt_s`` replaces a scattering's energy; within ``cuts``, by
     rejection, point by point), on shell at the masses the amplitude binds
     (``validation.bound_external_masses`` at the parameters the generation
-    fixes, ``fixed``: a slice's ``fixed_parameters``, or its request's; None:
-    none, the model's own masses): the four-vectors, or ``GenerationError``
-    "``unavailable``: <why>"."""
+    fixes, ``fixed``: the effective slice binding, a slice's
+    ``fixed_parameters`` or ``assemble.request_binding``'s; None: none, the
+    model's own masses; ``scale_parameter`` the slice's, whose
+    scale-dependent external masses are refused): the four-vectors, or
+    ``GenerationError`` "``unavailable``: <why>"."""
 
     from .phase_space_cuts import CutsError, draw_accepted, is_cut_particle
     from .validation import bound_external_masses
@@ -2295,6 +2313,7 @@ def _validation_momenta(
             seed=point_seed,
             sqrt_s=sqrt_s,
             fixed_parameters=fixed,
+            scale_parameter=scale_parameter,
         )
         if not record.available:
             raise GenerationError(f"{unavailable}: {record.error}")
@@ -2313,7 +2332,15 @@ def _validation_momenta(
         int(particle.pdg_code): particle
         for particle in context.resolved.compiled.ir.particles
     }
-    masses = bound_external_masses(entry.process_ir, context.resolved.model, fixed)
+    try:
+        masses = bound_external_masses(
+            entry.process_ir,
+            context.resolved.model,
+            fixed,
+            scale_parameter=scale_parameter,
+        )
+    except ValueError as error:
+        raise GenerationError(f"{unavailable}: {error}") from error
     legs = [
         initial + leg
         for leg, pdg in enumerate(entry.process_ir.final_pdgs)
@@ -2490,7 +2517,7 @@ def _validate_v2_artifact(backend, output, context, generated, members):
             entry,
             validation,
             index,
-            generated[representative].slice.fixed_parameters,
+            generated[representative].slice,
         )
         if permutation is not None:
             # The target's points in the alias's leg order.
@@ -2716,10 +2743,10 @@ def _compare_v2(
     return largest
 
 
-def _v2_validation_points(context, entry, validation, index, fixed):
+def _v2_validation_points(context, entry, validation, index, slice_):
     """The post-build validation's points of ``entry`` (``_validation_momenta``
-    on shell at the masses the slice binds, ``fixed`` its fixed parameters)
-    and their scales (each point's initial invariant)."""
+    on shell at the masses its slice ``slice_`` binds) and their scales (each
+    point's initial invariant)."""
 
     from pyamplicol.loops.v2.induced import initial_invariant
 
@@ -2730,7 +2757,8 @@ def _v2_validation_points(context, entry, validation, index, fixed):
         seed=validation.seed + index,
         count=validation.samples,
         unavailable="virtual validation momenta unavailable",
-        fixed=fixed,
+        fixed=slice_.fixed_parameters,
+        scale_parameter=slice_.scale_parameter,
     ):
         point = [[repr(float(x)) for x in vector] for vector in vectors]
         initial = len(entry.process_ir.initial_pdgs)

@@ -68,6 +68,7 @@ import copy
 import functools
 import json
 import math
+import re
 from collections import defaultdict
 from collections.abc import Callable, Container, Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -2252,19 +2253,11 @@ class LoopSlice:
 
         found = self._cache.get("fixed-parameters")
         if found is None:
-            externals = self._external_parameters()
-            found = dict(self.request.fixed_parameters)
-            prepared = self.prepared.structure.fixed_parameters or {}
-            for name, value in prepared.items():
-                if name in found or name not in externals:
-                    continue
-                real, imaginary = (value, "0") if isinstance(value, str) else value
-                if Decimal(imaginary) != 0:
-                    raise ValueError(
-                        f"parameter {name!r} is fixed to a complex value; v2 "
-                        "loop runtimes take real external parameters"
-                    )
-                found[name] = real
+            found = effective_fixed_parameters(
+                self.request.fixed_parameters,
+                self.prepared.structure.fixed_parameters,
+                self._external_parameters(),
+            )
             self._cache["fixed-parameters"] = found
         return dict(found)
 
@@ -6056,6 +6049,143 @@ def _model_masses(
         return value
 
     return mass
+
+
+def effective_fixed_parameters(
+    requested: Mapping[str, str],
+    prepared: Mapping[str, Any] | None,
+    externals: Container[str],
+) -> dict[str, str]:
+    """The external parameters a slice fixes, with their exact texts
+    (``LoopSlice.fixed_parameters``): the request's as given, and the
+    model's external parameters its preparation fixes besides
+    (``prepared``: ``prepared.structure.fixed_parameters``; a colour
+    declaration's scheme constants, a restriction's values), real."""
+
+    found = dict(requested)
+    for name, value in (prepared or {}).items():
+        if name in found or name not in externals:
+            continue
+        real, imaginary = (value, "0") if isinstance(value, str) else value
+        if Decimal(imaginary) != 0:
+            raise ValueError(
+                f"parameter {name!r} is fixed to a complex value; v2 "
+                "loop runtimes take real external parameters"
+            )
+        found[name] = real
+    return found
+
+
+def request_binding(
+    compiled: Any, request: SliceRequest, *, memo: Any = None
+) -> tuple[dict[str, str], str]:
+    """The effective binding of a slice request before its slice exists:
+    the fixed parameters its slice will hold (``effective_fixed_parameters``
+    on ``prepare_request_model``, shared through ``memo``) and its scale
+    parameter: what ``check``'s momenta are drawn on."""
+
+    model = prepare_request_model(compiled, request, memo=memo)
+    externals = frozenset(
+        record.name for record in compiled.ir.parameters if record.nature == "external"
+    )
+    fixed = effective_fixed_parameters(
+        request.fixed_parameters, model.prepared.structure.fixed_parameters, externals
+    )
+    return fixed, model.scale_parameter
+
+
+class RunningExternalMass(ValueError):
+    """An external leg whose bound mass depends on the renormalisation
+    scale, where no point scale is given (``bound_leg_masses``): points
+    cannot be generated on its shell before their scale is known."""
+
+
+def bound_leg_masses(
+    model: Any,
+    pdgs: Sequence[int],
+    parameters: Mapping[str, str],
+    digits: int,
+    *,
+    scale_parameter: str | None = None,
+    scale: Any = None,
+) -> list[Fraction | None]:
+    """THE evaluator of the squared mass each external leg of ``pdgs``
+    binds, shared by generation (the validation point, ``check``'s momenta,
+    the probes), the runtime's shell-consistency screen and load check, and
+    the flat points: the slice's mass evaluator (``_model_masses``: an
+    external mass parameter exactly, a derived one from the EXACT parameter
+    texts at ``digits`` decimal digits, as the executor binds it to its
+    rounding) at ``parameters`` (exact decimal texts by name over the
+    model's values: the effective slice binding, i.e. the request's and the
+    preparation's fixed parameters, and any caller's), on ``model`` (a
+    compiled model, or one with its ``name``, ``parameter_defaults`` and
+    ``ir.parameters`` / ``ir.particles``). A particle's mass is its own
+    record's, else its antiparticle's; a structurally zero mass (``ZERO``,
+    a derived mass whose resolved definition is 0) is 0. A derived mass that
+    depends on the renormalisation scale (``scale_parameter``) is evaluated
+    at ``scale`` (mu_R^2; the root sets the parameter), and refused
+    (``RunningExternalMass``) without one. None: a leg whose mass this
+    evaluator cannot form (the evaluation decides)."""
+
+    records = {int(p.pdg_code): str(p.mass) for p in model.ir.particles}
+    internal = {
+        record.name: str(record.resolved_expression)
+        for record in model.ir.parameters
+        if record.nature == "internal"
+    }
+    values = dict(parameters)
+    names = []
+    for pdg in pdgs:
+        name = records.get(int(pdg), records.get(-int(pdg)))
+        names.append(name)
+    if scale_parameter is not None:
+        pattern = re.compile(rf"::{re.escape(scale_parameter)}\b")
+        running = [
+            name
+            for name in names
+            if name is not None
+            and name in internal
+            and pattern.search(internal[name]) is not None
+        ]
+        if running:
+            if scale is None:
+                raise RunningExternalMass(
+                    f"the external mass {running[0]!r} depends on the "
+                    f"renormalisation scale {scale_parameter!r}: give the "
+                    "points' momenta (a scale-dependent shell is not drawn "
+                    "automatically)"
+                )
+            values[scale_parameter] = _decimal_string(
+                _sqrt_fraction(_fraction(scale), digits), digits
+            )
+    mass_of = _model_masses(model, values, digits)
+    out: list[Fraction | None] = []
+    for name in names:
+        if name is None:
+            out.append(None)
+        elif name.upper() == ZERO.upper() or internal.get(name, "").strip() == "0":
+            out.append(Fraction(0))
+        else:
+            try:
+                out.append(_fraction(mass_of(name)) ** 2)
+            except (ArithmeticError, KeyError, ValueError):
+                out.append(None)
+    return out
+
+
+def scale_dependent_legs(
+    model: Any, pdgs: Sequence[int], scale_parameter: str | None
+) -> bool:
+    """Whether a leg of ``pdgs`` has a mass that depends on the
+    renormalisation scale (``bound_leg_masses``)."""
+
+    if scale_parameter is None:
+        return False
+    try:
+        bound_leg_masses(model, pdgs, {}, 16, scale_parameter=scale_parameter)
+    except RunningExternalMass:
+        return True
+    return False
 
 
 def _massless_value(value: Any) -> bool:

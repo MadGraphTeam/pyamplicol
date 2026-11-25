@@ -85,43 +85,66 @@ def build_validation_point(
     )
 
 
+# The decimal digits at which a derived external mass is formed from the
+# exact parameter texts (``loops.v2.assemble.bound_leg_masses``) before it is
+# rounded, once, to the binary64 mass of the generated momenta: well beyond
+# binary64, so that a cancelling definition (loop_sm's W mass from MZ,
+# aEWM1 and Gf) does not lose the digits the momenta keep.
+BOUND_MASS_DIGITS = 40
+
+
 def bound_external_masses(
     process: CanonicalProcessIR,
     model: Model,
     fixed_parameters: Mapping[str, str] | None = None,
+    *,
+    scale_parameter: str | None = None,
 ) -> tuple[float, ...]:
     """The mass of every external leg of ``process`` (initial states first)
-    that its amplitude binds: the model's (its restriction applied) with the
-    parameters the generation fixes (``fixed_parameters``, exact decimal
-    texts by name: ``[loop.preparation] fixed_parameters``, the stable
-    external widths and the model preparation's constants, a loop slice's
-    ``fixed_parameters``) in place of the model's own values, derived masses
-    evaluated at them. THE one source of the external masses of the
-    generated kinematics: the stored validation point, the momenta of
-    ``pyamplicol check`` and of the loop-induced generation probes, and the
-    masses of the flat phase-space points (``cli.flat_points`` reads them
-    from the validation record). Without fixed parameters these are the
-    model's masses, bit for bit. A loop runtime binds the same values
-    (``NativeExecutor.leg_masses``, exact; a derived mass to its carrier's
-    rounding)."""
+    that its amplitude binds. Without ``fixed_parameters`` (a tree request):
+    the model's masses, bit for bit. With them (a loop request: the EFFECTIVE
+    slice binding, the request's fixed parameters and those its model
+    preparation adds, exact decimal texts): THE shared evaluator of the bound
+    external masses, ``loops.v2.assemble.bound_leg_masses`` on the compiled
+    model, the one the runtime's screen, its load check and the flat points
+    use, from the exact texts at ``BOUND_MASS_DIGITS`` digits, rounded once
+    to binary64 here. A mass that depends on the renormalisation scale
+    (``scale_parameter``) is refused (``RunningExternalMass``): its shell is
+    not known before the point's scale is. The one source of the external
+    masses of the generated kinematics: the stored validation point, the
+    momenta of ``pyamplicol check`` and of the loop-induced generation
+    probes, and the masses of the flat phase-space points
+    (``cli.flat_points`` reads them from the validation record)."""
 
-    bound = model
-    if fixed_parameters:
-        rebind = getattr(model, "with_runtime_parameters", None)
-        if rebind is None:
-            raise ValueError(
-                "fixed parameters need a compiled model to bind them "
-                f"({type(model).__name__} has no runtime parameters)"
-            )
-        bound = rebind(
-            {
-                name: complex(float(value), 0.0)
-                for name, value in fixed_parameters.items()
-            }
+    pdgs = (*process.initial_pdgs, *process.final_pdgs)
+    if fixed_parameters is None:
+        return tuple(_mass(model, int(pdg)) for pdg in pdgs)
+    from decimal import Decimal, localcontext
+
+    from pyamplicol.loops.v2.assemble import bound_leg_masses
+
+    compiled = getattr(model, "compiled", None)
+    if compiled is None:
+        raise ValueError(
+            "the bound masses of a loop request need its compiled model "
+            f"({type(model).__name__} has none)"
         )
-    return tuple(
-        _mass(bound, int(pdg)) for pdg in (*process.initial_pdgs, *process.final_pdgs)
+    squares = bound_leg_masses(
+        compiled,
+        [int(pdg) for pdg in pdgs],
+        dict(fixed_parameters),
+        BOUND_MASS_DIGITS,
+        scale_parameter=scale_parameter,
     )
+    out = []
+    for pdg, square in zip(pdgs, squares, strict=True):
+        if square is None:
+            raise ValueError(f"particle {pdg} has no bound mass")
+        with localcontext() as context:
+            context.prec = BOUND_MASS_DIGITS + 10
+            root = (Decimal(square.numerator) / Decimal(square.denominator)).sqrt()
+        out.append(float(root))
+    return tuple(out)
 
 
 def build_process_validation_point(
@@ -133,6 +156,7 @@ def build_process_validation_point(
     sqrt_s: float | None = None,
     fixed_parameters: Mapping[str, str] | None = None,
     record_masses: bool = False,
+    scale_parameter: str | None = None,
 ) -> ValidationPointRecord:
     """Build validation momenta without requiring a materialized DAG, on
     shell at the masses the amplitude binds (``bound_external_masses`` at
@@ -143,7 +167,9 @@ def build_process_validation_point(
 
     masses = None
     try:
-        masses = bound_external_masses(process, model, fixed_parameters)
+        masses = bound_external_masses(
+            process, model, fixed_parameters, scale_parameter=scale_parameter
+        )
         particles = _build_particles(process, masses, seed=seed, sqrt_s=sqrt_s)
     except (ArithmeticError, KeyError, RuntimeError, ValueError) as exc:
         return ValidationPointRecord(
@@ -174,12 +200,9 @@ def rotate_validation_point(
         f"{rotation_seed}:proper-spatial-rotation-v1".encode("ascii")
     ).digest()
     denominator = float(1 << 64)
-    azimuth = 2.0 * math.pi * (
-        (int.from_bytes(digest[:8], "big") + 0.5) / denominator
-    )
+    azimuth = 2.0 * math.pi * ((int.from_bytes(digest[:8], "big") + 0.5) / denominator)
     cosine_polar = (
-        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator)
-        - 1.0
+        2.0 * ((int.from_bytes(digest[8:16], "big") + 0.5) / denominator) - 1.0
     )
     sine_polar = math.sqrt(max(0.0, 1.0 - cosine_polar * cosine_polar))
     cos_azimuth = math.cos(azimuth)
@@ -213,9 +236,7 @@ def rotate_validation_point(
 
     return replace(
         point,
-        particles=tuple(
-            (pdg, rotated(momentum)) for pdg, momentum in point.particles
-        ),
+        particles=tuple((pdg, rotated(momentum)) for pdg, momentum in point.particles),
     )
 
 
@@ -368,6 +389,7 @@ def _decimal_string(value: float) -> str:
 
 
 __all__ = [
+    "BOUND_MASS_DIGITS",
     "ValidationPointRecord",
     "bound_external_masses",
     "build_process_validation_point",
