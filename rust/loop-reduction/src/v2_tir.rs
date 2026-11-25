@@ -201,10 +201,12 @@
 //!
 //! **Threads.** A call on a thread of a rayon pool (the executor's own,
 //! installed around its work) with more than one thread cuts its kinematic
-//! rows into contiguous slices of about equal TIRust cost (the plans' term
-//! counts; [`SLICES_PER_THREAD`] per thread) and reduces each slice on the
-//! pool with an engine of its own: workspaces of the backend's plans (an
-//! engine serves one slice at a time and is kept for the next calls).
+//! rows into contiguous slices ([`lane_slices`]: about
+//! [`lane_slices::SLICES_PER_WORKER`] per worker, the rows of a family group
+//! together where the size allows) and reduces them on the pool, the most
+//! expensive first (the plans' term counts), each task on an engine of its
+//! own: the backend's, or workspaces of the backend's plans kept for the
+//! next calls ([`lane_slices::EnginePool`]).
 //! Every pass of a row (direct, rotation copy, check frame, method choice,
 //! last resort, acceptance frame) stays in its slice, then the lanes are
 //! contracted per slice. A row's moments are a pure function of the row
@@ -214,11 +216,12 @@
 //! the stages' seconds are their wall time. The capability query of every
 //! plan of the call is asked first, in (propagators, rank) order, so a
 //! refusal is the one the serial passes meet first; any other TIRust error
-//! is the first slice's in slice order. With one thread, off a pool thread
+//! is the lowest failing slice's. With one thread, off a pool thread
 //! and with the tensor store ([`TirOptions::store`], whose counts depend on
 //! which rows meet in it) a call runs as one slice on the calling thread.
 
 use crate::Complex;
+use crate::lane_slices::{self, EnginePool};
 use crate::runtime::frames::{FrameMap, ReductionFrame};
 use crate::runtime::{Carrier, TypedBatch};
 use iregi_rust::{
@@ -599,16 +602,6 @@ impl Bin {
         })
     }
 
-    /// The same plan and permutation with workspaces of its own (a parallel
-    /// slice's engine, module docs 'Threads'; the plan is shared).
-    fn sibling(&self) -> Self {
-        Self {
-            plan: self.plan.clone(),
-            workspaces: Workspaces::default(),
-            position: self.position.clone(),
-        }
-    }
-
     /// The carrier's gates (or, with `choice`, method-choice) workspace,
     /// built on first use at the precision of `prototype`; with a `store`,
     /// a `check` pass's own workspace without it ([`Slots`]; without a store
@@ -946,14 +939,18 @@ impl MasterProvider for MastersCensus {
 /// One engine's plans and workspaces, by (propagators, rank).
 type Engine = BTreeMap<(usize, usize), Bin>;
 
+/// The plans of a call and their layout permutations, by (propagators,
+/// rank): what a parallel slice's engine builds its workspaces from.
+type Plans = BTreeMap<(usize, usize), (DirectReductionPlan, Vec<usize>)>;
+
 /// The TIR backend (module docs).
 pub struct TirReductionBackend {
     options: TirOptions,
     /// The plans of the backend and the calling thread's engine.
     bins: Engine,
-    /// The engines of the parallel slices (module docs 'Threads'): one per
-    /// worker at a time, their plans shared with `bins`, kept between calls.
-    workers: Vec<Engine>,
+    /// The other workers' engines of the parallel slices (module docs
+    /// 'Threads'), their plans shared with `bins`, kept between calls.
+    pool: EnginePool<Engine>,
     counters: Counters,
     /// [`TirOptions::store`]: the backend's one tensor store.
     store: Option<TensorStore>,
@@ -1155,7 +1152,7 @@ struct Worker<'a> {
     options: TirOptions,
     bins: &'a mut Engine,
     store: Option<&'a TensorStore>,
-    template: Option<&'a Engine>,
+    template: Option<&'a Plans>,
     counters: &'a mut Counters,
 }
 
@@ -1487,7 +1484,7 @@ impl TirReductionBackend {
         Self {
             options,
             bins: BTreeMap::new(),
-            workers: Vec::new(),
+            pool: EnginePool::new(),
             counters: Counters::default(),
             store: options.store.then(|| {
                 TensorStore::with_options(TensorStoreOptions {
@@ -1558,7 +1555,7 @@ impl TirReductionBackend {
     /// The engines kept for parallel slices (module docs 'Threads'): none
     /// before a call ran on more than one thread.
     pub fn parallel_engines(&self) -> usize {
-        self.workers.len()
+        self.pool.engines().count()
     }
 
     /// The (propagators, rank) plans built.
@@ -1737,9 +1734,9 @@ impl TirReductionBackend {
         let copy = check_frame
             .filter(|_| self.options.rotation_copy)
             .and_then(relabelling);
-        let threads = self.threads();
-        if threads > 1 && rows.len() > 1 {
-            return self.reduce_slices(groups, &rows, threads, (poles, check, copy), &prototype);
+        let workers = self.workers();
+        if workers > 1 && rows.len() > 1 {
+            return self.reduce_slices(groups, &rows, workers, (poles, check, copy), &prototype);
         }
         let mut worker = Worker {
             options: self.options,
@@ -1777,26 +1774,26 @@ impl TirReductionBackend {
         Ok((out.direct, out.check))
     }
 
-    /// The threads a call's rows are sliced over (module docs 'Threads'):
-    /// the pool the call runs on, one when it runs on no pool's thread (never
-    /// rayon's global pool) and with the tensor store (its counts depend on
-    /// which rows meet in it).
-    fn threads(&self) -> usize {
-        if self.store.is_some() || rayon::current_thread_index().is_none() {
+    /// The workers a call's rows are sliced over (module docs 'Threads'):
+    /// the pool the call runs on ([`lane_slices::workers`]: one off any
+    /// pool's thread, never rayon's global pool), one with the tensor store
+    /// (its counts depend on which rows meet in it).
+    fn workers(&self) -> usize {
+        if self.store.is_some() {
             1
         } else {
-            rayon::current_num_threads()
+            lane_slices::workers()
         }
     }
 
-    /// [`Self::reduce`] of `rows` over the pool's `threads` (module docs
+    /// [`Self::reduce`] of `rows` on the pool's `workers` (module docs
     /// 'Threads'): contiguous slices of rows, each reduced by an engine of
     /// its own, every output merged in slice order.
     fn reduce_slices<T: TirCarrier>(
         &mut self,
         groups: &[FamilyLanes<T>],
         rows: &[Row],
-        threads: usize,
+        workers: usize,
         (poles, check, copy): (Poles, Option<ReductionCheck>, Option<usize>),
         prototype: &T,
     ) -> RusticolResult<Reduced<T>>
@@ -1805,47 +1802,59 @@ impl TirReductionBackend {
     {
         use rayon::prelude::*;
         let check_frame = check.map(tir_frame);
+        let key = |row: &Row| (groups[row.group].propagators, row.rank);
         // Every plan of the call, built and admitted in the carrier here in
         // (propagators, rank) order: the refusal the serial passes would
-        // meet first.
-        let keys: std::collections::BTreeSet<(usize, usize)> = rows
-            .iter()
-            .map(|row| (groups[row.group].propagators, row.rank))
-            .collect();
+        // meet first. A row's cost is its plan's term count.
+        let keys: std::collections::BTreeSet<(usize, usize)> = rows.iter().map(key).collect();
+        let mut plans = Plans::new();
         let mut costs = BTreeMap::new();
         for &(n, rank) in &keys {
             let bin = self.bin(n, rank)?;
             admitted(&bin.plan, prototype)?;
             costs.insert((n, rank), bin.plan.instruction_counts().1 + 1);
+            plans.insert((n, rank), (bin.plan.clone(), bin.position.clone()));
         }
-        let slices = slices(rows, threads, |row| {
-            costs[&(groups[row.group].propagators, row.rank)]
-        });
+        // The rows of one family group together where the slice size
+        // allows (one TIRust call per bin of a slice); the most expensive
+        // slices first.
+        let affinity: Vec<usize> = rows.iter().map(|row| row.group).collect();
+        let size = lane_slices::slice_size(rows.len(), workers, rows.len());
+        let slices = lane_slices::cut(&affinity, size);
+        let cost = |slice: &std::ops::Range<usize>| -> usize {
+            rows[slice.clone()].iter().map(|row| costs[&key(row)]).sum()
+        };
+        let mut schedule: Vec<usize> = (0..slices.len()).collect();
+        schedule.sort_by_key(|&s| std::cmp::Reverse(cost(&slices[s])));
         let options = self.options;
-        let template = &self.bins;
-        let pool = std::sync::Mutex::new(std::mem::take(&mut self.workers));
         let started = Instant::now();
-        let passes: Vec<RusticolResult<(Passes<T>, Counters)>> = slices
-            .par_iter()
-            .map(|range| {
-                let mut engine = pool.lock().expect("TIR engines").pop().unwrap_or_default();
+        let passes = self.pool.run_ordered(
+            &mut self.bins,
+            &slices,
+            Some(&schedule),
+            || Ok(Engine::new()),
+            |_| {},
+            |engine, range| {
                 let mut counters = Counters::default();
                 let passes = Worker {
                     options,
-                    bins: &mut engine,
+                    bins: engine,
                     store: None,
-                    template: Some(template),
+                    template: Some(&plans),
                     counters: &mut counters,
                 }
-                .passes(groups, &rows[range.clone()], check_frame, copy, prototype);
-                pool.lock().expect("TIR engines").push(engine);
-                passes.map(|passes| (passes, counters))
-            })
-            .collect();
-        self.workers = pool.into_inner().expect("TIR engines");
+                .passes(
+                    groups,
+                    &rows[range.clone()],
+                    check_frame,
+                    copy,
+                    prototype,
+                )?;
+                Ok((passes, counters))
+            },
+        );
         let moments = started.elapsed().as_secs_f64();
-        // The first failure in slice order.
-        let passes = passes.into_iter().collect::<RusticolResult<Vec<_>>>()?;
+        let passes = passes?;
         let started = Instant::now();
         let contracted: Vec<(Contracted<T>, Counters)> = passes
             .into_par_iter()
@@ -1965,35 +1974,6 @@ impl Worker<'_> {
         })
     }
 }
-
-/// Contiguous slices of `rows` of about equal total `cost` (module docs
-/// 'Threads'): [`SLICES_PER_THREAD`] per thread, at most one per row.
-fn slices(
-    rows: &[Row],
-    threads: usize,
-    cost: impl Fn(&Row) -> usize,
-) -> Vec<std::ops::Range<usize>> {
-    let pieces = (threads * SLICES_PER_THREAD).min(rows.len()).max(1);
-    let total: usize = rows.iter().map(&cost).sum();
-    let mut out = Vec::with_capacity(pieces);
-    let (mut start, mut sum) = (0, 0);
-    for (r, row) in rows.iter().enumerate() {
-        sum += cost(row);
-        // Cut where the running cost reaches the next share of the total.
-        if sum * pieces >= total * (out.len() + 1) && out.len() + 1 < pieces {
-            out.push(start..r + 1);
-            start = r + 1;
-        }
-    }
-    if start < rows.len() {
-        out.push(start..rows.len());
-    }
-    out
-}
-
-/// Slices per thread of a parallel call (module docs 'Threads'): enough for
-/// rows of unequal cost to even out over the pool.
-const SLICES_PER_THREAD: usize = 4;
 
 /// TIRust's capability query of `plan` at the precision of `prototype`, its
 /// refusal typed.
@@ -2354,13 +2334,17 @@ fn bin_of<'a>(
     n: usize,
     rank: usize,
     store: Option<&TensorStore>,
-    template: Option<&Engine>,
+    template: Option<&Plans>,
 ) -> RusticolResult<&'a mut Bin> {
     Ok(match bins.entry((n, rank)) {
         std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
         std::collections::btree_map::Entry::Vacant(entry) => {
             let bin = match template.and_then(|t| t.get(&(n, rank))) {
-                Some(bin) => bin.sibling(),
+                Some((plan, position)) => Bin {
+                    plan: plan.clone(),
+                    workspaces: Workspaces::default(),
+                    position: position.clone(),
+                },
                 None => Bin::new(n, rank)?,
             };
             // Registered when built: `prepare` builds every plan of the call

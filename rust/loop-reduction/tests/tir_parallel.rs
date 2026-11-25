@@ -392,8 +392,9 @@ fn off_a_pool_the_call_is_the_one_thread_call() {
     assert_eq!(off, run(&groups, options, check, 3));
 }
 
-/// A call on a pool of several threads reduces its slices on engines of
-/// their own (kept for the next call), one on one thread on none.
+/// A call on a pool of several threads reduces its slices on the
+/// backend's engine and up to one more per other thread (kept for the next
+/// call); on one thread on the backend's alone.
 #[test]
 fn several_threads_use_engines_of_their_own() {
     let groups = groups();
@@ -410,6 +411,9 @@ fn several_threads_use_engines_of_their_own() {
             parallel,
             "{threads} threads: {engines} engines"
         );
-        assert!(engines <= threads, "{threads} threads: {engines} engines");
+        assert!(
+            engines < threads.max(2),
+            "{threads} threads: {engines} engines"
+        );
     }
 }
