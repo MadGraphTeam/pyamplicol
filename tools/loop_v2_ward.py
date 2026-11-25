@@ -16,12 +16,15 @@ entry). Binary64 runs with the reduction-direction check, which its
 criterion reads (``ward.WARD_CHECKS``); double-double runs without checks
 unless ``--dd-checks``.
 
-Each row is ``ward.ward_row`` (the criterion: the Born and the virtual of
-every sector and Laurent coefficient vanish to the carrier's rounding
-relative to the physical scale) plus the lanes' absolute sum over the scale
-(the conditioning of the cancellation, ``ward.lane_scales``). The record is
-written after every batch (``--json``); the exit status is 0 when every row
-passed.
+Each row is judged by ``pyamplicol check``'s rule (``loops.v2.checks.
+threshold``): every Born sector and every virtual sector and Laurent
+coefficient passes iff R < K S against the physical evaluation at the same
+point (``checks._ward_measures``), K ``--tolerance`` (default: the
+requested relative accuracy, ``checks.tolerance``); the row keeps
+``ward.ward_row``'s figures (recorded, not judged) and the lanes' absolute
+sum over the scale (the conditioning of the cancellation,
+``ward.lane_scales``). The record is written after every batch (``--json``);
+the exit status is 0 when every row passed in every carrier.
 
 Usage:
     python tools/loop_v2_ward.py gg_ggggg --points 0 --legs 1 4 7 \\
@@ -68,6 +71,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--precisions", nargs="+", choices=CARRIERS, default=CARRIERS)
     parser.add_argument("--dd-checks", action="store_true")
+    parser.add_argument("--tolerance", type=float, default=None, metavar="K")
     parser.add_argument("--lanes", type=int, default=8)
     parser.add_argument("--threads", type=int, default=None)
     parser.add_argument("--scratch", type=Path, help="parent of the model directory")
@@ -75,12 +79,16 @@ def main(argv: list[str] | None = None) -> int:
     options = parser.parse_args(argv)
 
     from pyamplicol.loops.native import load_loop_native
+    from pyamplicol.loops.v2 import checks as threshold_checks
     from pyamplicol.loops.v2 import ward
     from pyamplicol.loops.v2.plan_export import NativeExecutor
     from tools.developer.prepare_source_runtime import _native_build_inputs_digest
     from tools.loop_benchmark import pyamplicol_v2, streams
     from tools.loop_v2_operation_counts import UFO, compile_loop_sm
 
+    tolerance = (
+        threshold_checks.tolerance() if options.tolerance is None else options.tolerance
+    )
     record: dict[str, Any] = {
         "kind": "ward-native",
         "revision": _git("rev-parse", "HEAD"),
@@ -92,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
         "lanes": options.lanes,
         "process": options.process,
         "criterion": {
+            "rule": "R < K S per Born sector and virtual sector and coefficient",
+            "tolerance": tolerance,
             "born": ward.BORN_BOUNDS,
             "virtual": ward.VIRTUAL_BOUNDS,
             "estimate_factor": ward.ESTIMATE_FACTOR,
@@ -166,9 +176,21 @@ def main(argv: list[str] | None = None) -> int:
             rows = []
             for row, result in zip(check["rows"], check["results"], strict=True):
                 lanes = ward.lane_scales(result, average)
+                judged = threshold_checks._judged_row(
+                    "ward",
+                    f"leg {row['leg']}",
+                    index,
+                    carrier,
+                    threshold_checks._ward_measures(physical, result),
+                    tolerance,
+                )
                 row.update(
                     factor=names[row["factor"]],
                     lanes=[v / s for v, s in zip(lanes, scales, strict=True)],
+                    ward_row_passed=row["passed"],
+                    passed=judged.verdict == threshold_checks.PASS,
+                    verdict=judged.verdict,
+                    r_over_s=judged.deviation,
                 )
                 rows.append(row)
             width = len(scales)
@@ -192,7 +214,7 @@ def main(argv: list[str] | None = None) -> int:
                     else list(physical.stability.coefficients)
                 ),
                 "rows": rows,
-                "passed": bool(check["passed"]),
+                "passed": bool(rows) and all(row["passed"] for row in rows),
                 "max_born": max(row["born"] for row in rows),
                 "max_virtual": [
                     max(row["parts"]["virtual"][k] for row in rows)
@@ -206,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
                 carrier,
                 f"{seconds:.1f}s",
                 "passed" if summary["passed"] else "FAILED",
+                "max R/S",
+                f"{max((row['r_over_s'] or 0.0) for row in rows):.1e}",
                 "max |V|/scale",
                 [f"{x:.1e}" for x in summary["max_virtual"]],
                 "max born ratio",
