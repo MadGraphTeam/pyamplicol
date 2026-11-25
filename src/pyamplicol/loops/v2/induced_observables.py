@@ -1010,6 +1010,17 @@ class InducedColumns:
         kept = frozenset(row for output in self.outputs for row in output.rows)
         return None if kept >= frozenset(self.observables.rows) else kept
 
+    def leg_masses(self, point, scale, parameters, precision):
+        """The squared mass each caller leg binds in the process executor
+        these outputs run on (``NativeExecutor.leg_masses``)."""
+
+        member = self.member
+        representative = point if member is None else member.point(point)
+        legs = self.observables.executor.leg_masses(
+            representative, scale, parameters, precision
+        )
+        return legs if member is None else [legs[leg] for leg in member.legs]
+
     def evaluate(
         self,
         points,

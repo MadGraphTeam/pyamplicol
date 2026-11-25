@@ -1004,7 +1004,13 @@ def profile_loop(
     stability statistics of each reduction backend, as ``config.benchmark``
     selects (neither ``runtime`` nor ``stability``: the runtime only), on
     ``config.evaluation.reduction`` alone when it is set. The runtime times
-    ``points`` (default: ``benchmarking.profile_points``)."""
+    ``points`` (default: ``benchmarking.profile_points``). A configuration
+    with ``evaluation.model_parameters`` is refused (``benchmarking.
+    require_artifact_parameters``)."""
+
+    from pyamplicol.benchmarking import require_artifact_parameters
+
+    require_artifact_parameters(config)
 
     from pyamplicol.api import Runtime
     from pyamplicol.api.errors import ReductionUnavailable
@@ -1811,6 +1817,12 @@ def profile_loop(
     in_process = want_stability and (
         workers == 1 or (stability_given is not None and completion is None)
     )
+    # The flat points' binding (``flat_points.runtime_binding``: the masses
+    # the loaded runtime binds, its leg map), taken before the runtime can
+    # be released: the stability run draws its points with it.
+    from pyamplicol.cli.flat_points import runtime_binding
+
+    binding = runtime_binding(runtime) if want_stability else None
     if not in_process:
         # Nothing evaluates in this process any more (the runtime timings and
         # the stability workers load their own): its runtime is released and
@@ -2344,6 +2356,7 @@ def profile_loop(
             deadline=deadline if given_points is None else None,
             costs=costs,
             current=current,
+            binding=binding,
             worker_bytes=_worker_memory(
                 load_peak,
                 _own_peak_bytes() if costs and not blind else None,
@@ -2363,6 +2376,10 @@ def profile_loop(
                 stability_setup,
                 monitor,
                 physics.process_id,
+                selector=physics.process_id
+                if evaluation.process is None
+                else str(evaluation.process),
+                legs=tuple(leg.pdg_id for leg in physics.external_particles),
             )
     causes, totals = _runtime_causes(runtime_rows or (), truth)
     more, more_totals = _stability_causes(stability_rows or ())
@@ -3176,7 +3193,7 @@ def _measure(
 
     from pyamplicol.api.errors import ReductionUnavailable
     from pyamplicol.benchmarking import REFERENCE_PRIOR, _initial_invariant
-    from pyamplicol.cli.flat_points import draw_flat_points
+    from pyamplicol.cli.flat_points import draw_flat_points, runtime_binding
     from pyamplicol.loops.v2.plan_export import DEFAULT_LANES
     from pyamplicol.loops.v2.reduction import NAMES
     from pyamplicol.profile_plan import (
@@ -3194,6 +3211,8 @@ def _measure(
         seed=space.seed,
         sqrt_s=space.sqrt_s,
         cuts=space.cuts,
+        # The masses the loaded runtime binds, in its leg order.
+        binding=runtime_binding(runtime),
     ).as_inputs(exact=False)
     initial = sum(1 for leg in physics.external_particles if leg.state == "incoming")
     scales = (
@@ -4630,6 +4649,7 @@ def _stability(
     records: bool = True,
     tail_seconds: float = 0.0,
     worker_bytes: float | None = None,
+    binding: Any = None,
 ) -> tuple[tuple[BackendStability, ...], Mapping[str, object]]:
     """The stability statistics of every backend (module docstring) over
     flat points, evaluated on ``benchmark.n_core`` worker processes (capped
@@ -4792,6 +4812,13 @@ def _stability(
     sqrt_s: list[float] = []
     cut_legs: list[tuple[int, ...]] = []
 
+    from pyamplicol.cli.flat_points import runtime_binding
+
+    # The masses the loaded runtime binds, in its leg order (once; taken by
+    # the caller before it released its runtime, ``binding``).
+    if binding is None and runtime is not None:
+        binding = runtime_binding(runtime)
+
     def draw(start: int, size: int) -> tuple[list[Any], list[Any] | Any]:
         flat = draw_flat_points(
             artifact,
@@ -4800,6 +4827,7 @@ def _stability(
             seed=space.seed + start,
             sqrt_s=space.sqrt_s,
             cuts=space.cuts,
+            binding=binding,
         )
         if not sqrt_s:
             sqrt_s.append(flat.sqrt_s)
@@ -5290,7 +5318,11 @@ def _stability(
                 workers,
                 (
                     str(artifact),
-                    physics.process_id,
+                    # The caller's selector (a permutation of the stored
+                    # process keeps its leg order in the workers).
+                    evaluation.process
+                    if evaluation.process is not None
+                    else physics.process_id,
                     dict(load_options or {}),
                     warm,
                     checks,
@@ -5939,11 +5971,23 @@ def _write_samples(
     setup: Mapping[str, object],
     monitor: _Monitor,
     process: str,
+    *,
+    selector: str,
+    legs: Sequence[int],
 ) -> tuple[tuple[BackendStability, ...], Mapping[str, object]]:
     """``--samples-output``: every sample's record to ``path`` (one JSON
     document: ``inputs`` as the setup's ``samples``, ``backends`` each
     backend's as its ``samples``), as its own phase; the report then names
-    the file where the records were."""
+    the file where the records were.
+
+    ``process`` is the representative's process id (kept for
+    compatibility); ``selector`` the process selector the profile loaded,
+    and ``legs`` the external legs' PDG codes in the order of every
+    sample's momenta: a replay passes ``selector`` (``Runtime.load(...,
+    process=selector)``), so that each momentum is the leg it was drawn
+    for. The representative id alone does not say it when the selector
+    orders the legs differently (``u u~ > z t t~`` of a stored
+    ``u u~ > t t~ z``)."""
 
     from pyamplicol.reporting.raw_json import RawJson, splice
 
@@ -5964,6 +6008,8 @@ def _write_samples(
     document = {
         "schema": "pyamplicol.profile-samples/1",
         "process": process,
+        "selector": selector,
+        "external_pdgs": list(legs),
         "seed": setup.get("seed"),
         "sqrt_s": setup.get("sqrt_s"),
         "cuts": setup.get("cuts"),

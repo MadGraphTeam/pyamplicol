@@ -80,4 +80,3 @@ strip = "debuginfo"
 [profile.sdk]
 inherits = "release"
 lto = "off"
-

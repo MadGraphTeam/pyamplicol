@@ -336,6 +336,33 @@ pub mod v2 {
         pub coefficients: Vec<Complex<T>>,
     }
 
+    impl<T: Clone> FamilyLanes<T> {
+        /// Keep the lanes of the points `keep` keeps (in order).
+        fn retain_points(&mut self, keep: impl Fn(usize) -> bool) {
+            let lanes = self.keys.len();
+            if lanes == 0 {
+                return;
+            }
+            let kept: Vec<bool> = self.points.iter().map(|&point| keep(point)).collect();
+            fn retain<V: Clone>(values: &mut Vec<V>, kept: &[bool]) {
+                let stride = values.len() / kept.len();
+                let mut at = 0;
+                values.retain(|_| {
+                    let keep = kept[at / stride.max(1)];
+                    at += 1;
+                    keep
+                });
+            }
+            retain(&mut self.points, &kept);
+            retain(&mut self.keys, &kept);
+            retain(&mut self.shifts, &kept);
+            retain(&mut self.masses, &kept);
+            retain(&mut self.scales, &kept);
+            retain(&mut self.s_matrix, &kept);
+            retain(&mut self.coefficients, &kept);
+        }
+    }
+
     /// One reduction lane: its raw Laurent integrals in the columns of
     /// [`Poles`], or the reducer status of a failed lane.
     pub type LaneOutcome<T> = Result<Vec<Complex<T>>, String>;
@@ -494,8 +521,9 @@ pub mod v2 {
     }
 
     /// The rescue-precision kinematics of a reduction call's lanes, on
-    /// demand ([`V2Backend::reduce_refined`]).
-    pub trait RefinementSource<T> {
+    /// demand ([`V2Backend::reduce_refined`]); shared by the workers of a
+    /// parallel reduction, hence `Sync`.
+    pub trait RefinementSource<T>: Sync {
         /// The rescue carrier of the low parts.
         fn carrier(&self) -> RescueCarrier;
         /// The low parts of lane `row` of group `group` (one lane:
@@ -1499,6 +1527,32 @@ pub mod v2 {
         data: &LaneData<T, L>,
         failures: &mut [Vec<String>],
     ) -> FamilyLanes<T> {
+        lanes_with(
+            plan,
+            masses,
+            scales,
+            numerator,
+            data,
+            failures,
+            |failures, point| !failures[point].is_empty(),
+            |failures, point, failure| failures[point].push(failure),
+        )
+    }
+
+    /// [`lanes_of`] with the failures read and recorded through `state`:
+    /// `failed(state, point)` skips a point, `fail(state, point, failure)`
+    /// records a non-finite numerator.
+    #[allow(clippy::too_many_arguments)]
+    fn lanes_with<T: Carrier, S: ?Sized, const L: usize>(
+        plan: &LoopProgramV4,
+        masses: &[Complex<T>],
+        scales: &[Complex<T>],
+        numerator: &FamilyNumerator<T>,
+        data: &LaneData<T, L>,
+        state: &mut S,
+        failed: impl Fn(&S, usize) -> bool,
+        mut fail: impl FnMut(&mut S, usize, String),
+    ) -> FamilyLanes<T> {
         let family = &plan.families[numerator.family];
         let n = family.propagators();
         let masks = family.shift_masks();
@@ -1532,11 +1586,15 @@ pub mod v2 {
         let dependents = family_dependents(plan, family);
         for lane in 0..data.active {
             let point = data.points[lane];
-            if !failures[point].is_empty() {
+            if failed(state, point) {
                 continue;
             }
             if !finite[lane] {
-                failures[point].push(format!("family {}: non-finite numerator", numerator.family));
+                fail(
+                    state,
+                    point,
+                    format!("family {}: non-finite numerator", numerator.family),
+                );
                 continue;
             }
             for (k, &order) in family.orders.iter().enumerate() {
@@ -1581,6 +1639,68 @@ pub mod v2 {
             }
         }
         lanes
+    }
+
+    /// The reduction lanes of a bucket chunk's family numerators (the
+    /// groups with lanes, in numerator order): [`lanes_of`] of each in turn,
+    /// a point failed by one numerator skipped by the later ones. On several
+    /// threads the numerators scatter in parallel, each against the
+    /// failures at entry, and are merged in numerator order: a point a
+    /// numerator fails loses the later numerators' lanes and failures, as
+    /// in turn, so the groups and failures do not depend on the count.
+    fn scatter_lanes<T: Carrier, const L: usize>(
+        plan: &LoopProgramV4,
+        masses: &[Complex<T>],
+        scales: &[Complex<T>],
+        numerators: &[FamilyNumerator<T>],
+        data: &LaneData<T, L>,
+        failures: &mut [Vec<String>],
+    ) -> Vec<FamilyLanes<T>> {
+        if numerators.len() < 2 || rayon::current_num_threads() < 2 {
+            return numerators
+                .iter()
+                .map(|numerator| lanes_of(plan, masses, scales, numerator, data, failures))
+                .filter(|group| !group.keys.is_empty())
+                .collect();
+        }
+        let entry: &[Vec<String>] = failures;
+        // Per numerator its lanes and the failures it found (point, why).
+        type Scattered<T> = (FamilyLanes<T>, Vec<(usize, String)>);
+        let scattered: Vec<Scattered<T>> = numerators
+            .par_iter()
+            .map(|numerator| {
+                let mut new = Vec::new();
+                let group = lanes_with(
+                    plan,
+                    masses,
+                    scales,
+                    numerator,
+                    data,
+                    &mut new,
+                    |_, point| !entry[point].is_empty(),
+                    |new: &mut Vec<(usize, String)>, point, failure| new.push((point, failure)),
+                );
+                (group, new)
+            })
+            .collect();
+        // Points failed within this chunk, by the numerators merged so far.
+        let mut failed_here: Vec<usize> = Vec::new();
+        let mut groups = Vec::with_capacity(scattered.len());
+        for (mut group, new) in scattered {
+            if !failed_here.is_empty() {
+                group.retain_points(|point| !failed_here.contains(&point));
+            }
+            for (point, failure) in new {
+                if !failed_here.contains(&point) {
+                    failures[point].push(failure);
+                    failed_here.push(point);
+                }
+            }
+            if !group.keys.is_empty() {
+                groups.push(group);
+            }
+        }
+        groups
     }
 
     /// The dependent columns of a dressed-row family (lit-fold F1d,
@@ -1835,20 +1955,14 @@ pub mod v2 {
             report: &mut Report,
         ) -> RusticolResult<()> {
             let start = Instant::now();
-            let groups: Vec<FamilyLanes<T>> = numerators
-                .iter()
-                .map(|numerator| {
-                    lanes_of(
-                        self.plan,
-                        self.masses,
-                        self.scales,
-                        numerator,
-                        self.data,
-                        &mut self.sink.failures,
-                    )
-                })
-                .filter(|group| !group.keys.is_empty())
-                .collect();
+            let groups = scatter_lanes(
+                self.plan,
+                self.masses,
+                self.scales,
+                numerators,
+                self.data,
+                &mut self.sink.failures,
+            );
             report.time("scatter", start);
             report.count(
                 "reduction lanes",
@@ -3335,6 +3449,175 @@ pub mod v2 {
                 assert_eq!(value[0], Complex::new(6.0, 0.0));
             }
             assert_eq!(report.counts["reduction lanes"], 3);
+        }
+
+        /// A received group: its family, points, keys and the bits of every
+        /// lane input.
+        type Received = (usize, Vec<usize>, Vec<LaneKey>, Vec<u64>);
+
+        /// Records every group it receives (points, keys and the bits of
+        /// every lane input) and serves each lane its first coefficient.
+        #[derive(Default)]
+        struct Recording {
+            groups: Vec<Received>,
+        }
+
+        impl V2Backend<f64> for Recording {
+            fn begin(&mut self) {}
+
+            fn reduce(
+                &mut self,
+                groups: &[FamilyLanes<f64>],
+                _poles: Poles,
+                _check: Option<ReductionCheck>,
+            ) -> RusticolResult<Reduced<f64>> {
+                let bits = |values: &[Complex<f64>]| {
+                    values
+                        .iter()
+                        .flat_map(|z| [z.re.to_bits(), z.im.to_bits()])
+                        .collect::<Vec<_>>()
+                };
+                let direct = groups
+                    .iter()
+                    .map(|group| {
+                        let mut inputs = bits(&group.coefficients);
+                        for values in [&group.shifts, &group.masses, &group.scales, &group.s_matrix]
+                        {
+                            inputs.extend(bits(values));
+                        }
+                        self.groups.push((
+                            group.family,
+                            group.points.clone(),
+                            group.keys.clone(),
+                            inputs,
+                        ));
+                        let monomials = group.coefficients.len() / group.keys.len().max(1);
+                        (0..group.keys.len())
+                            .map(|lane| -> LaneOutcome<f64> {
+                                let zero = Complex::new(0.0, 0.0);
+                                Ok(vec![group.coefficients[lane * monomials], zero, zero])
+                            })
+                            .collect()
+                    })
+                    .collect();
+                Ok((direct, None))
+            }
+        }
+
+        /// Six families in one bucket chunk (the scatter runs its numerators
+        /// in parallel on several threads), four points of which point 1 has
+        /// a non-finite Born (every numerator fails it; the first records
+        /// it): the backend's groups and the results are bitwise those of one
+        /// thread at 2, 4 and 8 threads.
+        #[test]
+        fn the_scatter_on_several_threads_is_bitwise_the_serial_one() {
+            let families = [FAMILY; 6].join(",");
+            let text = std::str::from_utf8(PLAN)
+                .unwrap()
+                .replace("FAMILY,FAMILY", &families);
+            let plan = Arc::new(LoopProgramV4::load(text.as_bytes()).unwrap());
+            let momentum = |e: i64| -> Vec<Rational> {
+                [e, 0, 0, e, e, 0, 0, -e].map(Rational::from).to_vec()
+            };
+            let batch = V2Batch {
+                momenta: (1..=4).map(momentum).collect(),
+                scales: vec![Rational::from(1); 4],
+                masses: vec![Rational::from(0)],
+                masses_imaginary: Vec::new(),
+                leg_masses: Vec::new(),
+                constants: vec![Complex::new(2.0, 0.0)],
+                block_rows: vec![Vec::new(); 4],
+                born: vec![
+                    vec![Complex::new(1.0, 1.0)],
+                    vec![Complex::new(f64::NAN, 0.0)],
+                    vec![Complex::new(3.0, -0.5)],
+                    vec![Complex::new(0.25, 2.0)],
+                ],
+            };
+            let run = |threads: usize| {
+                let executor = V2Executor::new(plan.clone(), DEFAULT_LANES, Some(threads)).unwrap();
+                let mut backend = Recording::default();
+                let (results, report) = executor
+                    .evaluate(&batch, &0.0, &mut backend, V2Options::default())
+                    .unwrap();
+                let results: Vec<_> = results
+                    .iter()
+                    .map(|result| {
+                        let lanes: Vec<_> = result
+                            .families
+                            .iter()
+                            .map(|(key, value)| {
+                                (
+                                    *key,
+                                    value
+                                        .iter()
+                                        .map(|z| (z.re.to_bits(), z.im.to_bits()))
+                                        .collect::<Vec<_>>(),
+                                )
+                            })
+                            .collect();
+                        (lanes, result.failures.clone())
+                    })
+                    .collect();
+                (backend.groups, results, report.counts["reduction lanes"])
+            };
+            let expected = run(1);
+            assert_eq!(expected.0.len(), 6, "one group per family");
+            assert!(
+                expected
+                    .0
+                    .iter()
+                    .all(|(_, points, ..)| !points.contains(&1))
+            );
+            assert_eq!(
+                expected.1[1].1.len(),
+                1,
+                "the first numerator fails point 1"
+            );
+            assert!(expected.1[1].1[0].contains("non-finite numerator"));
+            assert_eq!(expected.2, 18);
+            for threads in [2, 4, 8] {
+                assert_eq!(run(threads), expected, "{threads} threads");
+            }
+        }
+
+        /// `retain_points` keeps the lanes of the kept points with all their
+        /// inputs.
+        #[test]
+        fn retained_lanes_keep_their_inputs() {
+            let c = |x: f64| Complex::new(x, -x);
+            let mut lanes = FamilyLanes {
+                family: 0,
+                propagators: 1,
+                rank: 0,
+                points: vec![0, 1, 1, 2],
+                keys: (0..4)
+                    .map(|column| LaneKey {
+                        family: 0,
+                        order: 0,
+                        column,
+                    })
+                    .collect(),
+                shifts: (0..16).map(|k| c(k as f64)).collect(),
+                masses: (0..4).map(|k| c(10.0 + k as f64)).collect(),
+                scales: (0..4).map(|k| c(20.0 + k as f64)).collect(),
+                s_matrix: (0..4).map(|k| c(30.0 + k as f64)).collect(),
+                coefficients: (0..8).map(|k| c(40.0 + k as f64)).collect(),
+            };
+            lanes.retain_points(|point| point != 1);
+            assert_eq!(lanes.points, [0, 2]);
+            assert_eq!(
+                lanes.keys.iter().map(|k| k.column).collect::<Vec<_>>(),
+                [0, 3]
+            );
+            assert_eq!(
+                lanes.shifts,
+                [0.0, 1.0, 2.0, 3.0, 12.0, 13.0, 14.0, 15.0].map(c)
+            );
+            assert_eq!(lanes.masses, [10.0, 13.0].map(c));
+            assert_eq!(lanes.scales, [20.0, 23.0].map(c));
+            assert_eq!(lanes.s_matrix, [30.0, 33.0].map(c));
+            assert_eq!(lanes.coefficients, [40.0, 41.0, 46.0, 47.0].map(c));
         }
 
         /// Refuses every lane of point 0 in binary64; its lane rescue

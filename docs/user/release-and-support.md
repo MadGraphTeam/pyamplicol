@@ -37,6 +37,92 @@ dependency source patches or unpublished wheels are needed.
 
 ## Changes after 1.0.3
 
+**The one-loop runtime uses its threads.** Until now the reduction, most of
+a one-loop call's time, ran on one thread whatever `threads` allowed: 8
+threads gained x1.0 to x1.1 on loop-induced processes with NinjaRS and at most
+x2.9 elsewhere. Both reductions now run in parallel on the runtime's own pool
+(NinjaRS over slices of lanes, TIRust over slices of kinematic rows, in every
+carrier, the check frames, the cancellation rescue and the lane rescue
+included), and so do the tree programs, the tree interferences and the
+scatter of numerators into lanes. One 16-point call on 8 cores (binary64,
+unchecked) is about 4.3 (NinjaRS) and 5.6 (TIRust) times faster than on one
+on `g g > g g g g`, 4.1 on `g g > h g g` with NinjaRS (1.7 with TIRust), 4.3
+on `g g > z z`, 2.3 on `g g > t t~ g`, 1.6 on `u u~ > e+ e- g g`
+([Configuration](configuration.md#threads): what runs in parallel and what
+does not scale).
+
+Compatibility: results do not depend on the thread count, bit for bit (every
+value, diagnostic, rescue and uncertified record, checked and unchecked, every
+carrier and batch size, both reductions), and one thread gives the values it
+gave before this change, bit for bit; the one-core cost is unchanged with
+NinjaRS and up to about 1.5 % higher with TIRust (lane independence, below).
+TIRust's workspaces are now
+lane-independent: a lane starts from the plan's base variant instead of the
+variant the lane before it selected, which made a nearly degenerate row's
+last bits (and, in the last-resort pass, its value) depend on the rows reduced
+before it in the same workspace; no value of the shipped and profiled
+processes changes. Limits: the Python assembly of the result runs under the
+interpreter lock, the tree programs are bound by memory reads past a few
+threads, the dressing of a small process has few families to share out, and
+a TIRust row refused by its gates has its method choice as one serial
+computation; each worker keeps engines of its own, so memory grows with the
+thread count.
+
+Dependencies: TIRust `780410ce` (huashengshao/TIRust#63 on `1c130a81`:
+lane-independent workspaces); the other pins are unchanged.
+
+**Fixed parameters now define the masses of the generated points.** In 1.0.2
+and 1.0.3 (every one-loop artifact), a card's `[loop.preparation]
+fixed_parameters` were bound by the amplitude but ignored by the kinematics:
+the artifact's validation point, the points of `check` and of the
+generation's probes and, in 1.0.3, the flat phase-space points of `evaluate`
+and `profile` (which took their masses from the validation point) were drawn
+on the model's own masses, and `model/parameters.json` stated the model's
+values. Where a fixed parameter changes an external mass, every such point was
+off the shells the amplitude binds and its value was returned as `success`
+although it is no amplitude: `g g > t t~ h` with `MT = ymt = 173`, `MH = 125`
+on `loop_qcd_qed_sm_Gmu` / `with_b_mass_no_width` (174.3 / 120) was profiled
+with tops 1.5 % and the Higgs 7.8 % off shell in p^2, its double pole up to
+0.2 off -2 C_A (alpha_s / 2 pi) Born and the two reduction backends up to an
+order apart (on shell: Catani's pole to 1e-10, the backends to 1e-24,
+MadLoop and Recola agree). `check` was not affected (it re-shells its points
+on the masses it binds). Now one evaluator gives the bound external masses
+(from the exact parameter texts, on the effective binding, a derived mass
+rounded once) to every generated point; the flat points of `evaluate` follow
+the parameters given at evaluation (`--model-parameters`), `profile`, the
+benchmark runner and the Python profiling functions (`benchmarking.
+profile_virtual`, `profile_points`) refuse such parameters, and draw on the
+masses the runtime they load binds, in the selected process's leg order; a
+`profile --samples-output` file now also records the `selector` the profile
+loaded and its legs' PDG codes (`external_pdgs`), with which its samples
+are replayed (its `process`, the representative's id, does not give the leg
+order of a selector that permutes the final state); the validation record states the
+bound masses and `model/parameters.json` the bound values. In the checked
+mode a shell-consistency screen marks a point off the bound shells beyond the
+call's target as `uncertified` (its value still served; [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
+"The shell-consistency screen"); the unchecked mode is unchanged.
+
+Compatibility: the values at given points (the same supplied momenta and
+parameters) are those of 1.0.3; the screen adds a diagnostic only. Newly
+generated stored validation points are bit for bit those of 1.0.3 when every
+external mass is an input parameter of the model and none is moved by a
+fixed parameter; an external mass that is DERIVED (loop_sm's W) is now the
+amplitude's own binary64 binding, which can differ from the former value in
+its last bits (u d~ > w+ on loop_sm defaults: beam energy 40.209501222878089
+became 40.209501222878082, MW 80.419002445756178 became 80.419002445756163);
+no shipped example and none of the profiling campaign's processes has a
+derived external mass. The flat phase-space SAMPLE drawn for a given seed changes
+at rounding level for every process with a massive external leg (the masses
+are now the exact bound ones, no longer re-derived from the stored point:
+173.00000000000003 became 173): a profile's points before and after this
+change are not the same bits, so the shards of one profiled row must all be
+drawn by the same version. **Artifacts with an external mass fixed to another
+value than the model's must be regenerated**: the Python runtime refuses to
+load one (its stored validation point is measured against the masses it
+binds) and the standalone flat-point drawer refuses its record; the native
+SDKs' open does not check (a known gap, to follow), and stream files of the
+stored benchmark tool keep their own momenta and parameters.
+
 **NinjaRS no longer loses a lane's digits silently.** At ordinary phase-space
 points a few NinjaRS reduction lanes lost most of their binary64 digits to
 cancellation at a nearly degenerate cut (a triangle with two massive legs of
