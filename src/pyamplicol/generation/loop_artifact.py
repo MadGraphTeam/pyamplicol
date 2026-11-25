@@ -13,7 +13,7 @@ Virtual processes are published by the shared-recursion engine v2
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -204,6 +204,12 @@ class LoopV2ProcessArtifact:
     state_legs: tuple[dict[str, object], ...] = ()
     helicities: tuple[tuple[int, ...], ...] = ()
     point_inputs: str = LOOP_V2_NATIVE_POINT_INPUTS
+    # The external parameters the process's amplitude binds at fixed values
+    # (its slice's ``fixed_parameters``: the request's and those its model
+    # preparation fixes), exact decimal texts: the artifact's model parameter
+    # record (``model/parameters.json``) states them in place of the model's
+    # own values.
+    fixed_parameters: Mapping[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not isinstance(self.metadata, LoopV2ExecutionMetadata):

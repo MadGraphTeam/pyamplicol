@@ -1267,6 +1267,15 @@ class VirtualLaneDiagnostic:
     # established (``accuracy_established`` False, the reasons in ``detail``)
     # whatever the point's stability estimate says. Empty otherwise.
     uncertified: tuple[str, ...] = ()
+    # The shell-consistency screen's measure of the point (``pyamplicol.
+    # kinematics``, "the shell screen"; checked mode only): per external leg,
+    # in the caller's leg order, the relative shell defect of the evaluated
+    # momenta (after the kinematics improvement) against the squared mass
+    # the call's executor binds, |p^2 - m^2| / m^2 (massless |p^2| /
+    # (E^2 + |p|^2)); a leg beyond the screen's allowance marks the point
+    # (its value served, an ``uncertified`` reason; never a failure). None
+    # in the unchecked mode and from a runtime that records none.
+    mass_shell: tuple[float, ...] | None = None
 
     def __post_init__(self) -> None:
         if self.status not in {
@@ -1319,6 +1328,11 @@ class VirtualLaneDiagnostic:
                 "a lane's reduction rescue is a VirtualReductionRescue record"
             )
         object.__setattr__(self, "uncertified", tuple(str(r) for r in self.uncertified))
+        if self.mass_shell is not None:
+            shell = tuple(float(value) for value in self.mass_shell)
+            if any(value < 0.0 for value in shell):
+                raise ValueError("mass-shell defects are nonnegative")
+            object.__setattr__(self, "mass_shell", shell)
         if self.uncertified and self.accuracy_established:
             raise ValueError(
                 "a lane served without accuracy evidence cannot establish accuracy"
