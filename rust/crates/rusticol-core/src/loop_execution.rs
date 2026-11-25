@@ -494,8 +494,9 @@ pub mod v2 {
     }
 
     /// The rescue-precision kinematics of a reduction call's lanes, on
-    /// demand ([`V2Backend::reduce_refined`]).
-    pub trait RefinementSource<T> {
+    /// demand ([`V2Backend::reduce_refined`]); shared by the workers of a
+    /// parallel reduction, hence `Sync`.
+    pub trait RefinementSource<T>: Sync {
         /// The rescue carrier of the low parts.
         fn carrier(&self) -> RescueCarrier;
         /// The low parts of lane `row` of group `group` (one lane:

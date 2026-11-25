@@ -993,10 +993,15 @@ impl V2ReductionBackend {
             )
             .collect();
         let adapter = source.map(|source| SourceAdapter { source });
+        // The lanes' points cut a parallel reduction's slices (none needed
+        // on one thread).
+        let points: Option<Vec<&[usize]>> = (crate::lane_slices::workers() > 1)
+            .then(|| groups.iter().map(|g| g.points.as_slice()).collect());
         let output = self
             .reducer
-            .reduce_refined(
+            .reduce_at(
                 &family_groups,
+                points.as_deref(),
                 adapter.as_ref().map(|a| a as &dyn GroupRefinementSource),
                 ReduceOptions {
                     poles,
