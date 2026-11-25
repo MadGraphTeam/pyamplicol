@@ -2058,15 +2058,31 @@ class V2VirtualRuntime:
         representative's executor, on the caller's legs): the improvement's
         targets."""
 
+        from .native_trees import scale_dependent_shared
+
         member = self._member
         representative = point if member is None else member.point(point)
         with self._lock:
             # The caller's snapshot of the call (``parameters``), else the
             # runtime's current parameters.
             own = dict(self._parameters if parameters is None else parameters)
-            masses = self._executor.leg_masses(
-                representative, scale, own, precision, count
+            # The binding depends on the carrier and the parameters only
+            # (never on the point; on the scale too for a program whose
+            # masses run with it, which is bound per call): bound once.
+            key = (
+                "native",
+                precision.arithmetic,
+                precision.working_digits,
+                tuple(sorted(own.items())),
             )
+            masses = self._bound_masses.get(key)
+            if masses is None:
+                masses = self._executor.leg_masses(
+                    representative, scale, own, precision, count
+                )
+                if not scale_dependent_shared(self._native_process.trees):
+                    self._bound_masses[key] = masses
+            masses = list(masses)
         if member is None:
             return masses
         return [masses[leg] for leg in member.legs]
