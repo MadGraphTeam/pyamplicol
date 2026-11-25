@@ -157,19 +157,24 @@ def build_process_validation_point(
     fixed_parameters: Mapping[str, str] | None = None,
     record_masses: bool = False,
     scale_parameter: str | None = None,
+    masses: Sequence[float] | None = None,
 ) -> ValidationPointRecord:
     """Build validation momenta without requiring a materialized DAG, on
     shell at the masses the amplitude binds (``bound_external_masses`` at
     ``fixed_parameters``). ``sqrt_s`` replaces the centre-of-mass energy of
     a 2 -> n scattering (n >= 2) (None: the convention of
     ``_build_particles``). ``record_masses`` stores the bound masses in the
-    record (a loop process's, ``ValidationPointRecord.masses``)."""
+    record (a loop process's, ``ValidationPointRecord.masses``). ``masses``:
+    the legs' masses as the amplitude's own binding gives them (a loop
+    process's native binary64 binding, ``loop_service.
+    _native_external_masses``), in place of ``bound_external_masses``."""
 
-    masses = None
     try:
-        masses = bound_external_masses(
-            process, model, fixed_parameters, scale_parameter=scale_parameter
-        )
+        if masses is None:
+            masses = bound_external_masses(
+                process, model, fixed_parameters, scale_parameter=scale_parameter
+            )
+        masses = tuple(float(mass) for mass in masses)
         particles = _build_particles(process, masses, seed=seed, sqrt_s=sqrt_s)
     except (ArithmeticError, KeyError, RuntimeError, ValueError) as exc:
         return ValidationPointRecord(

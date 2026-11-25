@@ -1855,6 +1855,9 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                                     fixed_parameters=process.slice.fixed_parameters,
                                     scale_parameter=process.slice.scale_parameter,
                                     record_masses=True,
+                                    masses=_native_external_masses(
+                                        process, native, entry
+                                    ),
                                 ),
                                 generation_filters={
                                     "loop_engine": "v2",
@@ -2276,7 +2279,56 @@ def _loop_induced_candidates(context, entry, process, validation, index):
         unavailable="loop-induced probe momenta unavailable",
         fixed=slice_.fixed_parameters,
         scale_parameter=slice_.scale_parameter,
+        masses=_native_external_masses(process, None, entry),
     )
+
+
+def _native_external_masses(process, native, entry):
+    """The mass of every external leg (``entry``'s order, initial states
+    first) as the generated process's own native executor binds it in
+    binary64 (``NativeExecutor.leg_masses``: the tree program's binding, the
+    amplitude's; a derived mass in that carrier), rounded once to its root:
+    the masses of the generated kinematics. None for a process without
+    native point inputs (the shared evaluator, ``validation.
+    bound_external_masses``, then decides). An external mass that runs with
+    the renormalisation scale is refused (``assemble.RunningExternalMass``:
+    the validation point is then unavailable with its reason)."""
+
+    from decimal import Decimal, localcontext
+
+    from pyamplicol.loops.native import load_loop_native
+    from pyamplicol.loops.v2.assemble import (
+        Precision,
+        RunningExternalMass,
+        scale_dependent_legs,
+    )
+
+    stored = getattr(process, "native", None)
+    if stored is None:
+        return None
+    slice_ = process.slice
+    pdgs = [*entry.process_ir.initial_pdgs, *entry.process_ir.final_pdgs]
+    if scale_dependent_legs(slice_.compiled, pdgs, slice_.scale_parameter):
+        return None
+    executor = stored.executor(native or load_loop_native())
+    legs = sorted(executor.slice.blocks.process.legs, key=lambda leg: int(leg.label))
+    if [int(leg.pdg) for leg in legs] != [int(pdg) for pdg in pdgs]:
+        return None
+    zero = [[0, 0, 0, 0] for _ in legs]
+    try:
+        squares = executor.leg_masses(zero, "1", {}, Precision.double(), 1)
+    except (ArithmeticError, RunningExternalMass, ValueError):
+        return None
+    out = []
+    for square in squares:
+        if square is None:
+            return None
+        with localcontext() as context:
+            context.prec = 60
+            out.append(
+                float((Decimal(square.numerator) / Decimal(square.denominator)).sqrt())
+            )
+    return tuple(out)
 
 
 def _validation_momenta(
@@ -2290,6 +2342,7 @@ def _validation_momenta(
     scale_parameter=None,
     sqrt_s=None,
     cuts=None,
+    masses=None,
 ):
     """``count`` phase-space points of the generation's validation convention
     (``build_process_validation_point`` at seeds ``seed``, ``seed + 1``,
@@ -2314,6 +2367,7 @@ def _validation_momenta(
             sqrt_s=sqrt_s,
             fixed_parameters=fixed,
             scale_parameter=scale_parameter,
+            masses=masses,
         )
         if not record.available:
             raise GenerationError(f"{unavailable}: {record.error}")
@@ -2332,15 +2386,16 @@ def _validation_momenta(
         int(particle.pdg_code): particle
         for particle in context.resolved.compiled.ir.particles
     }
-    try:
-        masses = bound_external_masses(
-            entry.process_ir,
-            context.resolved.model,
-            fixed,
-            scale_parameter=scale_parameter,
-        )
-    except ValueError as error:
-        raise GenerationError(f"{unavailable}: {error}") from error
+    if masses is None:
+        try:
+            masses = bound_external_masses(
+                entry.process_ir,
+                context.resolved.model,
+                fixed,
+                scale_parameter=scale_parameter,
+            )
+        except ValueError as error:
+            raise GenerationError(f"{unavailable}: {error}") from error
     legs = [
         initial + leg
         for leg, pdg in enumerate(entry.process_ir.final_pdgs)
@@ -2517,7 +2572,7 @@ def _validate_v2_artifact(backend, output, context, generated, members):
             entry,
             validation,
             index,
-            generated[representative].slice,
+            generated[representative],
         )
         if permutation is not None:
             # The target's points in the alias's leg order.
@@ -2743,12 +2798,16 @@ def _compare_v2(
     return largest
 
 
-def _v2_validation_points(context, entry, validation, index, slice_):
+def _v2_validation_points(context, entry, validation, index, process):
     """The post-build validation's points of ``entry`` (``_validation_momenta``
-    on shell at the masses its slice ``slice_`` binds) and their scales (each
-    point's initial invariant)."""
+    on shell at the masses the generated ``process`` binds: its native
+    binding, ``_native_external_masses``) and their scales (each point's
+    initial invariant)."""
 
     from pyamplicol.loops.v2.induced import initial_invariant
+
+    slice_ = process.slice
+    masses = _native_external_masses(process, None, entry)
 
     points, scales = [], []
     for vectors in _validation_momenta(
@@ -2759,6 +2818,7 @@ def _v2_validation_points(context, entry, validation, index, slice_):
         unavailable="virtual validation momenta unavailable",
         fixed=slice_.fixed_parameters,
         scale_parameter=slice_.scale_parameter,
+        masses=masses,
     ):
         point = [[repr(float(x)) for x in vector] for vector in vectors]
         initial = len(entry.process_ir.initial_pdgs)

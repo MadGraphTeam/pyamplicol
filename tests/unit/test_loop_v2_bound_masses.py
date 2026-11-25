@@ -716,9 +716,17 @@ def test_an_override_moves_the_thresholds_and_profile_refuses_overrides(
 
     heavy = runtime_binding(Runtime.load(uux_ttx_free, model_parameters={"MT": "600"}))
     assert heavy.masses[2:] == (600.0, 600.0)
+    # The default energy follows the bound masses (the generation's
+    # convention: threshold + 100 above 1000), an explicit one is checked
+    # against their threshold.
+    flat = draw_flat_points(
+        uux_ttx_free, process=None, points=1, seed=1, sqrt_s=None, binding=heavy
+    )
+    assert flat.sqrt_s == 1300.0
+    _assert_on_shell(flat.points[0], heavy.masses)
     with pytest.raises(ConfigurationError, match="below the threshold"):
         draw_flat_points(
-            uux_ttx_free, process=None, points=1, seed=1, sqrt_s=None, binding=heavy
+            uux_ttx_free, process=None, points=1, seed=1, sqrt_s=1000.0, binding=heavy
         )
     from dataclasses import replace
 
@@ -806,7 +814,9 @@ def test_a_derived_external_mass_is_bound_once(tmp_path, model, restriction, fix
     binding = runtime_binding(runtime)
     assert binding.masses[2] == binding.masses[3] == recorded
     if model == "loop_sm":
-        assert recorded == 64.34672030531159
+        # The executor's binary64 binding of the cancelling definition (the
+        # exact value is 64.34672030531159).
+        assert abs(recorded / 64.34672030531159 - 1) < 1e-8
     (point,) = record["points"]
     _assert_on_shell([entry["momentum"] for entry in point], binding.masses)
     flat = draw_flat_points(artifact, process=None, points=2, seed=3, sqrt_s=None)
@@ -1135,3 +1145,77 @@ def test_a_grossly_off_shell_point_never_establishes_accuracy(uux_ttx, spelling,
     (lane,) = result.diagnostics
     assert lane.has_value and not lane.accuracy_established
     assert any(is_shell_reason(reason) for reason in lane.uncertified)
+
+
+_GF = "0.000008129019219166201336841295286623932582846681333890791203855282746298838"
+
+
+@pytest.fixture(scope="module")
+def uux_ww(tmp_path_factory):
+    """u u~ > w+ w- (QCD) on loop_sm with the review's inputs of a derived W
+    mass near its threshold: MZ = 91, aEWM1 = 132 and the long Gf."""
+
+    return _card(
+        tmp_path_factory.mktemp("bound-masses-ww"),
+        "loop_sm",
+        "no_b_mass",
+        "u u~ > w+ w-",
+        {"MZ": "91", "aEWM1": "132", "Gf": _GF},
+    )
+
+
+@pytest.mark.loop_physics
+def test_the_draws_and_the_screen_take_the_executor_binding(uux_ww):
+    """The derived W mass of the amplitude is the native binary64 binding,
+    not the exact one (64.34672030531159; the review measured a 5.8e-10
+    squared-mass difference on g g > w+ w-): the stored record, the flat points and the
+    screen take the executor's binding; at target 1e-12 a point on the
+    exact shell is marked, and once the binary64 improvement moved it onto
+    the executor's shell it is not."""
+
+    from pyamplicol.api import Runtime
+    from pyamplicol.cli.flat_points import (
+        FlatBinding,
+        draw_flat_points,
+        runtime_binding,
+    )
+    from pyamplicol.kinematics import is_shell_reason
+    from pyamplicol.loops.v2.assemble import Precision
+
+    runtime = Runtime.load(uux_ww, reduction_target=1e-12)
+    backend = runtime._backend
+    flat = draw_flat_points(
+        uux_ww,
+        process=None,
+        points=1,
+        seed=3,
+        sqrt_s=350.0,
+        binding=runtime_binding(runtime),
+    )
+    point = [list(leg) for leg in flat.points[0]]
+    native = backend._kinematics_masses(Precision.double(), point, "1", 1)
+    w = flat.masses[2]
+    # The executor's own binary64 binding, off the exact mass by its
+    # carrier's cancellation (about 1e-10 relative here).
+    assert Fraction(w) ** 2 == native[2] == native[3]
+    assert 1e-11 < abs(w / 64.34672030531159 - 1) < 1e-8
+    assert float(_record(uux_ww)["masses"][2]) == w
+    result = runtime.evaluate([point], mu_r2=flat.mu_r2())
+    assert not any(is_shell_reason(r) for r in result.diagnostics[0].uncertified)
+    exact = draw_flat_points(
+        uux_ww,
+        process=None,
+        points=1,
+        seed=3,
+        sqrt_s=350.0,
+        binding=FlatBinding("p", (0.0, 0.0, 64.34672030531159, 64.34672030531159)),
+    )
+    stale = [list(leg) for leg in exact.points[0]]
+    marked = runtime.evaluate([stale], mu_r2=exact.mu_r2())
+    assert any(is_shell_reason(r) for r in marked.diagnostics[0].uncertified)
+    improved = runtime.evaluate(
+        [stale], mu_r2=exact.mu_r2(), kinematics_improvement_binary64=True
+    )
+    (lane,) = improved.diagnostics
+    assert lane.kinematics.status == "improved"
+    assert not any(is_shell_reason(r) for r in lane.uncertified)

@@ -184,9 +184,10 @@ class FlatBinding:
 def runtime_binding(runtime: object) -> FlatBinding | None:
     """The flat points' binding of a loaded runtime (``Runtime.load``, with
     the caller's model parameters applied): a one-loop runtime's bound masses
-    at its current parameters (``V2VirtualRuntime._bound_leg_masses``, the
-    shared evaluator) and its leg map; a tree runtime's the masses its
-    evaluation binds at the stored point (``_tree_kinematics_masses``).
+    at its current parameters, its executor's binary64 binding
+    (``V2VirtualRuntime._native_leg_masses``), and its leg map; a tree
+    runtime's the masses its evaluation binds at the stored point
+    (``_tree_kinematics_masses``).
     None: a runtime without such a binding (the validation record decides).
     A one-loop external mass that runs with the renormalisation scale is
     refused (its shell is not known before the points' scales)."""
@@ -194,12 +195,12 @@ def runtime_binding(runtime: object) -> FlatBinding | None:
     from pyamplicol.loops.v2.assemble import Precision, RunningExternalMass
 
     backend = getattr(runtime, "_backend", runtime)
-    bound = getattr(backend, "_bound_leg_masses", None)
+    bound = getattr(backend, "_native_leg_masses", None)
     if callable(bound):
+        # The amplitude's own binary64 binding (the native tree program's),
+        # in the stored order: the drawn points are on its shells.
         try:
-            squares = bound(
-                Precision.double(), dict(backend._parameters), None, caller=False
-            )
+            squares = bound(Precision.double())
         except RunningExternalMass as error:
             raise ConfigurationError(
                 f"no flat points: {error}; give evaluation.momenta (--momenta)"

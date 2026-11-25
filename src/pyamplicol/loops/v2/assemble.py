@@ -6140,12 +6140,16 @@ def bound_leg_masses(
         names.append(name)
     if scale_parameter is not None:
         pattern = re.compile(rf"::{re.escape(scale_parameter)}\b")
+        # A mass that is the scale parameter itself, or a derived mass whose
+        # definition refers to it.
         running = [
             name
             for name in names
             if name is not None
-            and name in internal
-            and pattern.search(internal[name]) is not None
+            and (
+                name == scale_parameter
+                or (name in internal and pattern.search(internal[name]) is not None)
+            )
         ]
         if running:
             if scale is None:

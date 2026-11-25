@@ -2108,14 +2108,41 @@ class V2VirtualRuntime:
         count: int,
         parameters: Mapping[str, str] | None = None,
     ) -> list[Any]:
-        """The squared masses the mass-shell guard measures each caller leg
-        against (``kinematics.shell_check``'s provider): those the evaluation
-        binds at the runtime's parameters (``_bound_leg_masses``)."""
+        """The squared masses the shell-consistency screen measures each
+        caller leg against (``kinematics.shell_check``'s provider): those the
+        evaluation's own executor binds in its carrier (``_kinematics_masses``:
+        ``NativeExecutor.leg_masses``, the native tree program's binding),
+        at the call's parameters (``parameters``, its snapshot) and scale."""
 
-        del point, count
+        return self._kinematics_masses(precision, point, scale, count, parameters)
+
+    def _native_leg_masses(
+        self, precision: Any, parameters: Mapping[str, str] | None = None
+    ) -> list[Fraction | None]:
+        """The squared mass each leg binds in the process's own executor at
+        ``precision`` (``NativeExecutor.leg_masses``: the native binding the
+        amplitude takes), in the representative's leg order, at the
+        runtime's parameters (or ``parameters``) and at no particular scale:
+        refused (``assemble.RunningExternalMass``) when an external mass runs
+        with the scale. The flat points' masses (``flat_points.
+        runtime_binding``)."""
+
+        from .assemble import RunningExternalMass, scale_dependent_legs
+
+        legs = sorted(
+            self._executor.slice.blocks.process.legs, key=lambda leg: int(leg.label)
+        )
+        pdgs = [int(leg.pdg) for leg in legs]
+        if scale_dependent_legs(self._mass_model, pdgs, self._scale_parameter):
+            raise RunningExternalMass(
+                "an external mass runs with the renormalisation scale: give "
+                "the points' momenta (a scale-dependent shell is not drawn "
+                "automatically)"
+            )
         with self._lock:
-            parameters = dict(self._parameters)
-        return self._bound_leg_masses(precision, parameters, scale)
+            own = dict(self._parameters if parameters is None else parameters)
+        zero = [[0, 0, 0, 0] for _ in legs]
+        return list(self._executor.leg_masses(zero, "1", own, precision, 1))
 
     def _bound_leg_masses(
         self,
