@@ -62,9 +62,16 @@ mode a shell-consistency screen marks a point off the bound shells beyond the
 call's target as `uncertified` (its value still served; [Configuration](configuration.md#kinematics-improvement-of-the-input-points),
 "The shell-consistency screen"); the unchecked mode is unchanged.
 
-Compatibility: the stored validation points and the values at given points
-are bit for bit those of 1.0.3 for every process whose fixed parameters move
-no external mass. The flat phase-space SAMPLE drawn for a given seed changes
+Compatibility: the values at given points (the same supplied momenta and
+parameters) are those of 1.0.3; the screen adds a diagnostic only. Newly
+generated stored validation points are bit for bit those of 1.0.3 when every
+external mass is an input parameter of the model and none is moved by a
+fixed parameter; an external mass that is DERIVED (loop_sm's W) is now the
+amplitude's own binary64 binding, which can differ from the former value in
+its last bits (u d~ > w+ on loop_sm defaults: beam energy 40.209501222878089
+became 40.209501222878082, MW 80.419002445756178 became 80.419002445756163);
+no shipped example and none of the profiling campaign's processes has a
+derived external mass. The flat phase-space SAMPLE drawn for a given seed changes
 at rounding level for every process with a massive external leg (the masses
 are now the exact bound ones, no longer re-derived from the stored point:
 173.00000000000003 became 173): a profile's points before and after this

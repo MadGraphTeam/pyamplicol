@@ -376,7 +376,13 @@ def with_kinematics(evaluation: Any, records: Sequence[Any]) -> Any:
 # the carrier moves m^2 by 2 u m^2, and forming the on-shell energy from the
 # momentum and the mass (three squares, three sums, a square root: six
 # roundings of E^2) by 6 u E^2, together within 8 u (E^2 + |p|^2 + m^2) to
-# first order. The test is exact (rational arithmetic; binary64 inputs in
+# first order. That is the first-order allowance of a point whose energies
+# are formed directly on the shells; a generator that boosts its momenta
+# (Lorentz transformations) adds rounding: at t = 1e-25, 20 of 2,000 native
+# draws with three massless final legs exceed 8 u on a leg. The mark is
+# kept there (the screen measures what it is given; C is not raised to
+# cover a generator's own rounding). The test is exact (rational
+# arithmetic; binary64 inputs in
 # vectorised double-double arithmetic on each leg scaled by a power of two
 # to its largest component first, so that no square overflows or
 # underflows). Beyond it the ORIGINAL value is served, its lane marked

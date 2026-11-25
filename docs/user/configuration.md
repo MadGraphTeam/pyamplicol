@@ -1443,9 +1443,12 @@ unit roundoff of the carrier each leg's components were supplied in, by
 their input contract (binary64's 2^-53 for a Python float; 0 for an exact
 spelling: an integer, a decimal text or `Decimal` at any number of digits;
 nothing is inferred from a text's spelling), or the evaluating carrier's when
-coarser; 8 u bounds the rounding of a point drawn on its shell
-in that carrier (its components, its mass and the on-shell energy formed from
-them). A leg beyond it marks the point: its ORIGINAL value is served, its lane
+coarser; 8 u is the first-order rounding of a point whose energy is formed
+on its shell in that carrier (its components, its mass and the on-shell
+energy formed from them). A generator that boosts its momenta adds rounding
+of its own: at targets near the carrier's rounding (t = 1e-25 in
+double-double) a few of its points (20 of 2,000 native draws with three
+massless final legs) are marked; the allowance is not widened for them. A leg beyond it marks the point: its ORIGINAL value is served, its lane
 carries the typed reason in `VirtualLaneDiagnostic.uncertified` ("off the
 bound mass shell: external leg k, p^2 = ..., bound m^2 = ..., relative defect
 ..., ... times the screen's allowance") and its accuracy is not established;
@@ -1974,18 +1977,20 @@ is the generic remedy of `cms-external-width`, in the real on-shell scheme of
 the external particles' own `coloured-width` / `electroweak-width`. The
 default `"model"` keeps the model's widths.
 
-Fixed parameters also define the kinematics. One evaluator gives the
-external masses an amplitude binds (`loops.v2.assemble.bound_leg_masses`: the
-model's values, its restriction applied, with the effective fixed parameters,
-i.e. `fixed_parameters`, the widths `external_widths` fixes and the model
-preparation's constants, as exact texts; a derived mass such as loop_sm's W
-mass formed from them at 40 digits and rounded once), and every point
-pyAmpliCol generates for a loop artifact takes them: its validation point,
+Fixed parameters also define the kinematics. The external masses an amplitude
+binds are those of its own native binding (the tree program's, in the
+evaluation's carrier) at the effective fixed parameters: `fixed_parameters`,
+the widths `external_widths` fixes and the model preparation's constants, in
+place of the model's own values, its restriction applied; a derived mass such
+as loop_sm's W mass is the value that binding computes in binary64. Every
+point pyAmpliCol generates for a loop artifact takes them: its validation point,
 whose record states them (`processes/<id>/validation-momenta.json`,
 `"masses"`), the points of `pyamplicol check` and of the generation's own
-probes, and the flat phase-space points of `evaluate`, `profile` and the
-benchmark runner without a momenta file, which take the masses the LOADED
-runtime binds (`evaluate --model-parameters` included: MT = 160 at evaluation
+probes (check's starting momenta take the slice's exact evaluator of the
+same parameters, and are put on the slice's shells by check itself), and the
+flat phase-space points of `evaluate`, `profile` and the benchmark runner
+without a momenta file, which take the masses the LOADED runtime's executor
+binds (`evaluate --model-parameters` included: MT = 160 at evaluation
 draws tops of 160 GeV; the thresholds and the cuts' massless legs follow) in
 the requested leg order (a permuted selector or a process-group member);
 `model/parameters.json` states the bound values. `profile` and the benchmark
