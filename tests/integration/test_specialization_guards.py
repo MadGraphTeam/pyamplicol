@@ -519,6 +519,9 @@ def test_a_coupling_zero_under_one_reading_only_is_kept(
             "u u~ > e+ e-",
         )
     )
+    # Different lanes agree to their own extended-precision accuracy; the
+    # pruned term the defect dropped changed the result by 7 %.
+    tolerance = {16: Decimal("1e-12"), 32: Decimal("1e-22"), 50: Decimal("1e-40")}
     for digits, found in simplified.items():
         for a, b in zip(found, reference[digits], strict=True):
-            assert abs(a - b) <= abs(b) * Decimal(10) ** (4 - digits), (digits, a, b)
+            assert abs(a - b) <= abs(b) * tolerance[digits], (digits, a, b)
