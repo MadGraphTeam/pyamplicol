@@ -1020,3 +1020,374 @@ fn fast_reducer_settings_hold_whatever_the_order_of_first_use_errors_and_unwinds
         }
     }
 }
+
+/// Batches of complex values (row-major).
+fn complex(values: &[(f64, f64)], columns: usize) -> Batch {
+    Batch::typed(
+        values.iter().map(|&(re, im)| C64::new(re, im)).collect(),
+        (0..(values.len() / columns) as u64).collect(),
+        columns,
+        53,
+    )
+    .unwrap()
+}
+
+/// `rows` rank-0 tadpoles at `μ² = 16`, every third of squared mass `1e-12`
+/// (routed to the exact engine), the others 4; the shift of lane
+/// `bad_shift` and the scale of lane `bad_scale` complex (invalid inputs
+/// of the fast engine).
+fn mixed_tadpoles(rows: usize, bad_shift: Option<usize>, bad_scale: Option<usize>) -> [Batch; 5] {
+    let shifts: Vec<(f64, f64)> = (0..rows)
+        .flat_map(|r| {
+            let time = if Some(r) == bad_shift { 1. } else { 0. };
+            [(0., time), (0., 0.), (0., 0.), (0., 0.)]
+        })
+        .collect();
+    let masses: Vec<(f64, f64)> = (0..rows)
+        .map(|r| if r % 3 == 0 { (1e-12, 0.) } else { (4., 0.) })
+        .collect();
+    let scales: Vec<(f64, f64)> = (0..rows)
+        .map(|r| (16., if Some(r) == bad_scale { 1. } else { 0. }))
+        .collect();
+    [
+        complex(&shifts, 4),
+        complex(&masses, 1),
+        complex(&scales, 1),
+        complex(&vec![(0., 0.); rows], 1),
+        complex(&vec![(1., 0.); rows], 1),
+    ]
+}
+
+/// Two bubbles whose numerator `2^60 (1 + 2 q0)` the fast engine's
+/// cancellation rescue flags (the refinement callback is asked), the second
+/// one's shift complex if `bad`.
+fn rescued_bubbles(bad: bool) -> [Batch; 5] {
+    let n = 2f64.powi(60);
+    let r = |x: f64| (x, 0.);
+    let z = r(0.);
+    let last = if bad { (1., 1.) } else { r(1.) };
+    [
+        complex(&[z, z, z, z, r(1.), z, z, z, z, z, z, z, last, z, z, z], 8),
+        complex(&[r(4.); 4], 2),
+        complex(&[r(1.); 2], 1),
+        complex(&[z, r(1.), r(1.), z, z, r(1.), r(1.), z], 4),
+        complex(&[r(n), r(2. * n), z, z, z, r(n), r(2. * n), z, z, z], 5),
+    ]
+}
+
+/// A refinement callback: one that panics at every lane, one that panics
+/// at the first lane asked and then serves exact kinematics, one that
+/// refuses every lane, one that serves exact kinematics.
+#[derive(Clone, Copy, Debug)]
+enum Callback {
+    Panics,
+    PanicsOnce,
+    Refuses,
+    Serves,
+}
+
+struct Refinement {
+    callback: Callback,
+    once: std::sync::atomic::AtomicBool,
+}
+
+impl GroupRefinementSource for Refinement {
+    fn lane(
+        &self,
+        _: usize,
+        _: usize,
+        _: &mut [[f64; 4]],
+        _: &mut [f64],
+        _: &mut [rusticol_loop_reduction::C64],
+    ) -> bool {
+        match self.callback {
+            Callback::Panics => panic!("a refinement callback panics"),
+            Callback::PanicsOnce if self.once.swap(false, std::sync::atomic::Ordering::SeqCst) => {
+                panic!("a refinement callback panics once")
+            }
+            Callback::Refuses => false,
+            Callback::PanicsOnce | Callback::Serves => true,
+        }
+    }
+}
+
+/// One failing (or not) call of the mix table: its groups in order, the
+/// refinement callback, the target, the check's frame and split poles,
+/// point labels.
+struct Mix {
+    name: &'static str,
+    groups: Vec<([Batch; 5], usize)>,
+    callback: Option<Callback>,
+    target: Option<f64>,
+    check: bool,
+    labels: bool,
+}
+
+fn mix(name: &'static str, groups: Vec<([Batch; 5], usize)>, callback: Option<Callback>) -> Mix {
+    Mix {
+        name,
+        groups,
+        callback,
+        target: Some(1e-25),
+        check: false,
+        labels: false,
+    }
+}
+
+/// The outcome of `mix` on a fresh fast reducer at `threads` workers
+/// (`None`: serial), with the state the call leaves: the error, the panic's
+/// message or the full output, then the templates, cached masters and
+/// counters left, then a valid call's full report on the same reducer.
+fn mix_report(mix: &Mix, threads: Option<usize>) -> String {
+    let mut reducer = V2Reducer::new("double", None, "fast", true).unwrap();
+    if let Some(target) = mix.target {
+        reducer.set_target(target);
+    }
+    let groups: Vec<FamilyGroup<'_>> = mix
+        .groups
+        .iter()
+        .map(|(b, n)| FamilyGroup {
+            propagators: *n,
+            shifts: &b[0],
+            masses_squared: &b[1],
+            scales_squared: &b[2],
+            s_matrix: &b[3],
+            coefficients: &b[4],
+        })
+        .collect();
+    let mut next = 0;
+    let points: Vec<Vec<usize>> = mix
+        .groups
+        .iter()
+        .map(|(b, _)| {
+            (0..b[0].rows())
+                .map(|_| {
+                    next += 1;
+                    usize::MAX - next
+                })
+                .collect()
+        })
+        .collect();
+    let views: Vec<&[usize]> = points.iter().map(Vec::as_slice).collect();
+    let refinement = mix.callback.map(|callback| Refinement {
+        callback,
+        once: std::sync::atomic::AtomicBool::new(true),
+    });
+    let source = refinement.as_ref().map(|r| r as &dyn GroupRefinementSource);
+    let options = ReduceOptions {
+        poles: if mix.check { Poles::Split } else { Poles::All },
+        check: mix.check.then_some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let labels = mix.labels.then_some(views.as_slice());
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut call = || reducer.reduce_at(&groups, labels, source, options);
+        match threads {
+            None => call(),
+            Some(threads) => pool(threads).install(call),
+        }
+    }));
+    let mut report = match caught {
+        Ok(Ok(output)) => format!("success\n{}", fingerprint(&output, &mut reducer)),
+        Ok(Err(error)) => format!("error {error}\n"),
+        Err(panic) => format!(
+            "panic {}\n",
+            panic
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| panic.downcast_ref::<String>().cloned())
+                .unwrap_or_default()
+        ),
+    };
+    report += &format!(
+        "left: templates {} cached masters {} statistics {:?} exact lanes {} rescued lanes {}\n",
+        reducer.built_templates(),
+        reducer.cached_masters(),
+        reducer
+            .take_master_statistics()
+            .map(|s| (s.requests, s.evaluated, s.hits)),
+        reducer.take_exact_lanes(),
+        reducer.take_rescued_lanes()
+    );
+    let valid = mixed_tadpoles(6, None, None);
+    let next = [FamilyGroup {
+        propagators: 1,
+        shifts: &valid[0],
+        masses_squared: &valid[1],
+        scales_squared: &valid[2],
+        s_matrix: &valid[3],
+        coefficients: &valid[4],
+    }];
+    let output = reducer.reduce(&next, ReduceOptions::default()).unwrap();
+    report + "next:\n" + fingerprint(&output, &mut reducer).as_str()
+}
+
+/// A failing call fails as the serial reduction does, for every mix of
+/// failures: an invalid input, a refinement callback that panics (always or
+/// once) or refuses, in any slice and any phase (the fast lanes, the routed
+/// exact lanes, the cancellation rescue, the check's frame), in one bucket
+/// or several, one group or many: the same error or the same panic, and the
+/// same state left, at 1, 2 and 8 workers. The first row is the minimal
+/// case: 48 tadpoles, lane 31's shift complex, a callback that panics at
+/// target 1e-25 (the serial reduction validates lane 31 before it asks the
+/// callback). A callback whose answer depends on the lanes asked before
+/// (one that panics once) is serial only as the call's single failure: next
+/// to a failure of a later bucket, which lane meets its panic depends on
+/// the schedule.
+#[test]
+fn a_failing_call_gives_the_serial_outcome_for_every_mix_of_failures() {
+    let _unlock = pyamplicol::unlock();
+    let t = |rows, shift, scale| (mixed_tadpoles(rows, shift, scale), 1);
+    let b = |bad| (rescued_bubbles(bad), 2);
+    let per_lane = |rows: usize, bad: usize| -> Vec<([Batch; 5], usize)> {
+        (0..rows)
+            .map(|r| {
+                let batches = mixed_tadpoles(1, (r == bad).then_some(0), None);
+                // Every lane its own group, every third light.
+                let light = r % 3 == 0;
+                let mut batches = batches;
+                batches[1] = complex(&[(if light { 1e-12 } else { 4. }, 0.)], 1);
+                (batches, 1)
+            })
+            .collect()
+    };
+    let mut mixes = vec![
+        mix(
+            "minimal",
+            vec![t(48, Some(31), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "minimal, once",
+            vec![t(48, Some(31), None)],
+            Some(Callback::PanicsOnce),
+        ),
+        mix(
+            "minimal, refuses",
+            vec![t(48, Some(31), None)],
+            Some(Callback::Refuses),
+        ),
+        mix(
+            "bad first lane",
+            vec![t(48, Some(0), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad last lane",
+            vec![t(48, Some(47), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad routed lane",
+            vec![t(48, Some(30), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "scale then shift",
+            vec![t(48, Some(40), Some(3))],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "shift then scale",
+            vec![t(48, Some(3), Some(40))],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "valid, panics",
+            vec![t(48, None, None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "valid, panics once",
+            vec![t(48, None, None)],
+            Some(Callback::PanicsOnce),
+        ),
+        mix(
+            "valid, refuses",
+            vec![t(48, None, None)],
+            Some(Callback::Refuses),
+        ),
+        mix(
+            "valid, serves",
+            vec![t(48, None, None)],
+            Some(Callback::Serves),
+        ),
+        mix("no callback", vec![t(48, Some(31), None)], None),
+        // A later bucket's invalid input after an earlier bucket's panic,
+        // and the reverse.
+        mix(
+            "panic, then a bad bucket",
+            vec![t(48, None, None), b(true)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad bucket, then a panic",
+            vec![t(48, Some(31), None), b(false)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "rescue panics, tadpoles fine",
+            vec![b(false), t(48, None, None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "one group per lane",
+            per_lane(48, 31),
+            Some(Callback::Panics),
+        ),
+        mix(
+            "one group per lane, valid",
+            per_lane(48, usize::MAX),
+            Some(Callback::Panics),
+        ),
+    ];
+    // Every row again with the check's frame and split poles; the rows of
+    // several slices per bucket also with point labels (slices cut by
+    // point).
+    let variants: Vec<Mix> = mixes
+        .iter()
+        .flat_map(|base| {
+            let labelled = base.groups.len() < 3;
+            [(true, false), (false, true)]
+                .into_iter()
+                .filter(move |&(_, labels)| !labels || labelled)
+                .map(|(check, labels)| Mix {
+                    name: base.name,
+                    groups: base.groups.clone(),
+                    callback: base.callback,
+                    target: base.target,
+                    check,
+                    labels,
+                })
+        })
+        .collect();
+    mixes.extend(variants);
+    mixes.push(Mix {
+        target: None,
+        ..mix(
+            "default target",
+            vec![t(48, Some(31), None), b(false)],
+            Some(Callback::Panics),
+        )
+    });
+    let mut differences = Vec::new();
+    for mix in &mixes {
+        let serial = mix_report(mix, None);
+        if mix.name == "minimal" && !mix.check && !mix.labels {
+            assert!(
+                serial.starts_with("error fast engine requires real shifts\n"),
+                "{serial}"
+            );
+        }
+        for threads in [1, 2, 8] {
+            let got = mix_report(mix, Some(threads));
+            if got != serial {
+                differences.push(format!(
+                    "{} (check {}, labels {}), {threads} workers:\n--- serial\n{serial}--- got\n{got}",
+                    mix.name, mix.check, mix.labels
+                ));
+            }
+        }
+    }
+    assert!(differences.is_empty(), "{}", differences.join("\n"));
+}

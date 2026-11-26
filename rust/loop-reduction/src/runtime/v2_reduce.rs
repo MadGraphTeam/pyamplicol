@@ -661,12 +661,43 @@ fn reduce_members<T: Carrier, E: BucketEngine<T>>(
 type FrameOutcomes<T> = Vec<Vec<Option<Outcome<T>>>>;
 
 /// One slice of a parallel reduction ([`reduce_sliced`]): lanes `members`
-/// of bucket (`n`, `rank`) in frame `frame` (0 direct, 1 the check's).
+/// of bucket (`n`, `rank`) in frame `frame` (0 direct, 1 the check's), part
+/// of the serial reduction's engine call number `unit` (frame by frame,
+/// bucket by bucket).
 struct Slice {
     frame: usize,
+    unit: usize,
     n: usize,
     rank: usize,
     members: Vec<(usize, usize)>,
+}
+
+/// How an engine call of a parallel reduction failed: its error, or the
+/// payload of its panic, caught on its worker and carried to the calling
+/// thread, which returns the one the serial reduction would have met
+/// ([`reduce_sliced`], [`reduce_lent`]).
+enum Failure {
+    Error(ExecutionError),
+    Panic(Box<dyn std::any::Any + Send>),
+}
+
+impl Failure {
+    /// `call` run with its panic caught.
+    fn catch<R>(call: impl FnOnce() -> ExecutionResult<R>) -> Result<R, Failure> {
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(call)) {
+            Ok(Ok(value)) => Ok(value),
+            Ok(Err(error)) => Err(Failure::Error(error)),
+            Err(panic) => Err(Failure::Panic(panic)),
+        }
+    }
+
+    /// The error returned, or the panic resumed.
+    fn raise<R>(self) -> ExecutionResult<R> {
+        match self {
+            Failure::Error(error) => Err(error),
+            Failure::Panic(panic) => std::panic::resume_unwind(panic),
+        }
+    }
 }
 
 /// `members` stably ordered by their point, with each one's point: a
@@ -689,9 +720,23 @@ fn by_point(members: &[(usize, usize)], points: &[&[usize]]) -> (Vec<(usize, usi
 /// points (`points[group][row]`, stable; bucket order without), so that a
 /// slice holds whole points where it can and the masters a point's
 /// families share are requested by few slices. The slices are numbered
-/// frame by frame and bucket by bucket as [`reduce_groups`] reduces them (a
-/// failure is that of the lowest failing slice) and scheduled largest
-/// bucket first.
+/// frame by frame and bucket by bucket as [`reduce_groups`] reduces them and
+/// scheduled largest bucket first.
+///
+/// A failing call fails as the serial reduction does. The serial reduction
+/// makes one engine call per frame and bucket, in that order, and stops at
+/// the first that fails (an error or a panic); within one engine call the
+/// fast engine validates a chunk's input before it evaluates it (masters,
+/// cancellation rescue and its refinement callback), and reduces a bucket's
+/// fast lanes before its routed ones. So here the first engine call in that
+/// order with a failing slice decides (every slice of it and of the calls
+/// before it has run; slices of later calls are skipped once it fails), and
+/// that one engine call is made again serially on the reducer's engine: its
+/// error or panic is the call's, whichever slice failed first here and
+/// however the slices cut it; the failures of later engine calls never
+/// surface. Only a failure that does not repeat (a callback that fails
+/// once) can leave that serial engine call successful: the first failure
+/// of its slices, in slice order, is then the call's.
 #[allow(clippy::too_many_arguments)]
 fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     engine: &mut E,
@@ -709,6 +754,7 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     let lanes: usize = buckets.values().map(Vec::len).sum::<usize>() * frames.len();
     let size = lane_slices::slice_size(lanes, workers, engine.slice_cap());
     let mut slices = Vec::new();
+    let mut units = Vec::new();
     for frame in 0..frames.len() {
         for (&(n, rank), members) in buckets {
             let (ordered, affinity) = match points {
@@ -718,11 +764,13 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
             for range in lane_slices::cut(&affinity, size) {
                 slices.push(Slice {
                     frame,
+                    unit: units.len(),
                     n,
                     rank,
                     members: ordered[range].to_vec(),
                 });
             }
+            units.push((frame, n, rank));
         }
     }
     // Largest bucket (propagators, rank) first, then the larger slice.
@@ -734,6 +782,9 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     engine.begin_parallel();
     let settings = engine.settings();
     let mut pool = std::mem::take(engine.pool());
+    // The first engine call (unit) with a failing slice so far: slices of
+    // later ones are skipped (`None`), the others still run.
+    let failed = std::sync::atomic::AtomicUsize::new(usize::MAX);
     let reduced = pool.run_ordered(
         engine,
         &slices,
@@ -741,23 +792,66 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
         || E::fork(&settings),
         |copy| copy.follow(&settings),
         |engine, slice| {
-            reduce_members(
-                engine,
-                groups,
-                slice.n,
-                slice.rank,
-                &slice.members,
-                frames[slice.frame],
-                poles,
-                if slice.frame == 0 { source } else { None },
-            )
+            if slice.unit > failed.load(std::sync::atomic::Ordering::Relaxed) {
+                return Ok(None);
+            }
+            let reduced = Failure::catch(|| {
+                reduce_members(
+                    engine,
+                    groups,
+                    slice.n,
+                    slice.rank,
+                    &slice.members,
+                    frames[slice.frame],
+                    poles,
+                    if slice.frame == 0 { source } else { None },
+                )
+            });
+            if reduced.is_err() {
+                failed.fetch_min(slice.unit, std::sync::atomic::Ordering::Relaxed);
+            }
+            Ok::<_, ExecutionError>(Some(reduced))
         },
     );
     retire_copies(engine, pool);
     drop(settings);
     engine.end_parallel();
+    let Ok(reduced) = reduced else {
+        // A worker's engine could not be made: the serial reduction.
+        return serial_frames(engine, groups, buckets, frames, poles, source);
+    };
+    let failed = failed.into_inner();
+    if failed != usize::MAX {
+        let first = slices
+            .iter()
+            .zip(reduced)
+            .filter(|(slice, _)| slice.unit == failed)
+            .find_map(|(_, reduced)| reduced.and_then(Result::err))
+            .expect("a failing slice of the failed engine call");
+        let (frame, n, rank) = units[failed];
+        let serial = Failure::catch(|| {
+            reduce_members(
+                engine,
+                groups,
+                n,
+                rank,
+                &buckets[&(n, rank)],
+                frames[frame],
+                poles,
+                if frame == 0 { source } else { None },
+            )
+        });
+        return match serial {
+            Err(failure) => failure.raise(),
+            Ok(_) => first.raise(),
+        };
+    }
     let mut outcomes = empty_outcomes(groups, frames.len());
-    for (slice, reduced) in slices.iter().zip(reduced?) {
+    for (slice, reduced) in slices.iter().zip(reduced) {
+        let reduced = match reduced {
+            Some(Ok(reduced)) => reduced,
+            _ => unreachable!("every slice of a successful call is reduced"),
+        };
         for (&(group, row), outcome) in slice.members.iter().zip(reduced) {
             outcomes[slice.frame][group][row] = Some(outcome);
         }
@@ -778,21 +872,24 @@ fn retire_copies<T, E: BucketEngine<T>>(engine: &mut E, mut pool: EnginePool<E>)
     *engine.pool() = pool;
 }
 
-/// The serial reduction of a call's frames: the direct frame, then the
-/// check's.
+/// The serial reduction of a call's frames, in order (the direct frame,
+/// then the check's): it stops at the first failure.
 fn serial_frames<T: Carrier, E: BucketEngine<T>>(
     engine: &mut E,
     groups: &[Lanes<'_, T>],
     buckets: &Buckets,
-    options: ReduceOptions,
+    frames: &[Option<ReductionFrame>],
+    poles: Poles,
     source: Option<&dyn GroupRefinementSource>,
-) -> ExecutionResult<(FrameOutcomes<T>, Option<FrameOutcomes<T>>)> {
-    let direct = reduce_groups(engine, groups, buckets, None, options.poles, source)?;
-    let check = options
-        .check
-        .map(|frame| reduce_groups(engine, groups, buckets, Some(frame), options.poles, None))
-        .transpose()?;
-    Ok((direct, check))
+) -> ExecutionResult<Vec<FrameOutcomes<T>>> {
+    frames
+        .iter()
+        .enumerate()
+        .map(|(f, &frame)| {
+            let source = if f == 0 { source } else { None };
+            reduce_groups(engine, groups, buckets, frame, poles, source)
+        })
+        .collect()
 }
 
 /// Empty outcome tables of `frames` frames.
@@ -815,8 +912,12 @@ fn empty_outcomes<T>(groups: &[Lanes<'_, T>], frames: usize) -> Vec<FrameOutcome
 /// template of the bucket, taken out of the reducer's engine for the call
 /// and put back after it. So the copies of the engine build no template:
 /// memory does not grow with the threads, and the buckets run in parallel
-/// (largest first); a bucket's lanes run on one thread. The failure is the
-/// first in the serial order (frame by frame, bucket by bucket).
+/// (largest first); a bucket's lanes run on one thread. Each engine call is
+/// the serial reduction's (same lanes, same order), so a failing call fails
+/// as the serial one: a task stops at its bucket's first failing frame (an
+/// error or a caught panic), and the failure returned (or panic resumed) is
+/// the first in the serial order, frame by frame, bucket by bucket; every
+/// engine call before it in that order has run.
 fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     engine: &mut E,
     groups: &[Lanes<'_, T>],
@@ -835,8 +936,8 @@ fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     schedule.sort_by_key(|&k| std::cmp::Reverse((keys[k].0, keys[k].1, buckets[&keys[k]].len())));
     let settings = engine.settings();
     let mut pool = std::mem::take(engine.pool());
-    // A panic in a task is resumed once the templates are back
-    // (`GenericEngine::discard_call` then sees them as after the serial
+    // A panic outside the engine calls is resumed once the templates are
+    // back (`GenericEngine::discard_call` then sees them as after the serial
     // reduction's panic).
     let reduced = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         pool.run_ordered(
@@ -851,34 +952,33 @@ fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
                 if let Some(template) = slot.take() {
                     worker.put_template(n, rank, template);
                 }
-                let parts = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    frames
-                        .iter()
-                        .enumerate()
-                        .map(|(f, &frame)| {
-                            let source = if f == 0 { source } else { None };
-                            reduce_members(
-                                worker,
-                                groups,
-                                n,
-                                rank,
-                                &buckets[&keys[k]],
-                                frame,
-                                poles,
-                                source,
-                            )
-                        })
-                        .collect::<Vec<ExecutionResult<Vec<Outcome<T>>>>>()
-                }));
+                let mut parts = Vec::with_capacity(frames.len());
+                for (f, &frame) in frames.iter().enumerate() {
+                    let source = if f == 0 { source } else { None };
+                    let part = Failure::catch(|| {
+                        reduce_members(
+                            worker,
+                            groups,
+                            n,
+                            rank,
+                            &buckets[&keys[k]],
+                            frame,
+                            poles,
+                            source,
+                        )
+                    });
+                    let failed = part.is_err();
+                    parts.push(part);
+                    if failed {
+                        break;
+                    }
+                }
                 // The template (built here if it was not) goes back to the
-                // reducer's engine whatever the outcome, also before a panic
-                // goes on unwinding, as in the serial reduction.
+                // reducer's engine whatever the outcome, as in the serial
+                // reduction.
                 *slot = worker.take_template(n, rank);
                 drop(slot);
-                match parts {
-                    Ok(parts) => Ok::<_, ExecutionError>(parts),
-                    Err(panic) => std::panic::resume_unwind(panic),
-                }
+                Ok::<_, ExecutionError>(parts)
             },
         )
     }));
@@ -891,13 +991,23 @@ fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
             engine.put_template(n, rank, template);
         }
     }
-    let mut reduced = reduced.unwrap_or_else(|panic| std::panic::resume_unwind(panic))?;
+    let Ok(mut reduced) = reduced.unwrap_or_else(|panic| std::panic::resume_unwind(panic)) else {
+        // A worker's engine could not be made: the serial reduction.
+        return serial_frames(engine, groups, buckets, frames, poles, source);
+    };
     let mut outcomes = empty_outcomes(groups, frames.len());
     for (f, table) in outcomes.iter_mut().enumerate() {
         for (k, parts) in reduced.iter_mut().enumerate() {
-            let part = std::mem::replace(&mut parts[f], Ok(Vec::new()))?;
-            for (&(group, row), outcome) in buckets[&keys[k]].iter().zip(part) {
-                table[group][row] = Some(outcome);
+            // A task that stopped before frame `f` failed at an earlier
+            // frame, returned above.
+            let part = std::mem::replace(&mut parts[f], Ok(Vec::new()));
+            match part {
+                Ok(part) => {
+                    for (&(group, row), outcome) in buckets[&keys[k]].iter().zip(part) {
+                        table[group][row] = Some(outcome);
+                    }
+                }
+                Err(failure) => return failure.raise(),
             }
         }
     }
@@ -931,34 +1041,41 @@ fn buckets<T: Carrier>(groups: &[Lanes<'_, T>]) -> ExecutionResult<Buckets> {
 
 /// [`buckets`] with every group's true ranks found in parallel on the
 /// current pool (a parallel reduction): the same buckets, and the refusal
-/// of the first refused lane in (group, row) order.
+/// (or panic) of the first failing lane in (group, row) order, as
+/// [`buckets`] meets it.
 fn buckets_in_parallel<T: Carrier + Sync>(groups: &[Lanes<'_, T>]) -> ExecutionResult<Buckets> {
     use rayon::prelude::*;
-    let ranks: Vec<ExecutionResult<Vec<usize>>> = groups
+    let ranks: Vec<Result<Vec<usize>, Failure>> = groups
         .par_iter()
         .map(|lanes| {
-            let width = ncoeff(lanes.rank);
-            (0..lanes.ids.len())
-                .map(|row| {
-                    let rank = true_rank(
-                        &lanes.coefficients[row * width..(row + 1) * width],
-                        lanes.rank,
-                    );
-                    match rusticol_core::loop_v2::bounds::rank_refusal(
-                        rusticol_core::loop_v2::bounds::Reducer::NinjaRs,
-                        lanes.n,
-                        rank,
-                    ) {
-                        Some(refusal) => Err(error(refusal)),
-                        None => Ok(rank),
-                    }
-                })
-                .collect()
+            Failure::catch(|| {
+                let width = ncoeff(lanes.rank);
+                (0..lanes.ids.len())
+                    .map(|row| {
+                        let rank = true_rank(
+                            &lanes.coefficients[row * width..(row + 1) * width],
+                            lanes.rank,
+                        );
+                        match rusticol_core::loop_v2::bounds::rank_refusal(
+                            rusticol_core::loop_v2::bounds::Reducer::NinjaRs,
+                            lanes.n,
+                            rank,
+                        ) {
+                            Some(refusal) => Err(error(refusal)),
+                            None => Ok(rank),
+                        }
+                    })
+                    .collect()
+            })
         })
         .collect();
     let mut buckets = BTreeMap::<_, Vec<_>>::new();
     for (index, (lanes, ranks)) in groups.iter().zip(ranks).enumerate() {
-        for (row, rank) in ranks?.into_iter().enumerate() {
+        let ranks = match ranks {
+            Ok(ranks) => ranks,
+            Err(failure) => return failure.raise(),
+        };
+        for (row, rank) in ranks.into_iter().enumerate() {
             buckets
                 .entry((lanes.n, rank))
                 .or_default()
@@ -969,7 +1086,8 @@ fn buckets_in_parallel<T: Carrier + Sync>(groups: &[Lanes<'_, T>]) -> ExecutionR
 }
 
 /// [`output_batches`] of the frames' outcomes, the groups in parallel on
-/// the current pool (a parallel reduction); a failure is the first group's.
+/// the current pool (a parallel reduction); a failure (an error or a panic)
+/// is the first failing group's, as [`output_batches`] meets it.
 fn output_batches_in_parallel<T: BatchCarrier + Send + Sync>(
     groups: &[Lanes<'_, T>],
     outcomes: Vec<Vec<Option<Outcome<T>>>>,
@@ -977,14 +1095,19 @@ fn output_batches_in_parallel<T: BatchCarrier + Send + Sync>(
     bits: u32,
 ) -> ExecutionResult<Vec<ReductionBatch>> {
     use rayon::prelude::*;
-    let batches: Vec<ExecutionResult<Vec<ReductionBatch>>> = groups
+    let batches: Vec<Result<Vec<ReductionBatch>, Failure>> = groups
         .par_iter()
         .zip(outcomes.into_par_iter())
-        .map(|(lanes, rows)| output_batches(std::slice::from_ref(lanes), vec![rows], poles, bits))
+        .map(|(lanes, rows)| {
+            Failure::catch(|| output_batches(std::slice::from_ref(lanes), vec![rows], poles, bits))
+        })
         .collect();
     let mut out = Vec::with_capacity(batches.len());
     for batch in batches {
-        out.extend(batch?);
+        match batch {
+            Ok(batch) => out.extend(batch),
+            Err(failure) => return failure.raise(),
+        }
     }
     Ok(out)
 }
@@ -2808,23 +2931,20 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
             workers,
         );
         *sliced += start.elapsed().as_secs_f64();
-        match reduced {
-            Ok(reduced) => {
-                let mut reduced = reduced.into_iter();
-                let direct = reduced
-                    .next()
-                    .ok_or_else(|| error("the direct frame was not reduced"))?;
-                (direct, reduced.next())
-            }
-            // A failed parallel call is replayed serially (review finding
-            // 4): its error is the one the serial reduction reports, the
-            // first in serial order, whichever slice failed first here or
-            // how many inputs are invalid. The call's state is discarded by
-            // the caller either way (`settle`).
-            Err(_) => serial_frames(engine, groups, &buckets, options, source)?,
-        }
+        // A failed call's error or panic is the serial reduction's
+        // (`reduce_sliced`); its state is discarded by the caller (`settle`).
+        let mut reduced = reduced?.into_iter();
+        let direct = reduced
+            .next()
+            .ok_or_else(|| error("the direct frame was not reduced"))?;
+        (direct, reduced.next())
     } else {
-        serial_frames(engine, groups, &buckets, options, source)?
+        let direct = reduce_groups(engine, groups, &buckets, None, options.poles, source)?;
+        let check = options
+            .check
+            .map(|frame| reduce_groups(engine, groups, &buckets, Some(frame), options.poles, None))
+            .transpose()?;
+        (direct, check)
     };
     let rescued = direct
         .iter()
