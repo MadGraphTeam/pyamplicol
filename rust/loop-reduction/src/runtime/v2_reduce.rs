@@ -835,48 +835,63 @@ fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     schedule.sort_by_key(|&k| std::cmp::Reverse((keys[k].0, keys[k].1, buckets[&keys[k]].len())));
     let settings = engine.settings();
     let mut pool = std::mem::take(engine.pool());
-    let reduced = pool.run_ordered(
-        engine,
-        &tasks,
-        Some(&schedule),
-        || E::fork(&settings),
-        |copy| copy.follow(&settings),
-        |worker, &k| {
-            let (n, rank) = keys[k];
-            let mut slot = lent[k].lock().expect("a lent template");
-            if let Some(template) = slot.take() {
-                worker.put_template(n, rank, template);
-            }
-            let parts: Vec<ExecutionResult<Vec<Outcome<T>>>> = frames
-                .iter()
-                .enumerate()
-                .map(|(f, &frame)| {
-                    let source = if f == 0 { source } else { None };
-                    reduce_members(
-                        worker,
-                        groups,
-                        n,
-                        rank,
-                        &buckets[&keys[k]],
-                        frame,
-                        poles,
-                        source,
-                    )
-                })
-                .collect();
-            // The template (built here if it was not) goes back to the
-            // reducer's engine whatever the outcome.
-            *slot = worker.take_template(n, rank);
-            Ok::<_, ExecutionError>(parts)
-        },
-    );
+    // A panic in a task is resumed once the templates are back
+    // (`GenericEngine::discard_call` then sees them as after the serial
+    // reduction's panic).
+    let reduced = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        pool.run_ordered(
+            engine,
+            &tasks,
+            Some(&schedule),
+            || E::fork(&settings),
+            |copy| copy.follow(&settings),
+            |worker, &k| {
+                let (n, rank) = keys[k];
+                let mut slot = lent[k].lock().expect("a lent template");
+                if let Some(template) = slot.take() {
+                    worker.put_template(n, rank, template);
+                }
+                let parts = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    frames
+                        .iter()
+                        .enumerate()
+                        .map(|(f, &frame)| {
+                            let source = if f == 0 { source } else { None };
+                            reduce_members(
+                                worker,
+                                groups,
+                                n,
+                                rank,
+                                &buckets[&keys[k]],
+                                frame,
+                                poles,
+                                source,
+                            )
+                        })
+                        .collect::<Vec<ExecutionResult<Vec<Outcome<T>>>>>()
+                }));
+                // The template (built here if it was not) goes back to the
+                // reducer's engine whatever the outcome, also before a panic
+                // goes on unwinding, as in the serial reduction.
+                *slot = worker.take_template(n, rank);
+                drop(slot);
+                match parts {
+                    Ok(parts) => Ok::<_, ExecutionError>(parts),
+                    Err(panic) => std::panic::resume_unwind(panic),
+                }
+            },
+        )
+    }));
     retire_copies(engine, pool);
     for (&(n, rank), slot) in keys.iter().zip(lent) {
-        if let Some(template) = slot.into_inner().expect("a lent template") {
+        let slot = slot
+            .into_inner()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(template) = slot {
             engine.put_template(n, rank, template);
         }
     }
-    let mut reduced = reduced?;
+    let mut reduced = reduced.unwrap_or_else(|panic| std::panic::resume_unwind(panic))?;
     let mut outcomes = empty_outcomes(groups, frames.len());
     for (f, table) in outcomes.iter_mut().enumerate() {
         for (k, parts) in reduced.iter_mut().enumerate() {
@@ -1042,6 +1057,9 @@ struct FastEngine {
     chunk_lanes: usize,
     /// The cancellation rescue's per-lane target ([`V2Reducer::set_target`]).
     lane_target: f64,
+    /// The vanishing reason of the exact engine ([`V2Reducer::set_vanishing`]),
+    /// kept here so that an exact engine built later takes it too.
+    vanishing: Option<&'static str>,
     /// The engine's copies of a parallel reduction ([`reduce_sliced`]).
     workers: EnginePool<FastEngine>,
     /// During a parallel reduction, the reducer's exact engine shared by
@@ -1055,6 +1073,9 @@ struct FastCounters {
     masters: MasterStatistics,
     exact_lanes: u64,
     rescued_lanes: u64,
+    /// Whether the exact engine existed (else a failed call drops the one it
+    /// built).
+    exact: bool,
 }
 
 /// The exact engine of a parallel fast reduction, lent to one worker at a
@@ -1068,6 +1089,7 @@ struct FastSettings {
     unchecked: bool,
     best_effort: bool,
     lane_target: f64,
+    vanishing: Option<&'static str>,
     threshold: f64,
     chunk_lanes: usize,
     cache: bool,
@@ -1094,6 +1116,7 @@ impl FastEngine {
             lane_target: crate::reduction_policy::rescue_lane_target(
                 crate::reduction_policy::DEFAULT_TARGET,
             ),
+            vanishing: None,
             workers: EnginePool::new(),
             shared_exact: None,
         })
@@ -1104,14 +1127,22 @@ impl FastEngine {
     fn exact_settings(&self) -> GenericSettings<f64> {
         match &self.exact {
             Some(exact) => exact.generic_settings(),
-            None => GenericSettings {
-                prototype: 0.0,
-                selection: PoleSelection::BOTH,
-                checked: !self.unchecked,
-                target: Some(self.lane_target),
-                best_effort: self.best_effort,
-                vanishing: None,
-            },
+            None => self.new_exact_settings(),
+        }
+    }
+
+    /// The settings an exact engine is built with: every setting of the
+    /// reducer that reaches it ([`V2Reducer::set_unchecked`],
+    /// [`V2Reducer::set_target`], [`V2Reducer::set_best_effort_pass`],
+    /// [`V2Reducer::set_vanishing`]), whenever it is built.
+    fn new_exact_settings(&self) -> GenericSettings<f64> {
+        GenericSettings {
+            prototype: 0.0,
+            selection: PoleSelection::BOTH,
+            checked: !self.unchecked,
+            target: Some(self.lane_target),
+            best_effort: self.best_effort,
+            vanishing: self.vanishing,
         }
     }
 
@@ -1159,29 +1190,39 @@ impl FastEngine {
         lanes
     }
 
-    /// The counters of this engine at the start of a call (its copies' are
-    /// zero between calls, [`retire_copies`]).
-    fn counters(&self) -> FastCounters {
+    /// The start of a reduction call: the counters of this engine (its
+    /// copies' are zero between calls, [`retire_copies`]) and whether its
+    /// exact engine exists, and that engine's templates built so far kept
+    /// apart from those the call builds ([`GenericEngine::begin_call`]).
+    fn begin_call(&mut self) -> FastCounters {
+        if let Some(exact) = &mut self.exact {
+            exact.begin_call();
+        }
         FastCounters {
             masters: self.masters.statistics(),
             exact_lanes: self.exact_lanes,
             rescued_lanes: self.rescued_lanes,
+            exact: self.exact.is_some(),
         }
     }
 
     /// Discard what a failed call (an error or a panic) left behind,
     /// serially and in parallel alike: the exact engine handed back from its
-    /// shared slot (or dropped if the call broke inside it), the call's
-    /// ladder records, every cached master and the call's failed keys, the
-    /// copies' working state, and the counters restored to `before`. The
-    /// next call then sees what it would see after the serial reduction's
-    /// failure, at every worker count.
+    /// shared slot, then dropped if the call built it, else rid of the
+    /// templates and ladder records the call left in it; every cached master
+    /// and the call's failed keys, the copies' working state, and the
+    /// counters restored to `before`. The next call then sees the engine as
+    /// it was before the failed one, at every worker count (which lanes a
+    /// failed call reached before its error depends on how it was sliced).
     fn discard_call(&mut self, before: FastCounters) {
         if let Some(shared) = self.shared_exact.take() {
             self.exact = shared
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .take();
+        }
+        if !before.exact {
+            self.exact = None;
         }
         if let Some(exact) = &mut self.exact {
             exact.discard_call();
@@ -1250,6 +1291,7 @@ impl BucketEngine<f64> for FastEngine {
             unchecked: self.unchecked,
             best_effort: self.best_effort,
             lane_target: self.lane_target,
+            vanishing: self.vanishing,
             threshold: self.threshold,
             chunk_lanes: self.chunk_lanes,
             cache: self.masters.enabled(),
@@ -1269,6 +1311,7 @@ impl BucketEngine<f64> for FastEngine {
         self.unchecked = settings.unchecked;
         self.best_effort = settings.best_effort;
         self.lane_target = settings.lane_target;
+        self.vanishing = settings.vanishing;
         self.threshold = settings.threshold;
         self.chunk_lanes = settings.chunk_lanes;
         self.masters.share(settings.shared.clone());
@@ -1360,13 +1403,10 @@ impl BucketEngine<f64> for FastEngine {
         // The generic engine parses and evaluates Symbolica expressions: it
         // runs under pyAmpliCol's library key on this thread (module docs,
         // 'Absolute thresholds'), whichever thread the executor reduces on.
-        let (unchecked, lane_target, best_effort) =
-            (self.unchecked, self.lane_target, self.best_effort);
+        let settings = self.new_exact_settings();
         let build = || {
-            let mut engine = GenericEngine::new(0_f64);
-            engine.set_checked(!unchecked);
-            engine.set_cancellation_target(Some(lane_target));
-            engine.set_best_effort(best_effort);
+            let mut engine = GenericEngine::new(settings.prototype);
+            engine.take_settings(&settings);
             engine
         };
         let mut exact = {
@@ -1713,6 +1753,10 @@ where
     vanishing: Option<&'static str>,
     /// The engine's copies of a parallel reduction ([`reduce_sliced`]).
     workers: EnginePool<GenericEngine<T>>,
+    /// The (n, rank) of the templates built since [`Self::begin_call`]
+    /// (here, or by a copy and handed back): a failed call drops them
+    /// ([`Self::discard_call`]).
+    built: Vec<(usize, usize)>,
 }
 
 /// What a copy of a generic engine takes from it ([`BucketEngine::fork`]):
@@ -1745,6 +1789,7 @@ where
             best_effort: false,
             vanishing: None,
             workers: EnginePool::new(),
+            built: Vec::new(),
         }
     }
 
@@ -1771,16 +1816,27 @@ where
         self.vanishing = settings.vanishing;
     }
 
-    /// Discard what a failed call left in this engine: the ladder records of
-    /// its templates (taken per engine call, so an interrupted one leaves
-    /// them), and its copies' templates if any (a parallel call that broke
-    /// keeps none: the lent ones go with it).
+    /// The start of a reduction call: the templates built so far are kept
+    /// by a failed call ([`Self::discard_call`]).
+    fn begin_call(&mut self) {
+        self.built.clear();
+    }
+
+    /// Discard what a failed call left in this engine: the templates it
+    /// built (which of them a failed call reached depends on how it was
+    /// sliced; the templates it found stay), the ladder records of the
+    /// others (taken per engine call, so an interrupted one leaves them),
+    /// and its copies' templates if any.
     fn discard_call(&mut self) {
+        for key in self.built.drain(..) {
+            self.reductions.remove(&key);
+        }
         for reductions in self.reductions.values_mut() {
             let _ = reductions.take_ladder_records();
         }
         for copy in self.workers.engines_mut() {
             copy.reductions.clear();
+            copy.built.clear();
         }
     }
 
@@ -1941,6 +1997,12 @@ where
         self.reductions.insert((n, rank), template);
     }
 
+    /// The templates a copy built in the call are the call's
+    /// ([`GenericEngine::discard_call`]).
+    fn absorb(&mut self, copy: &mut Self) {
+        self.built.append(&mut copy.built);
+    }
+
     fn precision(&self) -> u32 {
         self.prototype.get_precision()
     }
@@ -1972,6 +2034,7 @@ where
                     reductions.enable_cancellation_ladder()?;
                     reductions.set_cancellation_target(self.target);
                 }
+                self.built.push((input.n, input.rank));
                 entry.insert(reductions)
             }
         };
@@ -2198,6 +2261,7 @@ impl V2Reducer {
     pub fn set_vanishing(&mut self, reason: Option<&'static str>) {
         match &mut self.engines {
             Engines::Fast(engine) => {
+                engine.vanishing = reason;
                 if let Some(exact) = &mut engine.exact {
                     exact.vanishing = reason;
                 }
@@ -2535,7 +2599,7 @@ impl V2Reducer {
                 // ended when `_call` is dropped.
                 let _call = engine.masters.begin_call();
                 let lanes = double()?;
-                let before = engine.counters();
+                let before = engine.begin_call();
                 let sliced = &mut self.sliced;
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     run(
@@ -2552,6 +2616,7 @@ impl V2Reducer {
             }
             Engines::Double(engine) => {
                 engine.select(options.masters);
+                engine.begin_call();
                 let lanes = double()?;
                 let sliced = &mut self.sliced;
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -2561,6 +2626,7 @@ impl V2Reducer {
             }
             Engines::DoubleDouble(engine) => {
                 engine.select(options.masters);
+                engine.begin_call();
                 let lanes = double_double()?;
                 let sliced = &mut self.sliced;
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -2570,6 +2636,7 @@ impl V2Reducer {
             }
             Engines::Arbitrary(engine) => {
                 engine.select(options.masters);
+                engine.begin_call();
                 let lanes = arbitrary()?;
                 let sliced = &mut self.sliced;
                 let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

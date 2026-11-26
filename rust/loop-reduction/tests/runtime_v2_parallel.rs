@@ -808,3 +808,215 @@ fn a_panic_in_a_parallel_call_leaves_the_reducer_as_the_uninterrupted_one() {
     assert!(reports[0].contains("Unstable"), "control:\n{}", reports[0]);
     assert_eq!(reports[1], reports[0]);
 }
+
+type C64 = rusticol_loop_reduction::Complex<f64>;
+
+fn c(re: f64) -> C64 {
+    C64::new(re, 0.)
+}
+
+/// The reason under which the reducer returns a refused lane consistent
+/// with zero ([`V2Reducer::set_vanishing`]).
+const VANISHING: &str = "a vanishing lane of the last carrier (test)";
+
+/// A call rejected on an invalid input: a light tadpole (routed to the
+/// exact engine) next to one whose shift is complex (refused by the fast
+/// engine); the error text.
+fn rejected_call(reducer: &mut V2Reducer) -> String {
+    let (z, o) = (c(0.), c(1.));
+    let mut shifts = [z; 8];
+    shifts[4].im = 1.;
+    let masses = [c(1e-12), c(4.)];
+    let views = LaneViews {
+        propagators: 1,
+        rows: 2,
+        shifts: &shifts,
+        masses_squared: &masses,
+        scales_squared: &[o; 2],
+        s_matrix: &[z; 2],
+        coefficients: &[o; 2],
+    };
+    reducer
+        .reduce_views(&[views], None, None, ReduceOptions::default())
+        .err()
+        .map(|e| e.to_string())
+        .expect("an invalid input")
+}
+
+/// A call that unwinds: a light tadpole (routed to the exact engine, first
+/// in serial order) and a bubble whose cancellation rescue asks a
+/// refinement callback that panics.
+fn unwinding_call(reducer: &mut V2Reducer) {
+    let tadpole = [
+        typed(&[0., 0., 0., 0.], 4),
+        typed(&[1e-12], 1),
+        typed(&[1.], 1),
+        typed(&[0.], 1),
+        typed(&[1.], 1),
+    ];
+    let n = 2f64.powi(60);
+    let bubble = [
+        typed(
+            &[
+                0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0.,
+            ],
+            8,
+        ),
+        typed(&[4., 4., 4., 4.], 2),
+        typed(&[1., 1.], 1),
+        typed(&[0., 1., 1., 0., 0., 1., 1., 0.], 4),
+        typed(&[n, 2. * n, 0., 0., 0., n, 2. * n, 0., 0., 0.], 5),
+    ];
+    fn group(b: &[Batch; 5], n: usize) -> FamilyGroup<'_> {
+        FamilyGroup {
+            propagators: n,
+            shifts: &b[0],
+            masses_squared: &b[1],
+            scales_squared: &b[2],
+            s_matrix: &b[3],
+            coefficients: &b[4],
+        }
+    }
+    let groups = [group(&tadpole, 1), group(&bubble, 2)];
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        reducer.reduce_refined(&groups, Some(&Panicking), ReduceOptions::default())
+    }));
+    assert!(caught.is_err(), "the callback panics");
+}
+
+/// Checked, the vanishing reason set, then the equal-mass bubble with
+/// numerator `shift² + 2 shift q0` at three (mass, shift), two targets and
+/// three imaginary parts of its constant term, reduced serially: every
+/// value, status, rescued and uncertified lane and counter, the masters
+/// cleared first.
+fn bubble_report(reducer: &mut V2Reducer) -> String {
+    reducer.set_unchecked(false);
+    reducer.set_vanishing(Some(VANISHING));
+    reducer.clear_masters();
+    let _ = reducer.take_master_statistics();
+    let _ = (reducer.take_exact_lanes(), reducer.take_rescued_lanes());
+    let z = c(0.);
+    let mut report = String::new();
+    for (mass, shift) in [(1e-12, 1.0), (4.0, 1e-5), (1e-12, 1e-5)] {
+        for target in [1e-8, 1e-25] {
+            reducer.set_target(target);
+            let shifts = [z, z, z, z, c(shift), z, z, z];
+            let masses = [c(mass); 2];
+            let matrix = [z, c(shift * shift), c(shift * shift), z];
+            for imag in [0., 1e-30, 1e-300] {
+                let coefficients = [C64::new(shift * shift, imag), c(2. * shift), z, z, z];
+                let views = LaneViews {
+                    propagators: 2,
+                    rows: 1,
+                    shifts: &shifts,
+                    masses_squared: &masses,
+                    scales_squared: &[c(1.)],
+                    s_matrix: &matrix,
+                    coefficients: &coefficients,
+                };
+                let output = reducer
+                    .reduce_views(&[views], None, None, ReduceOptions::default())
+                    .unwrap();
+                report += &format!(
+                    "{mass:e} {shift:e} {target:e} {imag:e}:\n{}",
+                    fingerprint(&output, reducer)
+                );
+            }
+        }
+    }
+    report
+}
+
+/// A rejected call's worker count does not change the reducer it leaves: a
+/// fresh unchecked reducer rejects the same call at 1 and 2 workers, keeps
+/// no template either way, and the following checked serial reductions with
+/// a vanishing reason give the same statuses, values and uncertified lanes,
+/// the reason applied by the exact engine built after the rejection.
+#[test]
+fn a_rejected_call_leaves_the_same_reducer_at_any_worker_count() {
+    let _unlock = pyamplicol::unlock();
+    let mut reports = Vec::new();
+    for threads in [1, 2] {
+        let mut reducer = V2Reducer::new("double", None, "fast", true).unwrap();
+        reducer.set_unchecked(true);
+        let error = pool(threads).install(|| rejected_call(&mut reducer));
+        let templates = reducer.built_templates();
+        reports.push(format!(
+            "{error}\ntemplates {templates}\n{}",
+            bubble_report(&mut reducer)
+        ));
+    }
+    assert!(reports[0].contains("templates 0\n"), "{}", reports[0]);
+    assert!(reports[0].contains(VANISHING), "{}", reports[0]);
+    assert_eq!(reports[1], reports[0]);
+}
+
+/// Every setting of the fast reducer holds on its exact engine whatever the
+/// order of the setter, the engine's first use, a rejected call and a
+/// caught unwind (at 1 and 2 workers): each history gives the reports of a
+/// reducer whose exact engine existed before the setters, and a rejected or
+/// unwound call keeps exactly the templates the reducer had before it.
+#[test]
+fn fast_reducer_settings_hold_whatever_the_order_of_first_use_errors_and_unwinds() {
+    let _unlock = pyamplicol::unlock();
+    let light = |reducer: &mut V2Reducer| {
+        let tadpole = [
+            typed(&[0., 0., 0., 0.], 4),
+            typed(&[1e-12], 1),
+            typed(&[1.], 1),
+            typed(&[0.], 1),
+            typed(&[1.], 1),
+        ];
+        let groups = [FamilyGroup {
+            propagators: 1,
+            shifts: &tadpole[0],
+            masses_squared: &tadpole[1],
+            scales_squared: &tadpole[2],
+            s_matrix: &tadpole[3],
+            coefficients: &tadpole[4],
+        }];
+        reducer.reduce(&groups, ReduceOptions::default()).unwrap();
+    };
+    let fresh = || V2Reducer::new("double", None, "fast", true).unwrap();
+    let mut warm = fresh();
+    light(&mut warm);
+    assert_eq!(warm.built_templates(), 1);
+    let want = bubble_report(&mut warm);
+    assert!(want.contains(VANISHING), "{want}");
+    for (history, expected_templates) in [
+        ("fresh", 0),
+        ("a fast call", 0),
+        ("rejected", 0),
+        ("unwound", 0),
+        ("warm, rejected", 1),
+        ("warm, unwound", 1),
+    ] {
+        for threads in [1, 2] {
+            let mut reducer = fresh();
+            if history.starts_with("warm") {
+                light(&mut reducer);
+            }
+            pool(threads).install(|| {
+                if history == "a fast call" {
+                    let tadpoles = [tadpoles(4, [4., 0.], "double", None, |row| row)];
+                    let groups: Vec<_> = tadpoles.iter().map(group).collect();
+                    reducer.reduce(&groups, ReduceOptions::default()).unwrap();
+                } else if history.ends_with("rejected") {
+                    rejected_call(&mut reducer);
+                } else if history.ends_with("unwound") {
+                    unwinding_call(&mut reducer);
+                }
+            });
+            assert_eq!(
+                reducer.built_templates(),
+                expected_templates,
+                "{history}, {threads} workers"
+            );
+            assert_eq!(
+                bubble_report(&mut reducer),
+                want,
+                "{history}, {threads} workers"
+            );
+        }
+    }
+}
