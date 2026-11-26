@@ -547,6 +547,33 @@ trait BucketEngine<T>: Send + Sized {
     /// The most lanes of one slice of a parallel reduction (the engine's
     /// own call size).
     fn slice_cap(&self) -> usize;
+    /// The engine's built object of one bucket (propagators, rank) that a
+    /// copy of the engine must not build again: a parallel reduction lends
+    /// it to one worker at a time ([`reduce_lent`]). `()` for an engine
+    /// whose copies hold working state only.
+    type Template: Send;
+    /// Whether a parallel reduction lends this engine's templates (one task
+    /// per bucket, on the bucket's one template) instead of slicing its
+    /// buckets over copies that would each build their own.
+    fn lends(&self) -> bool;
+    /// The template of bucket (`n`, `rank`), taken out of the engine (None:
+    /// not built yet).
+    fn take_template(&mut self, n: usize, rank: usize) -> Option<Self::Template>;
+    /// Put the template of bucket (`n`, `rank`) (back) into the engine.
+    fn put_template(&mut self, n: usize, rank: usize, template: Self::Template);
+    /// Before a parallel region: share what the copies must not duplicate
+    /// (the fast engine's exact engine); undone by [`Self::end_parallel`].
+    fn begin_parallel(&mut self) {}
+    fn end_parallel(&mut self) {}
+    /// Fold a worker copy's counters into this engine (after every
+    /// parallel call, [`retire_copies`]).
+    fn absorb(&mut self, copy: &mut Self) {
+        let _ = copy;
+    }
+    /// Drop the working state a copy grew during a call (its lane-sized
+    /// buffers); what is cheap to keep and costly to build (the master
+    /// provider) stays for the next call ([`retire_copies`]).
+    fn release(&mut self) {}
     /// `source`: the lanes' rescue-precision kinematics on demand (the
     /// fast engine's cancellation rescue; others ignore it).
     fn reduce(
@@ -687,6 +714,9 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
     points: Option<&[&[usize]]>,
     workers: usize,
 ) -> ExecutionResult<Vec<FrameOutcomes<T>>> {
+    if engine.lends() {
+        return reduce_lent(engine, groups, buckets, frames, poles, source);
+    }
     let lanes: usize = buckets.values().map(Vec::len).sum::<usize>() * frames.len();
     let size = lane_slices::slice_size(lanes, workers, engine.slice_cap());
     let mut slices = Vec::new();
@@ -712,6 +742,7 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
         let slice = &slices[k];
         std::cmp::Reverse((slice.n, slice.rank, slice.members.len()))
     });
+    engine.begin_parallel();
     let settings = engine.settings();
     let mut pool = std::mem::take(engine.pool());
     let reduced = pool.run_ordered(
@@ -733,19 +764,120 @@ fn reduce_sliced<T: Carrier + Send + Sync, E: BucketEngine<T>>(
             )
         },
     );
+    retire_copies(engine, pool);
+    drop(settings);
+    engine.end_parallel();
+    let mut outcomes = empty_outcomes(groups, frames.len());
+    for (slice, reduced) in slices.iter().zip(reduced?) {
+        for (&(group, row), outcome) in slice.members.iter().zip(reduced) {
+            outcomes[slice.frame][group][row] = Some(outcome);
+        }
+    }
+    Ok(outcomes)
+}
+
+/// After a parallel call: fold the worker copies' counters into the
+/// reducer's engine and release their working state, then keep them for the
+/// next call (invariant 5: between calls a copy holds no lane-sized buffer,
+/// no template and no master row; a fast engine's copy keeps its master
+/// provider, a few kB of evaluator constants that are costly to rebuild).
+fn retire_copies<T, E: BucketEngine<T>>(engine: &mut E, mut pool: EnginePool<E>) {
+    for copy in pool.engines_mut() {
+        engine.absorb(copy);
+        copy.release();
+    }
     *engine.pool() = pool;
-    let mut outcomes: Vec<FrameOutcomes<T>> = frames
-        .iter()
+}
+
+/// Empty outcome tables of `frames` frames.
+fn empty_outcomes<T>(groups: &[Lanes<'_, T>], frames: usize) -> Vec<FrameOutcomes<T>> {
+    (0..frames)
         .map(|_| {
             groups
                 .iter()
                 .map(|g| (0..g.ids.len()).map(|_| None).collect())
                 .collect()
         })
+        .collect()
+}
+
+/// [`reduce_sliced`] for an engine that lends its templates
+/// ([`BucketEngine::lends`]: the generic engines, whose Symbolica template
+/// reductions per (n, rank) evaluate through `&mut` and cannot be shared
+/// between threads): one task per bucket, every frame's lanes of the bucket
+/// in one engine call each (as [`reduce_groups`] makes them), on the one
+/// template of the bucket, taken out of the reducer's engine for the call
+/// and put back after it. So the copies of the engine build no template:
+/// memory does not grow with the threads, and the buckets run in parallel
+/// (largest first); a bucket's lanes run on one thread. The failure is the
+/// first in the serial order (frame by frame, bucket by bucket).
+fn reduce_lent<T: Carrier + Send + Sync, E: BucketEngine<T>>(
+    engine: &mut E,
+    groups: &[Lanes<'_, T>],
+    buckets: &Buckets,
+    frames: &[Option<ReductionFrame>],
+    poles: Poles,
+    source: Option<&dyn GroupRefinementSource>,
+) -> ExecutionResult<Vec<FrameOutcomes<T>>> {
+    let keys: Vec<(usize, usize)> = buckets.keys().copied().collect();
+    let lent: Vec<std::sync::Mutex<Option<E::Template>>> = keys
+        .iter()
+        .map(|&(n, rank)| std::sync::Mutex::new(engine.take_template(n, rank)))
         .collect();
-    for (slice, reduced) in slices.iter().zip(reduced?) {
-        for (&(group, row), outcome) in slice.members.iter().zip(reduced) {
-            outcomes[slice.frame][group][row] = Some(outcome);
+    let tasks: Vec<usize> = (0..keys.len()).collect();
+    let mut schedule = tasks.clone();
+    schedule.sort_by_key(|&k| std::cmp::Reverse((keys[k].0, keys[k].1, buckets[&keys[k]].len())));
+    let settings = engine.settings();
+    let mut pool = std::mem::take(engine.pool());
+    let reduced = pool.run_ordered(
+        engine,
+        &tasks,
+        Some(&schedule),
+        || E::fork(&settings),
+        |copy| copy.follow(&settings),
+        |worker, &k| {
+            let (n, rank) = keys[k];
+            let mut slot = lent[k].lock().expect("a lent template");
+            if let Some(template) = slot.take() {
+                worker.put_template(n, rank, template);
+            }
+            let parts: Vec<ExecutionResult<Vec<Outcome<T>>>> = frames
+                .iter()
+                .enumerate()
+                .map(|(f, &frame)| {
+                    let source = if f == 0 { source } else { None };
+                    reduce_members(
+                        worker,
+                        groups,
+                        n,
+                        rank,
+                        &buckets[&keys[k]],
+                        frame,
+                        poles,
+                        source,
+                    )
+                })
+                .collect();
+            // The template (built here if it was not) goes back to the
+            // reducer's engine whatever the outcome.
+            *slot = worker.take_template(n, rank);
+            Ok::<_, ExecutionError>(parts)
+        },
+    );
+    retire_copies(engine, pool);
+    for (&(n, rank), slot) in keys.iter().zip(lent) {
+        if let Some(template) = slot.into_inner().expect("a lent template") {
+            engine.put_template(n, rank, template);
+        }
+    }
+    let mut reduced = reduced?;
+    let mut outcomes = empty_outcomes(groups, frames.len());
+    for (f, table) in outcomes.iter_mut().enumerate() {
+        for (k, parts) in reduced.iter_mut().enumerate() {
+            let part = std::mem::replace(&mut parts[f], Ok(Vec::new()))?;
+            for (&(group, row), outcome) in buckets[&keys[k]].iter().zip(part) {
+                table[group][row] = Some(outcome);
+            }
         }
     }
     Ok(outcomes)
@@ -906,7 +1038,15 @@ struct FastEngine {
     lane_target: f64,
     /// The engine's copies of a parallel reduction ([`reduce_sliced`]).
     workers: EnginePool<FastEngine>,
+    /// During a parallel reduction, the reducer's exact engine shared by
+    /// every worker (one at a time: routed lanes are rare), so that no copy
+    /// builds its own templates ([`BucketEngine::begin_parallel`]).
+    shared_exact: Option<SharedExact>,
 }
+
+/// The exact engine of a parallel fast reduction, lent to one worker at a
+/// time.
+type SharedExact = Arc<std::sync::Mutex<Option<GenericEngine<f64>>>>;
 
 /// What a copy of the fast engine takes from it ([`BucketEngine::fork`]):
 /// its options, its master caching and shared master tier, and its exact
@@ -920,6 +1060,7 @@ struct FastSettings {
     cache: bool,
     shared: Option<Arc<SharedMasters>>,
     exact: GenericSettings<f64>,
+    shared_exact: Option<SharedExact>,
 }
 
 impl FastEngine {
@@ -941,6 +1082,7 @@ impl FastEngine {
                 crate::reduction_policy::DEFAULT_TARGET,
             ),
             workers: EnginePool::new(),
+            shared_exact: None,
         })
     }
 
@@ -1062,6 +1204,7 @@ impl BucketEngine<f64> for FastEngine {
             cache: self.masters.enabled(),
             shared: self.masters.shared().cloned(),
             exact: self.exact_settings(),
+            shared_exact: self.shared_exact.clone(),
         }
     }
 
@@ -1078,6 +1221,7 @@ impl BucketEngine<f64> for FastEngine {
         self.threshold = settings.threshold;
         self.chunk_lanes = settings.chunk_lanes;
         self.masters.share(settings.shared.clone());
+        self.shared_exact = settings.shared_exact.clone();
         // A built exact engine takes the settings the reducer's has (or
         // would be built with); an unbuilt one is built on first use with
         // the settings above, as the reducer's is.
@@ -1092,6 +1236,46 @@ impl BucketEngine<f64> for FastEngine {
 
     fn slice_cap(&self) -> usize {
         self.chunk_lanes.max(1)
+    }
+
+    type Template = ();
+
+    fn lends(&self) -> bool {
+        false
+    }
+
+    fn take_template(&mut self, _: usize, _: usize) -> Option<()> {
+        None
+    }
+
+    fn put_template(&mut self, _: usize, _: usize, _: ()) {}
+
+    fn begin_parallel(&mut self) {
+        self.shared_exact = Some(Arc::new(std::sync::Mutex::new(self.exact.take())));
+    }
+
+    fn end_parallel(&mut self) {
+        if let Some(shared) = self.shared_exact.take() {
+            self.exact = shared.lock().expect("the shared exact engine").take();
+        }
+    }
+
+    fn absorb(&mut self, copy: &mut Self) {
+        self.masters.add_statistics(copy.masters.take_statistics());
+        self.exact_lanes += std::mem::take(&mut copy.exact_lanes);
+        self.rescued_lanes += std::mem::take(&mut copy.rescued_lanes);
+    }
+
+    fn release(&mut self) {
+        // The amplitudes' per-lane workspaces, the numerators' coefficient
+        // buffers, the result buffers and the rows looked up in the shared
+        // master tier: rebuilt by the next call as it needs them.
+        self.amplitudes = HashMap::new();
+        self.numerators = HashMap::new();
+        self.results = Vec::new();
+        self.statuses = Vec::new();
+        self.masters.release();
+        self.shared_exact = None;
     }
 
     fn precision(&self) -> u32 {
@@ -1124,17 +1308,28 @@ impl BucketEngine<f64> for FastEngine {
         // 'Absolute thresholds'), whichever thread the executor reduces on.
         let (unchecked, lane_target, best_effort) =
             (self.unchecked, self.lane_target, self.best_effort);
+        let build = || {
+            let mut engine = GenericEngine::new(0_f64);
+            engine.set_checked(!unchecked);
+            engine.set_cancellation_target(Some(lane_target));
+            engine.set_best_effort(best_effort);
+            engine
+        };
         let mut exact = {
             let _unlock = pyamplicol::unlock();
-            self.exact
-                .get_or_insert_with(|| {
-                    let mut engine = GenericEngine::new(0_f64);
-                    engine.set_checked(!unchecked);
-                    engine.set_cancellation_target(Some(lane_target));
-                    engine.set_best_effort(best_effort);
-                    engine
-                })
-                .reduce(&input.select(&routed), None)?
+            match &self.shared_exact {
+                // A parallel reduction: the reducer's exact engine, one
+                // worker at a time.
+                Some(shared) => shared
+                    .lock()
+                    .expect("the shared exact engine")
+                    .get_or_insert_with(build)
+                    .reduce(&input.select(&routed), None)?,
+                None => self
+                    .exact
+                    .get_or_insert_with(build)
+                    .reduce(&input.select(&routed), None)?,
+            }
         }
         .into_iter();
         routed
@@ -1665,6 +1860,20 @@ where
         FAST_CHUNK_LANES
     }
 
+    type Template = Reductions<T>;
+
+    fn lends(&self) -> bool {
+        true
+    }
+
+    fn take_template(&mut self, n: usize, rank: usize) -> Option<Reductions<T>> {
+        self.reductions.remove(&(n, rank))
+    }
+
+    fn put_template(&mut self, n: usize, rank: usize, template: Reductions<T>) {
+        self.reductions.insert((n, rank), template);
+    }
+
     fn precision(&self) -> u32 {
         self.prototype.get_precision()
     }
@@ -2074,6 +2283,35 @@ impl V2Reducer {
         match &mut self.engines {
             Engines::Fast(engine) => engine.take_rescued_lanes(),
             _ => 0,
+        }
+    }
+
+    /// The Symbolica template reductions per (propagators, rank) this
+    /// reducer and its worker copies have built and keep (the generic
+    /// engines', the fast engine's exact engine's): a parallel reduction
+    /// lends the reducer's own to its workers, so this does not grow with
+    /// the threads.
+    pub fn built_templates(&self) -> usize {
+        fn generic<T: Carrier>(engine: &GenericEngine<T>) -> usize
+        where
+            Complex<T>: Real + EvaluationDomain,
+        {
+            engine.reductions.len()
+                + engine
+                    .workers
+                    .engines()
+                    .map(|copy| copy.reductions.len())
+                    .sum::<usize>()
+        }
+        match &self.engines {
+            Engines::Fast(engine) => std::iter::once(engine.as_ref())
+                .chain(engine.workers.engines())
+                .filter_map(|e| e.exact.as_ref())
+                .map(generic)
+                .sum(),
+            Engines::Double(engine) => generic(engine),
+            Engines::DoubleDouble(engine) => generic(engine),
+            Engines::Arbitrary(engine) => generic(engine),
         }
     }
 

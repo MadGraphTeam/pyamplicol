@@ -144,6 +144,13 @@ impl<E: Send> EnginePool<E> {
         self.forks.iter().flatten()
     }
 
+    /// Take every engine made so far out of the pool (it is empty after):
+    /// a backend whose copies must not outlive a call folds their counters
+    /// into its own engine and drops them.
+    pub fn drain(&mut self) -> impl Iterator<Item = E> + '_ {
+        self.forks.drain(..).flatten()
+    }
+
     /// Reduce every slice with `reduce` on up to [`workers`] engines in
     /// parallel on the current pool: `main` and engines of the pool, made
     /// by `make` on first use and brought to the call's settings by `follow`
