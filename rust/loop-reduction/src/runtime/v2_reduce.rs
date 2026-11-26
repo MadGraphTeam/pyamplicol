@@ -316,6 +316,13 @@ pub struct FamilyGroup<'a> {
 /// repair serves it). Asked by the fast engine's cancellation rescue for the
 /// lanes it flags only (direct frame). Shared by the workers of a parallel
 /// reduction (`crate::lane_slices`), hence `Sync`.
+///
+/// With several workers its requests can be concurrent (lanes of different
+/// slices at once), speculative (asked by a slice whose result a failing call
+/// discards) and repeated (a failing call makes its first failing step again
+/// serially). The outcome equals the serial reduction's only when a lane's
+/// answer, or its panic, is the same whenever it is asked; a caller that
+/// needs its effects in the serial order can reduce on one worker.
 pub trait GroupRefinementSource: Sync {
     fn lane(
         &self,

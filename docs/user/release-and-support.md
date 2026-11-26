@@ -76,9 +76,16 @@ applies it to that lane (before, the reason reached only an exact engine that
 already existed). For direct Rust users of the reduction crate, the new
 `MasterCache::begin_call` opens a grouped call and returns its handle: inside
 it a failed row is evaluated and counted once, and an ordinary `evaluate` asks
-the provider again for a failed row, as before. The one-core cost is unchanged
-or lower with NinjaRS and up to about 1.5 % higher with TIRust from lane
-independence alone (with the faster assembly, lower overall).
+the provider again for a failed row, as before. A reduction call that fails
+returns the outcome of the serial call (the error or panic of its first failing
+step) at any thread count. For direct Rust users, the refinement callback
+(`GroupRefinementSource`) can be asked for a lane concurrently, speculatively
+and more than once: the outcome equals the serial one when a lane's answer or
+panic is the same whenever it is asked (a callback that panics only once, next
+to a failure in a later bucket, can make a parallel call return the other
+failure); a caller that needs ordered effects can use one thread. The one-core
+cost is unchanged or lower with NinjaRS and up to about 1.5 % higher with
+TIRust from lane independence alone (with the faster assembly, lower overall).
 
 Limits: NinjaRS in double-double and arbitrary precision stays at about
 one-thread speed (parallel over buckets only, on one set of built templates),
