@@ -381,6 +381,26 @@ def _mt_dependent_vector_sm(destination: Path) -> Path:
     return destination
 
 
+def _prepared_at_173_and_174(
+    root: Path, source: Path, *, simplify: bool
+) -> dict[str, ModelSource]:
+    built = {}
+    for mass, restriction in (
+        ("173", "default"),
+        ("174", source / "restrict_mt174.dat"),
+    ):
+        bundle = root / f"mt{mass}.pyamplicol-model"
+        ModelSource.from_path(
+            source, restriction=restriction, simplify=simplify
+        ).compile(
+            cache_dir=root / "cache",
+            prepared_output=bundle,
+            evaluator=EvaluatorConfig(),
+        )
+        built[mass] = ModelSource.from_path(bundle)
+    return built
+
+
 @pytest.fixture(scope="module")
 def mt_vector_models(tmp_path_factory: pytest.TempPathFactory):
     """The MT-dependent model prepared at MT = 173 (the vector term vanishes)
@@ -389,19 +409,17 @@ def mt_vector_models(tmp_path_factory: pytest.TempPathFactory):
 
     root = tmp_path_factory.mktemp("sm-mt-vector")
     source = _mt_dependent_vector_sm(root / "sm_mt_vector")
-    built = {}
-    for mass, restriction in (
-        ("173", "default"),
-        ("174", source / "restrict_mt174.dat"),
-    ):
-        bundle = root / f"mt{mass}.pyamplicol-model"
-        ModelSource.from_path(source, restriction=restriction, simplify=False).compile(
-            cache_dir=root / "cache",
-            prepared_output=bundle,
-            evaluator=EvaluatorConfig(),
-        )
-        built[mass] = ModelSource.from_path(bundle)
-    return built
+    return _prepared_at_173_and_174(root, source, simplify=False)
+
+
+@pytest.fixture(scope="module")
+def simplified_mt_vector_models(tmp_path_factory: pytest.TempPathFactory):
+    """The same model with the default restriction simplification, which
+    removes the vector coupling at MT = 173 (and records its guard)."""
+
+    root = tmp_path_factory.mktemp("sm-mt-vector-simplified")
+    source = _mt_dependent_vector_sm(root / "sm_mt_vector")
+    return _prepared_at_173_and_174(root, source, simplify=True)
 
 
 def _parameter_value(runtime: Runtime, name: str) -> float:
@@ -522,6 +540,186 @@ def test_a_line_through_a_coupling_zero_only_at_the_defaults_is_refused(
 
     with pytest.raises(GenerationError, match=r"dirac-weyl-closure:.*both chiral"):
         _runtime(mt_vector_models["173"], "vt vt~ > ta+ ta-", tmp_path / "a")
+
+
+_GUARDED_LANES = [
+    ("compiled", "full"),
+    ("eager", "full"),
+    ("recurrence", "lc"),
+    ("recurrence", "full"),
+    ("on-the-fly", "lc"),
+]
+
+
+@pytest.mark.parametrize(("lane", "accuracy"), _GUARDED_LANES)
+def test_a_simplified_artifact_refuses_the_update_that_revives_the_coupling(
+    simplified_mt_vector_models, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    """Under the default restriction simplification the vector coupling,
+    zero at MT = 173, is removed with its specialisation guard: the 173
+    artifact refuses MT = 174 (it gave 0.054 instead of 678.5) and keeps its
+    binding; the 174 artifact has the coupling."""
+
+    process = "ta- ta+ > w- w+"
+    models = simplified_mt_vector_models
+    at_173 = _runtime(
+        models["173"], process, tmp_path / "a173", lane=lane, accuracy=accuracy
+    )
+    at_174 = _runtime(
+        models["174"], process, tmp_path / "a174", lane=lane, accuracy=accuracy
+    )
+    points = _tau_pair_to_w_pair_points(at_174)
+    before = _values(at_173, points)
+    with pytest.raises(Exception, match=r"specialisation-guard: binding MT.*GC_MTV"):
+        at_173.set_model_parameters({"MT": 174.0})
+    assert _values(at_173, points) == before
+    fresh = _values(at_174, points)
+    assert all(abs(f - b) > 1e-3 * abs(b) for f, b in zip(fresh, before, strict=True))
+
+
+@pytest.mark.parametrize(
+    ("lane", "accuracy"), [("recurrence", "lc"), ("eager", "full")]
+)
+def test_a_simplified_line_through_the_removed_coupling_refuses_its_revival(
+    simplified_mt_vector_models, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    """vt vt~ > ta+ ta-: at MT = 173 the simplified model's W is purely
+    left-handed and the line builds; MT = 174 would revive the right-handed
+    half the line was built without, and is refused. Generated at 174 the
+    line meets both chiral projections and is refused at generation."""
+
+    process = "vt vt~ > ta+ ta-"
+    runtime = _runtime(
+        simplified_mt_vector_models["173"],
+        process,
+        tmp_path / "a173",
+        lane=lane,
+        accuracy=accuracy,
+    )
+    with pytest.raises(Exception, match=r"specialisation-guard: binding MT.*GC_MTV"):
+        runtime.set_model_parameters({"MT": 174.0})
+    with pytest.raises(GenerationError, match=r"dirac-weyl-closure:.*both chiral"):
+        _runtime(
+            simplified_mt_vector_models["174"],
+            process,
+            tmp_path / "a174",
+            lane=lane,
+            accuracy=accuracy,
+        )
+
+
+# A derived parameter the recurrence template holds real (one runtime
+# component: its default is real and not zero) must stay real at every
+# binding the template lanes accept. A copy of the shipped sm whose tau-line
+# W couplings get an imaginary part proportional to MT - 173 (the W stays
+# purely left-handed, so the projection is unaffected): the coupling is real
+# only at MT = 173.
+def _mt_dependent_phase_sm(destination: Path) -> Path:
+    shipped = Path(str(resources.files("pyamplicol").joinpath("assets/models/ufo/sm")))
+    shutil.copytree(shipped, destination, ignore=shutil.ignore_patterns("__pycache__"))
+    couplings = destination / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    path = destination / "vertices.py"
+    vertices = path.read_text(encoding="utf-8")
+    for index, (particles, sign) in enumerate(
+        (
+            ("P.vt__tilde__, P.ta__minus__, P.W__plus__", "1"),
+            ("P.ta__plus__, P.vt, P.W__minus__", "-1"),
+        )
+    ):
+        pattern = re.compile(
+            r"(particles = \[ "
+            + re.escape(particles)
+            + r" \],\n\s*color = \[ '1' \],\n\s*lorentz = \[ L\.FFV2 \],"
+            r"\n\s*couplings = \{\(0,0\):C\.)GC_\d+"
+        )
+        vertices, count = pattern.subn(rf"\g<1>GC_MTR{index}", vertices)
+        assert count == 1
+        text += (
+            f"\nGC_MTR{index} = Coupling(name = 'GC_MTR{index}',\n"
+            f"                 value = '({sign}+complex(0,1)*(MT-173.))*ee"
+            "/(sw*cmath.sqrt(2))',\n"
+            "                 order = {'QED':1})\n"
+        )
+    couplings.write_text(text, encoding="utf-8")
+    path.write_text(vertices, encoding="utf-8")
+    card = (destination / "restrict_default.dat").read_text(encoding="utf-8")
+    (destination / "restrict_mt174.dat").write_text(
+        card.replace("    6 1.730000e+02 # MT", "    6 1.740000e+02 # MT"),
+        encoding="utf-8",
+    )
+    return destination
+
+
+@pytest.fixture(scope="module")
+def mt_phase_models(tmp_path_factory: pytest.TempPathFactory):
+    root = tmp_path_factory.mktemp("sm-mt-phase")
+    source = _mt_dependent_phase_sm(root / "sm_mt_phase")
+    return _prepared_at_173_and_174(root, source, simplify=True)
+
+
+@pytest.mark.parametrize(
+    ("lane", "accuracy"),
+    [("recurrence", "lc"), ("recurrence", "full"), ("on-the-fly", "lc")],
+)
+def test_a_template_lane_refuses_a_binding_that_makes_a_real_parameter_complex(
+    mt_phase_models, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    """vt e- > ve ta-: the template lanes held the coupling real and gave
+    the MT = 173 value after MT = 174 (half the right one). The template's
+    "real" guard refuses that binding, accepts those that keep the coupling
+    real, and the 174 artifact equals the eager lane."""
+
+    process = "vt e- > ve ta-"
+    points = _reference("default", process)["points"]
+    at_173 = _runtime(
+        mt_phase_models["173"], process, tmp_path / "a173", lane=lane, accuracy=accuracy
+    )
+    before = _values(at_173, points)
+    with pytest.raises(
+        Exception,
+        match=r"specialisation-guard: binding MT.*held real by the recurrence template",
+    ):
+        at_173.set_model_parameters({"MT": 174.0})
+    assert _values(at_173, points) == before
+    at_173.set_model_parameters({"MZ": 91.0})
+    fresh = _values(
+        _runtime(
+            mt_phase_models["174"],
+            process,
+            tmp_path / "a174",
+            lane=lane,
+            accuracy=accuracy,
+        ),
+        points,
+    )
+    eager = _runtime(
+        mt_phase_models["174"],
+        process,
+        tmp_path / "e174",
+        lane="eager",
+        accuracy="full",
+    )
+    _assert_close(fresh, _values(eager, points))
+
+
+@pytest.mark.parametrize("lane", ["eager", "compiled"])
+def test_the_complex_typed_lanes_follow_the_binding(
+    mt_phase_models, tmp_path: Path, lane: str
+) -> None:
+    """The eager and compiled lanes evaluate the coupling as complex: the
+    173 artifact updated to MT = 174 equals the 174 artifact."""
+
+    process = "vt e- > ve ta-"
+    points = _reference("default", process)["points"]
+    at_173 = _runtime(
+        mt_phase_models["173"], process, tmp_path / "a173", lane=lane, accuracy="full"
+    )
+    at_173.set_model_parameters({"MT": 174.0})
+    at_174 = _runtime(
+        mt_phase_models["174"], process, tmp_path / "a174", lane=lane, accuracy="full"
+    )
+    _assert_close(_values(at_173, points), _values(at_174, points))
 
 
 # A template with paired rows (a projection and its full-state counterpart)
