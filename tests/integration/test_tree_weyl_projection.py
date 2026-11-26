@@ -492,7 +492,9 @@ def test_a_runtime_parameter_update_equals_a_fresh_generation(
     """ta- ta+ > w- w+ (a neutrino t channel through the tau-line W):
     the artifact prepared at MT = 173 and evaluated at MT = 174 equals the
     artifact prepared at MT = 174. With the vector half dropped at MT = 173
-    the two differed by 1.5x."""
+    the two differed by 1.5x; in the recurrence lane the coupling, an
+    imaginary derived parameter that is zero at MT = 173, also had only a
+    real runtime component."""
 
     process = "ta- ta+ > w- w+"
     at_173 = _runtime(
@@ -539,7 +541,7 @@ def test_paired_rows_carry_an_abi_the_plain_reader_refuses(sm_models) -> None:
     )
 
     pack = load_prepared_model_bundle(sm_models("default").path).kernel_pack
-    template = dict(pack.recurrence_template)
+    template = json.loads(json.dumps(pack.recurrence_template, default=dict))
     header = dict(template["header"])
     assert header["abi"] == RECURRENCE_TEMPLATE_EXECUTION_ABI != _PLAIN_TEMPLATE_ABI
     assert pack.provenance["recurrence_template_abi"] == header["abi"]
