@@ -329,6 +329,60 @@ def test_spin_correlations_of_a_gluon_with_helicity_dependent_zeros(tmp_path):
                 assert abs(values[label][point].imag / scale) < Decimal("1e-26")
 
 
+@pytest.mark.parametrize(
+    ("accuracy", "graded", "leading"),
+    (("strict-lc", False, "lc"), ("strict-nlc", False, "nlc"), ("full", True, "full")),
+)
+def test_graded_colour_with_zero_groups(tmp_path, accuracy, graded, leading):
+    """Strict and graded colour: each correlation's N_c degrees sum to its
+    total, and the Born equals the Born of the corresponding ungraded
+    accuracy (the strict correlations themselves are a different truncation)."""
+
+    pytest.importorskip("pyamplicol._rusticol")
+    process = "u u~ > d d~"
+    config = _configuration("full", QCD_ZERO)
+    config = RunConfig(
+        action=config.action,
+        model=config.model,
+        color=ColorConfig(accuracy=accuracy, graded=True)
+        if graded
+        else ColorConfig(accuracy=accuracy),
+        process=config.process,
+        generation=config.generation,
+        evaluator=config.evaluator,
+    )
+    Generator(config).generate(
+        process,
+        tmp_path / "graded",
+        model=ModelSource.built_in_sm(),
+        correlators=_declarations(process),
+    )
+    runtime = Runtime.load(tmp_path / "graded")
+    assert _zero_set(tmp_path / "graded")
+    reference = _generate(
+        ModelSource.built_in_sm(), process, QCD_ZERO, leading, tmp_path / "plain"
+    )
+    points = _points(4)
+    with localcontext() as context:
+        context.prec = 40
+        for identifier in ("born", "T13", "T24"):
+            graded_values = runtime.evaluate_correlated_graded(
+                points, color_correlation=identifier, precision=32
+            )
+            totals = runtime.evaluate_correlated(
+                points, color_correlation=identifier, precision=32
+            )
+            expected = reference.evaluate_correlated(
+                points, color_correlation=identifier, precision=32
+            )
+            for point in range(len(points)):
+                total = totals[point].real
+                parts = sum(value.real for value in graded_values.values[point])
+                assert abs((parts - total) / total) < Decimal("1e-26")
+                if identifier == "born":
+                    assert abs(total / expected[point].real - 1) < Decimal("1e-26")
+
+
 def test_processes_without_zero_groups_keep_correlator_schema_one(tmp_path):
     """A process whose colour sectors exist at every retained helicity writes
     the payload exactly as before: schema 1, no zero-group record."""
