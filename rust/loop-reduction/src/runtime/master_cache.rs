@@ -58,7 +58,11 @@
 //! found, without being canonicalised again. Canonicalisation is a function
 //! of the row's bits, so that source is the one the canonical look-up would
 //! find: which rows reach the provider, in which order, and every count are
-//! those of the plain canonical look-up.
+//! those of the plain canonical look-up. What the memo keeps across calls is
+//! call-independent (the offset of a stored value, dropped with the values);
+//! a miss of the current call is tagged with the call's id and read by that
+//! call only, so a call that ends early (a provider error, or a panic
+//! unwinding out of the provider) leaves nothing a later call could read.
 
 use ninjars::Result;
 use ninjars::fast::{C64, FastMaster, FastMasters};
@@ -399,6 +403,21 @@ enum Source {
     Failed,
 }
 
+/// What the memo of asked rows holds for a row.
+#[derive(Clone, Copy)]
+enum Asked {
+    /// The offset of its cached outputs in the cache's values: valid until
+    /// they are dropped (`forget`, `release`), which drops the memo too.
+    Cached(usize),
+    /// Miss `miss` of the call with id `call`. Only that call reads it: every
+    /// call takes a new id when it starts, so a miss left by a call that
+    /// ended early (a provider error, or a panic unwinding out of the
+    /// provider) is never read by a later one, which looks the row up again
+    /// as if that call had not happened. A call that ends normally turns its
+    /// misses into `Cached` (stored) or removes them (failed rows).
+    Miss { call: u64, miss: usize },
+}
+
 /// Whether a family's rows have a canonical form other than themselves
 /// ([`canonicalise`]): those rows are also remembered as asked.
 fn relabelled(family: FastMaster) -> bool {
@@ -411,10 +430,13 @@ pub struct MasterCache<M> {
     enabled: bool,
     /// Canonical key -> offset of its outputs in `values`.
     entries: ExactMap<usize>,
-    /// Triangle and box rows as asked -> the source their canonical key
-    /// resolved to (module docs, 'Look-ups'). Between calls it holds cached
-    /// sources only: a call's own misses are settled at its end.
-    asked: ExactMap<Source>,
+    /// Triangle and box rows as asked -> what their canonical key resolved
+    /// to (module docs, 'Look-ups'): a cached value, or one of the misses of
+    /// the call that asked them, read only by that call ([`Asked`]).
+    asked: ExactMap<Asked>,
+    /// The id of the current (or last) call ([`Asked::Miss`]); a new one at
+    /// the start of every call.
+    call: u64,
     values: Vec<[C64; 3]>,
     statistics: MasterStatistics,
     canonical: Vec<C64>,
@@ -445,6 +467,7 @@ impl<M: FastMasters> MasterCache<M> {
             enabled,
             entries: ExactMap::default(),
             asked: ExactMap::default(),
+            call: 0,
             values: Vec::new(),
             statistics: MasterStatistics::default(),
             canonical: Vec::new(),
@@ -718,14 +741,9 @@ impl<M: FastMasters> MasterCache<M> {
             );
             let result = self.provider(family, &miss_args, &mut miss_out, &mut miss_ok);
             (self.miss_args, self.miss_out, self.miss_ok) = (miss_args, miss_out, miss_ok);
-            if result.is_err() {
-                // This call's misses have no outputs: forget the rows that
-                // point at them.
-                for key in &self.asked_misses {
-                    self.asked.remove(key);
-                }
-                return result;
-            }
+            // On an error (or a panic unwinding from the provider) the call's
+            // misses in `asked` are left to its id ([`Asked::Miss`]).
+            result?;
         }
         // Store the successful misses and remember the failed ones for the
         // rest of the call. On the shared tier, a row is evaluated when it is
@@ -775,12 +793,13 @@ impl<M: FastMasters> MasterCache<M> {
         // Rows asked in this call that resolved to one of its misses now
         // point at its stored outputs, or are forgotten when it failed.
         for key in &self.asked_misses {
-            let source = self.asked.get_mut(key).expect("a row of this call");
-            let Source::Evaluated(miss) = *source else {
+            let entry = self.asked.get_mut(key).expect("a row of this call");
+            let Asked::Miss { call, miss } = *entry else {
                 unreachable!("a row of this call's misses")
             };
+            debug_assert_eq!(call, self.call);
             match self.stored[miss] {
-                Some(offset) => *source = Source::Cached(offset),
+                Some(offset) => *entry = Asked::Cached(offset),
                 None => {
                     self.asked.remove(key);
                 }
@@ -826,12 +845,24 @@ impl<M: FastMasters> MasterCache<M> {
         self.pending_keys.clear();
         self.asked_misses.clear();
         self.miss_args.clear();
+        self.call += 1;
+        let call = self.call;
         let mut canonical = [C64::ZERO; MAX_ARITY];
         for row in args.chunks_exact(arity) {
             let asked = Key::new(family, row);
-            if relabelled && let Some(&source) = self.asked.get(&asked) {
-                self.sources.push(source);
-                continue;
+            if relabelled {
+                match self.asked.get(&asked) {
+                    Some(&Asked::Cached(offset)) => {
+                        self.sources.push(Source::Cached(offset));
+                        continue;
+                    }
+                    Some(&Asked::Miss { call: of, miss }) if of == call => {
+                        self.sources.push(Source::Evaluated(miss));
+                        continue;
+                    }
+                    // Absent, or a miss of an earlier call that ended early.
+                    _ => {}
+                }
             }
             // The canonical row (a bubble's or a tadpole's is the row).
             let canonical = if relabelled {
@@ -880,10 +911,19 @@ impl<M: FastMasters> MasterCache<M> {
                 self.miss_args.extend_from_slice(canonical);
                 Source::Evaluated(miss)
             };
-            if relabelled && !matches!(source, Source::Failed) {
-                self.asked.insert(asked, source);
-                if let Source::Evaluated(_) = source {
-                    self.asked_misses.push(asked);
+            if relabelled {
+                // A row failed earlier in this reduction call is not
+                // remembered as asked: it is looked up again (and fails).
+                let entry = match source {
+                    Source::Cached(offset) => Some(Asked::Cached(offset)),
+                    Source::Evaluated(miss) => {
+                        self.asked_misses.push(asked);
+                        Some(Asked::Miss { call, miss })
+                    }
+                    Source::Failed => None,
+                };
+                if let Some(entry) = entry {
+                    self.asked.insert(asked, entry);
                 }
             }
             self.sources.push(source);
@@ -1198,5 +1238,211 @@ mod tests {
         assert!(key(&rows[0]) != key(&rows[1]));
         assert!(key(&rows[2]) == key(&rows[5]));
         assert!(Key::new(FastMaster::BubbleRank3, &rows[2]) != key(&rows[2]));
+    }
+
+    /// Returns the row's scale (its last argument) as the first output, so
+    /// that a value given to the wrong row shows; panics in `evaluate` while
+    /// `panic` is set, returns an error while `error` is set.
+    #[derive(Default)]
+    struct Scaled {
+        rows: usize,
+        panic: bool,
+        error: bool,
+    }
+    impl FastMasters for Scaled {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            if self.panic {
+                panic!("provider panic (test)");
+            }
+            if self.error {
+                return Err(ninjars::Error::Shape {
+                    name: "provider error (test)",
+                    expected: 0,
+                    actual: 1,
+                });
+            }
+            let (arity, width) = (family.arity(), family.outputs());
+            for (r, (row, values)) in args
+                .chunks_exact(arity)
+                .zip(out.chunks_exact_mut(width))
+                .enumerate()
+            {
+                self.rows += 1;
+                for triple in values.iter_mut() {
+                    *triple = [row[arity - 1], value(row[0].re), value(1.)];
+                }
+                ok[r] = true;
+            }
+            Ok(())
+        }
+    }
+
+    /// A triangle row at scale `mu2`.
+    fn scaled_triangle(mu2: f64) -> Vec<C64> {
+        [2., -5., 11., 0., 3., 7., mu2].map(value).to_vec()
+    }
+
+    fn scales(out: &[[C64; 3]]) -> Vec<f64> {
+        out.iter().map(|triple| triple[0].re).collect()
+    }
+
+    fn catch<T>(f: impl FnOnce() -> T) -> std::thread::Result<T> {
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(f))
+    }
+
+    /// The reviewer's sequence: row A's call unwinds out of the provider (the
+    /// panic is caught), then [A, B] at scales 2 and 3 gets 2 and 3, as from a
+    /// cache that never saw the unwound call.
+    #[test]
+    fn a_call_that_unwinds_from_the_provider_leaves_no_miss_behind() {
+        let (a, b) = (scaled_triangle(2.), scaled_triangle(3.));
+        for repeated in [false, true] {
+            let mut cache = MasterCache::new(Scaled::default(), true);
+            cache.inner.panic = true;
+            let first = if repeated {
+                vec![a.clone(), a.clone()]
+            } else {
+                vec![a.clone()]
+            };
+            assert!(catch(|| evaluate_rows(&mut cache, FastMaster::C0, &first)).is_err());
+            cache.inner.panic = false;
+            let (out, ok) =
+                evaluate_rows(&mut cache, FastMaster::C0, &[a.clone(), b.clone()]).unwrap();
+            assert_eq!(ok, [true, true]);
+            assert_eq!(scales(&out), [2., 3.]);
+            // And again (A and B now cached), and B before A.
+            let (out, _) =
+                evaluate_rows(&mut cache, FastMaster::C0, &[b.clone(), a.clone()]).unwrap();
+            assert_eq!(scales(&out), [3., 2.]);
+            assert_eq!(cache.inner.rows, 2);
+        }
+    }
+
+    /// The same after a provider error, and after an unwind on the shared
+    /// tier.
+    #[test]
+    fn a_call_that_fails_leaves_no_miss_behind() {
+        let (a, b) = (scaled_triangle(2.), scaled_triangle(3.));
+        let mut cache = MasterCache::new(Scaled::default(), true);
+        cache.inner.error = true;
+        assert!(evaluate_rows(&mut cache, FastMaster::C0, std::slice::from_ref(&a)).is_err());
+        cache.inner.error = false;
+        let (out, ok) = evaluate_rows(&mut cache, FastMaster::C0, &[a.clone(), b.clone()]).unwrap();
+        assert_eq!((scales(&out), ok), (vec![2., 3.], vec![true, true]));
+
+        let mut cache = MasterCache::new(Scaled::default(), true);
+        cache.share(Some(Arc::new(SharedMasters::new(2))));
+        cache.inner.panic = true;
+        assert!(
+            catch(|| evaluate_rows(&mut cache, FastMaster::C0, std::slice::from_ref(&a))).is_err()
+        );
+        cache.inner.panic = false;
+        let (out, ok) = evaluate_rows(&mut cache, FastMaster::C0, &[a.clone(), b.clone()]).unwrap();
+        assert_eq!((scales(&out), ok), (vec![2., 3.], vec![true, true]));
+        assert_eq!(cache.len(), 2);
+    }
+
+    /// One cache across calls at other scales, after `release`, `clear` and a
+    /// change of tier: every row gets its own value.
+    #[test]
+    fn a_cache_reused_across_scales_releases_and_tiers_keeps_rows_apart() {
+        let rows: Vec<Vec<C64>> = [2., 3., 5.].map(scaled_triangle).to_vec();
+        let mut cache = MasterCache::new(Scaled::default(), true);
+        let check = |cache: &mut MasterCache<Scaled>, order: &[usize]| {
+            let asked: Vec<Vec<C64>> = order.iter().map(|&k| rows[k].clone()).collect();
+            let (out, ok) = evaluate_rows(cache, FastMaster::C0, &asked).unwrap();
+            assert!(ok.iter().all(|ok| *ok));
+            let expected: Vec<f64> = order.iter().map(|&k| [2., 3., 5.][k]).collect();
+            assert_eq!(scales(&out), expected, "{order:?}");
+        };
+        check(&mut cache, &[0]);
+        check(&mut cache, &[1, 0, 1]);
+        cache.release();
+        check(&mut cache, &[2, 1]);
+        check(&mut cache, &[0, 2]);
+        cache.share(Some(Arc::new(SharedMasters::new(2))));
+        check(&mut cache, &[1]);
+        check(&mut cache, &[2, 0, 1]);
+        cache.share(None);
+        check(&mut cache, &[0, 1, 2]);
+        cache.clear();
+        check(&mut cache, &[2, 2, 0]);
+        check(&mut cache, &[1, 0, 2]);
+    }
+
+    /// Two engines on one shared tier: while one call is inside its
+    /// provider (and then unwinds out of it), the other completes a call on
+    /// the same rows. Afterwards both caches, and a third on the tier, give
+    /// every row its own value, and the tier holds only provider values.
+    #[test]
+    fn a_call_that_unwinds_on_the_shared_tier_leaves_the_other_engines_right() {
+        use std::sync::Barrier;
+        struct Gated<'a> {
+            gate: &'a Barrier,
+            armed: bool,
+            inner: Scaled,
+        }
+        impl FastMasters for Gated<'_> {
+            fn evaluate(
+                &mut self,
+                family: FastMaster,
+                args: &[C64],
+                out: &mut [[C64; 3]],
+                ok: &mut [bool],
+            ) -> Result<()> {
+                if self.armed {
+                    self.armed = false;
+                    self.gate.wait(); // the other engine starts its call
+                    self.gate.wait(); // ... and has completed it
+                    panic!("provider panic (test)");
+                }
+                self.inner.evaluate(family, args, out, ok)
+            }
+        }
+        let (a, b, c) = (
+            scaled_triangle(2.),
+            scaled_triangle(3.),
+            scaled_triangle(5.),
+        );
+        let tier = Arc::new(SharedMasters::new(2));
+        let gate = Barrier::new(2);
+        let make = |armed: bool| {
+            let mut cache = MasterCache::new(
+                Gated {
+                    gate: &gate,
+                    armed,
+                    inner: Scaled::default(),
+                },
+                true,
+            );
+            cache.share(Some(tier.clone()));
+            cache
+        };
+        let (mut first, mut second) = (make(true), make(false));
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                let rows = [a.clone(), c.clone(), a.clone()];
+                assert!(catch(|| evaluate_rows(&mut first, FastMaster::C0, &rows)).is_err());
+            });
+            scope.spawn(|| {
+                gate.wait();
+                let (out, ok) =
+                    evaluate_rows(&mut second, FastMaster::C0, &[b.clone(), a.clone()]).unwrap();
+                assert_eq!((scales(&out), ok), (vec![3., 2.], vec![true, true]));
+                gate.wait();
+            });
+        });
+        let all = [a.clone(), b.clone(), c.clone(), a.clone()];
+        for cache in [&mut first, &mut second, &mut make(false)] {
+            let (out, ok) = evaluate_rows(cache, FastMaster::C0, &all).unwrap();
+            assert_eq!((scales(&out), ok), (vec![2., 3., 5., 2.], vec![true; 4]));
+        }
+        assert_eq!(tier.len(), 3);
     }
 }
