@@ -859,3 +859,96 @@ def test_the_heavy_refusal_rows_return_the_unchecked_values(heavy):
             assert status == "failed" and found.values[p] is None
     counts = {w.kind: w.count for w in found.warnings}
     assert sum(counts.values()) == len(refused)
+
+
+@pytest.mark.loop_physics
+def test_a_point_failing_only_in_its_check_rows_keeps_its_unchecked_value(heavy):
+    """Without the lane rescue, TIRust refuses a triangle below its
+    fixed-precision floor at any gate, the gate-0 last resort included, so the
+    best-effort evaluation of a refused point can fail only in the rows of the
+    checks that estimate its uncertainty (u u~ > t t~ g g: one of the sixteen
+    points). Such a point keeps its unchecked value, best-effort without an
+    uncertainty, in the Python API and in the SDKs' failure policy (C ABI);
+    a point the unchecked reduction fails too stays failed in both."""
+
+    import ctypes
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import FAILED_STATUS, _evaluate
+
+    artifact, exact_points, exact_scales = heavy
+    runtime = Runtime.load(artifact)
+    options = {"mu_r2": exact_scales, "poles": "none", "reduction": "tirust"}
+    returned = runtime.evaluate(exact_points, on_failure="return", **options)
+    bare = runtime.evaluate(
+        exact_points, on_failure="return", reduction_unchecked=True, **options
+    )
+    with_checks = runtime.evaluate(
+        exact_points,
+        on_failure="return",
+        reduction_unchecked=True,
+        stability_checks=VirtualStabilityChecks(1, True, rescaled=True),
+        **options,
+    )
+    refused = [p for p, ok in enumerate(returned.valid) if not ok]
+    rows_only = [p for p in refused if bare.valid[p] and not with_checks.valid[p]]
+    without = [p for p in refused if not bare.valid[p]]
+    if "uux_ttxgg" in str(artifact):
+        assert rows_only and without, (rows_only, without)
+    found = runtime.evaluate(exact_points, **options)
+    for p in rows_only:
+        assert found.statuses[p] == "best-effort", p
+        assert repr(found.values[p]) == repr(bare.values[p]), p
+        record = found.diagnostics[p].best_effort
+        assert record.uncertainty is None and record.source == "none", p
+        assert "the rows of its checks failed" in str(found.diagnostics[p]), p
+    for p in without:
+        assert found.statuses[p] == "failed" and found.values[p] is None, p
+
+    points = [[[float(c) for c in leg] for leg in point] for point in exact_points]
+    scales = [float(Fraction(s)) for s in exact_scales]
+    sdk = _sdk()
+    sdk.rusticol_virtual_set_reduction_unchecked.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_int,
+    ]
+    handle = ctypes.c_void_p()
+    assert (
+        sdk.rusticol_virtual_open(
+            str(artifact).encode(), None, None, None, ctypes.byref(handle)
+        )
+        == 0
+    ), _error(sdk)
+    try:
+        assert sdk.rusticol_virtual_set_lane_rescue(handle, 0) == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"tirust") == 0
+        assert sdk.rusticol_virtual_set_reduction_unchecked(handle, 1) == 0
+        unchecked = _evaluate(sdk, handle, points, scales)
+        assert sdk.rusticol_virtual_set_reduction_unchecked(handle, 0) == 0
+        policy = _evaluate(sdk, handle, points, scales)
+    finally:
+        sdk.rusticol_virtual_free(handle)
+
+    def rows(result):
+        """Each served point's values (the flat array holds served points
+        only, in point order)."""
+
+        served = [p for p, s in enumerate(result["statuses"]) if s != FAILED_STATUS]
+        stride = len(result["virtual"]) // max(len(served), 1)
+        return {
+            p: result["virtual"][k * stride : (k + 1) * stride]
+            for k, p in enumerate(served)
+        }
+
+    mine, theirs = rows(policy), rows(unchecked)
+    entries = policy["diagnostics"]["best_effort"]
+    for p in rows_only:
+        assert policy["statuses"][p] == 5, p
+        assert [x.hex() for x in mine[p]] == [x.hex() for x in theirs[p]], p
+        entry = entries[str(p)]
+        assert entry["uncertainty"] is None and entry["source"] == "none", p
+    for p in without:
+        assert policy["statuses"][p] == FAILED_STATUS, p
