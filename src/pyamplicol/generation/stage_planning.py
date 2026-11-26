@@ -574,17 +574,8 @@ def _lc_materialized_sector_memberships(
 
     sectors_by_current: dict[int, set[int]] = {}
     sectors_by_root: dict[int, set[int]] = {}
-    # An open-lines sector without a root is a zero colour flow: the DAG's
-    # closure enumeration is exhaustive and only the pairing of the lines a W
-    # joins has diagrams in a pure electroweak four-quark amplitude (the
-    # recurrence's ``closes_to_zero_flow``). Any other rootless sector, or a
-    # process none of whose sectors has a root, stays refused.
-    sector_kinds = {int(sector.id): sector.kind for sector in dag.color_plan.sectors}
-    has_rooted_sector = any(roots_by_sector.values())
     for sector_id, root_ids in roots_by_sector.items():
         if not root_ids:
-            if has_rooted_sector and sector_kinds.get(sector_id) == "open-lines":
-                continue
             raise ValueError(
                 "LC topology replay materialized sector "
                 f"{sector_id} has no amplitude root"
