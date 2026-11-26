@@ -35,10 +35,11 @@ def _environment() -> GuardEnvironment:
             "aEWM1": 132.507 + 0j,
             "MZ": 91.188 + 0j,
             "CKM": 0.97 + 0.25j,
+            "MH": 125.0 + 0j,
         },
         definitions={"ee": E("2*UFO::aEWM1^(-1/2)*UFO::pi^(1/2)")},
         constants={"ZERO": 0j, "pi": math.pi, "I": 1j},
-        real_externals=frozenset({"MT", "aEWM1", "MZ"}),
+        real_externals=frozenset({"MT", "aEWM1", "MZ", "MH"}),
     )
 
 
@@ -85,12 +86,12 @@ def test_a_product_of_several_inputs_holds_its_zero_factor() -> None:
 
 def test_a_zero_without_a_zero_factor_holds_every_input() -> None:
     # Zero only where both terms cancel: no factor vanishes on its own.
-    guard = _vanishing("(UFO::MT-173)+(UFO::MZ-91.188)")
+    guard = _vanishing("(UFO::MT-173)+(UFO::MH-125)")
     assert guard is not None
-    assert guard.parameters == ("MT", "MZ")
+    assert guard.parameters == ("MH", "MT")
     # A change that keeps the sum zero is refused too: no cancellation is
     # accepted numerically.
-    assert binding_refusal([guard], {"MT": 174.0, "MZ": 90.188}) is not None
+    assert binding_refusal([guard], {"MT": 174.0, "MH": 124.0}) is not None
 
 
 def test_structural_specialisations_record_nothing() -> None:
@@ -142,13 +143,14 @@ def test_the_loop_runtime_compares_exact_decimals() -> None:
     assert float(close) == 173.0
     assert exact_decimal_binding_refusal([guard], {"MT": close}) is not None
     assert exact_decimal_binding_refusal([guard], {"MT": "174"}) is not None
-    # The generation value as exact carriers read it is the shortest decimal
-    # of the binary64 (91.188, as a card gives it), not the binary64 itself.
+    # The generation value as exact carriers read it is the producer's
+    # recorded decimal (91.188, as a card gives it), not the binary64 itself.
     from pyamplicol.models.specialization_guards import exact_generation_value
 
     assert exact_generation_value(91.188) == Fraction(22797, 250)
-    tenth = _vanishing("(UFO::MZ-91.188)*UFO::ee")
-    assert tenth is not None and tenth.parameters == ("MZ",)
+    tenth = SpecializationGuard.holding(
+        "vanishing", {"MZ": 91.188}, subject="s", producer="p", message="m"
+    )
     assert exact_decimal_binding_refusal([tenth], {"MZ": "91.188"}) is None
     assert exact_decimal_binding_refusal([tenth], {"MZ": 91.188}) is None
     assert exact_decimal_binding_refusal([tenth], {"MZ": Fraction(91.188)}) is not None
@@ -162,10 +164,13 @@ def test_a_zero_only_in_binary64_is_refused_at_generation() -> None:
     # carriers evaluate.
     with pytest.raises(InexactSpecialization, match="simplify=False"):
         _vanishing("(UFO::MZ-22797/250-1/10^30)*UFO::ee")
-    # A binary64 literal is read as its shortest decimal, as a card value is.
+    # Zero at the decimal 91.188 but not at the binary64 the native tree
+    # runtime promotes (and the converse): refused, whichever way the
+    # literal is read.
     literal = str(Decimal.from_float(91.188))
-    guard = _vanishing(f"(UFO::MZ-{literal})*UFO::ee")
-    assert guard is not None and guard.parameters == ("MZ",)
+    for expression in ("(UFO::MZ-22797/250)*UFO::ee", f"(UFO::MZ-{literal})*UFO::ee"):
+        with pytest.raises(InexactSpecialization):
+            _vanishing(expression)
 
 
 def test_a_loop_plan_that_fixes_or_scales_a_guarded_parameter_is_refused() -> None:
@@ -336,3 +341,74 @@ def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
         runtime_coupling_component_guards(SimpleNamespace(), [record(lepton, zero)])
         == ()
     )
+
+
+def _ufo_model(couplings: dict[str, str], externals: dict[str, float]) -> object:
+    """A minimal ``ufo_model_loader`` model: externals and zero-valued
+    couplings (their binary64 value is what the simplifier saw)."""
+
+    def parameter(name: str, value: float) -> SimpleNamespace:
+        return SimpleNamespace(name=name, value=value, parameter_type="real")
+
+    return SimpleNamespace(
+        couplings=[
+            SimpleNamespace(name=name, value=0j, expression=E(text))
+            for name, text in couplings.items()
+        ],
+        get_external_parameters=lambda: [
+            parameter(name, value) for name, value in externals.items()
+        ],
+        get_internal_parameters=lambda: [],
+        get_model_variables=lambda: {},
+    )
+
+
+def test_a_coupling_is_removed_only_when_exactly_zero_under_every_reading() -> None:
+    from pyamplicol.models.specialization_guards import _couplings_not_exactly_zero
+
+    model = _ufo_model(
+        {
+            # Order one, zero in binary64 only (no mutable dependence).
+            "GC_CANCEL": "2*10^8*(10000000000000001^(1/2)-100000000)*UFO::complex(0,1)",
+            # Zero at the decimal 91.188, not at the promoted binary64.
+            "GC_DECIMAL": "10^15*(UFO::MZ-22797/250)",
+            # Zero at both: an algebraic identity and a structural factor.
+            "GC_IDENTITY": "(UFO::MT+1)^2-UFO::MT^2-2*UFO::MT-1",
+            "GC_LINEAR": "(UFO::MT-173)*UFO::MZ",
+            "GC_ZERO": "0*UFO::MZ",
+            # A transcendental Symbolica cannot prove zero: kept (safe side).
+            "GC_TRANSCENDENTAL": "sin(UFO::MT-173)",
+        },
+        {"MZ": 91.188, "MT": 173.0},
+    )
+    kept = sorted(c.name for c in _couplings_not_exactly_zero(model))
+    assert "GC_CANCEL" in kept
+    assert "GC_DECIMAL" in kept
+    assert "GC_IDENTITY" not in kept
+    assert "GC_LINEAR" not in kept
+    assert "GC_ZERO" not in kept
+    assert set(kept) <= {"GC_CANCEL", "GC_DECIMAL", "GC_TRANSCENDENTAL"}
+
+
+def test_the_producers_exact_text_is_what_readers_compare() -> None:
+    from pyamplicol.models.specialization_guards import exact_decimal_text
+
+    value = 173.0 + 2.0**-15
+    guard = SpecializationGuard.holding(
+        "vanishing", {"MT": value}, subject="s", producer="p", message="m"
+    )
+    (texts,) = guard.generation_exact.values()
+    assert texts == (exact_decimal_text(value), "0.0")
+    restored = guards_from_file_payload(guard_file_payload([guard]))[0]
+    assert restored.generation_exact == guard.generation_exact
+    # Exact bindings compare with the stored text; a float with the binary64.
+    assert exact_decimal_binding_refusal([guard], {"MT": texts[0]}) is None
+    assert exact_decimal_binding_refusal([guard], {"MT": value}) is None
+    other = "173.00003051757813"
+    assert other != texts[0] and float(other) == value
+    assert exact_decimal_binding_refusal([guard], {"MT": other}) is not None
+    # A record whose text does not round to its binary64 is refused.
+    payload = guard.to_dict()
+    payload["generation_exact"] = {"MT": ["173.0001", "0.0"]}
+    with pytest.raises(ValueError, match="does not round"):
+        SpecializationGuard.from_dict(payload)

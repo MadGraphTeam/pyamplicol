@@ -68,6 +68,7 @@ def _generate(
     fixed: dict[str, str],
     process: str = "u u~ > e+ e-",
     mass_scheme: str = "real-on-shell",
+    simplify: bool = True,
 ) -> Path:
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
@@ -81,6 +82,7 @@ def _generate(
         f"""action = "generate"
 [model]
 source = "{model}"
+simplify = {"true" if simplify else "false"}
 cache_dir = "{root / "cache"}"
 [process]
 entries = [{{expression = {json.dumps(process)}, name = "p"}}]
@@ -167,10 +169,11 @@ def test_a_fixed_parameter_is_checked_at_admission(photon_down_mt, tmp_path) -> 
     _generate(tmp_path / "c", photon_down_mt, {"MT": "173"})
 
 
-# A guarded parameter with a non-dyadic card value: the plan's default (the
-# card's decimal), the same decimal bound explicitly, and the same value as a
-# float are one value; the binary64 nearest it, read exactly, is another and
-# is refused.
+# A coupling zero at a non-dyadic card value only at its decimal (zero at
+# MZ = 91.188, not at the binary64 nearest it, which the native tree runtime
+# promotes) is not removed: the simplified model then gives the unsimplified
+# one's double-double values, for a mass, a width and a coupling input. (A
+# guarded non-dyadic default is in the tie test below.)
 _NON_DYADIC = {
     "mass": ("MZ", "91.188"),
     "width": ("WZ", "2.441404"),
@@ -180,24 +183,15 @@ _NON_DYADIC = {
 
 @pytest.mark.loop_physics
 @pytest.mark.parametrize("kind", sorted(_NON_DYADIC))
-def test_a_non_dyadic_guarded_default_is_one_value(kind, tmp_path) -> None:
-    from decimal import Decimal
-
+def test_a_zero_only_at_the_decimal_is_kept(kind, tmp_path) -> None:
     from pyamplicol.api import Runtime
 
     name, decimal = _NON_DYADIC[kind]
-    binary64 = str(Decimal(float(decimal)))
-    assert binary64 != decimal
     model = _custom_loop_sm(tmp_path / "loop_sm_x", _ELECTRON_Z, f"({name}-{decimal})")
-    artifact = _generate(tmp_path / "a", model, {})
-    guards = json.loads((artifact / "model/specialization-guards.json").read_text())
-    assert [guard["parameters"] for guard in guards["guards"]] == [[name]]
-    default = _values(Runtime.load(artifact))
-    explicit = _values(Runtime.load(artifact, model_parameters={name: decimal}))
-    as_float = _values(Runtime.load(artifact, model_parameters={name: float(decimal)}))
-    assert explicit == default and as_float == default
-    with pytest.raises(Exception, match=f"specialisation-guard: binding {name}"):
-        Runtime.load(artifact, model_parameters={name: binary64})
+    simplified = _generate(tmp_path / "s", model, {})
+    unsimplified = _generate(tmp_path / "u", model, {}, simplify=False)
+    assert not (simplified / "model/specialization-guards.json").exists()
+    assert _values(Runtime.load(simplified)) == _values(Runtime.load(unsimplified))
 
 
 @pytest.mark.loop_physics
@@ -232,3 +226,71 @@ def test_the_complex_mass_scheme_on_a_shipped_model_is_unchanged(tmp_path) -> No
     assert not (artifact / "model/specialization-guards.json").exists()
     born, _finite = _values(Runtime.load(artifact), arithmetic="double")
     assert all(value != 0.0 for value in born)
+
+
+def _with_card(model: Path, replacements: dict[str, str]) -> Path:
+    card = model / "restrict_default.dat"
+    text = card.read_text(encoding="utf-8")
+    for old, new in replacements.items():
+        assert text.count(old) == 1, old
+        text = text.replace(old, new)
+    card.write_text(text, encoding="utf-8")
+    return model
+
+
+@pytest.mark.loop_physics
+def test_a_tie_between_shortest_decimals_is_one_value(tmp_path, loop_native) -> None:
+    """MT = ymt = 173 + 2^-15: Python's repr writes 173.00003051757812,
+    Rust's Debug 173.00003051757813. The guard (on GC_24 times MT - ymt)
+    records the producer's text, the plan's default is written by the same
+    function, and every reader parses that text: the default loads in Python
+    and through the native runtime's own admission."""
+
+    from pyamplicol.api import Runtime
+
+    value = 173.0 + 2.0**-15
+    assert repr(value) == "173.00003051757812"
+    model = _custom_loop_sm(tmp_path / "loop_sm_tie", _ELECTRON_Z, "(MT-ymt)")
+    _with_card(
+        model,
+        {
+            "    6 1.730000e+02 # MT": "    6 1.73000030517578125e+02 # MT",
+            "    6 1.730000e+02 # ymt": "    6 1.73000030517578125e+02 # ymt",
+        },
+    )
+    artifact = _generate(tmp_path / "a", model, {})
+    guards = json.loads((artifact / "model/specialization-guards.json").read_text())
+    (guard,) = guards["guards"]
+    assert guard["generation_exact"]["MT"][0] == repr(value)
+    default = _values(Runtime.load(artifact))
+    flat = [str(c) for momentum in _POINT for c in momentum]
+    found = loop_native.evaluate_v2_artifact(
+        str(artifact), [flat], ["250000"], process=None, parameters=None
+    )
+    ((_values_native, failures),) = found
+    assert not failures, failures
+    assert default
+    # The same value bound explicitly: the producer's text, the float.
+    for bound in (repr(value), value):
+        assert (
+            _values(Runtime.load(artifact, model_parameters={"MT": bound})) == default
+        )
+
+
+@pytest.mark.loop_physics
+def test_an_order_one_coupling_zero_in_binary64_is_kept(tmp_path) -> None:
+    """An electron-Z coupling times 2e8 (sqrt(10000000000000001) - 1e8): of
+    order one, zero in binary64 only. The exact rule keeps it, so the
+    simplified model gives the unsimplified one's double-double values."""
+
+    from pyamplicol.api import Runtime
+
+    model = _custom_loop_sm(
+        tmp_path / "loop_sm_cancel",
+        _ELECTRON_Z,
+        "200000000*(cmath.sqrt(10000000000000001)-100000000)",
+    )
+    simplified = _generate(tmp_path / "s", model, {})
+    unsimplified = _generate(tmp_path / "u", model, {}, simplify=False)
+    assert not (simplified / "model/specialization-guards.json").exists()
+    assert _values(Runtime.load(simplified)) == _values(Runtime.load(unsimplified))
