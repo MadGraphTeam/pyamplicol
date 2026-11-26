@@ -241,3 +241,27 @@ def test_the_loop_runtime_refuses_a_binding_a_guard_rejects() -> None:
     assert checked == {"aEWM1": "128"}
     with pytest.raises(ValueError, match="specialisation-guard: binding MT"):
         V2VirtualRuntime._checked_parameters(runtime, {"MT": "174"})
+
+
+def test_zero_coupling_components_of_massless_lines_are_guarded() -> None:
+    from pyamplicol.generation.contracts import runtime_coupling_component_guards
+
+    model = SimpleNamespace(
+        is_fermion=lambda pdg: abs(pdg) in {6, 11, 12},
+        mass=lambda pdg: 173.0 if abs(pdg) == 6 else 0.0,
+    )
+    records = [
+        # A complex component of a W vertex with massless leptons: guarded.
+        {"name": "coupling.10.12_-24_11.component_1.real", "default": 0.0,
+         "runtime_name": "coupling.10.12_-24_11.component_1"},
+        {"name": "coupling.10.12_-24_11.component_1.imag", "default": 0.0,
+         "runtime_name": "coupling.10.12_-24_11.component_1"},
+        # Nonzero, or on a line without a massless fermion: not guarded.
+        {"name": "coupling.10.12_-24_11.component_0", "default": 1.5},
+        {"name": "coupling.10.6_-24_-6.component_1", "default": 0.0},
+        {"name": "MT", "default": 0.0},
+    ]  # fmt: skip
+    (guard,) = runtime_coupling_component_guards(model, records)
+    assert guard.parameters == ("coupling.10.12_-24_11.component_1",)
+    assert binding_refusal([guard], {"coupling.10.12_-24_11.component_1": 0.0}) is None
+    assert binding_refusal([guard], {"coupling.10.12_-24_11.component_1": 1e-300})

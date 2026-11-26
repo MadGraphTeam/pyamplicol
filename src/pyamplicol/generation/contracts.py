@@ -4,10 +4,12 @@ from __future__ import annotations
 import hashlib
 import json
 import marshal
-from collections.abc import Mapping, Sequence
+import re
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 
 from ..models.base import Model
+from ..models.specialization_guards import SpecializationGuard
 from .dag_types import GenericDAG
 
 LC_SECTOR_SELECTOR_PARAMETER = "runtime.lc_sector_id"
@@ -22,6 +24,8 @@ _REQUIRED_RUNTIME_SCHEMA_KEYS = frozenset(
         "value_storage",
     }
 )
+
+
 @dataclass(frozen=True, slots=True)
 class RuntimeExpressionSchema:
     """Canonical, dependency-neutral stage compiler input schema."""
@@ -138,10 +142,77 @@ def runtime_coupling_parameter_names(
     return names
 
 
+#: The producer name of the guards of zero coupling components (below).
+VERTEX_CHIRAL_SUPPORT = "vertex-chiral-support"
+_RUNTIME_COUPLING_NAME = re.compile(
+    r"coupling\.(?P<kind>\d+)\.(?P<particles>-?\d+(?:_-?\d+)*)"
+    r"\.component_(?P<component>\d+)"
+)
+
+
+def runtime_coupling_component_guards(
+    model: Model, records: Iterable[Mapping[str, object]]
+) -> tuple[SpecializationGuard, ...]:
+    """The specialisation guards of the coupling components a process exposes
+    as runtime parameters (``runtime_coupling_parameter_names``) that are zero
+    at generation on a vertex with a massless fermion leg.
+
+    A massless fermion is a Weyl state, and a vertex lets it through only in
+    the chiralities whose coupling component is nonzero at generation
+    (the built-in model's chiral support; a W's right-handed component is 0):
+    the lines of the process carry no current of the other chirality. A
+    later binding that makes the component nonzero would need those currents
+    and was silently ignored; its guard ("vanishing", on the component
+    itself) refuses it. ``records``: the process's runtime model-parameter
+    records (``name``, ``default``, ``runtime_name`` for the components of a
+    complex parameter)."""
+
+    defaults: dict[str, list[float]] = {}
+    for record in records:
+        name = str(record.get("runtime_name") or record["name"])
+        defaults.setdefault(name, []).append(float(record["default"]))  # type: ignore[arg-type]
+    guards: list[SpecializationGuard] = []
+    for name in sorted(defaults):
+        match = _RUNTIME_COUPLING_NAME.fullmatch(name)
+        if match is None or any(value != 0.0 for value in defaults[name]):
+            continue
+        particles = [int(pdg) for pdg in match["particles"].split("_")]
+        if not any(_is_massless_fermion(model, pdg) for pdg in particles):
+            continue
+        guards.append(
+            SpecializationGuard(
+                kind="vanishing",
+                subject=(
+                    f"coupling component {name}, zero at generation, decides which "
+                    "chiralities of a massless fermion the vertex passes"
+                ),
+                producer=VERTEX_CHIRAL_SUPPORT,
+                parameters=(name,),
+                generation_values={name: (0.0, 0.0)},
+                program=(("p", 0),),
+                expression=name,
+                message=(
+                    "the massless fermion lines carry only the chiralities this "
+                    "component allowed at generation; use a model whose vertex has "
+                    "it nonzero"
+                ),
+            )
+        )
+    return tuple(guards)
+
+
+def _is_massless_fermion(model: Model, pdg: int) -> bool:
+    try:
+        return bool(model.is_fermion(pdg)) and float(model.mass(pdg)) == 0.0
+    except (KeyError, ValueError):
+        return False
+
+
 __all__ = [
     "EXPRESSION_SCHEMA_CONTRACT_VERSION",
     "LC_SECTOR_SELECTOR_PARAMETER",
     "RuntimeExpressionSchema",
     "StageCompilationInput",
+    "runtime_coupling_component_guards",
     "runtime_coupling_parameter_names",
 ]

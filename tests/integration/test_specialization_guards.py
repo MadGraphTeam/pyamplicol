@@ -112,7 +112,13 @@ def simplified_models(tmp_path_factory: pytest.TempPathFactory):
     return built
 
 
-def _generate(model: ModelSource, artifact: Path, lane: str, accuracy: str) -> Runtime:
+def _generate(
+    model: ModelSource,
+    artifact: Path,
+    lane: str,
+    accuracy: str,
+    process: str = PROCESS,
+) -> Runtime:
     config = RunConfig(
         action="generate",
         model=ModelConfig(cache=False),
@@ -129,7 +135,7 @@ def _generate(model: ModelSource, artifact: Path, lane: str, accuracy: str) -> R
             execution_mode=lane, optimization=EvaluatorOptimizationConfig(cores=1)
         ),
     )
-    Generator(config).generate(PROCESS, artifact, model=model)
+    Generator(config).generate(process, artifact, model=model)
     return Runtime.load(artifact)
 
 
@@ -207,3 +213,42 @@ def test_an_unguarded_model_writes_no_guard_payload(tmp_path: Path) -> None:
     _generate(ModelSource.built_in_sm(), tmp_path / "a", "recurrence", "lc")
     manifest = load_manifest(tmp_path / "a")
     assert all(record.role != GUARD_PAYLOAD_ROLE for record in manifest.payloads)
+
+
+# The built-in SM exposes a vertex's coupling components as runtime
+# parameters in the eager and compiled lanes. A W's right-handed component is
+# zero, and the massless leptons' lines carry only the left-handed currents it
+# lets through: a binding that makes it nonzero was accepted and ignored.
+_MASSLESS_W_POINT = [
+    [500.0, 0.0, 0.0, 500.0],
+    [500.0, 0.0, 0.0, -500.0],
+    [500.0, 300.0, 0.0, 400.0],
+    [500.0, -300.0, 0.0, -400.0],
+]
+
+
+@pytest.mark.parametrize("lane", ["eager", "compiled"])
+def test_a_zero_chiral_coupling_of_a_massless_line_is_held_zero(
+    tmp_path: Path, lane: str
+) -> None:
+    runtime = _generate(
+        ModelSource.built_in_sm(), tmp_path / "a", lane, "full", "e- ve~ > mu- vm~"
+    )
+    names = [
+        parameter.name
+        for parameter in runtime.physics.model_parameters
+        if parameter.name.startswith("coupling.")
+    ]
+    right = [name for name in names if name.endswith(".component_1")]
+    left = [name for name in names if name.endswith(".component_0")]
+    assert right and left
+    before = _values(runtime, [_MASSLESS_W_POINT])
+    with pytest.raises(
+        Exception, match="specialisation-guard: binding coupling"
+    ) as error:
+        runtime.set_model_parameters({right[0]: 1.5})
+    assert "vertex-chiral-support" in str(error.value)
+    assert _values(runtime, [_MASSLESS_W_POINT]) == before
+    # The nonzero (left-handed) components stay free.
+    runtime.set_model_parameters({name: 0.75 for name in left})
+    assert _values(runtime, [_MASSLESS_W_POINT]) != before
