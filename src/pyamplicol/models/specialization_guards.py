@@ -249,24 +249,25 @@ class SpecializationGuard:
         message: str,
     ) -> SpecializationGuard | None:
         resolved = environment.resolve(expression)
-        parameters = environment.mutable_dependencies(resolved)
+        parameters = exact_dependencies(environment, expression)
         if not parameters:
             return None
         if kind == "vanishing":
-            if _is_identically_zero(resolved):
+            if exact_zero_holding(environment, expression, ()):
                 return None
-            parameters = _vanishing_factor_dependencies(environment, resolved)
-            if not parameters:
-                return None
-            if not _exactly_zero_at_generation(
-                environment, resolved, environment.mutable_dependencies(resolved)
-            ):
+            if not exact_zero_holding(environment, expression, parameters):
                 raise InexactSpecialization(
-                    f"{subject}: the expression is zero at the generation values "
-                    "only in binary64 arithmetic, not exactly at their decimals; "
-                    "compile the model with simplify=False"
+                    f"{subject}: the expression is not exactly zero at the "
+                    "generation values under every exact reading (their decimals "
+                    "and their binary64 values); compile the model with "
+                    "simplify=False"
                 )
-        elif environment.is_real_for_every_binding(resolved):
+            parameters = _vanishing_factor_dependencies(
+                environment, expression, parameters
+            )
+        elif environment.is_real_for_every_binding(
+            _exact_resolution(environment, expression, "decimal", {}, ())
+        ):
             return None
         return cls(
             kind=kind,
@@ -538,27 +539,26 @@ def describe_failure(
 
 
 def _vanishing_factor_dependencies(
-    environment: GuardEnvironment, resolved: Any
+    environment: GuardEnvironment, expression: Any, parameters: Sequence[str]
 ) -> tuple[str, ...]:
-    """The parameters a vanishing ``resolved`` depends on through its zero: the
-    mutable dependencies of the factor (of its top-level product or of its
-    factorisation) that is exactly zero at the generation values, the one with
-    the fewest; all its mutable dependencies when no factor is provably zero
-    there. A factor ``f`` with ``f(generation) = 0`` exactly keeps the product
-    zero while its own parameters keep their generation values."""
+    """The fewest of ``parameters`` that, held at their generation values, keep
+    ``expression`` exactly zero for every value of the others
+    (``exact_zero_holding``): the dependencies of a factor of its product or
+    of its factorisation (the candidates), each validated by the exact
+    decision itself; all of ``parameters`` when no smaller set is valid."""
 
+    resolved = _exact_resolution(environment, expression, "decimal", {}, ())
     candidates = [resolved]
-    # Factorisation is an optional refinement: an expression Symbolica cannot
-    # factor keeps its top-level product.
+    # Factorisation only proposes candidates; each is validated exactly.
     with contextlib.suppress(Exception):
-        candidates.append(_with_imaginary_unit(resolved).factor())
-    best = environment.mutable_dependencies(resolved)
+        candidates.append(resolved.factor())
+    best = tuple(parameters)
     for candidate in candidates:
         for factor in _product_factors(candidate):
             dependencies = environment.mutable_dependencies(factor)
             if not dependencies or len(dependencies) >= len(best):
                 continue
-            if _exactly_zero_at_generation(environment, factor, dependencies):
+            if exact_zero_holding(environment, expression, dependencies):
                 best = dependencies
     return best
 
@@ -588,68 +588,154 @@ def _product_factors(expression: Any) -> list[Any]:
     return out
 
 
-def _exactly_zero_at_generation(
-    environment: GuardEnvironment, factor: Any, dependencies: Sequence[str]
-) -> bool:
-    """Whether ``factor`` is exactly zero (exact rational arithmetic) at the
-    generation values under EVERY exact reading a supported runtime can give
-    them: each parameter in ``dependencies`` as its recorded decimal (the
-    one-loop runtime, the Python extended-precision paths) and as the exact
-    value of its binary64 (the native tree runtime promotes the binary64), and
-    every binary64 literal of the expression read either way. A term that is
-    zero under one reading only is not zero for the runtimes that use the
-    other."""
+# -- the exact decision ----------------------------------------------------------
+#
+# Every exact carrier reads a number either as its shortest decimal (the
+# one-loop runtime, the Python extended-precision paths) or as the exact
+# value of its binary64 (the native tree runtime promotes the binary64). A
+# specialisation is valid only if it holds under every reading: of the
+# expression's literals and constants, and of the held parameters' values.
+# Nothing passes through binary64 arithmetic or a printed-digits round trip
+# before the decision: numbers are read from their value, and transcendental
+# constants (pi, e) stay symbols.
 
-    return all(
-        _exactly_zero_under(environment, factor, dependencies, parameters, literals)
-        for parameters in ("decimal", "binary64")
-        for literals in ("decimal", "binary64")
+#: The readings of a binary64 number by an exact carrier.
+_READINGS = ("decimal", "binary64")
+#: Constants that stay symbols in the exact decision (no binary64 value of a
+#: transcendental constant may cancel a literal).
+_SYMBOLIC_CONSTANTS = frozenset(("pi", _PI_SYMBOL, _E_SYMBOL))
+
+
+def exact_zero_holding(
+    environment: GuardEnvironment, expression: Any, held: Iterable[str]
+) -> bool:
+    """Whether ``expression`` is exactly zero for every value of the external
+    parameters of ``environment`` not in ``held``, with those in ``held`` at
+    their generation values, under every reading (``_READINGS``) of its
+    literals, its constants and the held values.
+
+    ``held=()``: zero for every binding (a structural specialisation, or a
+    removed term a transform leaves zero: ``provably_zero_after_transform``).
+    ``held`` = every dependency: zero at the generation values (what
+    restriction simplification may remove). The resolution is exact
+    (``_exact_resolution``) and the result must expand to exactly 0;
+    Symbolica's expansion is sound (it does not take ``sqrt(x^2)`` for ``x``)
+    and incomplete: what it cannot reduce is not zero."""
+
+    held = tuple(held)
+    for literals in _READINGS:
+        resolved = _exact_resolution(environment, expression, literals, {}, ())
+        readings = _READINGS if held else ("decimal",)
+        for values in readings:
+            substituted = resolved
+            for symbol in resolved.get_all_symbols(False):
+                name = _short_name(symbol.get_name())
+                if name in held:
+                    substituted = substituted.replace(
+                        symbol, _exact_complex(environment.externals[name], values)
+                    )
+            try:
+                if substituted.expand().to_canonical_string() != "0":
+                    return False
+            except (TypeError, ValueError, ArithmeticError):
+                return False
+    return True
+
+
+def provably_zero_after_transform(
+    environment: GuardEnvironment, expression: Any
+) -> bool:
+    """Whether ``expression`` is exactly zero for every value of the external
+    parameters of ``environment`` (which stay symbols) under every reading of
+    its numbers: ``exact_zero_holding`` with nothing held. The decision a
+    parameter transform (the complex-mass scheme) applies to a removed
+    coupling, after redefining the internal parameters."""
+
+    return exact_zero_holding(environment, expression, ())
+
+
+def exact_dependencies(
+    environment: GuardEnvironment, expression: Any
+) -> tuple[str, ...]:
+    """The external (mutable) parameters ``expression`` depends on after its
+    exact resolution."""
+
+    return environment.mutable_dependencies(
+        _exact_resolution(environment, expression, "decimal", {}, ())
     )
 
 
-def _exactly_zero_under(
+def _exact_resolution(
     environment: GuardEnvironment,
-    factor: Any,
-    dependencies: Sequence[str],
-    parameters: str,
-    literals: str,
-) -> bool:
+    expression: Any,
+    reading: str,
+    memo: dict[str, Any],
+    visiting: tuple[str, ...],
+) -> Any:
+    """``expression`` with every non-external parameter replaced, to any depth,
+    by its definition or its value, every number read exactly in ``reading``
+    (``_exact_numbers``, ``_exact_complex``) before anything is combined;
+    externals and transcendental constants stay symbols."""
+
+    expression = _exact_numbers(
+        _with_imaginary_unit(_as_expression(expression)), reading
+    )
+    replacements = []
+    for symbol in expression.get_all_symbols(False):
+        name = _short_name(symbol.get_name())
+        if name in environment.externals or name in _SYMBOLIC_CONSTANTS:
+            continue
+        if name in environment.constants:
+            replacements.append(
+                (symbol, _exact_complex(environment.constants[name], reading))
+            )
+        elif name in environment.definitions:
+            if name in visiting:
+                raise ValueError(f"parameter {name!r} is defined in terms of itself")
+            resolved = memo.get(name)
+            if resolved is None:
+                resolved = memo[name] = _exact_resolution(
+                    environment,
+                    environment.definitions[name],
+                    reading,
+                    memo,
+                    (*visiting, name),
+                )
+            replacements.append((symbol, resolved))
+    for source, replacement in replacements:
+        expression = expression.replace(source, replacement)
+    return expression
+
+
+def _exact_complex(value: complex, reading: str) -> Any:
+    """A binary64 complex number as an exact Symbolica number, its parts read
+    as the shortest decimal (``"decimal"``) or the exact binary64."""
+
     from symbolica import E, Expression
 
-    def exact(component: float) -> Fraction:
-        return (
+    def part(component: float) -> Any:
+        if not math.isfinite(component):
+            raise ValueError("a non-finite number is not exact")
+        exact = (
             exact_generation_value(component)
-            if parameters == "decimal"
+            if reading == "decimal"
             else Fraction(component)
         )
+        return E(f"({exact.numerator}/{exact.denominator})")
 
-    substituted = _rational_literals(_with_imaginary_unit(factor), literals)
-    for symbol in factor.get_all_symbols(False):
-        name = _short_name(symbol.get_name())
-        if name not in dependencies:
-            continue
-        real, imaginary = environment.generation_value(name)
-        value = E(_fraction_text(exact(real)))
-        if imaginary != 0.0:
-            value = value + E(_fraction_text(exact(imaginary))) * Expression.I
-        substituted = substituted.replace(symbol, value)
-    try:
-        expanded = substituted.expand()
-        return bool(expanded.is_constant()) and expanded.to_canonical_string() == "0"
-    except (TypeError, ValueError):
-        return False
+    value = complex(value)
+    if value.imag == 0.0:
+        return part(value.real)
+    return part(value.real) + part(value.imag) * Expression.I
 
 
-def _fraction_text(value: Fraction) -> str:
-    return f"({value.numerator}/{value.denominator})"
+def _exact_numbers(expression: Any, reading: str) -> Any:
+    """``expression`` with every floating-point number (a binary64 literal the
+    source parse kept as a float, real or imaginary) replaced by its exact
+    value in ``reading``, read from its value (``evaluate``), not from its
+    printed digits (Symbolica prints 15)."""
 
-
-def _rational_literals(expression: Any, reading: str = "decimal") -> Any:
-    """``expression`` with every binary64 literal (a UFO ``91.188``) read as
-    its shortest decimal (``reading="decimal"``) or as the exact value of the
-    binary64 (``"binary64"``)."""
-
-    from symbolica import AtomType, E
+    from symbolica import AtomType
 
     found: dict[str, Any] = {}
 
@@ -658,23 +744,17 @@ def _rational_literals(expression: Any, reading: str = "decimal") -> Any:
         if kind == AtomType.Num:
             text = atom.to_canonical_string()
             if ("." in text or "e" in text) and text not in found:
-                try:
-                    value = float(text)
-                except ValueError:
-                    return
-                if math.isfinite(value):
-                    found[text] = (atom, value)
+                found[text] = atom
             return
         if kind in (AtomType.Add, AtomType.Mul, AtomType.Pow, AtomType.Fn):
             for child in atom:
                 collect(child)
 
     collect(expression)
-    for atom, value in found.values():
-        exact = (
-            exact_generation_value(value) if reading == "decimal" else Fraction(value)
+    for atom in found.values():
+        expression = expression.replace(
+            atom, _exact_complex(complex(atom.evaluate({})), reading)
         )
-        expression = expression.replace(atom, E(_fraction_text(exact)))
     return expression
 
 
@@ -869,14 +949,6 @@ def _with_imaginary_unit(expression: Any) -> Any:
     return expression
 
 
-def _is_identically_zero(expression: Any) -> bool:
-    expanded = _with_imaginary_unit(expression).expand()
-    try:
-        return bool(expanded.is_constant()) and complex(expanded.evaluate({})) == 0
-    except (TypeError, ValueError):
-        return False
-
-
 def _as_expression(value: Any) -> Any:
     from symbolica import E
 
@@ -987,10 +1059,15 @@ def _couplings_not_exactly_zero(model: Any) -> list[Any]:
     environment = GuardEnvironment.from_ufo_model(model)
     unproven = []
     for coupling in zero:
-        resolved = environment.resolve(coupling.expression)
-        if not _exactly_zero_at_generation(
-            environment, resolved, environment.mutable_dependencies(resolved)
-        ):
+        try:
+            proven = exact_zero_holding(
+                environment,
+                coupling.expression,
+                exact_dependencies(environment, coupling.expression),
+            )
+        except (TypeError, ValueError, ArithmeticError):
+            proven = False
+        if not proven:
             unproven.append(coupling)
     return unproven
 

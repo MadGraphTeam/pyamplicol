@@ -34,7 +34,7 @@ def _environment() -> GuardEnvironment:
             "MT": 173.0 + 0j,
             "aEWM1": 132.507 + 0j,
             "MZ": 91.188 + 0j,
-            "CKM": 0.97 + 0.25j,
+            "CKM": 0.75 + 0.25j,
             "MH": 125.0 + 0j,
         },
         definitions={"ee": E("2*UFO::aEWM1^(-1/2)*UFO::pi^(1/2)")},
@@ -118,11 +118,11 @@ def test_structural_specialisations_record_nothing() -> None:
 
 
 def test_both_components_of_a_complex_parameter_are_held() -> None:
-    guard = _vanishing("(UFO::CKM-0.97-0.25*UFO::complex(0,1))*UFO::MT")
+    guard = _vanishing("(UFO::CKM-0.75-0.25*UFO::complex(0,1))*UFO::MT")
     assert guard is not None and guard.parameters == ("CKM",)
-    assert binding_refusal([guard], {"CKM": 0.97 + 0.25j}) is None
-    assert binding_refusal([guard], {"CKM": 0.97 + 0.0j}) is not None
-    assert binding_refusal([guard], {"CKM": 0.97 + 0.26j}) is not None
+    assert binding_refusal([guard], {"CKM": 0.75 + 0.25j}) is None
+    assert binding_refusal([guard], {"CKM": 0.75 + 0.0j}) is not None
+    assert binding_refusal([guard], {"CKM": 0.75 + 0.26j}) is not None
 
 
 def test_a_refused_change_and_a_return_to_the_generation_value() -> None:
@@ -342,7 +342,11 @@ def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
     )
 
 
-def _ufo_model(couplings: dict[str, str], externals: dict[str, float]) -> object:
+def _ufo_model(
+    couplings: dict[str, str],
+    externals: dict[str, float],
+    constants: dict[str, float] | None = None,
+) -> object:
     """A minimal ``ufo_model_loader`` model: externals and zero-valued
     couplings (their binary64 value is what the simplifier saw)."""
 
@@ -357,8 +361,11 @@ def _ufo_model(couplings: dict[str, str], externals: dict[str, float]) -> object
         get_external_parameters=lambda: [
             parameter(name, value) for name, value in externals.items()
         ],
-        get_internal_parameters=lambda: [],
-        get_model_variables=lambda: {},
+        get_internal_parameters=lambda: [
+            SimpleNamespace(name=name, value=value, expression=None)
+            for name, value in (constants or {}).items()
+        ],
+        get_model_variables=lambda: {E("UFO::pi"): math.pi, E("UFO::I"): 1j},
     )
 
 
@@ -411,3 +418,33 @@ def test_the_producers_exact_text_is_what_readers_compare() -> None:
     payload["generation_exact"] = {"MT": ["173.0001", "0.0"]}
     with pytest.raises(ValueError, match="does not round"):
         SpecializationGuard.from_dict(payload)
+
+
+def test_no_number_passes_through_binary64_before_the_exact_decision() -> None:
+    from pyamplicol.models.specialization_guards import (
+        GuardEnvironment,
+        _couplings_not_exactly_zero,
+        provably_zero_after_transform,
+    )
+
+    model = _ufo_model(
+        {
+            # A = 0.1, B = 0.30000000000000004: A*3 - B is 0 in binary64 but
+            # nonzero under both exact readings (decimal and binary64).
+            "GC_CONSTANTS": "UFO::A*3-UFO::B",
+            # pi stays a symbol: no binary64 value of it cancels a literal.
+            "GC_PI": "UFO::pi-3.141592653589793",
+            # The same through a binary64 literal read from its value.
+            "GC_LITERAL": "0.1*3-0.30000000000000004",
+            # Exactly zero under every reading (dyadic): removed.
+            "GC_EXACT": "UFO::C*4-1",
+        },
+        {"MT": 173.0},
+        {"A": 0.1, "B": 0.30000000000000004, "C": 0.25},
+    )
+    kept = sorted(c.name for c in _couplings_not_exactly_zero(model))
+    assert kept == ["GC_CONSTANTS", "GC_LITERAL", "GC_PI"]
+    environment = GuardEnvironment.from_ufo_model(model)
+    assert not provably_zero_after_transform(environment, E("UFO::A*3-UFO::B"))
+    assert provably_zero_after_transform(environment, E("(UFO::MT-UFO::MT)*UFO::pi"))
+    assert not provably_zero_after_transform(environment, E("UFO::MT-173"))
