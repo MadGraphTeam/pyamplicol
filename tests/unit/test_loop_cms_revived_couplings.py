@@ -58,10 +58,13 @@ _TEST_CARD_REVIVED = (
 )
 
 
-def _switched_loop_sm(destination: Path, original: str) -> Path:
+def _switched_loop_sm(
+    destination: Path, original: str, factor: str = "CMSParam"
+) -> Path:
     """A copy of the shipped loop_sm with the coupling ``original`` times the
     NLOCT convention parameter ``CMSParam`` (internal, 0 in the real scheme,
-    1 under the complex-mass scheme)."""
+    1 under the complex-mass scheme), or times ``factor`` (which should
+    contain it)."""
 
     shipped = Path(
         str(resources.files("pyamplicol").joinpath("assets/models/ufo/loop_sm"))
@@ -71,7 +74,7 @@ def _switched_loop_sm(destination: Path, original: str) -> Path:
     text = couplings.read_text(encoding="utf-8")
     assert text.count(original) == 1
     couplings.write_text(
-        text.replace(original, original[:-1] + "*CMSParam'"), encoding="utf-8"
+        text.replace(original, original[:-1] + f"*{factor}'"), encoding="utf-8"
     )
     with (destination / "parameters.py").open("a", encoding="utf-8") as parameters:
         parameters.write(_CMS_PARAMETER)
@@ -269,40 +272,75 @@ def _environment_model(externals, internals):
 
 @pytest.mark.loop_fast
 def test_the_rule_after_a_transform():
-    """A removed coupling is left zero by a transform only when its value
-    there is exactly zero and it reads no external or vanishes identically
-    in the transformed definitions; a value the evaluation did not set
-    (not a number) counts as revived."""
+    """A removed coupling stays removed only if it is provably zero for every
+    value of the externals, under both exact readings of its numbers (the
+    shortest decimal and the exact binary64), with no binary64 arithmetic:
+    a value that is zero only in binary64, zero only at the current values,
+    zero in one reading only, or not reducible is refused. The binary64 value
+    is never evidence (a value the evaluation did not set, NaN, changes
+    nothing)."""
 
     from symbolica import E
 
     from pyamplicol.models.specialization_guards import revived_removed_couplings
 
+    cmass = "(UFO::MT^2-UFO::I*UFO::MT*UFO::WT)^(1/2)"
     model = _environment_model(
         {"MT": 173.0, "WT": 1.5},
-        {"CMSParam": 1.0, "ZERO": 0.0, "K": "UFO::MT-173", "L": "UFO::MT-UFO::MT"},
+        {
+            "CMSParam": 1.0,
+            "ZERO": 0.0,
+            "I": 1j,
+            "TENTH": 0.1,
+            "K": "UFO::MT-173",
+            "L": "UFO::MT-UFO::MT",
+            "CMASS_MT": cmass,
+        },
     )
 
-    def coupling(name, expression, value):
+    def coupling(name, expression, value=0.0):
         return SimpleNamespace(name=name, expression=E(expression), value=value)
 
     found = revived_removed_couplings(
         model,
         [
             coupling("revived", "UFO::CMSParam*UFO::WT", 1.5),
-            coupling("constant", "UFO::ZERO*UFO::CMSParam", 0.0),
-            coupling("identical", "UFO::L*UFO::CMSParam", 0.0),
-            coupling("at-values", "UFO::K*UFO::CMSParam", 0.0),
+            coupling("constant", "UFO::ZERO*UFO::CMSParam"),
+            coupling("identical", "UFO::L*UFO::CMSParam"),
+            coupling("at-values", "UFO::K*UFO::CMSParam"),
             coupling("unset", "UFO::CMSParam", complex(math.nan, 0.0)),
+            # Order one, zero in binary64 only (the reviewer's cancellation).
+            coupling(
+                "binary64-only",
+                "2*10^8*UFO::I*UFO::CMSParam*(10000000000000001^(1/2)-100000000)",
+            ),
+            # Zero exactly at the decimal 1/10, not at the binary64 0.1.
+            coupling("one-reading", "UFO::CMSParam*(3*UFO::TENTH-3/10)"),
+            # An algebraic identity of the complex pole mass: provably zero,
+            # whatever its binary64 value (rounding) is.
+            coupling(
+                "pole-identity",
+                "UFO::CMSParam*((UFO::CMASS_MT+UFO::WT)^2-UFO::CMASS_MT^2"
+                "-2*UFO::CMASS_MT*UFO::WT-UFO::WT^2)",
+                complex(0.0, 2.0**-40),
+            ),
+            # A branch identity Symbolica does not take: not proven, refused.
+            coupling("branch", "UFO::CMSParam*((UFO::MT^2)^(1/2)-UFO::MT)"),
         ],
     )
     assert [(item.name, item.revived) for item in found] == [
         ("revived", True),
         ("at-values", False),
         ("unset", True),
+        ("binary64-only", False),
+        ("one-reading", False),
+        ("branch", False),
     ]
-    assert found[1].parameters == ("MT",)
-    assert "zero here only at the values of MT" in found[1].describe()
+    by_name = {item.name: item for item in found}
+    assert by_name["at-values"].parameters == ("MT",)
+    assert "a binding would revive it" in by_name["at-values"].describe()
+    assert by_name["binary64-only"].parameters == ()
+    assert "not proven exactly zero" in by_name["binary64-only"].describe()
 
 
 # ------------------------------------------------------- custom loop_sm models
@@ -379,6 +417,61 @@ def test_a_loop_dressed_coupling_the_scheme_revives_is_refused_at_admission(
     message = _refused(_card(tmp_path / "s", model, "d d~ > e+ e-"), "d d~ > e+ e-")
     assert "GC_1 = " in message
     assert "loop-vertex-outside-tree-model" not in message
+
+
+@pytest.mark.loop_physics
+def test_a_revived_coupling_zero_only_in_binary64_is_refused(tmp_path) -> None:
+    """The electron-Z coupling replaced by an order-one constant that cancels
+    in binary64, times CMSParam: 2e8 i (sqrt(10000000000000001) - 10^8) is
+    about i, but 0 in binary64. Removed at CMSParam = 0 (exactly zero there),
+    revived under the complex-mass scheme, where its binary64 value is still
+    0: a numerical test would accept it and compute without it. The exact
+    test cannot reduce the square root of a non-square: refused."""
+
+    model = _switched_loop_sm(tmp_path / "loop_sm_cancel", _ELECTRON_Z)
+    couplings = model / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    switched = "'(ee*complex(0,1)*sw)/(2.*cw)*CMSParam'"
+    assert text.count(switched) == 1
+    couplings.write_text(
+        text.replace(
+            switched,
+            "'2.e8*complex(0,1)*CMSParam*(cmath.sqrt(10000000000000001.)-100000000.)'",
+        ),
+        encoding="utf-8",
+    )
+    message = _refused(_card(tmp_path / "s", model, "u u~ > e+ e-"), "u u~ > e+ e-")
+    assert "GC_24 (zero in binary64 here, but not proven exactly zero" in message
+
+
+@pytest.mark.loop_physics
+def test_a_coupling_zero_by_a_pole_mass_identity_stays_removed(tmp_path) -> None:
+    """The electron-Z coupling times CMSParam ((MT+WT)^2 - MT^2 - 2 MT WT -
+    WT^2): under the complex-mass scheme MT is the pole mass CMASS_MT =
+    sqrt(MT^2 - i MT WT), and the factor is an identity in it, whose binary64
+    value is rounding. Proven exactly zero: the request generates without
+    the coupling, and equals the model without the electron-Z coupling (the
+    reviewer's simplified value). The unsimplified twin keeps a vertex whose
+    coupling is pure rounding, which the native export refuses
+    (``plane-mismatch``): no silent value either way."""
+
+    from pyamplicol.loops.v2.refusals import NativeExportRefused
+
+    model = _switched_loop_sm(
+        tmp_path / "loop_sm_identity",
+        _ELECTRON_Z,
+        "CMSParam*((MT+WT)**2-MT**2-2*MT*WT-WT**2)",
+    )
+    born, finite = _born_and_finite(
+        _generate(_card(tmp_path / "s", model, "u u~ > e+ e-"), "u u~ > e+ e-")
+    )
+    assert born == pytest.approx([0.0014102944360971175], rel=1e-12)
+    assert finite == pytest.approx([6.602378073479062e-05], rel=1e-9)
+    with pytest.raises(NativeExportRefused, match="plane-mismatch"):
+        _generate(
+            _card(tmp_path / "u", model, "u u~ > e+ e-", simplify=False),
+            "u u~ > e+ e-",
+        )
 
 
 @pytest.mark.loop_physics

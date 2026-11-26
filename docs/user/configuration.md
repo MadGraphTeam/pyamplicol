@@ -150,15 +150,30 @@ vertices left without a coupling. The compile records what it removed.
 - **Refused at admission:** a transform that changes parameter values without
   a binding. The complex-mass scheme sets `CMSParam = 1`, ties the Yukawa
   inputs to the masses and turns masses with a width into complex pole masses.
-  Every removed coupling is evaluated again with those substitutions. If one
-  is non-zero there, or zero there only at the values of runtime parameters,
-  generation and `--dry-run` refuse the request with `cms-revived-coupling`,
-  naming the couplings. The refusal covers the whole model, also processes
-  that never meet those couplings.
+  Every removed coupling is decided again, exactly, under those substitutions.
+  It stays removed only if it is provably zero for every value of the runtime
+  parameters:
+  - its expression is written in the runtime parameters through the
+    transformed definitions;
+  - every number is read both as its shortest decimal and as the exact
+    binary64;
+  - it must expand to exactly 0, with no floating-point arithmetic.
+
+  Any other removed coupling makes generation and `--dry-run` refuse the
+  request with `cms-revived-coupling`, naming the couplings. That covers a
+  coupling that is non-zero after the transform, one that is zero only at the
+  current values of runtime parameters, and one that is zero only in binary64
+  or cannot be reduced (for example the square root of a non-square, or a
+  model function of a non-zero argument).
+- **Scope (a behaviour change):** the refusal covers the whole model in that
+  scheme, including processes that never meet those couplings. On the shipped
+  models this is only `loop_sm` with the card `test`, which zeroes the Yukawa
+  inputs while the b and t masses are not zero. Every complex-mass process on
+  that card is now refused, including `u u~ > e+ e-`, which worked before
+  because it meets none of the 8 revived couplings. With `simplify = false` it
+  gives identical values. No shipped default card is affected.
 - **Remedy:** `simplify = false` for that model, or a restriction card under
-  which the couplings vanish in that scheme too. On the shipped models only
-  `loop_sm`'s `test` card is refused (it zeroes the Yukawa inputs while the b
-  and t masses are not zero). No shipped default card is affected.
+  which the couplings vanish in that scheme too.
 - **Older compiled and prepared models:** a model compiled or prepared from a
   simplified UFO or JSON source by a pyAmpliCol that did not record every
   removed coupling is refused for new generation. Compile or prepare it again
