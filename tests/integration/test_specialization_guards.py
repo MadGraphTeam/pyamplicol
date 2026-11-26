@@ -17,6 +17,7 @@ import json
 import math
 import re
 import shutil
+from decimal import Decimal
 from importlib import resources
 from pathlib import Path
 
@@ -418,3 +419,106 @@ def test_a_zero_chiral_coupling_of_a_massless_line_is_held_zero(
     runtime.set_model_parameters({zero[0]: 0.0})
     runtime.set_model_parameters({name: 0.75 for name in free})
     assert _values(runtime, point) != before
+
+
+# A coupling is removed by value only if it is exactly zero under every exact
+# reading of the generation values: the decimal the one-loop runtime and the
+# Python paths read, and the binary64 the native tree runtime promotes. A
+# coupling zero under one reading only, or zero in binary64 by an order-one
+# cancellation, is kept: the simplified and the unsimplified model then give
+# the same amplitude at every precision.
+_ELECTRON_Z = (
+    "GC_24 = Coupling(name = 'GC_24',\n"
+    "                 value = '(ee*complex(0,1)*sw)/(2.*cw)'"
+)
+_KEPT_FACTORS = {
+    "decimal-only zero": "*(MZ-22797/250)*1000000000000000",
+    "binary64 cancellation": "*200000000*(cmath.sqrt(10000000000000001)-100000000)",
+}
+_TREE_POINT = [
+    [
+        [250.0, 0.0, 0.0, 250.0],
+        [250.0, 0.0, 0.0, -250.0],
+        [250.0, 150.0, 0.0, 200.0],
+        [250.0, -150.0, 0.0, -200.0],
+    ]
+]
+
+
+@pytest.fixture(scope="module", params=sorted(_KEPT_FACTORS))
+def kept_coupling_model(request, tmp_path_factory) -> Path:
+    shipped = Path(
+        str(resources.files("pyamplicol").joinpath("assets/models/ufo/loop_sm"))
+    )
+    destination = tmp_path_factory.mktemp("kept") / "loop_sm_kept"
+    shutil.copytree(shipped, destination, ignore=shutil.ignore_patterns("__pycache__"))
+    couplings = destination / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    assert text.count(_ELECTRON_Z) == 1
+    couplings.write_text(
+        text.replace(
+            _ELECTRON_Z, _ELECTRON_Z[:-1] + _KEPT_FACTORS[request.param] + "'"
+        ),
+        encoding="utf-8",
+    )
+    return destination
+
+
+def _real_part(value: object) -> Decimal:
+    text = str(value).strip("()")
+    match = re.match(r"[+-]?[0-9.]+(?:[eE][+-]?[0-9]+)?", text)
+    assert match is not None, text
+    return Decimal(match.group(0))
+
+
+@pytest.mark.parametrize(("lane", "accuracy"), LANES)
+def test_a_coupling_zero_under_one_reading_only_is_kept(
+    kept_coupling_model, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    from pyamplicol.models.loading import compile_model_source
+
+    compiled = compile_model_source(
+        kept_coupling_model, simplify=True, cache_dir=tmp_path / "cache"
+    )
+    assert compiled.specialization_guards == ()
+    assert any(c.get("name") == "GC_24" for c in compiled.model["couplings"])
+
+    def values(runtime) -> dict[int, list[Decimal]]:
+        return {
+            digits: [
+                _real_part(value)
+                for value in runtime.evaluate(_TREE_POINT, precision=digits)
+            ]
+            for digits in (16, 32, 50)
+        }
+
+    # The simplified model (prepared) in this lane against the unsimplified
+    # model in the compiled lane (an unsimplified loop_sm has no prepared
+    # catalog on this base; the compiled lane needs none).
+    bundle = tmp_path / "simplified.pyamplicol-model"
+    ModelSource.from_path(kept_coupling_model, simplify=True).compile(
+        cache_dir=tmp_path / "cache-s",
+        prepared_output=bundle,
+        evaluator=EvaluatorConfig(),
+    )
+    simplified = values(
+        _generate(
+            ModelSource.from_path(bundle),
+            tmp_path / "s",
+            lane,
+            accuracy,
+            "u u~ > e+ e-",
+        )
+    )
+    reference = values(
+        _generate(
+            ModelSource.from_path(kept_coupling_model, simplify=False),
+            tmp_path / "u",
+            "compiled",
+            "full",
+            "u u~ > e+ e-",
+        )
+    )
+    for digits, found in simplified.items():
+        for a, b in zip(found, reference[digits], strict=True):
+            assert abs(a - b) <= abs(b) * Decimal(10) ** (4 - digits), (digits, a, b)

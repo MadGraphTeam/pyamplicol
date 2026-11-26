@@ -65,8 +65,21 @@ pub struct SpecializationGuard {
     producer: String,
     parameters: Vec<String>,
     generation_values: Vec<Complex64>,
+    /// The exact decimals the producer recorded (real, imaginary), as text:
+    /// exact readers parse them; nothing here formats a float to obtain them.
+    generation_exact: Vec<[String; 2]>,
     message: String,
     process_ids: Option<Vec<String>>,
+}
+
+/// One guarded parameter as a binding check sees it.
+#[derive(Clone, Copy, Debug)]
+pub struct GuardedParameter<'a> {
+    pub name: &'a str,
+    /// The recorded binary64 value.
+    pub generation: Complex64,
+    /// The producer's exact decimal text of it (real, imaginary).
+    pub exact: &'a [String; 2],
 }
 
 #[derive(Deserialize)]
@@ -77,6 +90,7 @@ struct GuardWire {
     producer: String,
     parameters: Vec<String>,
     generation_values: BTreeMap<String, [f64; 2]>,
+    generation_exact: BTreeMap<String, [String; 2]>,
     expression: String,
     message: String,
     #[serde(default)]
@@ -121,12 +135,41 @@ impl SpecializationGuard {
                 Ok(Complex64::new(*re, *im))
             })
             .collect::<RusticolResult<Vec<_>>>()?;
+        if wire.generation_exact.len() != wire.parameters.len() {
+            return Err(invalid("exact generation values must name the parameters"));
+        }
+        let generation_exact = wire
+            .parameters
+            .iter()
+            .zip(&generation_values)
+            .map(|(name, generation)| {
+                let texts = wire
+                    .generation_exact
+                    .get(name)
+                    .ok_or_else(|| invalid(format!("no exact generation value of {name:?}")))?;
+                // The exact decimal rounds to the recorded binary64 (Rust's
+                // parse is correctly rounded): a record whose two values
+                // disagree is refused.
+                let parsed = texts
+                    .iter()
+                    .map(|text| text.trim().parse::<f64>())
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|_| invalid(format!("exact value of {name:?} is not a decimal")))?;
+                if parsed[0] != generation.re || parsed[1] != generation.im {
+                    return Err(invalid(format!(
+                        "exact value of {name:?} does not round to its binary64 value"
+                    )));
+                }
+                Ok(texts.clone())
+            })
+            .collect::<RusticolResult<Vec<_>>>()?;
         Ok(Self {
             kind: wire.kind,
             subject: wire.subject,
             producer: wire.producer,
             parameters: wire.parameters,
             generation_values,
+            generation_exact,
             message: wire.message,
             process_ids: wire.process_ids,
         })
@@ -143,12 +186,18 @@ impl SpecializationGuard {
         &self.parameters
     }
 
-    /// The guarded parameters with their generation values.
-    pub fn generation_values(&self) -> impl Iterator<Item = (&str, Complex64)> {
+    /// The guarded parameters with their generation values (binary64 and
+    /// the producer's exact decimal text).
+    pub fn guarded(&self) -> impl Iterator<Item = GuardedParameter<'_>> {
         self.parameters
             .iter()
-            .map(String::as_str)
-            .zip(self.generation_values.iter().copied())
+            .zip(&self.generation_values)
+            .zip(&self.generation_exact)
+            .map(|((name, generation), exact)| GuardedParameter {
+                name,
+                generation: *generation,
+                exact,
+            })
     }
 
     fn refusal(&self, changed: &[String]) -> String {
@@ -244,34 +293,35 @@ impl SpecializationGuards {
     /// generation value (both components; `==` on binary64, so `-0.0` equals
     /// `0.0`).
     pub fn check_binding(&self, binding: &BTreeMap<String, (f64, f64)>) -> RusticolResult<()> {
-        self.check_with(|name, generation| match binding.get(name) {
+        self.check_with(|parameter| match binding.get(parameter.name) {
             None => (Bound::Untouched, String::new()),
-            Some(&(re, im)) if re == generation.re && im == generation.im => {
+            Some(&(re, im))
+                if re == parameter.generation.re && im == parameter.generation.im =>
+            {
                 (Bound::Unchanged, String::new())
             }
-            Some(&(re, im)) => (
-                Bound::Changed,
-                format_complex(Complex64::new(re, im)),
-            ),
+            Some(&(re, im)) => (Bound::Changed, format_complex(Complex64::new(re, im))),
         })
     }
 
-    /// Check a binding through `bound(name, generation)`, which says whether
-    /// the binding leaves the parameter untouched, sets it to exactly its
-    /// generation value (in the binding's own precision), or changes it (with
-    /// a description of the new value).
+    /// Check a binding through `bound(parameter)`, which says whether the
+    /// binding leaves the parameter untouched, sets it to exactly its
+    /// generation value (in the binding's own precision: an exact binding
+    /// compares with `parameter.exact`, a binary64 one with
+    /// `parameter.generation`), or changes it (with a description of the new
+    /// value).
     pub fn check_with(
         &self,
-        bound: impl Fn(&str, Complex64) -> (Bound, String),
+        bound: impl Fn(GuardedParameter<'_>) -> (Bound, String),
     ) -> RusticolResult<()> {
         let mut failures = Vec::new();
         for guard in &self.guards {
             let changed = guard
-                .generation_values()
-                .filter_map(|(name, generation)| match bound(name, generation) {
+                .guarded()
+                .filter_map(|parameter| match bound(parameter) {
                     (Bound::Changed, value) => Some(format!(
-                        "{name} = {value} (generated at {})",
-                        format_complex(generation)
+                        "{} = {value} (generated at {})",
+                        parameter.name, parameter.exact[0]
                     )),
                     _ => None,
                 })
