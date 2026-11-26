@@ -36,13 +36,16 @@ on relabelled processes; the recurrence lane per squared order at all orders.
 A fermion line that a chiral vertex takes between massive and massless
 fermions (the tau t channel of v_tau v_tau~ > W+ W-; with a massless b,
 ``sm-no_b_mass``, the top t channel of b b~ > W+ W-, the W exchange of
-t t~ > b b~, single top and tW) can reach its massless sink as a Dirac
-current, which no closure contraction joins to the sink's Weyl state. The
-eager lane refuses those processes where it would close such a line and builds
-the others (b u > d t); the recurrence lane, which dropped the diagrams of the
-massive fermion's exchange, refuses them too (``dirac-weyl-closure``, m-qcd
-MQ-5F). The massless-b references come from the ``sm-no_b_mass`` restriction
-(``madgraph-split-orders-no-b-mass.json``), all at on-shell points.
+t t~ > b b~, single top and tW) carries a Dirac current past the massive
+fermion, while its massless sink is a Weyl state, and models install no
+Dirac-Weyl closure contraction. The lanes refused those processes (they had
+dropped the massive fermion's exchange before, ``dirac-weyl-closure``, m-qcd
+MQ-5F). A vertex with a single chiral projector (the W) now makes the line a
+Weyl state again at its massless end, so they build and match MadGraph
+(``test_tree_weyl_projection.py`` for the class in every lane). The
+massless-b references come from the ``sm-no_b_mass`` restriction
+(``madgraph-split-orders-no-b-mass.json``, ``madgraph-weyl-projection-no-b-mass.json``),
+all at on-shell points.
 """
 
 from __future__ import annotations
@@ -57,7 +60,7 @@ from pathlib import Path
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime, TreeOrderEvaluation
-from pyamplicol.api.errors import CompatibilityError, EvaluationError, GenerationError
+from pyamplicol.api.errors import CompatibilityError, GenerationError
 from pyamplicol.artifacts.process_groups import (
     initial_process_groups,
     write_process_groups,
@@ -563,81 +566,89 @@ def test_recurrence_lane_refuses_flows_without_roots(
 # Dirac-Weyl closure contraction. The massive fermion is internal (the tau t
 # channel of v_tau v_tau~ > W+ W-; the top t channel of b b~ > W+ W- with a
 # massless b) or external (t t~ > b b~, single top and tW with a massless b).
-# The eager lane dropped the roots of such a line wherever it closed on its
-# massless sink (the gauge cancellation of the t channel lost); it now refuses
-# those processes. The recurrence lane dropped the diagrams of the massive
-# fermion's exchange: it equalled MadGraph with that exchange removed
-# ("b b~ > w+ w- / t t~", "t t~ > b b~ / w+ w-", "vt vt~ > w+ w- / ta- ta+";
-# 72 against MadGraph's 0.030 for vt vt~ > w+ w-, b b~ > w+ w- 400x,
-# t t~ > b b~ 1.2x, e+ e- > b b~ w+ w- 0.24x at the first point). Its
-# structural-demand pass now refuses a closure anchor whose complement is a
-# Dirac state of a closable fermion pair that no closure row joins to the
-# anchor's Weyl state, reached within the request's coupling-order limits
-# (``construct.rs`` ``DiracWeylClosureGuard``, ``StructuralOrderReachability``,
-# key ``dirac-weyl-closure``); the loop engine admits the class (its Born closes at
-# a vertex, ``test_loop_v2_dirac_weyl``). The MadGraph references stay for a
-# Dirac-Weyl closure contraction.
+# The lanes dropped the diagrams of such a line where it closed on its
+# massless sink (72 against MadGraph's 0.030 for vt vt~ > w+ w-, b b~ > w+ w-
+# 400x, t t~ > b b~ 1.2x, e+ e- > b b~ w+ w- 0.24x at the first point), then
+# refused them (``dirac-weyl-closure``). A W vertex has a single chiral
+# projector: the model gives its result of a Dirac input in a massless fermion
+# as the Weyl state of that chirality (the other half of the Dirac result
+# vanishes identically), so these lines close like any Weyl line and match
+# MadGraph per squared order. ``construct.rs`` ``DiracWeylClosureGuard`` still
+# refuses a Dirac current that a vertex with both chiral projections brings
+# to a massless sink (``test_tree_weyl_projection.py``).
 _MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION = "vt vt~ > w+ w-"
-# With a massless b (sm-no_b_mass): the eager lane refuses these ...
-_MASSLESS_B_EAGER_REFUSALS = (
+# With a massless b (sm-no_b_mass): the eager lane builds these ...
+_MASSLESS_B_EAGER_PROCESSES = (
     "b b~ > w+ w-",
     "t t~ > b b~",
     "g b > t w-",
     "u b > d t",
 )
-# ... and the recurrence lane, silently wrong on these before, refuses them.
-_MASSLESS_B_RECURRENCE_REFUSALS = (
+# ... and the recurrence lane, silently wrong on these before, too.
+_MASSLESS_B_RECURRENCE_PROCESSES = (
     "b b~ > w+ w-",
     "t t~ > b b~",
     "e+ e- > b b~ w+ w-",
 )
-_DIRAC_WEYL_CLOSURE = (
-    r"dirac-weyl-closure: a Dirac \(chirality-0\) current cannot close on a Weyl"
-)
-_RECURRENCE_DIRAC_WEYL_CLOSURE = (
-    r"dirac-weyl-closure: LC sector \d+ would close a Dirac"
+WEYL_PROJECTION_REFERENCE = REFERENCE.with_name("madgraph-weyl-projection-sm.json")
+WEYL_PROJECTION_NO_B_MASS_REFERENCE = REFERENCE.with_name(
+    "madgraph-weyl-projection-no-b-mass.json"
 )
 
 
-def test_eager_lane_refuses_a_massless_line_through_a_massive_fermion(
+def _no_b_mass_reference(process: str) -> dict[str, object]:
+    """The massless-b MadGraph reference of ``process`` (either file)."""
+
+    for path in (NO_B_MASS_REFERENCE, WEYL_PROJECTION_NO_B_MASS_REFERENCE):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for entry in payload["processes"]:
+            if entry["process"] == process:
+                return entry
+    raise KeyError(process)
+
+
+def test_eager_lane_builds_a_massless_line_through_a_massive_fermion(
     sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    with pytest.raises(GenerationError, match=_DIRAC_WEYL_CLOSURE):
-        _runtime(
-            sm_model,
-            _MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION,
-            tmp_path / "artifact",
-            execution_mode="eager",
-        )
+    reference = _reference(_MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION)
+    runtime = _runtime(
+        sm_model,
+        _MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION,
+        tmp_path / "artifact",
+        execution_mode="eager",
+    )
+    _assert_total_matches_madgraph(runtime.evaluate(reference["points"]), reference)
 
 
-def test_recurrence_lane_refuses_a_massless_line_through_a_massive_fermion(
+def test_recurrence_lane_keeps_a_massless_line_through_a_massive_fermion(
     sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    """The tau t channel of a massless line (Dirac current, Weyl sink): the
-    recurrence refuses the request instead of dropping that channel."""
+    """The tau t channel of a massless line (a Dirac current projected to a
+    Weyl state by the W): every squared order matches MadGraph."""
 
-    with pytest.raises(GenerationError, match=_RECURRENCE_DIRAC_WEYL_CLOSURE):
-        _runtime(
-            sm_model, _MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION, tmp_path / "artifact"
-        )
+    reference = _reference(_MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION)
+    runtime = _runtime(
+        sm_model, _MASSLESS_LINE_THROUGH_A_MASSIVE_FERMION, tmp_path / "artifact"
+    )
+    _assert_matches_madgraph(runtime.evaluate_orders(reference["points"]), reference)
 
 
-@pytest.mark.parametrize("process", _MASSLESS_B_EAGER_REFUSALS)
-def test_eager_lane_refuses_dirac_weyl_closures_with_a_massless_b(
+@pytest.mark.parametrize("process", _MASSLESS_B_EAGER_PROCESSES)
+def test_eager_lane_builds_dirac_weyl_lines_with_a_massless_b(
     sm_no_b_mass_model: ModelSource, tmp_path: Path, process: str
 ) -> None:
-    with pytest.raises(GenerationError, match=_DIRAC_WEYL_CLOSURE):
-        _runtime(
-            sm_no_b_mass_model, process, tmp_path / "artifact", execution_mode="eager"
-        )
+    reference = _no_b_mass_reference(process)
+    runtime = _runtime(
+        sm_no_b_mass_model, process, tmp_path / "artifact", execution_mode="eager"
+    )
+    _assert_total_matches_madgraph(runtime.evaluate(reference["points"]), reference)
 
 
-def test_eager_lane_builds_single_top_where_no_dirac_current_meets_a_weyl_sink(
+def test_eager_lane_builds_single_top_in_either_leg_order(
     sm_no_b_mass_model: ModelSource, tmp_path: Path
 ) -> None:
-    """b u > d t builds: none of its closures joins a Dirac current to the
-    massless b. u b > d t, the same process relabelled, is refused above."""
+    """b u > d t (none of its closures met a Dirac current before) and
+    u b > d t (refused before, ``_MASSLESS_B_EAGER_PROCESSES``) both build."""
 
     reference = _reference("b u > d t", NO_B_MASS_REFERENCE)
     runtime = _runtime(
@@ -647,17 +658,17 @@ def test_eager_lane_builds_single_top_where_no_dirac_current_meets_a_weyl_sink(
     _assert_total_matches_madgraph(runtime.evaluate(reference["points"]), reference)
 
 
-@pytest.mark.parametrize("process", _MASSLESS_B_RECURRENCE_REFUSALS)
-def test_recurrence_lane_refuses_the_massive_exchange_with_a_massless_b(
+@pytest.mark.parametrize("process", _MASSLESS_B_RECURRENCE_PROCESSES)
+def test_recurrence_lane_keeps_the_massive_exchange_with_a_massless_b(
     sm_no_b_mass_model: ModelSource, tmp_path: Path, process: str
 ) -> None:
     """The massive fermion's exchange with a massless b (the top t channel,
-    the W exchange of t t~ > b b~, off-shell top pairs): refused. (The
-    MadGraph references, ``NO_B_MASS_REFERENCE``, stay for a Dirac-Weyl
-    closure contraction.)"""
+    the W exchange of t t~ > b b~, off-shell top pairs): every squared order
+    matches MadGraph."""
 
-    with pytest.raises(GenerationError, match=_RECURRENCE_DIRAC_WEYL_CLOSURE):
-        _runtime(sm_no_b_mass_model, process, tmp_path / "artifact")
+    reference = _no_b_mass_reference(process)
+    runtime = _runtime(sm_no_b_mass_model, process, tmp_path / "artifact")
+    _assert_matches_madgraph(runtime.evaluate_orders(reference["points"]), reference)
 
 
 @pytest.mark.parametrize(
@@ -670,7 +681,7 @@ def test_recurrence_lane_refuses_the_massive_exchange_with_a_massless_b(
         ("no_b_mass", "b b~ > w+ w- g"),
     ],
 )
-def test_recurrence_lane_refuses_the_radiative_dirac_weyl_class(
+def test_recurrence_lane_builds_the_radiative_dirac_weyl_class(
     sm_model: ModelSource,
     sm_no_b_mass_model: ModelSource,
     tmp_path: Path,
@@ -680,11 +691,16 @@ def test_recurrence_lane_refuses_the_radiative_dirac_weyl_class(
     """The radiative processes the recurrence got wrong without an error
     (v_tau v_tau~ > W+ W- Z 631-2210x MadGraph, W+ W- gamma 157-4780x; with a
     massless b, b b~ > W+ W- Z 21-1460x, W+ W- gamma 68-685x, W+ W- g
-    14-160x; DESIGN WP2.9) are refused too."""
+    14-160x; DESIGN WP2.9) and then refused match MadGraph."""
 
-    model = sm_model if restriction == "default" else sm_no_b_mass_model
-    with pytest.raises(GenerationError, match=_RECURRENCE_DIRAC_WEYL_CLOSURE):
-        _runtime(model, process, tmp_path / "artifact")
+    if restriction == "default":
+        model = sm_model
+        reference = _reference(process, WEYL_PROJECTION_REFERENCE)
+    else:
+        model = sm_no_b_mass_model
+        reference = _no_b_mass_reference(process)
+    runtime = _runtime(model, process, tmp_path / "artifact")
+    _assert_total_matches_madgraph(runtime.evaluate(reference["points"]), reference)
 
 
 @pytest.mark.parametrize("policy", ["explicit", "minimal"])
@@ -695,7 +711,7 @@ def test_recurrence_lane_refuses_the_radiative_dirac_weyl_class(
         ("no_b_mass", "b b~ > w+ w-"),
     ],
 )
-def test_on_the_fly_lane_refuses_dirac_weyl_closures(
+def test_on_the_fly_lane_builds_dirac_weyl_lines(
     sm_model: ModelSource,
     sm_no_b_mass_model: ModelSource,
     tmp_path: Path,
@@ -703,46 +719,49 @@ def test_on_the_fly_lane_refuses_dirac_weyl_closures(
     process: str,
     policy: str,
 ) -> None:
-    """The on-the-fly lane closed its selected LC flows on the same
-    template closures and dropped the same channels (b b~ > w+ w-: 24.0
-    against MadGraph's 0.060 at the first point); it refuses them too, where
-    it builds a query's closures: at evaluation, per query, with the public
-    typed evaluation error. Under the minimal coupling-order policy the
-    channel's orders are those of the other channels (QED 2), so the limits
-    hold and the query refuses."""
+    """The on-the-fly lane closed its selected LC flows on the same template
+    closures and dropped the same channels (b b~ > w+ w-: 24.0 against
+    MadGraph's 0.060 at the first point), then refused them at evaluation;
+    its queries now evaluate and match MadGraph (one quark line without
+    gluons: leading colour is exact) under both coupling-order policies."""
 
     model = sm_model if restriction == "default" else sm_no_b_mass_model
-    path = REFERENCE if restriction == "default" else NO_B_MASS_REFERENCE
-    points = _reference(process, path)["points"]
+    reference = (
+        _reference(process)
+        if restriction == "default"
+        else _no_b_mass_reference(process)
+    )
     runtime = _runtime(
         model, process, tmp_path / "artifact", accuracy="lc",
         execution_mode="on-the-fly", policy=policy,
     )  # fmt: skip
-    with pytest.raises(
-        EvaluationError,
-        match=r"dirac-weyl-closure: the LC query .* would close a Dirac",
-    ):
-        runtime.evaluate(points)
+    _assert_total_matches_madgraph(runtime.evaluate(reference["points"]), reference)
 
 
-def test_on_the_fly_minimal_policy_refuses_a_process_of_dirac_weyl_closures_only(
+def test_on_the_fly_minimal_policy_builds_a_process_of_dirac_weyl_lines_only(
     sm_no_b_mass_model: ModelSource, tmp_path: Path
 ) -> None:
     """g b > t w- with a massless b: every closure at the lane's anchor (the
-    b) meets a Dirac complement, so the minimal coupling-order policy finds
-    no viable order but the Dirac-Weyl pair's and refuses at the first
-    query instead of falling back to the explicit limits."""
+    b) met a Dirac complement, so the minimal coupling-order policy refused
+    at the first query. The complements are Weyl states now; its leading
+    colour equals the eager lane's."""
 
+    reference = _no_b_mass_reference("g b > t w-")
+    points = reference["points"]
     runtime = _runtime(
         sm_no_b_mass_model, "g b > t w-", tmp_path / "artifact", accuracy="lc",
         execution_mode="on-the-fly", policy="minimal",
     )  # fmt: skip
-    masses = (0.0, 0.0, _parameter(runtime, "MT"), _parameter(runtime, "MW"))
-    with pytest.raises(
-        EvaluationError,
-        match=r"dirac-weyl-closure: the coupling-order policy's closure would",
+    eager = _runtime(
+        sm_no_b_mass_model, "g b > t w-", tmp_path / "eager", accuracy="lc",
+        execution_mode="eager",
+    )  # fmt: skip
+    for mine, theirs in zip(
+        runtime.evaluate(points), eager.evaluate(points), strict=True
     ):
-        runtime.evaluate([_on_shell_two_to_two(masses, 0.3)])
+        mine, theirs = complex(mine), complex(theirs)
+        assert theirs.real > 0.0 and mine.imag == 0.0
+        assert abs(mine.real - theirs.real) <= 1e-12 * theirs.real
 
 
 def _parameter(runtime: Runtime, name: str) -> float:
@@ -833,13 +852,13 @@ def test_recurrence_lane_builds_a_massless_b_where_the_orders_keep_the_w_off(
     limits: dict[str, int],
     policy: str,
 ) -> None:
-    """The guard is order-aware: with a massless b and QED 0 no W joins the
-    b and the top, so no Dirac b current is reached within the limits and the
-    recurrence builds, equal to the eager lane at full colour (the
-    structural-demand pass alone, which carries no orders, refused these).
+    """With a massless b and QED 0 no W joins the b and the top, and the
+    recurrence builds at those limits, equal to the eager lane at full colour
+    (the Dirac-Weyl guard is order-aware; its structural-demand pass alone,
+    which carries no orders, refused these before the W became a projection).
     The minimal policy without low limits resolves t t~ > b b~ to QED 0 as
-    well (the W exchange is refused only where the limits admit it,
-    ``test_recurrence_lane_refuses_the_massive_exchange_with_a_massless_b``)."""
+    well (the W exchange at higher limits,
+    ``test_recurrence_lane_keeps_the_massive_exchange_with_a_massless_b``)."""
 
     eager = _runtime(
         sm_no_b_mass_model, process, tmp_path / "eager", execution_mode="eager",
