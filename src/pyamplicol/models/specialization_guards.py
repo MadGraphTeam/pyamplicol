@@ -996,9 +996,10 @@ _CAPTURE_LOCK = threading.Lock()
 
 def load_ufo_model_with_guards(
     load_model: Callable[..., tuple[Any, Any]], *args: Any, **kwargs: Any
-) -> tuple[Any, Any, tuple[SpecializationGuard, ...]]:
-    """``load_model(*args, **kwargs)`` of ``ufo_model_loader`` and the guards
-    of the couplings its restriction simplification removed.
+) -> tuple[Any, Any, tuple[SpecializationGuard, ...], tuple[dict[str, Any], ...]]:
+    """``load_model(*args, **kwargs)`` of ``ufo_model_loader``, the guards of
+    the couplings its restriction simplification removed, and the record of
+    every coupling it removed (``removed_coupling_record``).
 
     The simplification (``Model.remove_zero_couplings``) removes every
     coupling whose value at the restriction card is zero. A removed coupling
@@ -1006,11 +1007,17 @@ def load_ufo_model_with_guards(
     internal parameters are written in the external (mutable) ones, the
     externals the card set to zero being the constant ``ZERO``; otherwise it
     is zero only at the card's values, and its guard ("vanishing") refuses a
-    binding that revives it."""
+    binding that revives it. A structural zero is structural only for the
+    model's own parameter definitions: a transform that redefines parameters
+    afterwards (the complex-mass scheme sets ``CMSParam`` to 1 and the Yukawa
+    inputs to the masses) can revive it, so every removed coupling is
+    recorded, guarded or not, for such a transform to evaluate again
+    (``revived_removed_couplings``)."""
 
     from ufo_model_loader import model as ufo_model
 
     captured: list[SpecializationGuard] = []
+    removed_records: list[dict[str, Any]] = []
     kept: list[str] = []
     # The original method is read and restored under the lock, so overlapping
     # loads in one process can never leave a wrapper installed.
@@ -1033,6 +1040,9 @@ def load_ufo_model_with_guards(
                     coupling.value = saved[id(coupling)]
             kept.extend(str(coupling.name) for coupling in unproven)
             captured.extend(_removed_coupling_guards(self, removed[0]))
+            removed_records.extend(
+                removed_coupling_record(coupling) for coupling in removed[0]
+            )
             return removed
 
         ufo_model.Model.remove_zero_couplings = remove_zero_couplings
@@ -1041,7 +1051,158 @@ def load_ufo_model_with_guards(
         finally:
             ufo_model.Model.remove_zero_couplings = original
     unique = {guard.subject: guard for guard in captured}
-    return model, card, tuple(unique[subject] for subject in sorted(unique))
+    records = {record["name"]: record for record in removed_records}
+    return (
+        model,
+        card,
+        tuple(unique[subject] for subject in sorted(unique)),
+        tuple(records[name] for name in sorted(records)),
+    )
+
+
+# -- removed couplings and the transforms that redefine parameters ----------------
+
+
+def removed_coupling_record(coupling: Any) -> dict[str, Any]:
+    """A coupling restriction simplification removed, in the loader's own
+    serialised form (the ``couplings`` entries of a compiled model's
+    ``model`` payload: name, expression, orders, value at the card), so that
+    a transform can put it back into that payload and evaluate it with the
+    code that evaluates the couplings it kept."""
+
+    from ufo_model_loader.model import SerializableCoupling
+
+    serial = SerializableCoupling.from_coupling(coupling)
+    return {
+        "name": str(serial.name),
+        "expression": str(serial.expression),
+        "orders": [[str(order), int(power)] for order, power in serial.orders],
+        "value": None if serial.value is None else list(serial.value),
+    }
+
+
+def removed_coupling_records_from_payload(
+    value: object,
+) -> tuple[dict[str, Any], ...]:
+    """The removed-coupling records of a compiled-model payload (validated)."""
+
+    records = []
+    for item in _sequence(value):
+        record = _mapping(item)
+        name, expression, orders = (
+            record.get("name"),
+            record.get("expression"),
+            record.get("orders"),
+        )
+        if not isinstance(name, str) or not name or not isinstance(expression, str):
+            raise ValueError("a removed coupling needs a name and an expression")
+        records.append(
+            {
+                "name": name,
+                "expression": expression,
+                "orders": [
+                    [str(_sequence(pair)[0]), int(_sequence(pair)[1])]
+                    for pair in _sequence(orders)
+                ],
+                "value": (
+                    None
+                    if record.get("value") is None
+                    else [float(component) for component in _sequence(record["value"])]
+                ),
+            }
+        )
+    names = [record["name"] for record in records]
+    if names != sorted(set(names)):
+        raise ValueError("removed couplings must be sorted and unique")
+    return tuple(records)
+
+
+@dataclass(frozen=True)
+class RevivedCoupling:
+    """A removed coupling a transform is not proven to leave zero
+    (``revived_removed_couplings``): ``value`` in the transform's own binary64
+    arithmetic (for the message only); ``parameters``, the external
+    parameters it reads after the transform."""
+
+    name: str
+    value: complex
+    parameters: tuple[str, ...] = ()
+
+    @property
+    def revived(self) -> bool:
+        """Nonzero even in binary64 (otherwise only not proven zero)."""
+
+        return self.value != 0
+
+    def describe(self) -> str:
+        if self.revived:
+            return f"{self.name} = {_format_complex(self.value)}"
+        if self.parameters:
+            return (
+                f"{self.name} (zero in binary64 here, but not identically in "
+                f"{', '.join(self.parameters)}: a binding would revive it)"
+            )
+        return (
+            f"{self.name} (zero in binary64 here, but not proven exactly zero: "
+            "an exact carrier would evaluate it)"
+        )
+
+
+def revived_removed_couplings(
+    model: Any, removed: Iterable[Any]
+) -> tuple[RevivedCoupling, ...]:
+    """The couplings of ``removed`` that a parameter transform is not proven
+    to leave zero.
+
+    ``model`` is the ``ufo_model_loader`` model of a compiled model's tree
+    payload after the transform (its parameters redefined and its values
+    evaluated again); ``removed`` are the couplings restriction
+    simplification removed (``removed_coupling_record``), as loader
+    ``Coupling`` objects that went through the same transform as the kept
+    couplings (their ``value`` set by its evaluation, for the message).
+
+    The decision is exact, never numerical: a removed coupling stays removed
+    only if it is provably zero for every binding, in every exact reading
+    (``provably_zero_after_transform``, the shared ``exact_zero_holding``
+    with nothing held). Its expression is written in the external (mutable)
+    parameters, which stay symbols, through the
+    transformed internal definitions (CMSParam = 1, a Yukawa input = its
+    mass, a complex pole mass ``sqrt(M^2 - i M W)``), every internal constant
+    and binary64 literal read both as its shortest decimal and as the exact
+    binary64, and the result must expand to exactly 0. What the expansion
+    cannot reduce is not proven, and refused: a square root of a non-square
+    (``sqrt(10000000000000001) - 100000000``, zero in binary64 only), a
+    branch identity Symbolica does not take (``sqrt(x^2) = x``), the
+    conjugate of a real runtime parameter (``conj(MT) - MT``: the externals
+    are complex symbols here), a model function it cannot reduce (a
+    ``reglog`` of a non-trivial argument), an unresolved name. A term zero
+    at the transformed values but not identically (a binding would revive
+    it) is refused too: the transformed model holds no guard for it.
+    Returned in ``removed``'s order."""
+
+    environment: GuardEnvironment | None = None
+    found = []
+    for coupling in removed:
+        value = complex(coupling.value if coupling.value is not None else math.nan)
+        if environment is None:
+            environment = GuardEnvironment.from_ufo_model(model)
+            # A model variable that is not an exact integer (pi) stays a
+            # symbol: no binary64 value of a transcendental constant may
+            # cancel a literal.
+            for symbol, number in model.get_model_variables().items():
+                number = complex(number)
+                if not (number.real.is_integer() and number.imag.is_integer()):
+                    environment.constants.pop(_short_name(symbol.get_name()), None)
+        try:
+            parameters = environment.mutable_dependencies(
+                environment.resolve(coupling.expression)
+            )
+            proven = provably_zero_after_transform(environment, coupling.expression)
+        except (TypeError, ValueError, ArithmeticError):
+            parameters, proven = ("(unresolved)",), False
+        if not proven:
+            found.append(RevivedCoupling(str(coupling.name), value, parameters))
+    return tuple(found)
 
 
 #: A nonzero stand-in that makes ``remove_zero_couplings`` keep a coupling

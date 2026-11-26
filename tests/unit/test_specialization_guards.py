@@ -259,6 +259,7 @@ def test_generation_refuses_a_simplified_model_without_its_record(tmp_path) -> N
     from dataclasses import replace
 
     from pyamplicol.models.loading import (
+        SPECIALIZATION_RECORD,
         CompiledModel,
         compile_model_source,
         require_specialization_record,
@@ -281,7 +282,7 @@ def test_generation_refuses_a_simplified_model_without_its_record(tmp_path) -> N
         require_specialization_record(as_source(kind, True, True))
         require_specialization_record(as_source(kind, False, False))
     marked = as_source("ufo", True, True).to_dict()
-    assert marked["specialization_record"] == "complete"
+    assert marked["specialization_record"] == SPECIALIZATION_RECORD
     restored = CompiledModel.from_dict(marked, validate_fingerprint=False)
     assert restored.specialization_record
     legacy = {
