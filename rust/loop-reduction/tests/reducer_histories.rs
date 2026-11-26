@@ -256,7 +256,7 @@ fn the_standalone_master_cache_retries_a_failed_row_as_main() {
             }
             // Main's rule: a row that failed (or whose provider panicked)
             // is asked again at the next ordinary call, which then serves it.
-            if script != b"o" && script[1] == b'o' && !(oks[0] == false && oks[1] == true) {
+            if script != b"o" && script[1] == b'o' && !(!oks[0] && oks[1]) {
                 failures.push(format!(
                     "script {} enabled {enabled}: attempts 1 and 2 ok {:?}, main gives [false, true]",
                     String::from_utf8_lossy(script),

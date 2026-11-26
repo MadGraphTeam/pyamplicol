@@ -186,6 +186,7 @@ fn decimal(z: [f64; 2]) -> [String; 2] {
 /// One group's five batches from complex values (row-major), in the
 /// carrier's arithmetic, with `mass_rows` rows in the masses (a mismatch is
 /// the generic engines' rejected input).
+#[allow(clippy::too_many_arguments)]
 fn group_batches(
     c: Carrier,
     rows: usize,
@@ -277,7 +278,13 @@ fn inputs(c: Carrier, fixture: Fixture) -> Inputs {
             }
         }
         Fixture::RejectedMany(rows, bad) => {
-            let masses = |r: usize| if r % 3 == 0 { [1e-12, 0.] } else { [4., 0.] };
+            let masses = |r: usize| {
+                if r.is_multiple_of(3) {
+                    [1e-12, 0.]
+                } else {
+                    [4., 0.]
+                }
+            };
             if fast {
                 let shift = move |r| if r == bad { [0., 1.] } else { [0., 0.] };
                 one(tadpole_group(c, rows, masses, shift, rows), 1, rows)
@@ -499,7 +506,7 @@ fn placement_of(p: Placement, k: usize, step: &Step, workers: usize) -> Option<u
     match p {
         Placement::All => Some(workers),
         Placement::Exceptional => step.exceptional().then_some(workers),
-        Placement::Alternate => (k % 2 == 0).then_some(workers),
+        Placement::Alternate => k.is_multiple_of(2).then_some(workers),
     }
 }
 
@@ -606,19 +613,19 @@ pub fn random_history(rng: &mut Rng, c: Carrier, length: usize, labels: bool) ->
     };
     (0..length)
         .map(|_| match rng.next() % 10 {
-            0 => Step::SetUnchecked(rng.next() % 2 == 0),
+            0 => Step::SetUnchecked(rng.next().is_multiple_of(2)),
             1 => Step::SetVanishing(rng.pick(&REASONS)),
             2 => Step::SetTarget(rng.pick(&[1e-8, 1e-12, 1e-15, 1e-25, 1e-28])),
-            3 => Step::SetBestEffort(rng.next() % 2 == 0),
+            3 => Step::SetBestEffort(rng.next().is_multiple_of(2)),
             4 => Step::ClearMasters,
             _ => {
                 let fixture = rng.pick(&fixtures);
                 Step::Call {
                     fixture,
                     source: rng.pick(&sources),
-                    check: rng.next() % 3 == 0,
-                    split: rng.next() % 4 == 0,
-                    labels: if labels && rng.next() % 3 == 0 {
+                    check: rng.next().is_multiple_of(3),
+                    split: rng.next().is_multiple_of(4),
+                    labels: if labels && rng.next().is_multiple_of(3) {
                         rng.pick(&[Labels::Extreme, Labels::AllMax])
                     } else {
                         Labels::None
