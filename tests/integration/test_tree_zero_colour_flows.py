@@ -11,10 +11,12 @@ identically zero. The tree lanes take such an open-line colour flow as zero:
   resolved values, colour-flow and helicity selection, per point and in mixed
   batches, order partials, the full-colour helicity-selector companion)
   returns as an exact zero;
-- the certificate holds for every permitted parameter binding only: a model
-  whose vertex support depends on the values of mutable parameters (a coupling
-  the restriction removed, or a projection the support probe dropped, at the
-  card values) is refused (``models.binding_support``);
+- the certificate is structural for the vertices the compiled model supplies;
+  a vertex the model compile removed only because a mutable parameter made it
+  vanish at the card values (restriction simplification) is recorded as a
+  specialisation guard, and a later binding that revives it is refused
+  (``models.specialization_guards``), so a flow certified zero at generation
+  is never returned as zero where it is not;
 - the compiled lane lists the flow in public physics outside every reduction
   group and declares ``rusticol.compiled.zero-color-flows.v1`` (a released
   reader refuses the artifact); colour-flow selection of it returns an exact
@@ -31,10 +33,13 @@ gluons) in ``madgraph-ew-four-quark-lc.json``. They hold:
 - all 36 class representatives of the 2 -> 2 built-in particle table that the
   recurrence refused ("no exact closure for physical LC sector");
 - ``c d > u s g`` and ``u d~ > t b~ g``;
-- the single-top and multi-line processes of the design notes.
+- the single-top and multi-line processes of the design notes;
+- the W-only lines of the six with one and with two extra gluons or photons
+  (``c d > u s g``, ``u d~ > b~ t a``, ``u d~ > b~ t g g``,
+  ``d u~ > t~ b a a`` and the 20 others of that family).
 
-The default tier checks two of the six and the zero flow itself; the full list
-runs in the nightly tier.
+The default tier checks two of the six, the four named emission processes and
+the zero flow itself; the full list runs in the nightly tier.
 
 At full colour, ``u u~ > d d~ s s~`` and ``u d > u d s s~`` at QCD = 0, and
 ``u c~ > d s~ d d~``, reach a different refusal: their helicity-selector
@@ -52,7 +57,7 @@ from pathlib import Path
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime
-from pyamplicol.api.errors import GenerationError
+from pyamplicol.api.errors import EvaluationError, GenerationError
 from pyamplicol.config import (
     ColorConfig,
     EvaluatorConfig,
@@ -72,6 +77,20 @@ ALL_ORDERS = {"QCD": 99, "QED": 99}
 # Two of the six processes of the report in the default tier (the light-quark
 # lines and the top line); the nightly tier runs all six with the rest.
 REPORTED = ("c d > u s", "u d~ > b~ t")
+# W-only lines with extra gluons or photons in the default tier (2 -> 3 and
+# 2 -> 4); MadGraph's leading colour exists only without external gluons.
+EMISSIONS = ("c d > u s g", "u d~ > b~ t a", "u d~ > b~ t g g", "d u~ > t~ b a a")
+_BASE = (
+    "c d > u s",
+    "s u > d c",
+    "u d~ > b~ t",
+    "d u~ > t~ b",
+    "c s~ > b~ t",
+    "s c~ > t~ b",
+)
+EMISSION_FAMILY = tuple(
+    f"{base} {extra}" for extra in ("g", "a", "g g", "a a") for base in _BASE
+)
 # Explicit coupling orders of the multi-line references; MadGraph's QCD = 0
 # value is the sum of its partials without QCD.
 PURE_ELECTROWEAK = {
@@ -200,6 +219,52 @@ def test_reported_processes_match_madgraph(
     closure for physical LC sector")."""
 
     _check(sm_model, tmp_path, process, accuracy)
+
+
+def _zero_flows(runtime: Runtime, points) -> list[str]:
+    resolved = runtime.evaluate_resolved(points)
+    return sorted(
+        flow
+        for column, flow in enumerate(resolved.color_ids)
+        if all(complex(row[column]) == 0 for point in resolved.values for row in point)
+    )
+
+
+def _check_emission(
+    model: ModelSource, tmp_path: Path, process: str, accuracy: str, lane: str
+) -> None:
+    """Against MadGraph where it gives the number (full colour; leading colour
+    without external gluons); otherwise against the eager lane, flow by flow,
+    with the same exactly zero flows."""
+
+    if accuracy == "full" or process in _references(LC_REFERENCE):
+        _check(model, tmp_path, process, accuracy, lane)
+        return
+    points = _references(REFERENCE)[process]["points"]
+    runtime = _runtime(
+        model, process, tmp_path / lane, accuracy="lc", execution_mode=lane
+    )
+    eager = _runtime(
+        model, process, tmp_path / "eager", accuracy="lc", execution_mode="eager"
+    )
+    assert [complex(v).real for v in runtime.evaluate(points)] == pytest.approx(
+        [complex(v).real for v in eager.evaluate(points)], rel=1e-10, abs=0.0
+    )
+    zero = _zero_flows(eager, points)
+    assert zero and _zero_flows(runtime, points) == zero
+    assert len(zero) * 2 == len(eager.physics.color_flow_ids)
+
+
+@pytest.mark.parametrize("accuracy", ["lc", "full"])
+@pytest.mark.parametrize("process", EMISSIONS)
+def test_w_only_lines_with_extra_gluons_or_photons(
+    sm_model: ModelSource, tmp_path: Path, process: str, accuracy: str
+) -> None:
+    """2 -> 3 and 2 -> 4 relatives of the reported processes: the recurrence
+    refused all of them at both accuracies, the compiled lane at leading
+    colour. Half of their leading-colour flows are zero flows."""
+
+    _check_emission(sm_model, tmp_path, process, accuracy, "recurrence")
 
 
 @pytest.mark.parametrize("execution_mode", ["on-the-fly", "compiled"])
@@ -432,59 +497,148 @@ def _mutable_coupling_model(root: Path, madgraph_source: Path, mt: int) -> Path:
     return model
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="needs the specialisation guards of the parameter-binding boundary",
+def _massless_points() -> list[list[list[float]]]:
+    points = []
+    for angle in (0.7, 2.1):
+        c, s = math.cos(angle), math.sin(angle)
+        points.append(
+            [
+                [500.0, 0.0, 0.0, 500.0],
+                [500.0, 0.0, 0.0, -500.0],
+                [500.0, 500.0 * s, 0.0, 500.0 * c],
+                [500.0, -500.0 * s, 0.0, -500.0 * c],
+            ]
+        )
+    return points
+
+
+@pytest.mark.parametrize(
+    ("execution_mode", "accuracy"),
+    [("recurrence", "lc"), ("recurrence", "full"), ("compiled", "lc")],
 )
-def test_a_zero_flow_that_a_mutable_parameter_revives_is_refused(
-    madgraph_source: Path, tmp_path: Path
+def test_a_binding_that_revives_a_zero_flow_is_refused(
+    madgraph_source: Path, tmp_path: Path, execution_mode: str, accuracy: str
 ) -> None:
-    """A W coupling proportional to MT - 173 vanishes at MT = 173 and is
-    removed by the restriction (and dropped by the support probe without
-    simplification), so the W pairing of u d > u d at QCD = 0 has no diagram
-    there; MT stays mutable. Certifying that flow as zero gave
-    0.0985435252 at MT = 174 against 0.1996120998 from the artifact
-    generated at 174. The recurrence now refuses it at LC and full colour,
-    and the compiled lane refuses it at LC (as every rootless LC sector); the
-    artifact generated at 174 is unaffected."""
+    """A W coupling proportional to MT - 173 vanishes at MT = 173, where the
+    restriction removes it, so the W pairing of u d > u d at QCD = 0 has no
+    diagram and its flow is a zero flow; MT stays a runtime parameter. The
+    model compile records that removal as a specialisation guard on MT, so a
+    binding of MT away from 173 is refused, at load and through
+    set_model_parameters, instead of returning the zero flow's 0.0985 where an
+    artifact generated at MT = 174 gives 0.1996. The refused binding leaves
+    the runtime as it was. The artifact generated at MT = 174 has no zero flow
+    and no guard, and is right at every binding, MT = 173 included."""
 
     limits = {"QCD": 0, "QED": 2}
-    at_173 = _mutable_coupling_model(tmp_path, madgraph_source, 173)
-    at_174 = _mutable_coupling_model(tmp_path, madgraph_source, 174)
     prepared = {}
-    for name, source in (("173", at_173), ("174", at_174)):
-        bundle = tmp_path / f"sm-{name}.pyamplicol-model"
+    for mt in (173, 174):
+        source = _mutable_coupling_model(tmp_path, madgraph_source, mt)
+        bundle = tmp_path / f"sm-{mt}.pyamplicol-model"
         ModelSource.from_path(source, restriction="default").compile(
             cache_dir=tmp_path / "cache",
             prepared_output=bundle,
             evaluator=EvaluatorConfig(),
         )
-        prepared[name] = ModelSource.from_path(bundle)
-    refusal = "cannot be certified zero for every permitted parameter binding"
-    for accuracy in ("lc", "full"):
-        with pytest.raises(GenerationError, match=refusal):
+        prepared[mt] = ModelSource.from_path(bundle)
+    points = _massless_points()
+    artifact = tmp_path / "at-173"
+    runtime = _runtime(
+        prepared[173],
+        "u d > u d",
+        artifact,
+        accuracy=accuracy,
+        execution_mode=execution_mode,
+        limits=limits,
+    )
+    at_173 = [complex(value).real for value in runtime.evaluate(points)]
+    if accuracy == "lc":
+        assert len(_zero_flows(runtime, points)) == 1
+    refusal = "specialisation-guard: binding MT"
+    with pytest.raises(EvaluationError, match=refusal):
+        runtime.set_model_parameters({"MT": 174.0})
+    assert [complex(value).real for value in runtime.evaluate(points)] == at_173
+    with pytest.raises(EvaluationError, match=refusal):
+        Runtime.load(artifact, model_parameters={"MT": 174.0})
+    if accuracy == "full" and execution_mode == "recurrence":
+        # u d > u d at QCD = 0 has a helicity-dependent zero at MT = 174: the
+        # full-colour refusal of the module docstring.
+        with pytest.raises(GenerationError, match=_HELICITY_BLOCK_REFUSAL):
             _runtime(
-                prepared["173"],
+                prepared[174],
                 "u d > u d",
-                tmp_path / f"recurrence-{accuracy}",
+                tmp_path / "at-174",
                 accuracy=accuracy,
                 limits=limits,
             )
-    for simplify in (True, False):
-        # The compiled lane refuses every rootless LC sector.
-        with pytest.raises(GenerationError, match="has no amplitude root"):
-            _runtime(
-                ModelSource.from_path(at_173, restriction="default", simplify=simplify),
-                "u d > u d",
-                tmp_path / f"compiled-{simplify}",
-                accuracy="lc",
-                execution_mode="compiled",
-                limits=limits,
-            )
-    runtime = _runtime(
-        prepared["174"], "u d > u d", tmp_path / "at-174", accuracy="lc", limits=limits
+        return
+    fresh = _runtime(
+        prepared[174],
+        "u d > u d",
+        tmp_path / "at-174",
+        accuracy=accuracy,
+        execution_mode=execution_mode,
+        limits=limits,
     )
-    assert len(runtime.physics.color_flow_ids) == 2
+    assert _zero_flows(fresh, points) == []
+    at_174 = [complex(value).real for value in fresh.evaluate(points)]
+    # The revived W pairing changes the value (0.0985 -> 0.1996 at the
+    # reviewer's point).
+    assert at_174 != pytest.approx(at_173, rel=1e-6, abs=0.0)
+    fresh.set_model_parameters({"MT": 173.0})
+    assert [complex(value).real for value in fresh.evaluate(points)] == pytest.approx(
+        at_173, rel=1e-12, abs=0.0
+    )
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "without simplification the Weyl support probe decides a vertex's "
+        "chiral halves at the card values and drops the W coupling at MT = 173; "
+        "the symbolic support probe (decided for every runtime binding) fixes it"
+    ),
+)
+@pytest.mark.parametrize("accuracy", ["lc", "full"])
+def test_without_simplification_a_zero_coupling_keeps_its_vertex(
+    madgraph_source: Path, tmp_path: Path, accuracy: str
+) -> None:
+    """Without restriction simplification nothing is removed at generation
+    and no guard is recorded: the compiled lane must keep the W vertex whose
+    coupling vanishes at MT = 173 only, so the artifact generated at 173 and
+    bound to MT = 174 equals the one generated at 174."""
+
+    limits = {"QCD": 0, "QED": 2}
+    points = _massless_points()
+    values = {}
+    for mt in (173, 174):
+        runtime = _runtime(
+            ModelSource.from_path(
+                _mutable_coupling_model(tmp_path, madgraph_source, mt),
+                restriction="default",
+                simplify=False,
+            ),
+            "u d > u d",
+            tmp_path / f"compiled-{mt}",
+            accuracy=accuracy,
+            execution_mode="compiled",
+            limits=limits,
+        )
+        runtime.set_model_parameters({"MT": 174.0})
+        values[mt] = [complex(value).real for value in runtime.evaluate(points)]
+    assert values[173] == pytest.approx(values[174], rel=1e-12, abs=0.0)
+
+
+@pytest.mark.loop_nightly
+@pytest.mark.parametrize("accuracy", ["lc", "full"])
+@pytest.mark.parametrize("process", EMISSION_FAMILY)
+def test_the_emission_family_in_the_compiled_lane(
+    sm_model: ModelSource, tmp_path: Path, process: str, accuracy: str
+) -> None:
+    """The 24 W-only lines with one or two extra gluons or photons in the
+    compiled lane, which refused them at leading colour; the recurrence lane
+    runs them with every reference below."""
+
+    _check_emission(sm_model, tmp_path, process, accuracy, "compiled")
 
 
 @pytest.mark.loop_nightly
@@ -497,5 +651,8 @@ def test_every_reference_matches_madgraph(
     colour where MadGraph's colour basis is the colour-flow basis)."""
 
     if accuracy == "lc" and process not in _references(LC_REFERENCE):
-        pytest.skip("no MadGraph leading-colour reference with external gluons")
+        if process not in EMISSION_FAMILY:
+            pytest.skip("no MadGraph leading-colour reference with external gluons")
+        _check_emission(sm_model, tmp_path, process, accuracy, "recurrence")
+        return
     _check(sm_model, tmp_path, process, accuracy)
