@@ -623,7 +623,7 @@ fn error_of(reducer: &mut V2Reducer, all: &[Lanes], threads: Option<usize>) -> S
 #[test]
 fn a_rejected_call_leaves_nothing_in_the_next_report() {
     let _unlock = pyamplicol::unlock();
-    let good = vec![tadpoles(2, [4., 0.], "double", None, |row| row)];
+    let good = [tadpoles(2, [4., 0.], "double", None, |row| row)];
     let groups: Vec<_> = good.iter().map(group).collect();
     let points: Vec<&[usize]> = good.iter().map(|l| l.points.as_slice()).collect();
     for threads in [None, Some(1), Some(2), Some(8)] {
