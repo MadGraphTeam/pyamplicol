@@ -96,6 +96,7 @@ REFUSAL_KEYS = (
     "cms-internal-mass",
     "cms-yukawa-input",
     "cms-external-width",
+    "cms-revived-coupling",
     "complex-fixed-parameter",
 )
 
@@ -736,21 +737,54 @@ def _ordered(parameters: list[Any], heads: Mapping[str, Any]) -> list[Any]:
     return ordered
 
 
-def tree_model_payload(payload: Mapping[str, Any], scheme: ComplexMassScheme):
+def tree_model_payload(
+    payload: Mapping[str, Any],
+    scheme: ComplexMassScheme,
+    removed_couplings: Any = (),
+):
     """The compiled model's normalized tree payload (``CompiledModel.model``,
     the loader's restricted view) under ``scheme``: the same steps on the
     loader's records (``complex_mass_scheme``), the internal parameter and
-    coupling values evaluated again (``loading._canonical_loader_values``)."""
+    coupling values evaluated again (``loading._canonical_loader_values``).
+
+    ``removed_couplings`` are the couplings the model's restriction
+    simplification removed (``CompiledModel.removed_couplings``): zero at the
+    card's real-scheme values, they go through the same steps and evaluation
+    as the kept couplings, and one the scheme does not leave zero
+    (``specialization_guards.revived_removed_couplings``: CMSParam = 1 or a
+    Yukawa input tied to its mass revives it) is refused
+    (``cms-revived-coupling``): the restricted payload no longer holds its
+    vertex, so the scheme would compute without it."""
 
     import json
+    import math
 
     from ufo_model_loader.common import JSONLook
-    from ufo_model_loader.model import Model, Parameter, ParameterNature, ParameterType
+    from ufo_model_loader.model import (
+        Coupling,
+        Model,
+        Parameter,
+        ParameterNature,
+        ParameterType,
+        SerializableCoupling,
+    )
     from ufo_model_loader.symbolica_processing import parse_python_expression_safe
 
     from pyamplicol.models.loading import _canonical_loader_values
 
     model = Model.from_json(json.dumps(dict(payload)))
+    # The removed couplings ride along with the kept ones (renamed and
+    # evaluated by the same code), unreferenced by any vertex, and are taken
+    # out before the payload is written. A placeholder value that is not a
+    # number marks one the evaluation did not reach (then refused).
+    probes = []
+    for record in removed_couplings:
+        probe = Coupling.from_serializable_coupling(
+            SerializableCoupling.from_dict(dict(record))
+        )
+        probe.value = complex(math.nan, 0.0)
+        probes.append(probe)
+    model.couplings.extend(probes)
     parameters = {parameter.name: parameter for parameter in model.parameters}
     if len(parameters) != len(model.parameters):
         raise ValueError("ambiguous tree model parameter names")
@@ -844,6 +878,18 @@ def tree_model_payload(payload: Mapping[str, Any], scheme: ComplexMassScheme):
         parameter.name: index for index, parameter in enumerate(model.parameters)
     }
     _canonical_loader_values(model)
+    if probes:
+        from pyamplicol.models.specialization_guards import (
+            revived_removed_couplings,
+        )
+
+        revived = revived_removed_couplings(model, probes)
+        probe_ids = {id(probe) for probe in probes}
+        model.couplings = [
+            coupling for coupling in model.couplings if id(coupling) not in probe_ids
+        ]
+        if revived:
+            raise _revived_refusal(scheme, revived)
     result = json.loads(model.to_json(JSONLook.COMPACT))
     result.pop("raw_ufo", None)
     result.pop("raw_ufo_error", None)
@@ -856,6 +902,42 @@ def tree_model_payload(payload: Mapping[str, Any], scheme: ComplexMassScheme):
         for key, value in old.items():
             new.setdefault(key, value)
     return result
+
+
+def _revived_refusal(scheme: ComplexMassScheme, revived: Any):
+    """The refusal (``cms-revived-coupling``) of a complex-mass transform
+    that revives couplings restriction simplification removed."""
+
+    changed = []
+    if scheme.cms_parameter is not None:
+        changed.append(f"{scheme.cms_parameter} = 1")
+    if scheme.yukawas:
+        changed.append(
+            "the Yukawa inputs follow the masses ("
+            + ", ".join(sorted(scheme.yukawas))
+            + ")"
+        )
+    if scheme.masses:
+        changed.append("complex pole masses for " + ", ".join(sorted(scheme.masses)))
+    if scheme.internal_widths:
+        changed.append(
+            "real parts of the internal widths "
+            + ", ".join(sorted(scheme.internal_widths))
+        )
+    return ComplexMassSchemeUnsupported(
+        "cms-revived-coupling",
+        "the model's restriction simplification removed couplings that are zero "
+        "at the restriction card's real-scheme values but not under the "
+        "complex-mass scheme ("
+        + "; ".join(changed)
+        + "): "
+        + ", ".join(coupling.describe() for coupling in revived)
+        + ". The simplified model no longer holds their vertices, so the scheme "
+        "would compute without them. Compile the model with simplify = false "
+        "([model] simplify, ModelSource(..., simplify=False)), or use a "
+        "restriction card under which these couplings vanish in the "
+        "complex-mass scheme too",
+    )
 
 
 def complex_mass_model(
@@ -883,7 +965,9 @@ def complex_mass_model(
     scheme = complex_mass_scheme(
         raw, fixed_parameters=fixed_parameters, reglog_convention=reglog_convention
     )
-    payload = tree_model_payload(compiled.model, scheme)
+    payload = tree_model_payload(
+        compiled.model, scheme, getattr(compiled, "removed_couplings", ())
+    )
     ir, _entry = _counterterm_ir(
         payload,
         tree_kernel_variant="transverse",

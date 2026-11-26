@@ -195,8 +195,10 @@ counts (second genericity audit, ``genericity-audit-2/REPORT.md``):
   transform of the model (``complex_mass_model``), which refuses a model
   outside its assumptions (``complex-mass-scheme``), a width-carrying
   particle of internal mass (``cms-internal-mass``), a fixed Yukawa input
-  (``cms-yukawa-input``) and an external particle of a complex pole mass
-  (``cms-external-width``, EW-25). Fixed parameters are real in both schemes
+  (``cms-yukawa-input``), an external particle of a complex pole mass
+  (``cms-external-width``, EW-25) and a coupling restriction
+  simplification removed that the transform revives
+  (``cms-revived-coupling``). Fixed parameters are real in both schemes
   (``complex-fixed-parameter``). Each is decided by the model's records and
   the card: widths, parameter natures and SLHA blocks, the external legs.
 """
@@ -439,6 +441,23 @@ LOOP_ADMISSION_REFUSALS = (
         "the external particle's width fixed to zero in [loop.preparation] "
         "fixed_parameters (MG5_aMC computes it with the complex mass)",
         "none (EW-25)",
+        "none",
+    ),
+    LoopAdmissionRefusal(
+        "cms-revived-coupling",
+        "under the complex-mass scheme, a model whose restriction "
+        "simplification (simplify = true) removed a coupling that is zero at "
+        "the restriction card's real-scheme values but not after the transform "
+        "(CMSParam = 1, the Yukawa inputs tied to the masses, complex pole "
+        "masses), or that is zero there only at the values of runtime "
+        "parameters",
+        "the simplified model no longer holds the coupling's vertex, so the "
+        "scheme would compute without it; the removed couplings are recorded "
+        "at compile and evaluated again under the transform "
+        "(model_cms.tree_model_payload)",
+        "compile the model with simplify = false, or a restriction card under "
+        "which the couplings vanish in the complex-mass scheme too",
+        "none (a guard of the transform)",
         "none",
     ),
     LoopAdmissionRefusal(
