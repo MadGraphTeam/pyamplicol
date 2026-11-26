@@ -441,7 +441,7 @@ impl Trees {
             .map_err(|_| error("a poisoned tree runtime"))?;
         let slot: &mut Option<Box<dyn Any + Send>> = &mut guard;
         let program = &*self.program;
-        let bound = executor.install_for(scales.len(), || -> PyResult<_> {
+        let bound = executor.install(|| -> PyResult<_> {
             Ok(Self::bind(program, slot, &values, scales, zero)?.1)
         })?;
         Ok(Filling {
@@ -505,7 +505,7 @@ impl Trees {
             .map(|all| if whole { all } else { &all[range.clone()] });
         let momenta = &batch.momenta;
         let constants = &filling.bound.constants;
-        let mut out = executor.install_for(momenta.len(), || -> PyResult<_> {
+        let mut out = executor.install(|| -> PyResult<_> {
             let chunk = fill.unwrap_or_else(|| {
                 program.fill_points::<T>(momenta.len(), loop_sources.is_some(), TREE_FILL_BUDGET)
             });

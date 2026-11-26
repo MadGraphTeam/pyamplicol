@@ -834,32 +834,7 @@ pub mod v2 {
         /// The latest row liveness formed ([`Self::live_rows`]): calls
         /// repeating its rows and families reuse it (one is kept).
         live: std::sync::Mutex<Option<Arc<LiveRows>>>,
-        /// A one-thread pool for the calls too small to gain from `pool`
-        /// ([`Self::serial_call`]), built on first use.
-        serial: std::sync::OnceLock<Option<rayon::ThreadPool>>,
-        /// Per batch size, the evaluations timed on `pool` and on `serial`.
-        times: std::sync::Mutex<BTreeMap<usize, CallTimes>>,
     }
-
-    /// The timed evaluations of one batch size ([`V2Executor::serial_call`]):
-    /// per side (the executor's pool, one thread) the calls timed and the
-    /// fastest wall time, in seconds.
-    #[derive(Clone, Copy, Default)]
-    struct CallTimes {
-        pool: (u32, f64),
-        serial: (u32, f64),
-    }
-
-    /// Evaluations timed on each side before a batch size keeps the faster.
-    const CALL_PROBES: u32 = 2;
-
-    /// A batch size whose evaluations on the pool take at least this long is
-    /// never timed on one thread: the pool's fan-out cost measured on the
-    /// smallest calls is at most about 0.7 ms per call (g g > t t~ and
-    /// u u~ > e+ e- g at one point, 8 threads against one), under a seventh
-    /// of such a call, while a one-thread probe of a call that does gain
-    /// from the pool costs up to the thread count times as long.
-    const SERIAL_PROBE_SECONDS: f64 = 0.005;
 
     macro_rules! with_lanes {
         ($lanes:expr, $f:ident :: <$t:ty>($($arg:expr),*)) => {
@@ -915,8 +890,6 @@ pub mod v2 {
                 pool: executor_pool(threads)?,
                 fourier: None,
                 live: std::sync::Mutex::new(None),
-                serial: std::sync::OnceLock::new(),
-                times: std::sync::Mutex::new(BTreeMap::new()),
             })
         }
 
@@ -962,7 +935,7 @@ pub mod v2 {
         /// do not depend on the count.
         pub fn set_threads(&mut self, threads: Option<usize>) -> RusticolResult<()> {
             if let Some(pool) = self.pool_for(threads)? {
-                self.set_pool(pool);
+                self.pool = pool;
             }
             Ok(())
         }
@@ -986,73 +959,6 @@ pub mod v2 {
         /// Install a pool built by [`Self::pool_for`].
         pub fn set_pool(&mut self, pool: rayon::ThreadPool) {
             self.pool = pool;
-            // Timings of the former pool size do not carry over.
-            if let Ok(times) = self.times.get_mut() {
-                times.clear();
-            }
-        }
-
-        /// Whether an evaluation of `points` points runs on one thread
-        /// instead of this executor's pool: on a pool of more than one
-        /// thread, each batch size is timed on both for its first
-        /// [`CALL_PROBES`] evaluations each (alternately, pool first), then
-        /// keeps the faster, so that a call too small to gain from the pool
-        /// pays nothing for it; a size whose pool evaluations take
-        /// [`SERIAL_PROBE_SECONDS`] or more stays on the pool untimed. The
-        /// values do not depend on the choice (they do not depend on the
-        /// thread count); one thread never asks.
-        pub fn serial_call(&self, points: usize) -> bool {
-            if self.pool.current_num_threads() == 1 {
-                return false;
-            }
-            let Ok(times) = self.times.lock() else {
-                return false;
-            };
-            let found = times.get(&points).copied().unwrap_or_default();
-            if found.pool.0 == 0 || found.pool.1 >= SERIAL_PROBE_SECONDS {
-                false
-            } else if found.serial.0 < CALL_PROBES {
-                // Interleaved (pool, one thread, pool, one thread): each side
-                // has a first call and a warm one.
-                found.serial.0 < found.pool.0
-            } else if found.pool.0 < CALL_PROBES {
-                false
-            } else {
-                found.serial.1 < found.pool.1
-            }
-        }
-
-        /// The pool of a call ([`Self::serial_call`]).
-        fn call_pool(&self, serial: bool) -> &rayon::ThreadPool {
-            if serial && let Some(pool) = self.serial.get_or_init(|| executor_pool(Some(1)).ok()) {
-                return pool;
-            }
-            &self.pool
-        }
-
-        /// Record an evaluation of `points` points that took `seconds` on
-        /// one thread (`serial`) or on the pool.
-        fn record(&self, points: usize, serial: bool, seconds: f64) {
-            if let Ok(mut times) = self.times.lock() {
-                let found = times.entry(points).or_default();
-                let side = if serial {
-                    &mut found.serial
-                } else {
-                    &mut found.pool
-                };
-                side.1 = if side.0 == 0 {
-                    seconds
-                } else {
-                    side.1.min(seconds)
-                };
-                side.0 = side.0.saturating_add(1);
-            }
-        }
-
-        /// [`Self::install`] for the work of a call of `points` points: on
-        /// the pool [`Self::serial_call`] picks for it.
-        pub fn install_for<R: Send>(&self, points: usize, op: impl FnOnce() -> R + Send) -> R {
-            self.call_pool(self.serial_call(points)).install(op)
         }
 
         /// The threads of this executor's pool.
@@ -1204,39 +1110,15 @@ pub mod v2 {
                     "one family flag per plan family",
                 ));
             }
+            let threads = self.pool.current_num_threads();
             let fourier = self.contraction(options.contraction)?;
-            if self.pool.current_num_threads() == 1 {
-                return self.pool.install(|| {
-                    let (results, mut report) = evaluate_lanes::<T>(
-                        &self.plan, fourier, batch, zero, backend, options, families, live,
-                        self.lanes,
-                    )?;
-                    report.threads = 1;
-                    Ok((results, report))
-                });
-            }
-            // A call too small to gain from the pool runs on one thread
-            // (`serial_call`); the values are the same.
-            let points = batch.points();
-            let serial = self.serial_call(points);
-            let pool = self.call_pool(serial);
-            let threads = pool.current_num_threads();
-            let started = Instant::now();
-            let out = pool.install(|| {
+            self.pool.install(|| {
                 let (results, mut report) = evaluate_lanes::<T>(
                     &self.plan, fourier, batch, zero, backend, options, families, live, self.lanes,
                 )?;
                 report.threads = threads;
                 Ok((results, report))
-            });
-            if out.is_ok() {
-                self.record(
-                    points,
-                    serial && threads == 1,
-                    started.elapsed().as_secs_f64(),
-                );
-            }
-            out
+            })
         }
     }
 
@@ -3927,95 +3809,6 @@ pub mod v2 {
                     assert_eq!(run(threads, amplitude), expected, "{threads} threads");
                 }
             }
-        }
-
-        /// A batch size is timed twice on the pool, then twice on one
-        /// thread, then keeps the faster; one thread never switches; the
-        /// values of every call are those of a one-thread executor.
-        #[test]
-        fn a_small_call_keeps_the_faster_of_the_pool_and_one_thread() {
-            let text = std::str::from_utf8(PLAN)
-                .unwrap()
-                .replace("FAMILY,FAMILY", &[FAMILY; 2].join(","));
-            let plan = Arc::new(LoopProgramV4::load(text.as_bytes()).unwrap());
-            let one = V2Executor::new(plan.clone(), DEFAULT_LANES, Some(1)).unwrap();
-            assert!(!one.serial_call(3));
-            one.record(3, false, 1.0);
-            assert!(!one.serial_call(3), "one thread never asks");
-            let four = V2Executor::new(plan.clone(), DEFAULT_LANES, Some(4)).unwrap();
-            let ms = 1e-3;
-            let picks: Vec<bool> = (0..4)
-                .map(|k| {
-                    let serial = four.serial_call(3);
-                    four.record(
-                        3,
-                        serial,
-                        if serial {
-                            2.0 * ms
-                        } else {
-                            (1.0 + k as f64) * ms
-                        },
-                    );
-                    serial
-                })
-                .collect();
-            assert_eq!(picks, [false, true, false, true]);
-            assert!(!four.serial_call(3), "the pool was faster (1 ms vs 2 ms)");
-            four.record(5, false, 3.0 * ms);
-            four.record(5, false, 3.0 * ms);
-            four.record(5, true, 1.0 * ms);
-            four.record(5, true, 1.5 * ms);
-            assert!(four.serial_call(5), "one thread was faster for 5 points");
-            assert!(!four.serial_call(7), "an untimed size starts on the pool");
-            four.record(9, false, 0.02);
-            four.record(9, false, 0.01);
-            assert!(
-                !four.serial_call(9),
-                "a long call is never timed on one thread"
-            );
-            let momentum = |e: i64| -> Vec<Rational> {
-                [e, 0, 0, e, e, 0, 0, -e].map(Rational::from).to_vec()
-            };
-            let batch = V2Batch {
-                momenta: (1..=3).map(momentum).collect(),
-                scales: vec![Rational::from(1); 3],
-                masses: vec![Rational::from(0)],
-                masses_imaginary: Vec::new(),
-                leg_masses: Vec::new(),
-                constants: vec![Complex::new(2.0, 0.0)],
-                block_rows: vec![Vec::new(); 3],
-                born: vec![
-                    vec![Complex::new(1.0, 1.0)],
-                    vec![Complex::new(3.0, -0.5)],
-                    vec![Complex::new(0.25, 2.0)],
-                ],
-            };
-            let bits = |executor: &V2Executor| {
-                let mut backend = Recording::default();
-                let (results, _) = executor
-                    .evaluate(&batch, &0.0, &mut backend, V2Options::default())
-                    .unwrap();
-                results
-                    .iter()
-                    .map(|r| {
-                        r.bare
-                            .iter()
-                            .flatten()
-                            .map(|x| x.to_bits())
-                            .chain(r.families.iter().flat_map(|(_, v)| {
-                                v.iter().flat_map(|z| [z.re.to_bits(), z.im.to_bits()])
-                            }))
-                            .collect::<Vec<_>>()
-                    })
-                    .collect::<Vec<_>>()
-            };
-            let expected = bits(&one);
-            let fresh = V2Executor::new(plan, DEFAULT_LANES, Some(4)).unwrap();
-            for _ in 0..6 {
-                assert_eq!(bits(&fresh), expected);
-            }
-            let times = fresh.times.lock().unwrap()[&3];
-            assert!(times.pool.0 >= 2 && times.serial.0 >= 2 && times.pool.0 + times.serial.0 == 6);
         }
 
         /// `retain_points` keeps the lanes of the kept points with all their
