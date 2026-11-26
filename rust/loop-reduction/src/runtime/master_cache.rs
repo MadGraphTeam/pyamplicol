@@ -453,12 +453,17 @@ impl<M: FastMasters> MasterCache<M> {
     /// parallel reduction's worker copy between calls); the provider and the
     /// statistics stay.
     pub fn release(&mut self) {
-        self.entries = HashMap::new();
+        // Every map that holds offsets into `values` goes with it (as in
+        // `forget`): `asked` remembers cached sources by offset.
+        self.entries = ExactMap::default();
+        self.asked = ExactMap::default();
         self.values = Vec::new();
         self.canonical = Vec::new();
         self.sources = Vec::new();
-        self.pending = HashMap::new();
+        self.pending = ExactMap::default();
         self.pending_keys = Vec::new();
+        self.asked_misses = Vec::new();
+        self.stored = Vec::new();
         self.miss_args = Vec::new();
         self.miss_out = Vec::new();
         self.miss_ok = Vec::new();
