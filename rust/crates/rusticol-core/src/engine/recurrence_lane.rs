@@ -4947,7 +4947,10 @@ mod replay_destination_helicity_tests {
         // sector 1 and so conjugated.
         assert_eq!(entries.len(), 3);
         assert_eq!(
-            (entries[0].left_destination_id, entries[0].right_destination_id),
+            (
+                entries[0].left_destination_id,
+                entries[0].right_destination_id
+            ),
             (7, 7)
         );
         assert_eq!(
@@ -4960,7 +4963,10 @@ mod replay_destination_helicity_tests {
             (7, 3, 6.0, -1.0)
         );
         assert_eq!(
-            (entries[2].left_destination_id, entries[2].right_destination_id),
+            (
+                entries[2].left_destination_id,
+                entries[2].right_destination_id
+            ),
             (3, 3)
         );
         // A sector without any group, or a colour matrix that differs between
@@ -4975,7 +4981,11 @@ mod replay_destination_helicity_tests {
             Ok(_) => panic!("a helicity-dependent colour matrix must fail closed"),
             Err(error) => error,
         };
-        assert!(error.message().contains("differs between helicity components"));
+        assert!(
+            error
+                .message()
+                .contains("differs between helicity components")
+        );
     }
 
     #[test]

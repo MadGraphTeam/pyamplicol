@@ -1472,23 +1472,34 @@ impl RecurrenceColorContraction {
     pub(crate) fn expanded_incomplete_helicity_blocks_for_runtime_test(
         conflicting_diagonal: bool,
     ) -> Self {
-        let entry = |left_group_id, right_group_id, weight_re: f64, weight_im: f64, symmetry_factor| {
-            RawColorContractionEntry {
-                left_group_id,
-                right_group_id,
-                weight_re,
-                weight_im,
-                symmetry_factor,
-                exact_factor_id: 0,
-            }
-        };
+        let entry =
+            |left_group_id, right_group_id, weight_re: f64, weight_im: f64, symmetry_factor| {
+                RawColorContractionEntry {
+                    left_group_id,
+                    right_group_id,
+                    weight_re,
+                    weight_im,
+                    symmetry_factor,
+                    exact_factor_id: 0,
+                }
+            };
         let mut entries = vec![
             entry(0, 0, 9.0, 0.0, 1.0),
             entry(4, 0, 3.0, 0.5, 2.0),
             entry(4, 4, 9.0, 0.0, 1.0),
         ];
         for group in 1..4 {
-            entries.push(entry(group, group, if conflicting_diagonal && group == 2 { 8.0 } else { 9.0 }, 0.0, 1.0));
+            entries.push(entry(
+                group,
+                group,
+                if conflicting_diagonal && group == 2 {
+                    8.0
+                } else {
+                    9.0
+                },
+                0.0,
+                1.0,
+            ));
         }
         Self {
             accuracy: RecurrenceColorAccuracy::Full,
