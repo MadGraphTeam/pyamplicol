@@ -67,13 +67,18 @@ the lanes reduced before it in the same workspace, it is now the value the lane
 has in a fresh workspace. Such a dependence needs nearly degenerate rows: on
 the earlier 1.0.3 tag a checked double-double rank-1 box evaluated after an
 exactly dependent box differs from its fresh-workspace value by about 1.4e-9
-relative; no value of the shipped and profiled processes changes. Two
-diagnostics change on one thread too: a failed master integral counts once per
-reduction call (no longer once per failing row), and a reduction call that
-fails leaves no master integral cached (the next call starts as after a
-clear). The one-core cost is unchanged or lower with NinjaRS and up to about
-1.5 % higher with TIRust from lane independence alone (with the faster
-assembly, lower overall).
+relative; no value of the shipped and profiled processes changes. Also on one
+thread: a failed master integral counts once per reduction call (no longer once
+per failing row); a reduction call that fails leaves no master integral cached
+(the next call starts as after a clear) and no template it built; a binary64
+NinjaRS reducer given a vanishing reason before its first routed lane now
+applies it to that lane (before, the reason reached only an exact engine that
+already existed). For direct Rust users of the reduction crate, the new
+`MasterCache::begin_call` opens a grouped call and returns its handle: inside
+it a failed row is evaluated and counted once, and an ordinary `evaluate` asks
+the provider again for a failed row, as before. The one-core cost is unchanged
+or lower with NinjaRS and up to about 1.5 % higher with TIRust from lane
+independence alone (with the faster assembly, lower overall).
 
 Limits: NinjaRS in double-double and arbitrary precision stays at about
 one-thread speed (parallel over buckets only, on one set of built templates),
