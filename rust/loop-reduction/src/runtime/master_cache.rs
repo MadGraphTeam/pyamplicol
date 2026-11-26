@@ -350,18 +350,32 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
 struct Calls {
     /// The id of the open grouped call; zero when none is open.
     open: AtomicU64,
-    /// The last id given (ids increase and are never reused, so failed keys
-    /// stamped with an ended call's id are never read again, and a failure
-    /// stamped with an older id than the remembered keys' is not remembered).
+    /// The last id given (ids are never reused, so failed keys stamped with
+    /// an ended call's id are never read again). Ids are reserved and then
+    /// published in two steps, so two calls opened at once may be published
+    /// in either order: their order says nothing about which call is open.
     last: AtomicU64,
 }
 
 impl Calls {
-    /// Open a new grouped call (ending any open one) and return its id.
+    /// Open a new grouped call (ending any open one) and return its id. Of
+    /// two calls opened at once, the one published last is the open one.
     fn open(&self) -> u64 {
-        let id = self.last.fetch_add(1, Ordering::Relaxed) + 1;
-        self.open.store(id, Ordering::Release);
+        let id = self.reserve();
+        #[cfg(test)]
+        tests::pause_between_reserve_and_publish();
+        self.publish(id);
         id
+    }
+
+    /// A new id, not yet the open call's.
+    fn reserve(&self) -> u64 {
+        self.last.fetch_add(1, Ordering::Relaxed) + 1
+    }
+
+    /// Make the call with id `id` the open one.
+    fn publish(&self, id: u64) {
+        self.open.store(id, Ordering::Release);
     }
 
     /// The id of the open grouped call, or zero (ordinary calls).
@@ -463,18 +477,19 @@ impl SharedMasters {
         failures.call == call && failures.keys.contains_key(key)
     }
 
-    /// Remember that the provider failed `key` in grouped call `call`
-    /// (forgetting the keys of an earlier one); whether it is new. A failure
-    /// of a call older than the one the keys belong to (an engine finishing
-    /// an `evaluate` it began before another engine opened a new grouped
-    /// call) is not remembered: its call has ended, and the newer call's keys
-    /// stay as they are. It counts as evaluated, as in an ordinary call.
+    /// Remember that the provider failed `key` in grouped call `call`;
+    /// whether it is new. Only the open call's failures are remembered: the
+    /// open call is read under the lock that guards the keys, and a failure
+    /// of any other call (one that has ended, or that another call published
+    /// after it has superseded, whatever order their ids were reserved in)
+    /// leaves the keys alone and counts as evaluated, as in an ordinary
+    /// call. The open call's first failure replaces an earlier call's keys.
     fn record_failure(&self, call: u64, key: Key) -> bool {
         let mut failures = self.failed.lock().expect("shared masters");
-        if call < failures.call {
+        if call != self.calls.current() {
             return true;
         }
-        if call > failures.call {
+        if failures.call != call {
             failures.keys.clear();
             failures.call = call;
         }
@@ -1067,6 +1082,23 @@ impl<M: FastMasters> MasterCache<M> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use std::sync::Barrier;
+
+    std::thread_local! {
+        /// Barriers a thread waits at between the two steps of its next
+        /// [`Calls::open`] (reserving the id, publishing it).
+        static PAUSE: RefCell<Option<Arc<(Barrier, Barrier)>>> = const { RefCell::new(None) };
+    }
+
+    /// Called by [`Calls::open`] between reserving and publishing an id.
+    pub(super) fn pause_between_reserve_and_publish() {
+        if let Some(pause) = PAUSE.with(|slot| slot.take()) {
+            pause.0.wait();
+            pause.1.wait();
+        }
+    }
 
     fn value(re: f64) -> C64 {
         C64::real(re)
@@ -1977,5 +2009,217 @@ mod tests {
             ),
             (4, 2, 2)
         );
+    }
+
+    /// A provider that runs `hook` once, at its first `evaluate`, then
+    /// evaluates as `inner` does.
+    struct Hooked<P> {
+        inner: P,
+        hook: Option<Box<dyn FnOnce()>>,
+    }
+    impl<P: FastMasters> FastMasters for Hooked<P> {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            if let Some(hook) = self.hook.take() {
+                hook();
+            }
+            self.inner.evaluate(family, args, out, ok)
+        }
+    }
+
+    /// A cache with `provider` on `tier`.
+    fn on_tier<M: FastMasters>(tier: &Arc<SharedMasters>, provider: M) -> MasterCache<M> {
+        let mut cache = MasterCache::new(provider, true);
+        cache.share(Some(tier.clone()));
+        cache
+    }
+
+    /// The second step of [`Calls::open`] for an id reserved earlier: the
+    /// call becomes the open one; its handle.
+    fn publish(tier: &Arc<SharedMasters>, id: u64) -> GroupedCall {
+        tier.calls.publish(id);
+        GroupedCall {
+            calls: tier.calls.clone(),
+            id,
+        }
+    }
+
+    /// The status of triangle row `row` asked once.
+    fn ask<M: FastMasters>(cache: &mut MasterCache<M>, row: &[C64]) -> bool {
+        let (_, ok) = evaluate_rows(cache, FastMaster::C0, &[row.to_vec()]).unwrap();
+        ok[0]
+    }
+
+    /// Two caches on a tier open grouped calls at once: A reserves its id
+    /// first, B reserves, publishes and fails a row, then A publishes, so
+    /// A's call (the older id) is the open one. A's failure is remembered
+    /// for the rest of its call (a provider that would now succeed is not
+    /// asked), B's is not; ending B's superseded call does not end A's.
+    #[test]
+    fn a_grouped_call_published_after_a_newer_one_keeps_its_failures() {
+        let tier = Arc::new(SharedMasters::new(2));
+        let (j, k) = (
+            scaled_triangle(4.),
+            [-2., -5., -11., 0., 3., 7., 4.].map(value).to_vec(),
+        );
+        let mut a = on_tier(
+            &tier,
+            Recovering {
+                failures: 1,
+                ..Recovering::default()
+            },
+        );
+        let mut b = on_tier(&tier, Faulty::default());
+        let first = tier.calls.reserve();
+        let second = publish(&tier, tier.calls.reserve());
+        ask_failing(&mut b, &k, 1);
+        let first = publish(&tier, first);
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+        ask_failing(&mut b, &k, 2);
+        drop(second);
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+        drop(first);
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (true, 2));
+        let statistics = a.statistics();
+        assert_eq!(
+            (statistics.total_requests(), statistics.total_evaluated()),
+            (4, 2)
+        );
+    }
+
+    /// The mirror: B's `evaluate` begins in B's open grouped call; during
+    /// it, A publishes its (older) reserved id and fails a row; then B's row
+    /// fails. B's failure belongs to a call that is no longer open: it is
+    /// not remembered and A's failure stays remembered.
+    #[test]
+    fn a_failure_of_a_superseded_grouped_call_leaves_the_open_one_alone() {
+        let tier = Arc::new(SharedMasters::new(2));
+        let (j, k) = (
+            scaled_triangle(4.),
+            [-2., -5., -11., 0., 3., 7., 4.].map(value).to_vec(),
+        );
+        let a = Rc::new(RefCell::new(on_tier(
+            &tier,
+            Recovering {
+                failures: 1,
+                ..Recovering::default()
+            },
+        )));
+        let first = tier.calls.reserve();
+        let second = publish(&tier, tier.calls.reserve());
+        let late = Rc::new(RefCell::new(None));
+        let hook = {
+            let (tier, a, late, j) = (tier.clone(), a.clone(), late.clone(), j.clone());
+            move || {
+                *late.borrow_mut() = Some(publish(&tier, first));
+                let mut a = a.borrow_mut();
+                assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+            }
+        };
+        let mut b = on_tier(
+            &tier,
+            Hooked {
+                inner: Faulty::default(),
+                hook: Some(Box::new(hook)),
+            },
+        );
+        assert_eq!((ask(&mut b, &k), b.inner.inner.rows), (false, 1));
+        let mut a = a.borrow_mut();
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+        assert_eq!((ask(&mut b, &k), b.inner.inner.rows), (false, 2));
+        drop(second);
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (false, 1));
+        drop(late.borrow_mut().take());
+        assert_eq!((ask(&mut a, &j), a.inner.rows), (true, 2));
+    }
+
+    /// A tier's failed keys under every publication order of three reserved
+    /// grouped calls: after each publication, failures recorded for each of
+    /// the three calls, before and after the open one's, leave exactly the
+    /// open call's key remembered (a late record counts as evaluated); after
+    /// the open call ends, nothing more is remembered.
+    #[test]
+    fn a_tier_remembers_the_failures_of_the_open_grouped_call_only() {
+        let keys: Vec<Key> = (0..3)
+            .map(|i| Key::new(FastMaster::C0, &scaled_triangle(f64::from(i) + 1.)))
+            .collect();
+        let late = Key::new(FastMaster::C0, &scaled_triangle(9.));
+        let orders = [
+            [0, 1, 2],
+            [0, 2, 1],
+            [1, 0, 2],
+            [1, 2, 0],
+            [2, 0, 1],
+            [2, 1, 0],
+        ];
+        for order in orders {
+            let tier = Arc::new(SharedMasters::new(2));
+            let ids: Vec<u64> = (0..3).map(|_| tier.calls.reserve()).collect();
+            let mut handles = Vec::new();
+            for &open in &order {
+                handles.push(publish(&tier, ids[open]));
+                let others = (0..3).filter(|&c| c != open);
+                for c in others.clone() {
+                    assert!(tier.record_failure(ids[c], keys[c]), "{order:?}");
+                }
+                tier.record_failure(ids[open], keys[open]);
+                assert!(!tier.record_failure(ids[open], keys[open]), "{order:?}");
+                for c in others {
+                    assert!(tier.record_failure(ids[c], keys[c]), "{order:?}");
+                }
+                for c in 0..3 {
+                    assert_eq!(
+                        tier.has_failed(ids[open], &keys[c]),
+                        c == open,
+                        "{order:?} {open}"
+                    );
+                    if c != open {
+                        assert!(!tier.has_failed(ids[c], &keys[c]), "{order:?} {open} {c}");
+                    }
+                }
+            }
+            let last = order[2];
+            drop(handles);
+            assert!(tier.record_failure(ids[last], late), "{order:?}");
+            assert!(!tier.has_failed(ids[last], &late), "{order:?}");
+        }
+    }
+
+    /// Two caches on a tier open grouped calls at once, through
+    /// `begin_call` on two threads: A reserves its id and waits; B opens its
+    /// call and fails a row in it; then A publishes, so A's call is the open
+    /// one. A row of A's that its provider fails once is served failed for
+    /// the rest of A's call: the provider (which would now succeed) is asked
+    /// once.
+    #[test]
+    fn overlapping_begin_calls_keep_the_open_calls_failures() {
+        let pause = Arc::new((Barrier::new(2), Barrier::new(2)));
+        let tier = Arc::new(SharedMasters::new(2));
+        let recovering = || Recovering {
+            failures: 1,
+            ..Recovering::default()
+        };
+        let (mut a, mut b) = (on_tier(&tier, recovering()), on_tier(&tier, recovering()));
+        std::thread::scope(|scope| {
+            let paused = pause.clone();
+            let thread = scope.spawn(move || {
+                PAUSE.with(|slot| slot.replace(Some(paused)));
+                let _call = a.begin_call();
+                let row = scaled_triangle(4.);
+                (ask(&mut a, &row), ask(&mut a, &row), a.inner.rows)
+            });
+            pause.0.wait();
+            let _call = b.begin_call();
+            let row = [-3., -6., -13., 0., 3., 7., 4.].map(value).to_vec();
+            assert!(!ask(&mut b, &row));
+            pause.1.wait();
+            assert_eq!(thread.join().unwrap(), (false, false, 1));
+        });
     }
 }
