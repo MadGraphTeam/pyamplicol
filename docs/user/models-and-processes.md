@@ -69,8 +69,10 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
   inclusive `p`/`j` requests keep a quark-flavour-changing jet subprocess only
   when the request implies a W.
 - Still refused, with typed errors, as for the UFO `sm`: in the recurrence
-  execution mode, four-quark processes without a gluon exchange (four quark
-  flavours, or `QCD = 0`); in every tree mode, a massive top on a fermion
+  execution mode at full colour, four-quark processes at `QCD = 0`, whose W
+  exchange exists for some helicities only (leading colour and the other
+  modes build them; four quark flavours build at both accuracies); in every
+  tree mode, a massive top on a fermion
   line that ends in a massless b (`dirac-weyl-closure`: single top,
   `b b~ > w+ w-`, `t~ > b~ w-`), reported by the on-the-fly mode when it
   evaluates.
