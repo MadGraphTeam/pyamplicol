@@ -4427,12 +4427,15 @@ impl StructuralFeasibilityIndex {
 /// Fail-closed guard for the Dirac-Weyl closure class (m-qcd MQ-5F; HANDOFF
 /// §9.1). A fermion current whose line passed a massive fermion is a Dirac
 /// (chirality-0) current, while a massless external fermion is a Weyl
-/// (chirality +-1) source. Where a chiral vertex takes a line between massive
-/// and massless fermions (a massless b and the top through a W), the
-/// complement of a Weyl closure anchor can be a Dirac current of a particle
-/// pair that closes in other chirality states. Templates carry no Dirac-Weyl
-/// closure, so that complement would close on nothing and its diagrams (the
-/// top t channel of b b~ > w+ w-) would be dropped without an error: the
+/// (chirality +-1) source. A vertex with a single chiral projector (every W
+/// vertex) that takes such a line to a massless fermion has a Weyl result in
+/// the template (the model's quantum flows), so the line is Weyl again at its
+/// massless end. Where a vertex with both chiral projections (left- and
+/// right-handed couplings) takes a line between massive and massless
+/// fermions, the complement of a Weyl closure anchor can be a Dirac current
+/// of a particle pair that closes in other chirality states. Templates carry
+/// no Dirac-Weyl closure, so that complement would close on nothing and its
+/// diagrams would be dropped without an error: the
 /// recurrence (here, in its structural-demand pass, at each LC sector's
 /// closure anchor, for a complement reached within the request's
 /// coupling-order limits, `StructuralOrderReachability`) and the on-the-fly
@@ -4562,12 +4565,13 @@ impl DiracWeylClosureGuard {
             "dirac-weyl-closure: {context} would close a Dirac (chirality-0) \
              current of particle {} on a Weyl (chirality {}) current of \
              particle {}; a fermion line that joins massive and massless \
-             fermions through a chiral vertex (a massive internal or external \
-             fermion on a line with a massless sink) has no Dirac-Weyl closure \
-             contraction in the tree recurrence, which would drop that line's \
-             diagrams. Keep the light fermion massive in the tree model (the \
-             default restriction with its mass fixed to zero) or use the loop \
-             engine, whose Born closes at a vertex",
+             fermions through a vertex with both chiral projections (left- and \
+             right-handed couplings; a single chiral projector makes the line a \
+             Weyl state again) has no Dirac-Weyl closure contraction in the \
+             tree recurrence, which would drop that line's diagrams. Keep the \
+             light fermion massive in the tree model (the default restriction \
+             with its mass fixed to zero) or use the loop engine, whose Born \
+             closes at a vertex",
             dirac.particle_id, weyl.chirality, weyl.particle_id,
         )))
     }
