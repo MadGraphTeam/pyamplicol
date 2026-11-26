@@ -1626,7 +1626,7 @@ impl V2Runtime {
         if !self.specialization_guards.is_empty() {
             let bound = checked.iter().cloned().collect::<BTreeMap<_, _>>();
             self.specialization_guards
-                .check_with(|name, generation| guard_bound(bound.get(name), (generation.re, generation.im)))?;
+                .check_with(|parameter| guard_bound(bound.get(parameter.name), parameter.exact))?;
         }
         self.parameters.extend(checked);
         Ok(())
@@ -1647,7 +1647,8 @@ impl V2Runtime {
             .map(|(name, value)| (name.to_string(), value.clone()))
             .collect::<BTreeMap<_, _>>();
         for guard in self.specialization_guards.guards() {
-            for (name, generation) in guard.generation_values() {
+            for parameter in guard.guarded() {
+                let name = parameter.name;
                 if scale.as_deref() == Some(name) {
                     return Err(invalid(format!(
                         "a specialisation guard holds the renormalisation-scale parameter {name:?}, \
@@ -1657,7 +1658,7 @@ impl V2Runtime {
                 }
                 if let Some(default) = defaults.get(name)
                     && !self.record.fixed_parameters.contains_key(name)
-                    && guard_bound(Some(default), (generation.re, generation.im)).0
+                    && guard_bound(Some(default), parameter.exact).0
                         == rusticol_core::specialization_guards::Bound::Changed
                 {
                     return Err(invalid(format!(
@@ -1667,7 +1668,7 @@ impl V2Runtime {
                 }
                 if let Some(fixed) = self.record.fixed_parameters.get(name) {
                     let value = parse_rational(fixed).map_err(|e| invalid(e.message()))?;
-                    if guard_bound(Some(&value), (generation.re, generation.im)).0
+                    if guard_bound(Some(&value), parameter.exact).0
                         == rusticol_core::specialization_guards::Bound::Changed
                     {
                         return Err(invalid(format!(
@@ -3004,22 +3005,21 @@ mod tests {
 }
 
 /// How an exact loop binding treats a guarded parameter: unchanged only when
-/// the rational is exactly the recorded generation value as exact carriers
-/// read it, the shortest decimal that rounds to the recorded binary64 (`{:?}`;
-/// 91.188, as the plan's defaults give it); a real parameter's imaginary part
-/// must be zero.
+/// the rational is exactly the producer's recorded decimal (`exact`, the
+/// guard record's text, parsed here; nothing formats a float), and the
+/// recorded imaginary part is zero.
 fn guard_bound(
     value: Option<&Rational>,
-    (re, im): (f64, f64),
+    exact: &[String; 2],
 ) -> (rusticol_core::specialization_guards::Bound, String) {
     use rusticol_core::specialization_guards::Bound;
     let Some(value) = value else {
         return (Bound::Untouched, String::new());
     };
-    let exact = (im == 0.0 && re.is_finite())
-        .then(|| decimal_parameter(&format!("{re:?}"), "generation value").ok())
-        .flatten();
-    if exact.as_ref() == Some(value) {
+    let real = decimal_parameter(&exact[0], "a guard's exact generation value").ok();
+    let imaginary_zero = decimal_parameter(&exact[1], "a guard's exact generation value")
+        .is_ok_and(|imaginary| imaginary == Rational::from(0));
+    if imaginary_zero && real.as_ref() == Some(value) {
         (Bound::Unchanged, String::new())
     } else {
         (Bound::Changed, value.to_string())
