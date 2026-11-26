@@ -559,6 +559,46 @@ fn parallel_program() -> (Interactions, StateLayout, Vec<Complex<f64>>) {
 
 /// The kernels of `parallel_program`, exact evaluators or plane applications.
 fn parallel_kernels(plane: bool) -> Vec<Kernel<f64>> {
+    parallel_evaluators()
+        .into_iter()
+        .map(|evaluator| {
+            let binary64 = evaluator.map_coeff(&|r| Complex::new(r.re.to_f64(), r.im.to_f64()));
+            if plane {
+                let (bytes, inputs, outputs) =
+                    crate::engine::compile_symbolica_evaluator_to_plane_application_bytes(
+                        &binary64, 2, false,
+                    )
+                    .expect("a plane application");
+                Kernel::Plane(Box::new(
+                    BinaryPlane::load(&bytes, (inputs, outputs)).expect("loads"),
+                ))
+            } else {
+                Kernel::Exact(RowEvaluator::new(binary64))
+            }
+        })
+        .collect()
+}
+
+/// The kernels of `parallel_program` as exact evaluators in carrier `T`
+/// (double-double, MPFR), as `exact_kernel` maps a saved evaluator.
+fn wide_kernels<T: Carrier + Real>(zero: &T) -> Vec<Kernel<T>>
+where
+    Complex<T>: Real + EvaluationDomain,
+{
+    parallel_evaluators()
+        .into_iter()
+        .map(|evaluator| {
+            Kernel::Exact(RowEvaluator::map_coeff_with_prec(
+                evaluator,
+                &|r: &Complex<Rational>| Complex::new(cast(zero, &r.re), cast(zero, &r.im)),
+                zero.get_precision(),
+            ))
+        })
+        .collect()
+}
+
+/// The exact evaluators of `parallel_program`'s kernels.
+fn parallel_evaluators() -> Vec<symbolica::evaluate::ExpressionEvaluator<Complex<Rational>>> {
     use symbolica::atom::{Atom, AtomCore};
     let _unlock = crate::licence::unlock();
     let symbols = |names: &str| -> Vec<Atom> {
@@ -582,22 +622,9 @@ fn parallel_kernels(plane: bool) -> Vec<Kernel<f64>> {
                 symbolica::parse!(&text)
             })
             .collect();
-        let evaluator = Atom::evaluator_multiple(&expressions, &parameters)
+        Atom::evaluator_multiple(&expressions, &parameters)
             .build()
-            .expect("an evaluator");
-        let binary64 = evaluator.map_coeff(&|r| Complex::new(r.re.to_f64(), r.im.to_f64()));
-        if plane {
-            let (bytes, inputs, outputs) =
-                crate::engine::compile_symbolica_evaluator_to_plane_application_bytes(
-                    &binary64, 2, false,
-                )
-                .expect("a plane application");
-            Kernel::Plane(Box::new(
-                BinaryPlane::load(&bytes, (inputs, outputs)).expect("loads"),
-            ))
-        } else {
-            Kernel::Exact(RowEvaluator::new(binary64))
-        }
+            .expect("an evaluator")
     };
     vec![
         kernel(
@@ -697,14 +724,18 @@ fn the_interaction_program_on_several_workers_is_bitwise_the_serial_one() {
                             "plane {plane}, {points} points, poles {poles}, {threads} threads, fill {fill}"
                         );
                     }
-                    assert!(
-                        forks.workers.len() >= threads,
-                        "the steps ran on the workers"
-                    );
-                    assert!(
-                        program.steps[0].index.get().is_some_and(Option::is_some),
-                        "step 1 ran in parallel"
-                    );
+                    if plane {
+                        assert!(
+                            forks.workers.len() >= threads,
+                            "the steps ran on the workers"
+                        );
+                        assert!(
+                            program.steps[0].index.get().is_some_and(Option::is_some),
+                            "step 1 ran in parallel"
+                        );
+                    } else {
+                        assert_eq!(forks.copies(), 0, "an exact kernel is never copied");
+                    }
                 }
             }
         }
@@ -845,4 +876,74 @@ fn batched_propagators_are_bitwise_each_output_alone() {
             }
         }
     }
+}
+
+/// A fill on several workers in double-double and in MPFR (exact kernels,
+/// which own their instructions) copies no evaluator: no worker copy is
+/// made, even on the first fill, every step runs on the built evaluators,
+/// and every state is the one-thread state exactly.
+#[test]
+fn wide_carrier_fills_on_several_workers_copy_no_evaluator() {
+    fn check<T: TreeCarrier + Real + Send + Sync>(zero: T)
+    where
+        Complex<T>: Real + EvaluationDomain,
+    {
+        let (program, layout, all) = parallel_program();
+        let value = |x: f64| cast(&zero, &Rational::try_from(x).expect("finite"));
+        let complex = |z: &Complex<f64>| Complex::new(value(z.re), value(z.im));
+        let weights = [
+            complex(&Complex::new(1.0, 0.0)),
+            complex(&Complex::new(-0.5, 0.25)),
+            complex(&Complex::new(0.0, 2.0)),
+        ];
+        let czero = Complex::new(zero.clone(), zero.clone());
+        let exact = |states: &[Complex<T>]| -> Vec<(Rational, Rational)> {
+            states
+                .iter()
+                .map(|z| (z.re.exact().expect("finite"), z.im.exact().expect("finite")))
+                .collect()
+        };
+        let mut kernels = wide_kernels(&zero);
+        for points in [1, 16] {
+            let initial: Vec<Complex<T>> =
+                all[..points * layout.size].iter().map(complex).collect();
+            let run = |threads: usize, kernels: &mut Vec<Kernel<T>>| {
+                let pool = rayon::ThreadPoolBuilder::new()
+                    .start_handler(|_| crate::licence::unlock_thread())
+                    .num_threads(threads)
+                    .build()
+                    .unwrap();
+                let mut forks = Forks::default();
+                let mut states = Vec::new();
+                // Two fills: the first one forks nothing either.
+                for _ in 0..2 {
+                    states = initial.clone();
+                    pool.install(|| {
+                        run_interactions(
+                            &program,
+                            layout,
+                            kernels,
+                            Some(&mut forks),
+                            &weights,
+                            &mut states,
+                            points,
+                            true,
+                            None,
+                            &czero,
+                        )
+                    })
+                    .unwrap();
+                }
+                assert_eq!(forks.copies(), 0, "{threads} threads copied an evaluator");
+                states
+            };
+            let serial = run(1, &mut kernels);
+            assert_ne!(exact(&serial), exact(&initial));
+            for threads in [2, 4, 8] {
+                assert_eq!(exact(&run(threads, &mut kernels)), exact(&serial));
+            }
+        }
+    }
+    check(DoubleFloat::from(0.0));
+    check(Float::new(200));
 }

@@ -1399,16 +1399,20 @@ pub struct TreeRuntime<T> {
 }
 
 /// Per worker of the pool a tree fill runs on, its own copies of one
-/// interaction program's kernels ([`Kernel::fork`]), each forked from the
-/// runtime's kernel on the worker's first use and kept for later fills: a
-/// step's kernel calls then run on several workers at once
-/// ([`run_interactions`]). A worker only locks its own copies (uncontended),
-/// and the runtime's kernels while it forks one.
+/// interaction program's plane kernels ([`Kernel::fork`]: the compiled code
+/// shared, planes of its own), each forked from the runtime's kernel on the
+/// worker's first use and kept for later fills: a step whose kernels all
+/// have copies then runs its kernel calls on several workers at once
+/// ([`run_interactions`]). An exact kernel (double-double, MPFR, binary64
+/// without SymJIT) owns its instructions and is never copied: the steps
+/// using one run on the one built evaluator, serially. A worker only locks
+/// its own copies (uncontended), and the runtime's kernels while it forks
+/// one.
 struct Forks<T> {
     workers: Vec<std::sync::Mutex<Vec<Option<Kernel<T>>>>>,
-    /// Whether every kernel has a copy (decided on the first parallel fill,
-    /// which forks the first worker's copies).
-    forkable: Option<bool>,
+    /// Per kernel whether it has worker copies (decided on the first fill on
+    /// several threads, which forks the first worker's).
+    forkable: Option<Vec<bool>>,
 }
 
 impl<T> Default for Forks<T> {
@@ -1425,18 +1429,18 @@ where
     Complex<T>: Real + EvaluationDomain,
 {
     /// One slot per kernel of `base` for each of `workers` workers (grown
-    /// once, on the first fill on that many threads); whether every kernel
-    /// has a copy (the first call forks the first worker's).
+    /// once, on the first fill on that many threads); whether a kernel has
+    /// copies (the first call forks the first worker's plane kernels; an
+    /// exact kernel gets none).
     fn prepare(&mut self, base: &[Kernel<T>], workers: usize) -> bool {
         if self.forkable.is_none() {
-            let copies: Option<Vec<Option<Kernel<T>>>> =
-                base.iter().map(|kernel| kernel.fork().map(Some)).collect();
-            self.forkable = Some(copies.is_some());
-            if let Some(copies) = copies {
+            let copies: Vec<Option<Kernel<T>>> = base.iter().map(Kernel::fork).collect();
+            self.forkable = Some(copies.iter().map(Option::is_some).collect());
+            if copies.iter().any(Option::is_some) {
                 self.workers = vec![std::sync::Mutex::new(copies)];
             }
         }
-        if self.forkable != Some(true) {
+        if !self.forkable.iter().flatten().any(|&k| k) {
             return false;
         }
         while self.workers.len() < workers {
@@ -1453,8 +1457,31 @@ where
         true
     }
 
+    /// Whether kernel `kernel` has worker copies (a plane kernel).
+    fn shares(&self, kernel: usize) -> bool {
+        self.forkable
+            .as_ref()
+            .is_some_and(|forkable| forkable.get(kernel).copied().unwrap_or(false))
+    }
+
+    /// The worker copies held (all workers, all kernels).
+    #[cfg(test)]
+    fn copies(&mut self) -> usize {
+        self.workers
+            .iter_mut()
+            .map(|worker| {
+                worker
+                    .get_mut()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .iter()
+                    .flatten()
+                    .count()
+            })
+            .sum()
+    }
+
     /// `f` on the calling worker's copy of kernel `kernel` (forked from
-    /// `base` on first use).
+    /// `base` on first use; a plane kernel, `shares`).
     fn with<R>(
         &self,
         base: &std::sync::Mutex<&mut [Kernel<T>]>,
@@ -1538,13 +1565,14 @@ impl<T> Kernel<T>
 where
     Complex<T>: Real + EvaluationDomain,
 {
-    /// A copy of the kernel for another worker ([`Forks`]): an exact
-    /// evaluator's clone (its own stack), or a plane application sharing
-    /// its compiled code with planes of its own. Rows are independent, so a
-    /// copy evaluates every row bitwise as the kernel does.
+    /// A copy of the kernel for another worker ([`Forks`]): a plane
+    /// application sharing its compiled code with planes of its own (rows
+    /// are independent, so a copy evaluates every row bitwise as the kernel
+    /// does). None for an exact evaluator: it owns its instructions, and a
+    /// built evaluator is never copied per worker; its steps run serially.
     fn fork(&self) -> Option<Self> {
         match self {
-            Kernel::Exact(evaluator) => Some(Kernel::Exact(evaluator.clone())),
+            Kernel::Exact(_) => None,
             Kernel::Plane(plane) => plane.fork().map(Kernel::Plane),
         }
     }
@@ -4799,6 +4827,16 @@ fn parallel_step<T: Carrier>(
 where
     Complex<T>: Real + EvaluationDomain,
 {
+    // Every kernel the step calls has worker copies (plane kernels); a step
+    // calling an exact kernel runs serially on the built evaluator.
+    let shared = step.groups.iter().all(|(kernel, _)| forks.shares(*kernel))
+        && step
+            .outputs
+            .iter()
+            .all(|output| output.1.is_none_or(|kernel| forks.shares(kernel)));
+    if !shared {
+        return Ok(false);
+    }
     let Some(index) = step.index.get_or_init(|| StepIndex::of(step)) else {
         return Ok(false);
     };
