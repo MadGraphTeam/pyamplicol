@@ -177,6 +177,7 @@ key with its remedy:
 | `electroweak-width` | a real on-shell electroweak request with any particle of a width in a tree current |
 | `mass-scheme` | a `mass_scheme` that is neither `real-on-shell` nor `complex-mass` |
 | `complex-mass-scheme`, `cms-internal-mass`, `cms-yukawa-input`, `cms-external-width` | a complex-mass request outside the transform's assumptions (see [Configuration](configuration.md)) |
+| `cms-revived-coupling` | a complex-mass request on a model whose restriction simplification removed a coupling the transform revives (`simplify = false`, see [Configuration](configuration.md#what-restriction-simplification-specialises)) |
 | `complex-fixed-parameter` | a complex value in `[loop.preparation] fixed_parameters` |
 | `ufo-python2` | a Python-2 UFO |
 | `ufo-value-writes` | a UFO that writes declared values after their constructors (e.g. the UFOmodeldb issue-1 patch of `loop_qcd_qed_sm_Gmu` as published; the shipped copy has them folded) |

@@ -1141,7 +1141,9 @@ def _best_effort(
     relative estimate of the call's checks together with the recommended
     checks (``best_effort_checks``), run on these points alone; the public
     result carries the estimate of the call's own checks only (none when
-    the call ran none). A point the unchecked reduction fails too stays failed with
+    the call ran none). A point whose run fails only in the rows of those
+    checks is served by the same reduction without checks, without an
+    uncertainty. A point the unchecked reduction fails too stays failed with
     every reason; a served point's record (``VirtualReduction.best_effort``)
     keeps the refusals it overrides (bounded, ``bounded_reasons``)."""
 
@@ -1165,6 +1167,48 @@ def _best_effort(
     estimates = [
         _point_estimate(value) if value is not None else math.nan for value in values
     ]
+    # A point whose run fails only in the rows of the checks that estimate
+    # its uncertainty (a check row the backend refuses while the point's own
+    # rows are served: TIRust refuses a triangle below its fixed-precision
+    # floor at any gate, the gate-0 last resort included, so without the lane
+    # rescue a rotated or rescaled row can fail where the direct one is
+    # served) keeps the unchecked value: the same reduction without checks,
+    # bitwise what ``reduction_unchecked=True`` returns, without an
+    # uncertainty. A point that fails without checks too stays failed.
+    unestimated = [
+        local
+        for local in range(len(indices))
+        if local in still or values[local] is None
+    ]
+    check_failures: dict[int, list[str]] = {}
+    if unestimated and runs[0] is not None:
+
+        def bare(chosen: list[int] | None, with_checks: Any) -> Any:
+            picked = unestimated if chosen is None else [unestimated[i] for i in chosen]
+            return run([indices[i] for i in picked], with_checks)
+
+        # The checks' type, with every check off (the runners read
+        # ``enabled`` of the object they are given).
+        none = replace(
+            runs[0],
+            rotations=(),
+            reduction_direction=False,
+            rescaled=False,
+            cross_backend=False,
+        )
+        with best_effort_pass():
+            plain, plain_still, plain_served = _with_fallback(
+                bare, unchecked, len(unestimated), none, carrier
+            )
+        for k, local in enumerate(unestimated):
+            if k in plain_still or plain[k] is None:
+                continue
+            check_failures[local] = still.pop(local, ["no value"])
+            values[local] = plain[k]
+            served.pop(local, None)
+            if k in plain_served:
+                served[local] = plain_served[k]
+            estimates[local] = math.nan
     for extra in runs[1:]:
         # The call's checks and the recommended ones do not combine into one
         # set (two reduction checks): the larger of the two estimates.
@@ -1205,7 +1249,13 @@ def _best_effort(
             f"best effort: the value of {NAMES[effective]} without the backends' "
             "own acceptance and refusal checks (reduction_unchecked), every "
             "configured alternative having refused or failed the point: "
-            + "; ".join(refusal),
+            + "; ".join(refusal)
+            + (
+                ""
+                if local not in check_failures
+                else "; no uncertainty: the rows of its checks failed: "
+                + "; ".join(bounded_reasons(check_failures[local]))
+            ),
             target=choice.target,
             unchecked=True,
             guard_estimate=guard,

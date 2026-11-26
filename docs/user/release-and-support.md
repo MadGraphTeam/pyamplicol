@@ -120,20 +120,28 @@ relation at a stability threshold of 0 (#77). pyAmpliCol re-reduces a lane
 TIRust refuses in binary64 in double-double, then 500 digits (the lane
 rescue, in the checked and the unchecked mode alike); on the tested
 processes and points, with the lane rescue enabled, no point that was served
-before was observed to fail. TIRust-reduced values move where a lane changes
-route: in the regression suite by at most 3.5e-11 relative, and by 2.6e-9 on
-one `u u~ > e+ e- g g` point whose own binary64 error is 7e-9. On recorded
-stability points no point below 10.5 digits loses more than half a digit,
-and some `d d~ > d d~ z z` and `g g > g g g` points gain a digit. A 16-point
-call with TIRust costs up to about 7 % more on one core where NinjaRS is the
-default reduction (`g g > g g g`, `g g > t t~ g`, `u u~ > e+ e- g g`) and up
-to about 2.7 % elsewhere. oneloopmaster moves to `cdbc912` (#21: a
-cancellation-free series of the native binary64 and double-double C0 at
-small external momenta, the revision TIRust pins), and NinjaRS with it:
-NinjaRS-reduced values (the default for Born-interfered processes) are
-unchanged bit for bit except where that series acts (one `g g > t t~ g`
-point of the regression suite, its resolved entries by at most 9e-14
-relative and its checked stability estimate by 1e-7 of itself).
+before was observed to fail. With the lane rescue off (`lane_rescue=False`),
+the floor also refuses such triangles at the unchecked reduction's gate-0
+last resort, so an unchecked evaluation can fail where the earlier pin
+served it (on `u u~ > t t~ g g`, 6 of 16 flat points, which the earlier pin
+served within 4.2e-6 of double-double); with the rescue on (the default)
+they are served from double-double. A refused point whose best-effort
+evaluation fails only in the rows of its uncertainty's checks keeps its
+unchecked value, as best-effort without an uncertainty. TIRust-reduced
+values move where a lane changes route: in the regression suite by at most
+3.5e-11 relative, and by 2.6e-9 on one `u u~ > e+ e- g g` point whose own
+binary64 error is 7e-9. On recorded stability points no point below 10.5
+digits loses more than half a digit, and some `d d~ > d d~ z z` and
+`g g > g g g` points gain a digit. A 16-point call with TIRust costs up to
+about 7 % more on one core where NinjaRS is the default reduction
+(`g g > g g g`, `g g > t t~ g`, `u u~ > e+ e- g g`) and up to about 2.7 %
+elsewhere. oneloopmaster moves to `cdbc912` (#21: a cancellation-free series
+of the native binary64 and double-double C0 at small external momenta, the
+revision TIRust pins), and NinjaRS with it: NinjaRS-reduced values (the
+default for Born-interfered processes) are unchanged bit for bit except
+where that series acts (one `g g > t t~ g` point of the regression suite,
+its resolved entries by at most 9e-14 relative and its checked stability
+estimate by 1e-7 of itself).
 
 Dependencies: TIRust `c20d0be2` (main), NinjaRS `1f3d9d0e` (main:
 `e1d94412` with oneloopmaster `cdbc912`), oneloopmaster `cdbc912`; the

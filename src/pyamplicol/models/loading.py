@@ -42,17 +42,25 @@ from .contracts import (
     ModelGauge,
     TreeKernelVariant,
 )
-from .specialization_guards import SpecializationGuard
+from .specialization_guards import (
+    SpecializationGuard,
+    removed_coupling_records_from_payload,
+)
 
 COMPILED_MODEL_KIND = "pyamplicol-compiled-model"
 #: The schema of a compiled model that records specialisation guards: released
 #: readers accept only ``COMPILED_MODEL_SCHEMA_VERSION`` and so refuse it,
 #: instead of generating from it while ignoring its guards.
 GUARDED_COMPILED_MODEL_SCHEMA_VERSION = COMPILED_MODEL_SCHEMA_VERSION + 1
-#: Written by a compile that recorded the guards of restriction
-#: simplification (``CompiledModel.specialization_record``); readers released
-#: before ignore the field.
-SPECIALIZATION_RECORD = "complete"
+#: Written by a compile that recorded what restriction simplification
+#: specialised (``CompiledModel.specialization_record``): the guards of the
+#: couplings it removed and the record of every coupling it removed
+#: (``CompiledModel.removed_couplings``); readers released before ignore the
+#: field.
+SPECIALIZATION_RECORD = "guards-and-removed-couplings"
+#: Records written before every removed coupling was recorded (the guards
+#: only): read as no record (``require_specialization_record``).
+_SUPERSEDED_SPECIALIZATION_RECORDS = frozenset(("complete",))
 #: The source kinds restriction simplification runs on.
 _SIMPLIFIED_SOURCE_KINDS = frozenset(("ufo", "json"))
 MODEL_COMPILER_VERSION = 17
@@ -279,6 +287,11 @@ class CompiledModel:
     #: guards existed) may hide a specialisation (``require_specialization_
     #: record``).
     specialization_record: bool = False
+    #: Every coupling restriction simplification removed, guarded or not
+    #: (``specialization_guards.removed_coupling_record``, sorted by name): a
+    #: transform that redefines parameters after the simplification (the
+    #: complex-mass scheme) evaluates them again and refuses one it revives.
+    removed_couplings: tuple[Mapping[str, Any], ...] = ()
     _serialized_path: Path | None = field(default=None, compare=False, repr=False)
     _prepared_bundle: PreparedModelBundle | None = field(
         default=None,
@@ -338,6 +351,10 @@ class CompiledModel:
             ]
         if self.specialization_record:
             payload["specialization_record"] = SPECIALIZATION_RECORD
+        if self.removed_couplings:
+            payload["removed_couplings"] = [
+                dict(record) for record in self.removed_couplings
+            ]
         return payload
 
     def write(self, path: Path) -> Path:
@@ -375,7 +392,9 @@ class CompiledModel:
         elif schema_version != COMPILED_MODEL_SCHEMA_VERSION or raw_guards is not None:
             raise ValueError("compiled model schema mismatch; regenerate the model")
         record = payload.get("specialization_record")
-        if record is not None and record != SPECIALIZATION_RECORD:
+        if record in _SUPERSEDED_SPECIALIZATION_RECORDS:
+            record = None
+        elif record is not None and record != SPECIALIZATION_RECORD:
             raise ValueError("compiled model has an unknown specialisation record")
         if int(payload.get("model_compiler_version", -1)) != MODEL_COMPILER_VERSION:
             raise ValueError("compiled model compiler mismatch; regenerate the model")
@@ -421,6 +440,9 @@ class CompiledModel:
                 for item in raw_guards or ()
             ),
             specialization_record=record == SPECIALIZATION_RECORD,
+            removed_couplings=removed_coupling_records_from_payload(
+                payload.get("removed_couplings") or ()
+            ),
             _serialized_path=(
                 None if serialized_path is None else Path(serialized_path).resolve()
             ),
@@ -583,6 +605,7 @@ def _compile_model_source(
     raw_loop_model = None
     raw_loop_import_error = None
     specialization_guards: tuple[SpecializationGuard, ...] = ()
+    removed_couplings: tuple[Mapping[str, Any], ...] = ()
     if source_kind == "built-in-sm":
         from .builtin.adapters import build_model_payload
 
@@ -610,6 +633,9 @@ def _compile_model_source(
             for record in _sequence_or_empty(
                 worker_payload.get("specialization_guards")
             )
+        )
+        removed_couplings = removed_coupling_records_from_payload(
+            worker_payload.get("removed_couplings") or ()
         )
     phase_timings["model_loading"] = time.perf_counter() - phase_started
     phase_started = time.perf_counter()
@@ -708,6 +734,7 @@ def _compile_model_source(
         specialization_guards=specialization_guards,
         specialization_record=source_kind in _SIMPLIFIED_SOURCE_KINDS
         and options.simplify,
+        removed_couplings=removed_couplings,
     )
     if use_cache:
         compiled.write(cache_path)
@@ -824,18 +851,22 @@ def require_specialization_record(compiled: CompiledModel) -> CompiledModel:
     A compiled or prepared model of a UFO or JSON source simplified by a
     pyAmpliCol that did not record restriction simplification's guards may
     have removed a coupling that is zero only at its card's parameter values,
-    without the record that refuses a binding which revives it. A new artifact
-    generated from it would accept that binding and return the specialised
-    value, so it is refused; artifacts generated before still load and
-    evaluate as documented."""
+    without the record that refuses a binding which revives it; one that
+    recorded the guards but not every removed coupling
+    (``_SUPERSEDED_SPECIALIZATION_RECORDS``) lacks what a transform that
+    redefines parameters (the complex-mass scheme) evaluates again. A new
+    artifact generated from it could return the specialised value, so it is
+    refused; artifacts generated before still load and evaluate as
+    documented."""
 
     if _specialization_record_is_trusted(compiled):
         return compiled
     raise ValueError(
         f"compiled model {compiled.name!r} was written by a pyAmpliCol that did "
         "not record what restriction simplification specialises (a coupling "
-        "removed because it is zero only at the card's parameter values), so a "
-        "new artifact could not refuse the bindings that invalidate it; prepare "
+        "removed because it is zero only at the card's parameter values, and "
+        "every coupling it removed), so a new artifact could not refuse the "
+        "bindings and parameter transforms that invalidate it; prepare "
         "or compile the model again from its source with this version (or "
         "compile it with simplify=False)"
     )
@@ -1106,7 +1137,7 @@ def _load_external_model(
             # The model's own compile-time warnings (an invalid escape in a
             # TeX name) are returned as data, never printed.
             with ufo_source_warnings(source):
-                model, parameter_card, specialization_guards = (
+                model, parameter_card, specialization_guards, removed_couplings = (
                     load_ufo_model_with_guards(
                         load_model,
                         str(source),
@@ -1169,6 +1200,8 @@ def _load_external_model(
             result["specialization_guards"] = [
                 guard.to_dict() for guard in specialization_guards
             ]
+        if removed_couplings:
+            result["removed_couplings"] = list(removed_couplings)
         return result
 
 
