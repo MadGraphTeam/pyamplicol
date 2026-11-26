@@ -75,7 +75,7 @@ def _builtin_vertex_result_chiralities(
     result_pdg = vertex.particles[2]
     if model.is_chiral_eligible(result_pdg):
         input_chirality = _model_fermion_input_chirality(model, left_index, right_index)
-        if input_chirality == 0:
+        if input_chirality == 0 and getattr(model, "_project_full_inputs", True):
             # A full (Dirac) input: a vertex that feeds one result chirality
             # only (a single chiral projector, the W) makes the massless result
             # that Weyl state, the only nonzero half of its Dirac kernel
@@ -87,6 +87,8 @@ def _builtin_vertex_result_chiralities(
                 if _model_weyl_vertex_allowed(vertex, result_pdg, chirality)
             )
             return projected if len(projected) == 1 else (0,)
+        if input_chirality == 0:
+            return (0,)
         if not _model_weyl_vertex_allowed(vertex, result_pdg, input_chirality):
             return ()
         return (input_chirality,)

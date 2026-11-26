@@ -37,6 +37,8 @@ class ExternalModelCatalogMixin:
     # Set by ``CompiledUFOModel`` (``weyl_projection_support``).
     vertices: tuple[Vertex, ...]
     _weyl_projection_support: dict[tuple[int, int, int, int], bool]
+    # Set by ``CompiledUFOModel`` (``_prepared_pack_projects_full_inputs``).
+    _project_full_inputs: bool
 
     if TYPE_CHECKING:
         # Provided by ``ExternalModelKernelMixin`` (the symbolic probe).
@@ -254,13 +256,19 @@ class ExternalModelCatalogMixin:
         of the other chirality vanishes identically (a single chiral
         projector: a W vertex, Z to neutrinos): the Dirac result has exactly
         that Weyl state's two components and zeros elsewhere, so the line is
-        Weyl again at its massless end. With both projections nonzero (mixed
-        left- and right-handed couplings) the result stays the full state.
+        Weyl again at its massless end. "Vanishes" means for every parameter
+        binding the model admits at run time (``_weyl_projection_is_nonzero``).
+        With both projections nonzero (mixed left- and right-handed couplings,
+        or a coefficient that is zero only at the current values) the result
+        stays the full state, as it does for a model whose prepared pack
+        predates the projection.
         """
 
         if not self.is_chiral_eligible(result_particle):
             return (0,)
         if left_chirality == 0 and right_chirality == 0:
+            if not self._project_full_inputs:
+                return (0,)
             projected = tuple(
                 chirality
                 for chirality in (-1, 1)
