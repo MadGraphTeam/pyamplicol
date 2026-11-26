@@ -553,6 +553,75 @@ impl Runtime {
                     reasons.remove(id);
                 }
             }
+            // A point whose run fails only in the rows of the checks that
+            // estimate its uncertainty (a check row the backend refuses while
+            // the point's own rows are served: TIRust refuses a triangle below
+            // its fixed-precision floor at any gate, the gate-0 last resort
+            // included, so without the lane rescue a rotated or rescaled row
+            // can fail where the direct one is served) keeps the unchecked
+            // value: the same reduction without checks, without an
+            // uncertainty. A point that fails without checks too stays failed.
+            let left: Vec<usize> = failed
+                .iter()
+                .copied()
+                .filter(|&index| base.statuses()[index] == PointStatus::Failed)
+                .collect();
+            if !left.is_empty() {
+                let saved = (self.unchecked, self.checks.clone());
+                self.unchecked = true;
+                self.best_effort_pass = true;
+                self.checks = StabilityChecks::default();
+                let (points, selected) = subset(inputs, selection, &left);
+                let result = rerun(self, points, selected);
+                (self.unchecked, self.checks) = saved;
+                self.best_effort_pass = false;
+                if let Ok(mut plain) = result {
+                    let plain_diagnostics: serde_json::Value =
+                        serde_json::from_str(plain.diagnostics_mut())
+                            .map_err(crate::serialization)?;
+                    let index_of: HashMap<u64, usize> = requested
+                        .iter()
+                        .enumerate()
+                        .map(|(index, &id)| (id, index))
+                        .collect();
+                    let mut bare = Vec::new();
+                    for &id in plain.successful() {
+                        let index = *index_of.get(&id).ok_or_else(|| {
+                            RusticolError::internal(format!("best-effort rows: no point {id}"))
+                        })?;
+                        base.statuses_mut()[index] = PointStatus::BestEffort;
+                        base.uncertainties_mut()[index] = f64::NAN;
+                        let (deviation, conditioning) = measures_of(&diagnostics, id);
+                        best.insert(
+                            id,
+                            serde_json::json!({
+                                "refusal": joined(&reasons, id),
+                                "uncertainty": serde_json::Value::Null,
+                                "source": "none",
+                                "backend_deviation": deviation,
+                                "gram_conditioning": conditioning,
+                                "detail": "no uncertainty could be estimated (the rows of its \
+                                           checks failed; the value is the unchecked reduction's \
+                                           without checks)",
+                                "reduction": plain_diagnostics.get("reduction"),
+                            }),
+                        );
+                        bare.push(id);
+                    }
+                    if !bare.is_empty() {
+                        let order: Vec<u64> = requested
+                            .iter()
+                            .zip(base.statuses().iter())
+                            .filter(|(_, status)| **status != PointStatus::Failed)
+                            .map(|(&id, _)| id)
+                            .collect();
+                        base.merge_rows(&plain, &bare, &order)?;
+                        for id in &bare {
+                            reasons.remove(id);
+                        }
+                    }
+                }
+            }
         }
         let statuses = base.statuses().to_vec();
         let mut warnings = Vec::new();
