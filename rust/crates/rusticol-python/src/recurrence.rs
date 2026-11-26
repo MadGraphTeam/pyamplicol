@@ -17,13 +17,14 @@ use rusticol_core::recurrence::{
     AuthenticatedRecurrenceBuilderInput, CLOSURE_TARGET_DOMAIN_PROOF_KIND, CheckedTableRange,
     DIRECT_NONE_U32, DirectExecutorRole, DirectRecurrencePlan, DirectRecurrenceRuntimeOptions,
     DirectSelectorWorkSummary, PreparedDirectExecutorBinding, PreparedDirectExecutorCatalog,
-    RECURRENCE_BUILDER_INPUT_ABI, RECURRENCE_CONTRACTED_COLOR_CAPABILITY,
-    RECURRENCE_DIRECT_PLAN_ABI, RECURRENCE_DIRECT_RUNTIME_CAPABILITY,
-    RECURRENCE_DIRECT_RUNTIME_LAYOUT_ABI, RECURRENCE_DIRECT_SCHEDULE_MEMBER,
-    RECURRENCE_DIRECT_TEMPLATE_ABI, RECURRENCE_LC_COLOR_CAPABILITY, RecurrenceBuildProgress,
-    RecurrenceGenerationTelemetry, RecurrenceRelationDiscoveryMode,
-    RecurrenceRelationDiscoveryOptions, RecurrenceRelationDiscoveryReport, RecurrenceStrategy,
-    SemanticDigest, authenticate_recurrence_numerical_relation_provenance, checked_usize,
+    QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION, RECURRENCE_BUILDER_INPUT_ABI,
+    RECURRENCE_CONTRACTED_COLOR_CAPABILITY, RECURRENCE_DIRECT_PLAN_ABI,
+    RECURRENCE_DIRECT_RUNTIME_CAPABILITY, RECURRENCE_DIRECT_RUNTIME_LAYOUT_ABI,
+    RECURRENCE_DIRECT_SCHEDULE_MEMBER, RECURRENCE_DIRECT_TEMPLATE_ABI,
+    RECURRENCE_LC_COLOR_CAPABILITY, RecurrenceBuildProgress, RecurrenceGenerationTelemetry,
+    RecurrenceRelationDiscoveryMode, RecurrenceRelationDiscoveryOptions,
+    RecurrenceRelationDiscoveryReport, RecurrenceStrategy, SemanticDigest,
+    authenticate_recurrence_numerical_relation_provenance, checked_usize,
     lower_recurrence_direct_plan_v2, lower_recurrence_direct_plan_v2_with_helicity_dispatch,
     lower_recurrence_direct_plan_v2_with_relation_discovery,
     write_recurrence_direct_plan_pacbin_with_projection_certificate,
@@ -2112,7 +2113,13 @@ fn lower_recurrence_direct(
     let semantic_construction_seconds = semantic_started.elapsed().as_secs_f64();
 
     let direct_lowering_started = Instant::now();
-    let runtime_options = DirectRecurrenceRuntimeOptions::new(point_tile_size, workspace_mib)?;
+    // A QED-order-weighted normalization weighs closures by their QED order at
+    // run time, so their exact factors are interned per QED order.
+    let runtime_options = DirectRecurrenceRuntimeOptions::new(point_tile_size, workspace_mib)?
+        .with_closure_factors_by_qed_order(
+            authenticated.process().normalization_convention()?
+                == QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION,
+        );
     if let Some(evidence) = relation_discovery.numerical_evidence.as_ref() {
         let baseline_plan = lower_recurrence_direct_plan_v2(
             &program,

@@ -68,7 +68,29 @@ fn is_sha256(value: &str) -> bool {
 pub struct DirectRecurrenceRuntimeOptions {
     pub point_tile_size: u32,
     pub workspace_mib: u32,
+    /// Give every closure with a nonzero QED order an exact factor of its own,
+    /// shared only with closures of the same QED order, so the runtime can
+    /// weigh it by `rho^QED` (a QED-order-weighted normalization,
+    /// `QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION`). Off, the factors are
+    /// interned by value alone, as before.
+    pub closure_factors_by_qed_order: bool,
 }
+
+/// Index of the QED coupling order among a template catalog's coupling-order
+/// names, if it has one.
+pub fn template_qed_order_index(
+    templates: &ValidatedRecurrenceTemplateInput,
+) -> RusticolResult<Option<usize>> {
+    Ok(TemplateCatalog::new(templates.input())?
+        .coupling_order_names()
+        .iter()
+        .position(|name| name.eq_ignore_ascii_case("QED")))
+}
+
+/// The process-normalization convention of a QED-order-weighted
+/// normalization (`generation.recurrence_physics`).
+pub const QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION: &str =
+    "runtime-normalization-extension-qed-order-weights-v1";
 
 impl DirectRecurrenceRuntimeOptions {
     pub fn new(point_tile_size: u32, workspace_mib: u32) -> RusticolResult<Self> {
@@ -81,7 +103,15 @@ impl DirectRecurrenceRuntimeOptions {
         Ok(Self {
             point_tile_size,
             workspace_mib,
+            closure_factors_by_qed_order: false,
         })
+    }
+
+    /// These options with closure factors interned per QED order.
+    #[must_use]
+    pub const fn with_closure_factors_by_qed_order(mut self, enabled: bool) -> Self {
+        self.closure_factors_by_qed_order = enabled;
+        self
     }
 }
 
@@ -1335,6 +1365,20 @@ fn build_direct_parts(
 
     let closure_component_coefficients = templates.closure_component_coefficient_catalog()?;
     let (order_names, closure_term_orders) = closure_term_amplitude_orders(program, templates)?;
+    let closure_qed_index = runtime_options
+        .closure_factors_by_qed_order
+        .then(|| {
+            order_names
+                .iter()
+                .position(|name| name.eq_ignore_ascii_case("QED"))
+        })
+        .flatten();
+    if runtime_options.closure_factors_by_qed_order && closure_qed_index.is_none() {
+        return Err(invalid(
+            "QED-order-weighted closure factors need a QED coupling order",
+        ));
+    }
+    let mut closure_factor_ids_by_qed_order = BTreeMap::<(ExactComplexRational, u32), u32>::new();
     let closure_stage = program
         .currents()
         .iter()
@@ -1457,7 +1501,22 @@ fn build_direct_parts(
                 parent0_momentum_form_id: parents.parent0_momentum_form_id,
                 parent1_momentum_form_id_or_sentinel: parents.parent1_momentum_form_id_or_sentinel,
                 amplitude_destination_id: closure.target_destination_id(),
-                exact_factor_id: exact_factor_id(&exact_factor_ids, closure.exact_factor())?,
+                exact_factor_id: closure_exact_factor_id(
+                    closure.exact_factor(),
+                    closure_qed_index
+                        .map(|index| {
+                            closure_term_orders
+                                .get(closure.id() as usize)
+                                .and_then(|powers| powers.get(index).copied())
+                                .ok_or_else(|| {
+                                    invalid("closure amplitude coupling order is absent")
+                                })
+                        })
+                        .transpose()?,
+                    &mut exact_factors,
+                    &exact_factor_ids,
+                    &mut closure_factor_ids_by_qed_order,
+                )?,
                 component_factor_start,
                 component_count,
                 selector_domain_id: selector_domains.closure_domain_ids[closure.id() as usize],
@@ -3434,6 +3493,28 @@ fn exact_factor_id(
     ids.get(&factor)
         .copied()
         .ok_or_else(|| invalid("semantic exact factor was not interned"))
+}
+
+/// The exact-factor ID of a closure: interned by value, or, with a QED order
+/// `qed > 0` (QED-order-weighted closure factors), by value and QED order in
+/// IDs appended for those closures alone.
+fn closure_exact_factor_id(
+    factor: ExactComplexRational,
+    qed: Option<u32>,
+    factors: &mut Vec<ExactComplexRational>,
+    ids: &BTreeMap<ExactComplexRational, u32>,
+    weighted_ids: &mut BTreeMap<(ExactComplexRational, u32), u32>,
+) -> RusticolResult<u32> {
+    let Some(qed) = qed.filter(|qed| *qed != 0) else {
+        return exact_factor_id(ids, factor);
+    };
+    if let Some(id) = weighted_ids.get(&(factor, qed)).copied() {
+        return Ok(id);
+    }
+    let id = u32_len("exact factor", factors.len())?;
+    factors.push(factor);
+    weighted_ids.insert((factor, qed), id);
+    Ok(id)
 }
 
 fn intern_direct_factor(

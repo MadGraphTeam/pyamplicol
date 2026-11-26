@@ -13,8 +13,15 @@ generation builds none).
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable, Mapping
 
+from .._internal.qed_order_weights import (
+    NORMALIZATION_ALPHA_EW,
+    NORMALIZATION_ALPHA_S,
+    QED_ORDER_WEIGHTED_COUPLING_POLICY,
+)
+from ..api.errors import GenerationError
 from ..color.plan import GenericColorPlan
 from ..models.base import CouplingOrders, Model, Vertex
 from ..processes.ir import CanonicalProcessIR
@@ -28,6 +35,95 @@ from .dag_reachability import (
     _normalize_coupling_order_limits,
 )
 from .dag_types import GenericDAG
+
+
+def runtime_normalization_payload(
+    model: Model, request: RuntimeNormalizationRequest
+) -> dict[str, object]:
+    """``model.runtime_normalization_payload``, also for several Born orders.
+
+    A model whose stage evaluators carry local vertex couplings only and whose
+    global factor (4 pi alpha_s)^q (8 pi alpha_ew)^e restores g_s and e (its
+    run-time normalization inputs are ``NORMALIZATION_ALPHA_S`` and
+    ``NORMALIZATION_ALPHA_EW``) cannot weigh Born amplitudes of different
+    (q, e) with that one factor. For such a Born the payload of one of its
+    orders is rewritten to the QED-order-weighted policy
+    (``QED_ORDER_WEIGHTED_COUPLING_POLICY``); every other request is the
+    model's own payload, unchanged.
+    """
+
+    defaults = model.runtime_normalization_parameter_defaults()
+    if NORMALIZATION_ALPHA_S not in defaults or NORMALIZATION_ALPHA_EW not in defaults:
+        return dict(model.runtime_normalization_payload(request))
+    totals = request.born_amplitude_orders
+    if len(totals) <= 1:
+        return dict(model.runtime_normalization_payload(request))
+    process = request.process.process
+    powers: set[tuple[int, int]] = set()
+    for total in totals:
+        orders = {str(name).upper(): int(value) for name, value in total if value}
+        unknown = sorted(set(orders) - {"QCD", "QED"})
+        if unknown:
+            raise GenerationError(
+                f"process {process!r} has Born amplitudes of coupling orders "
+                f"{unknown!r} without a global-coupling normalization"
+            )
+        powers.add((orders.get("QCD", 0), orders.get("QED", 0)))
+    if len({qcd + qed for qcd, qed in powers}) != 1:
+        listed = ", ".join(f"QCD^{qcd} QED^{qed}" for qcd, qed in sorted(powers))
+        raise GenerationError(
+            f"process {process!r} has Born amplitudes of different total coupling "
+            f"orders ({listed}); a QED-order weight needs one total order"
+        )
+    _require_qed_order_weightable_vertices(model, process)
+    reference = min(totals)
+    payload = dict(
+        model.runtime_normalization_payload(
+            RuntimeNormalizationRequest(request.process, lambda: (reference,))
+        )
+    )
+    total_order = next(iter(powers))[0] + next(iter(powers))[1]
+    alpha_s = float(defaults[NORMALIZATION_ALPHA_S])
+    payload.update(
+        {
+            "qcd_coupling_power": total_order,
+            "electroweak_coupling_power": 0,
+            "global_coupling_factor": (4.0 * math.pi * alpha_s) ** total_order,
+            "couplings_in_stage_evaluators": True,
+            "coupling_policy": QED_ORDER_WEIGHTED_COUPLING_POLICY,
+        }
+    )
+    return payload
+
+
+def _require_qed_order_weightable_vertices(model: Model, process: str) -> None:
+    """Every vertex with a run-time coupling has exactly one QED order, and
+    every vertex with a QED order has a run-time coupling: then weighting each
+    coupling slot by rho weighs every amplitude by rho^QED."""
+
+    lowering_rule = getattr(model, "vertex_lowering_rule", None)
+    if not callable(lowering_rule):
+        raise GenerationError(
+            f"process {process!r} has Born amplitudes of several coupling orders "
+            "and its model declares no vertex lowering rules to weigh them"
+        )
+    for vertex in model.vertices:
+        orders = tuple(
+            (str(name).upper(), int(value))
+            for name, value in model.vertex_coupling_orders(vertex)
+            if value
+        )
+        runtime_coupling = lowering_rule(int(vertex.kind)).coupling_mode == "vertex"
+        if orders == (("QED", 1),) and runtime_coupling:
+            continue
+        if orders == (("QCD", 1),) and not runtime_coupling:
+            continue
+        raise GenerationError(
+            f"process {process!r} has Born amplitudes of several coupling orders, "
+            f"but model vertex kind {vertex.kind} {vertex.particles} (orders "
+            f"{orders!r}, run-time coupling {runtime_coupling}) cannot carry a "
+            "QED-order weight"
+        )
 
 
 class RuntimeNormalizationRequest:

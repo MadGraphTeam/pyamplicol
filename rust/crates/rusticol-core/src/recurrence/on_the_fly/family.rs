@@ -63,6 +63,10 @@ struct FamilyClosureIdentity {
     selector_domain_id: u32,
     proof_group_id: u32,
     amplitude_destination_id: u32,
+    /// QED order of the closure's amplitude (its parents' QED orders: the
+    /// built-in closures are vertex-free contractions) when the family is
+    /// QED-order weighted, else zero.
+    qed_order: u32,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -147,6 +151,9 @@ struct OnTheFlyBuiltQueryFamilyV1 {
     amplitude_destination_count: u32,
     momentum_forms: Box<[CanonicalMomentumLinearForm]>,
     exact_factors: Box<[ExactComplexRational]>,
+    /// (exact-factor ID, QED order) of every closure factor weighted by
+    /// `rho^QED` (QED-order-weighted families only; interned per QED order).
+    qed_closure_factors: Box<[(u32, i32)]>,
     row_groups: Box<[OnTheFlyFamilyRowGroupV1]>,
     #[cfg(any(test, feature = "on-the-fly-test-support"))]
     observed_currents: Box<[OnTheFlyFamilyObservedCurrentDescriptorV1]>,
@@ -513,6 +520,7 @@ fn prepared_binding(
 /// future executable union cannot lose an amplitude destination.
 fn build_query_family_from_chunks(
     direct_catalog: &PreparedDirectExecutorCatalog,
+    qed_order_index: Option<usize>,
     produce: impl FnOnce(&mut dyn OnTheFlyQueryFamilyChunkConsumerV1) -> RusticolResult<()>,
 ) -> RusticolResult<Option<(OnTheFlyBuiltQueryFamilyV1, SemanticDigest)>> {
     let mut layout = None;
@@ -912,6 +920,23 @@ fn build_query_family_from_chunks(
                                 .into_boxed_slice();
                             let amplitude_destination_id =
                                 checked_u32(query_index, "query-family amplitude destination ID")?;
+                            let qed_order = match qed_order_index {
+                                None => 0,
+                                Some(index) => [parent0, parent1].iter().try_fold(
+                                    0_u32,
+                                    |total, parent| {
+                                        trace.current_keys[*parent as usize]
+                                            .coupling_orders()
+                                            .get(index)
+                                            .and_then(|power| total.checked_add(*power))
+                                            .ok_or_else(|| {
+                                                integrity(
+                                                    "query-family closure parent QED order is absent",
+                                                )
+                                            })
+                                    },
+                                )?,
+                            };
                             closure_definitions.push(FamilyClosureIdentity {
                                 seed_digest: trace.seed_digest,
                                 query_digest: trace.query_digest,
@@ -940,6 +965,7 @@ fn build_query_family_from_chunks(
                                 selector_domain_id: row.selector_domain_id,
                                 proof_group_id: row.flags,
                                 amplitude_destination_id,
+                                qed_order,
                             });
                             closure_groups.insert((
                                 trace.seed_digest,
@@ -1142,7 +1168,17 @@ fn build_query_family_from_traces(
     direct_catalog: &PreparedDirectExecutorCatalog,
     selected: &[QueryFamilyTraceInput<'_>],
 ) -> RusticolResult<OnTheFlyBuiltQueryFamilyV1> {
-    build_query_family_from_chunks(direct_catalog, |consumer| {
+    build_query_family_from_traces_with_qed_order(direct_catalog, None, selected)
+}
+
+/// [`build_query_family_from_traces`] of a QED-order-weighted executor
+/// (`qed_order_index`: its QED coupling-order index).
+fn build_query_family_from_traces_with_qed_order(
+    direct_catalog: &PreparedDirectExecutorCatalog,
+    qed_order_index: Option<usize>,
+    selected: &[QueryFamilyTraceInput<'_>],
+) -> RusticolResult<OnTheFlyBuiltQueryFamilyV1> {
+    build_query_family_from_chunks(direct_catalog, qed_order_index, |consumer| {
         let destinations = consumer.push_chunk(selected)?;
         if destinations.start != 0 || destinations.end as usize != selected.len() {
             return Err(integrity(
@@ -1155,12 +1191,16 @@ fn build_query_family_from_traces(
     .ok_or_else(|| invalid("query-family census requires at least one query"))
 }
 
+/// `qed_order_index`: the QED coupling-order index of a QED-order-weighted
+/// lane (its closures' factors are interned per QED order and weighted at run
+/// time, `OnTheFlyQueryFamilyExecutorV1::set_qed_order_weight`), else `None`.
 pub(crate) fn build_streamed_query_family_candidate_v1(
     direct_catalog: &PreparedDirectExecutorCatalog,
+    qed_order_index: Option<usize>,
     produce: impl FnOnce(&mut dyn OnTheFlyQueryFamilyChunkConsumerV1) -> RusticolResult<()>,
 ) -> RusticolResult<Option<OnTheFlyStreamedQueryFamilyCandidateV1>> {
     let direct_catalog_digest = direct_catalog.direct_template_catalog_digest();
-    build_query_family_from_chunks(direct_catalog, produce).map(|candidate| {
+    build_query_family_from_chunks(direct_catalog, qed_order_index, produce).map(|candidate| {
         candidate.map(
             |(family, ordered_query_digest)| OnTheFlyStreamedQueryFamilyCandidateV1 {
                 identity: QueryFamilyCacheIdentityV1::Streamed {
@@ -1282,6 +1322,7 @@ fn materialize_query_family(
     let mut momentum_ids = BTreeMap::new();
     let mut momentum_forms = Vec::new();
     let mut factor_ids = BTreeMap::new();
+    let mut qed_factor_ids = BTreeMap::<(ExactComplexRational, u32), u32>::new();
     let mut factor_block_ids = BTreeMap::new();
     let mut exact_factors = Vec::new();
     let mut source_groups = BTreeMap::<GroupKey, Vec<FamilySourceDraft>>::new();
@@ -1473,8 +1514,26 @@ fn materialize_query_family(
                 "query-family closure executor has a parent permutation",
             ));
         }
-        let exact_factor_id =
-            intern_factor(&mut factor_ids, &mut exact_factors, closure.exact_factor)?;
+        let exact_factor_id = if closure.qed_order == 0 {
+            intern_factor(&mut factor_ids, &mut exact_factors, closure.exact_factor)?
+        } else {
+            // A weighted closure factor is shared only with closures of the
+            // same QED order, never with another row.
+            let key = (closure.exact_factor, closure.qed_order);
+            if let Some(id) = qed_factor_ids.get(&key).copied() {
+                id
+            } else {
+                let id = checked_u32(exact_factors.len(), "query-family exact-factor ID")?;
+                exact_factors.try_reserve(1).map_err(|error| {
+                    invalid(format!(
+                        "query-family exact-factor allocation failed: {error}"
+                    ))
+                })?;
+                exact_factors.push(closure.exact_factor);
+                qed_factor_ids.insert(key, id);
+                id
+            }
+        };
         let component_factor_start = intern_factor_block(
             &mut factor_block_ids,
             &mut factor_ids,
@@ -1560,6 +1619,15 @@ fn materialize_query_family(
         amplitude_destination_count: census.union_amplitude_destination_count,
         momentum_forms: momentum_forms.into_boxed_slice(),
         exact_factors: exact_factors.into_boxed_slice(),
+        qed_closure_factors: qed_factor_ids
+            .into_iter()
+            .map(|((_, qed), id)| {
+                i32::try_from(qed)
+                    .map(|qed| (id, qed))
+                    .map_err(|_| invalid("query-family closure QED order exceeds i32"))
+            })
+            .collect::<RusticolResult<Vec<_>>>()?
+            .into_boxed_slice(),
         row_groups: row_groups.into_boxed_slice(),
         #[cfg(any(test, feature = "on-the-fly-test-support"))]
         observed_currents,
@@ -2035,6 +2103,38 @@ impl OnTheFlyFamilyWorkspaceV1 {
         Ok(())
     }
 
+    /// Writes `factor * rho^QED` for every QED-order-weighted closure factor.
+    fn apply_qed_order_weight(
+        &mut self,
+        family: &OnTheFlyBuiltQueryFamilyV1,
+        rho: f64,
+    ) -> RusticolResult<()> {
+        for &(id, qed) in &family.qed_closure_factors {
+            let factor = family
+                .exact_factors
+                .get(id as usize)
+                .copied()
+                .ok_or_else(|| integrity("query-family weighted closure factor is absent"))?;
+            let (real, imag) = family_factor_parts(factor)?;
+            let weight = rho.powi(qed);
+            match (
+                self.factors_re.as_mut_slice().get_mut(id as usize),
+                self.factors_im.as_mut_slice().get_mut(id as usize),
+            ) {
+                (Some(re), Some(im)) => {
+                    *re = real * weight;
+                    *im = imag * weight;
+                }
+                _ => {
+                    return Err(integrity(
+                        "query-family weighted closure factor is out of range",
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn refresh_parameters(&mut self, parameters: &[(f64, f64)]) -> RusticolResult<()> {
         self.active_point_count = 0;
         if parameters.len() != self.parameters_re.len() {
@@ -2248,6 +2348,11 @@ pub(crate) struct OnTheFlyQueryFamilyExecutorV1<R: OnTheFlyPreparedExecutorResol
     pending: Option<BoundOnTheFlyQueryFamilyV1>,
     resolver: R,
     parameter_state: Vec<(f64, f64)>,
+    /// `rho` of a QED-order-weighted lane; part of the parameter version.
+    qed_order_weight: Option<f64>,
+    /// QED coupling-order index of a QED-order-weighted lane: the families
+    /// this executor builds intern closure factors per QED order.
+    qed_order_index: Option<usize>,
     parameter_version: u64,
     family_generation: u64,
 }
@@ -2260,9 +2365,34 @@ impl<R: OnTheFlyPreparedExecutorResolver> OnTheFlyQueryFamilyExecutorV1<R> {
             pending: None,
             resolver,
             parameter_state: Vec::new(),
+            qed_order_weight: None,
+            qed_order_index: None,
             parameter_version: 0,
             family_generation: 0,
         }
+    }
+
+    /// Marks this executor QED-order weighted (`index`: the QED coupling-order
+    /// index): the families it builds intern closure factors per QED order.
+    pub(crate) fn set_qed_order_index(&mut self, index: Option<usize>) {
+        self.qed_order_index = index;
+    }
+
+    /// Sets `rho` for the QED-order-weighted closure factors of every family
+    /// (`None`: unweighted); applied with the parameters.
+    pub(crate) fn set_qed_order_weight(&mut self, rho: Option<f64>) -> RusticolResult<()> {
+        if rho.is_some_and(|rho| !rho.is_finite()) {
+            return Err(invalid("query-family QED-order weight is not finite"));
+        }
+        if self.qed_order_weight == rho {
+            return Ok(());
+        }
+        self.qed_order_weight = rho;
+        self.parameter_version = self
+            .parameter_version
+            .checked_add(1)
+            .ok_or_else(|| invalid("query-family parameter version exceeds u64"))?;
+        Ok(())
     }
 
     pub(crate) const fn resolver(&self) -> &R {
@@ -2708,7 +2838,11 @@ impl<R: OnTheFlyPreparedExecutorResolver> OnTheFlyQueryFamilyExecutorV1<R> {
         // new one. This leaves the last successful family and its handle valid.
         self.discard_pending_family()?;
 
-        let family = build_query_family_from_traces(direct_catalog, selected)?;
+        let family = build_query_family_from_traces_with_qed_order(
+            direct_catalog,
+            self.qed_order_index,
+            selected,
+        )?;
         if family.census.source_frame_partition_count != 1 {
             return Err(invalid(
                 "executable query families currently require one compact source frame",
@@ -2925,6 +3059,11 @@ impl<R: OnTheFlyPreparedExecutorResolver> OnTheFlyQueryFamilyExecutorV1<R> {
             )?;
             if family.applied_parameter_version != self.parameter_version {
                 family.workspace.refresh_parameters(&self.parameter_state)?;
+                if let Some(rho) = self.qed_order_weight {
+                    family
+                        .workspace
+                        .apply_qed_order_weight(&family.family, rho)?;
+                }
                 family.applied_parameter_version = self.parameter_version;
             }
             family
@@ -4909,7 +5048,9 @@ mod tests {
         assert_eq!(used, bytes.len());
         let mut restored =
             OnTheFlyQueryFamilyExecutorV1::new(ProbeResolver::packed_singleton(catalog));
-        let handle = restored.restore_snapshot(saved.unwrap(), 1).unwrap();
+        let handle = restored
+            .restore_snapshot(saved.unwrap(), 1, Box::new([]))
+            .unwrap();
         assert!(restored.activate_retained_family(handle, 2).unwrap());
         let mut outputs = [(0.0, 0.0); 2];
         let report = restored
@@ -4927,7 +5068,11 @@ mod tests {
         let (saved, _): (Option<snapshot::OnTheFlyFamilySnapshotV1>, usize) =
             bincode::decode_from_slice(&bytes, bincode::config::standard()).unwrap();
         restored.family_generation = u64::MAX;
-        assert!(restored.restore_snapshot(saved.unwrap(), 1).is_err());
+        assert!(
+            restored
+                .restore_snapshot(saved.unwrap(), 1, Box::new([]))
+                .is_err()
+        );
         assert!(restored.pending.is_none());
         let report = restored
             .execute_into(&one_point_momenta(2.0, 3.0), 1, &mut first_output)

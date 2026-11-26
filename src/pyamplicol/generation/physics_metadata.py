@@ -10,7 +10,10 @@ from typing import Any
 
 from ..color.nc_expansion import nc_degree_color_id
 from ..models.base import Model
-from .born_orders import RuntimeNormalizationRequest
+from .born_orders import (
+    RuntimeNormalizationRequest,
+    runtime_normalization_payload,
+)
 from .contracts import runtime_coupling_parameter_names
 from .dag_types import GenericDAG
 from .helicity_replay import (
@@ -340,8 +343,8 @@ def build_runtime_normalization(
     """Build the shared runtime normalization payload for one DAG."""
 
     return dict(
-        model.runtime_normalization_payload(
-            RuntimeNormalizationRequest.of_dag(dag, model)
+        runtime_normalization_payload(
+            model, RuntimeNormalizationRequest.of_dag(dag, model)
         )
     )
 

@@ -44,6 +44,7 @@ from pyamplicol.config import (
     config_to_dict,
 )
 
+from .._internal.qed_order_weights import is_qed_order_weighted
 from .._internal.versions import (
     COMPILED_COLOR_CONTRACTION_WALSH_C2K_CAPABILITY,
     COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
@@ -67,6 +68,7 @@ from .._internal.versions import (
     ON_THE_FLY_RUNTIME_CAPABILITY,
     PROCESS_ARTIFACT_SCHEMA_VERSION,
     PYTHON_API_VERSION,
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_BUILDER_INPUT_ABI,
     RECURRENCE_COLOR_RUNTIME_CAPABILITY,
     RECURRENCE_CONTRACTED_COLOR_RUNTIME_CAPABILITY,
@@ -2941,7 +2943,7 @@ def _eager_plan_v3_execution_manifest(
         "Rust eager runtime payload size",
         minimum=1,
     )
-    capabilities = list(_EAGER_PLAN_V3_RUNTIME_CAPABILITIES)
+    capabilities = list(_eager_plan_v3_process_runtime_capabilities(process))
     plan = {
         "kind": EAGER_RUNTIME_KIND,
         "eager_plan_abi": EAGER_PLAN_V3_ABI,
@@ -3258,6 +3260,8 @@ def _execution_manifest(
         )
     if process.zero_color_flow_count:
         required_runtime_capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        required_runtime_capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return {
         "schema_version": PROCESS_ARTIFACT_SCHEMA_VERSION,
         "kind": "pyamplicol-runtime-execution",
@@ -3655,6 +3659,13 @@ def _execution_plan(schema: Mapping[str, object]) -> dict[str, object]:
             "qcd_coupling_power": int(normalization.get("qcd_coupling_power", 0)),
             "electroweak_coupling_power": int(
                 normalization.get("electroweak_coupling_power", 0)
+            ),
+            # Only a QED-order-weighted normalization names its policy, so
+            # every other execution plan keeps its bytes.
+            **(
+                {"coupling_policy": str(normalization["coupling_policy"])}
+                if is_qed_order_weighted(normalization)
+                else {}
             ),
         },
         "parameter_layout": {
@@ -5218,6 +5229,8 @@ def _compiled_process_runtime_capabilities(
         capabilities.add(COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY)
     if process.zero_color_flow_count:
         capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     if process.color_selector_executions:
         capabilities.add(COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY)
         capabilities.add(COMPILED_RUNTIME_SELECTORS_CAPABILITY)
@@ -5343,8 +5356,41 @@ def _process_runtime_capabilities(
     if isinstance(process, RecurrenceProcessArtifact):
         return _recurrence_process_runtime_capabilities(process)
     if isinstance(process, EagerPlanV3ProcessArtifact):
-        return _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
+        return _eager_plan_v3_process_runtime_capabilities(process)
     return _compiled_process_runtime_capabilities(process)
+
+
+def _process_normalization(process: ProcessArtifact) -> Mapping[str, object]:
+    """The runtime normalization payload a tree process artifact carries."""
+
+    if isinstance(process, RecurrenceProcessArtifact | OnTheFlyProcessArtifact):
+        return _mapping(process.runtime_metadata.get("normalization", {}))
+    if isinstance(process, EagerPlanV3ProcessArtifact):
+        extensions = _mapping(process.physics.get("extensions", {}))
+        return _mapping(extensions.get("normalization", {}))
+    if isinstance(process, CompiledProcessArtifact):
+        schema = _runtime_schema_mapping(process.runtime_schema)
+        return _mapping(schema.get("normalization", {}))
+    return {}
+
+
+def _process_is_qed_order_weighted(process: ProcessArtifact) -> bool:
+    return is_qed_order_weighted(_process_normalization(process))
+
+
+def _eager_plan_v3_process_runtime_capabilities(
+    process: EagerPlanV3ProcessArtifact,
+) -> tuple[str, ...]:
+    if not _process_is_qed_order_weighted(process):
+        return _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
+    return tuple(
+        sorted(
+            {
+                *_EAGER_PLAN_V3_RUNTIME_CAPABILITIES,
+                QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
+            }
+        )
+    )
 
 
 def _on_the_fly_process_runtime_capabilities(
@@ -5364,6 +5410,8 @@ def _on_the_fly_process_runtime_capabilities(
     }
     if _uses_symmetric_group_fft_color_contraction(process):
         capabilities.add(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return tuple(sorted(capabilities))
 
 
@@ -5383,6 +5431,8 @@ def _recurrence_process_runtime_capabilities(
         capabilities.add(RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY)
     if _uses_symmetric_group_fft_color_contraction(process):
         capabilities.add(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return tuple(sorted(capabilities))
 
 

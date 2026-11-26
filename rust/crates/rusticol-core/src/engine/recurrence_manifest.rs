@@ -3,6 +3,7 @@
 //! Bounded parsing and semantic validation for recurrence execution manifests.
 
 use crate::engine::{
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY,
     SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY,
 };
@@ -807,11 +808,15 @@ impl RecurrenceExecutionManifest {
             .and_then(|reference| reference.factorization.as_ref())
             .is_some_and(|factorization| factorization.kind == "symmetric-group-fourier");
         let has_helicity_selector_companion = self.helicity_selector_companion.is_some();
+        let qed_order_weighted = super::is_qed_order_weighted_policy(Some(
+            self.runtime_metadata.normalization.coupling_policy.as_str(),
+        ));
         validate_capabilities(
             &self.required_runtime_capabilities,
             &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "recurrence execution manifest",
         )?;
         validate_capabilities(
@@ -819,6 +824,7 @@ impl RecurrenceExecutionManifest {
             &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "outer recurrence process",
         )?;
         validate_direct_contract(
@@ -863,6 +869,7 @@ impl RecurrenceExecutionManifest {
             color_accuracy: &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             role: RecurrencePlanRole::Primary,
         })?;
         self.recurrence_summary.validate()?;
@@ -925,6 +932,7 @@ struct RecurrencePlanValidation<'a> {
     color_accuracy: &'a str,
     uses_symmetric_group_fft: bool,
     has_helicity_selector_companion: bool,
+    qed_order_weighted: bool,
     role: RecurrencePlanRole,
 }
 
@@ -953,6 +961,7 @@ impl RecurrencePlanSummary {
             color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             role,
         } = validation;
         if self.kind != RECURRENCE_RUNTIME_KIND {
@@ -993,6 +1002,7 @@ impl RecurrencePlanSummary {
             color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "nested recurrence plan",
         )?;
         if self.helicity_dispatch.is_some() != (role == RecurrencePlanRole::HelicitySelector) {
@@ -1116,6 +1126,13 @@ impl RecurrenceHelicitySelectorCompanionManifest {
             color_accuracy: &primary.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion: true,
+            qed_order_weighted: super::is_qed_order_weighted_policy(Some(
+                primary
+                    .runtime_metadata
+                    .normalization
+                    .coupling_policy
+                    .as_str(),
+            )),
             role: RecurrencePlanRole::HelicitySelector,
         })?;
 
@@ -3232,6 +3249,7 @@ fn validate_capabilities(
     color_accuracy: &str,
     uses_symmetric_group_fft: bool,
     has_helicity_selector_companion: bool,
+    qed_order_weighted: bool,
     context: &str,
 ) -> RusticolResult<()> {
     let color_capability = match color_accuracy {
@@ -3249,6 +3267,9 @@ fn validate_capabilities(
     }
     if has_helicity_selector_companion {
         expected.push(RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY);
+    }
+    if qed_order_weighted {
+        expected.push(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY);
     }
     expected.sort_unstable();
     if capabilities.iter().map(String::as_str).collect::<Vec<_>>() != expected {
