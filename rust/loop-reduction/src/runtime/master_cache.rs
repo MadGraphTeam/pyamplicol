@@ -38,11 +38,24 @@
 //! the tier, so that a row it has seen takes no lock (most requests are
 //! repeats: about 150 per evaluated row on loop-induced plans). The serial
 //! reduction uses no shared tier.
+//!
+//! **Look-ups.** Most requests repeat a row already seen (the lanes of one
+//! point ask for the same masters; about 150 requests per evaluated row on
+//! loop-induced plans), so the look-up itself dominates the cache's cost. A
+//! key hashes the words of its arguments with a word hasher
+//! ([`Key::digest`]); two keys are equal only when every bit of their rows
+//! is, so a collision costs a comparison, never a different value. Triangle
+//! and box rows are also remembered as they were asked ([`MasterCache`]'s
+//! `asked`): a repeated row is resolved to the source its first occurrence
+//! found, without being canonicalised again. Canonicalisation is a function
+//! of the row's bits, so that source is the one the canonical look-up would
+//! find: which rows reach the provider, in which order, and every count are
+//! those of the plain canonical look-up.
 
 use ninjars::Result;
 use ninjars::fast::{C64, FastMaster, FastMasters};
 use std::collections::HashMap;
-use std::hash::BuildHasher;
+use std::hash::{BuildHasher, BuildHasherDefault, Hash, Hasher};
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
@@ -121,7 +134,10 @@ impl MasterStatistics {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+/// The exact key of a master row: its family and the bit patterns of its
+/// arguments (real and imaginary part of each, in order; the words past the
+/// family's arity are zero).
+#[derive(Clone, Copy)]
 struct Key {
     family: FastMaster,
     bits: [u64; 2 * MAX_ARITY],
@@ -136,7 +152,99 @@ impl Key {
         }
         Self { family, bits }
     }
+
+    /// The words that hold the arguments.
+    fn words(&self) -> &[u64] {
+        &self.bits[..2 * self.family.arity()]
+    }
+
+    /// A digest of every word of the key: the folded products of each
+    /// argument's two words, each with constants of its position, summed (no
+    /// dependency chain between the arguments), then mixed once by
+    /// [`DigestHasher`]. Only the speed of a look-up depends on it.
+    #[inline]
+    fn digest(&self) -> u64 {
+        let mut sum = (self.family as u64).wrapping_add(1).wrapping_mul(SEEDS[0]);
+        for (k, pair) in self.words().chunks_exact(2).enumerate() {
+            sum = sum.wrapping_add(fold(pair[0] ^ SEEDS[2 * k + 1], pair[1] ^ SEEDS[2 * k + 2]));
+        }
+        sum
+    }
 }
+
+/// Keys are equal when their families and every bit of their arguments are.
+impl PartialEq for Key {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.family == other.family && self.words() == other.words()
+    }
+}
+
+impl Eq for Key {}
+
+impl Hash for Key {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u64(self.digest());
+    }
+}
+
+/// The 64-bit halves of a full product, xored (the mixing step of the
+/// folded-multiply hashes).
+#[inline]
+fn fold(a: u64, b: u64) -> u64 {
+    let product = u128::from(a) * u128::from(b);
+    (product as u64) ^ ((product >> 64) as u64)
+}
+
+/// Constants of [`Key::digest`] (a SplitMix64 sequence): one for the
+/// family, two per argument position, one for the final mix.
+const SEEDS: [u64; 2 * MAX_ARITY + 2] = {
+    let mut seeds = [0; 2 * MAX_ARITY + 2];
+    let mut state: u64 = 0x9e37_79b9_7f4a_7c15;
+    let mut k = 0;
+    while k < seeds.len() {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut z = state;
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        seeds[k] = (z ^ (z >> 31)) | 1;
+        k += 1;
+    }
+    seeds
+};
+
+/// The hasher of the cache's maps: a [`Key`] writes its digest once, which
+/// is mixed here so that every bit of it reaches the low bits (the table's
+/// buckets) and the high bits (its tags). Other input is folded in word by
+/// word.
+#[derive(Default)]
+struct DigestHasher(u64);
+
+impl Hasher for DigestHasher {
+    fn write(&mut self, bytes: &[u8]) {
+        for chunk in bytes.chunks(8) {
+            let mut word = [0; 8];
+            word[..chunk.len()].copy_from_slice(chunk);
+            self.write_u64(u64::from_le_bytes(word));
+        }
+    }
+
+    #[inline]
+    fn write_u64(&mut self, word: u64) {
+        self.0 = fold(self.0 ^ word, SEEDS[2 * MAX_ARITY + 1]);
+    }
+
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
+type Digested = BuildHasherDefault<DigestHasher>;
+
+/// A map keyed by exact master rows.
+type ExactMap<V> = HashMap<Key, V, Digested>;
 
 fn order_key(value: &C64) -> (u64, u64) {
     (value.re.to_bits(), value.im.to_bits())
@@ -214,8 +322,7 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
 /// canonical key, in shards (each a reader-writer lock) so that the workers
 /// rarely wait for one another.
 pub struct SharedMasters {
-    shards: Vec<RwLock<HashMap<Key, [[C64; 3]; MAX_OUTPUTS]>>>,
-    hasher: std::hash::RandomState,
+    shards: Vec<RwLock<ExactMap<[[C64; 3]; MAX_OUTPUTS]>>>,
 }
 
 impl SharedMasters {
@@ -224,13 +331,17 @@ impl SharedMasters {
         // A few shards per worker: two workers rarely want one at once.
         let shards = (4 * workers.max(1)).next_power_of_two();
         Self {
-            shards: (0..shards).map(|_| RwLock::new(HashMap::new())).collect(),
-            hasher: std::hash::RandomState::new(),
+            shards: (0..shards)
+                .map(|_| RwLock::new(ExactMap::default()))
+                .collect(),
         }
     }
 
-    fn shard(&self, key: &Key) -> &RwLock<HashMap<Key, [[C64; 3]; MAX_OUTPUTS]>> {
-        &self.shards[(self.hasher.hash_one(key) as usize) & (self.shards.len() - 1)]
+    fn shard(&self, key: &Key) -> &RwLock<ExactMap<[[C64; 3]; MAX_OUTPUTS]>> {
+        // Bits of the hash that a shard's table uses neither for its buckets
+        // (the low bits) nor for its tags (the top seven).
+        let hash = Digested::default().hash_one(key);
+        &self.shards[((hash >> 40) as usize) & (self.shards.len() - 1)]
     }
 
     /// Drop every value (a new chunk of points).
@@ -253,24 +364,41 @@ impl SharedMasters {
     }
 }
 
-/// Where a request row's outputs come from.
+/// Where a request row's outputs come from: a cached value (its offset in
+/// the cache's values) or a miss of the current call (its index).
 #[derive(Clone, Copy)]
 enum Source {
     Cached(usize),
     Evaluated(usize),
 }
 
+/// Whether a family's rows have a canonical form other than themselves
+/// ([`canonicalise`]): those rows are also remembered as asked.
+fn relabelled(family: FastMaster) -> bool {
+    matches!(family, FastMaster::C0 | FastMaster::D0)
+}
+
 /// Canonicalising, optionally caching [`FastMasters`] wrapper.
 pub struct MasterCache<M> {
     inner: M,
     enabled: bool,
-    entries: HashMap<Key, usize>,
+    /// Canonical key -> offset of its outputs in `values`.
+    entries: ExactMap<usize>,
+    /// Triangle and box rows as asked -> the source their canonical key
+    /// resolved to (module docs, 'Look-ups'). Between calls it holds cached
+    /// sources only: a call's own misses are settled at its end.
+    asked: ExactMap<Source>,
     values: Vec<[C64; 3]>,
     statistics: MasterStatistics,
     canonical: Vec<C64>,
     sources: Vec<Source>,
-    pending: HashMap<Key, usize>,
+    pending: ExactMap<usize>,
     pending_keys: Vec<Key>,
+    /// Rows of the current call entered in `asked` as one of its misses.
+    asked_misses: Vec<Key>,
+    /// Per miss of the current call: the offset of its stored outputs, or
+    /// `None` (failed).
+    stored: Vec<Option<usize>>,
     miss_args: Vec<C64>,
     miss_out: Vec<[C64; 3]>,
     miss_ok: Vec<bool>,
@@ -283,13 +411,16 @@ impl<M: FastMasters> MasterCache<M> {
         Self {
             inner,
             enabled,
-            entries: HashMap::new(),
+            entries: ExactMap::default(),
+            asked: ExactMap::default(),
             values: Vec::new(),
             statistics: MasterStatistics::default(),
             canonical: Vec::new(),
             sources: Vec::new(),
-            pending: HashMap::new(),
+            pending: ExactMap::default(),
             pending_keys: Vec::new(),
+            asked_misses: Vec::new(),
+            stored: Vec::new(),
             miss_args: Vec::new(),
             miss_out: Vec::new(),
             miss_ok: Vec::new(),
@@ -308,8 +439,7 @@ impl<M: FastMasters> MasterCache<M> {
             _ => false,
         };
         if !same {
-            self.entries.clear();
-            self.values.clear();
+            self.forget();
             self.shared = shared;
         }
     }
@@ -341,11 +471,17 @@ impl<M: FastMasters> MasterCache<M> {
 
     /// Drop every cached value (statistics are kept), the shared tier's too.
     pub fn clear(&mut self) {
-        self.entries.clear();
-        self.values.clear();
+        self.forget();
         if let Some(shared) = &self.shared {
             shared.clear();
         }
+    }
+
+    /// Drop this cache's own values and what points at them.
+    fn forget(&mut self) {
+        self.entries.clear();
+        self.asked.clear();
+        self.values.clear();
     }
 
     /// Number of distinct cached rows (the shared tier's when in use).
@@ -451,45 +587,30 @@ impl<M: FastMasters> MasterCache<M> {
         }
         let index = family_index(family);
         self.statistics.requests[index] += rows as u64;
-        self.canonical.resize(args.len(), C64::ZERO);
-        for (row, canonical) in args
-            .chunks_exact(arity)
-            .zip(self.canonical.chunks_exact_mut(arity))
-        {
-            canonicalise(family, row, canonical);
-        }
         if !self.enabled {
+            self.canonical.resize(args.len(), C64::ZERO);
+            for (row, canonical) in args
+                .chunks_exact(arity)
+                .zip(self.canonical.chunks_exact_mut(arity))
+            {
+                canonicalise(family, row, canonical);
+            }
             self.statistics.evaluated[index] += rows as u64;
             let canonical = std::mem::take(&mut self.canonical);
             let result = self.provider(family, &canonical, out, ok);
             self.canonical = canonical;
             return result;
         }
-        if let Some(shared) = self.shared.clone() {
-            return self.evaluate_shared(&shared, family, out, ok);
-        }
-        self.sources.clear();
-        self.pending.clear();
-        self.pending_keys.clear();
-        self.miss_args.clear();
-        for row in self.canonical.chunks_exact(arity) {
-            let key = Key::new(family, row);
-            let source = if let Some(&offset) = self.entries.get(&key) {
-                Source::Cached(offset)
-            } else if let Some(&miss) = self.pending.get(&key) {
-                Source::Evaluated(miss)
-            } else {
-                let miss = self.pending_keys.len();
-                self.pending.insert(key, miss);
-                self.pending_keys.push(key);
-                self.miss_args.extend_from_slice(row);
-                Source::Evaluated(miss)
-            };
-            self.sources.push(source);
-        }
+        let shared = self.shared.clone();
+        let shared = shared.as_deref();
+        self.resolve(family, args, shared);
         let misses = self.pending_keys.len();
-        self.statistics.evaluated[index] += misses as u64;
-        self.statistics.hits[index] += (rows - misses) as u64;
+        if shared.is_none() {
+            // The serial cache counts before evaluating (also when the
+            // provider fails).
+            self.statistics.evaluated[index] += misses as u64;
+            self.statistics.hits[index] += (rows - misses) as u64;
+        }
         self.miss_out.clear();
         self.miss_out.resize(misses * width, [C64::ZERO; 3]);
         self.miss_ok.clear();
@@ -502,13 +623,61 @@ impl<M: FastMasters> MasterCache<M> {
             );
             let result = self.provider(family, &miss_args, &mut miss_out, &mut miss_ok);
             (self.miss_args, self.miss_out, self.miss_ok) = (miss_args, miss_out, miss_ok);
-            result?;
+            if result.is_err() {
+                // This call's misses have no outputs: forget the rows that
+                // point at them.
+                for key in &self.asked_misses {
+                    self.asked.remove(key);
+                }
+                return result;
+            }
         }
+        // Store the successful misses. On the shared tier, a successful row
+        // is evaluated when its value is the first stored under its key; a
+        // failed row always (as the serial cache counts it).
+        self.stored.clear();
+        let mut evaluated = 0;
         for (miss, key) in self.pending_keys.iter().enumerate() {
-            if self.miss_ok[miss] {
-                self.entries.insert(*key, self.values.len());
-                self.values
-                    .extend_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
+            if !self.miss_ok[miss] {
+                self.stored.push(None);
+                evaluated += 1;
+                continue;
+            }
+            let outputs = &self.miss_out[miss * width..(miss + 1) * width];
+            let offset = self.values.len();
+            self.entries.insert(*key, offset);
+            self.values.extend_from_slice(outputs);
+            self.stored.push(Some(offset));
+            if let Some(shared) = shared {
+                let mut value = [[C64::ZERO; 3]; MAX_OUTPUTS];
+                value[..width].copy_from_slice(outputs);
+                if let std::collections::hash_map::Entry::Vacant(entry) = shared
+                    .shard(key)
+                    .write()
+                    .expect("shared masters")
+                    .entry(*key)
+                {
+                    entry.insert(value);
+                    evaluated += 1;
+                }
+            }
+        }
+        if shared.is_some() {
+            self.statistics.evaluated[index] += evaluated as u64;
+            self.statistics.hits[index] += (rows - evaluated) as u64;
+        }
+        // Rows asked in this call that resolved to one of its misses now
+        // point at its stored outputs, or are forgotten when it failed.
+        for key in &self.asked_misses {
+            let source = self.asked.get_mut(key).expect("a row of this call");
+            let Source::Evaluated(miss) = *source else {
+                unreachable!("a row of this call's misses")
+            };
+            match self.stored[miss] {
+                Some(offset) => *source = Source::Cached(offset),
+                None => {
+                    self.asked.remove(key);
+                }
             }
         }
         for ((source, target), status) in self
@@ -530,35 +699,54 @@ impl<M: FastMasters> MasterCache<M> {
         }
         Ok(())
     }
-}
 
-impl<M: FastMasters> MasterCache<M> {
-    /// [`Self::evaluate_rows`] on the shared tier, the canonical rows in
-    /// `self.canonical` (module docs, 'Shared tier'): the cache's own values
-    /// stay in front of the tier (a row this engine has seen takes no lock),
-    /// and keep every row it found there or evaluated.
-    fn evaluate_shared(
-        &mut self,
-        shared: &SharedMasters,
-        family: FastMaster,
-        out: &mut [[C64; 3]],
-        ok: &mut [bool],
-    ) -> Result<()> {
-        let (arity, width) = (family.arity(), family.outputs());
-        let index = family_index(family);
-        let rows = ok.len();
+    /// The source of every row of a call (`self.sources`), its misses
+    /// (`self.pending_keys`, their canonical rows in `self.miss_args`): a
+    /// row's canonical key is looked up in the cache's values, then among the
+    /// call's misses, then in the shared tier (whose value the cache then
+    /// keeps, so that a row it has seen takes no lock), else it is a new miss.
+    /// A triangle or box row asked before resolves to the source its first
+    /// occurrence found (module docs, 'Look-ups').
+    fn resolve(&mut self, family: FastMaster, args: &[C64], shared: Option<&SharedMasters>) {
+        let arity = family.arity();
+        let width = family.outputs();
+        let relabelled = relabelled(family);
         self.sources.clear();
         self.pending.clear();
         self.pending_keys.clear();
+        self.asked_misses.clear();
         self.miss_args.clear();
-        for row in self.canonical.chunks_exact(arity) {
-            let key = Key::new(family, row);
+        let mut canonical = [C64::ZERO; MAX_ARITY];
+        for row in args.chunks_exact(arity) {
+            let asked = Key::new(family, row);
+            if relabelled && let Some(&source) = self.asked.get(&asked) {
+                self.sources.push(source);
+                continue;
+            }
+            // The canonical row (a bubble's or a tadpole's is the row).
+            let canonical = if relabelled {
+                canonicalise(family, row, &mut canonical[..arity]);
+                &canonical[..arity]
+            } else {
+                row
+            };
+            let key = if relabelled {
+                Key::new(family, canonical)
+            } else {
+                asked
+            };
             let source = if let Some(&offset) = self.entries.get(&key) {
                 Source::Cached(offset)
             } else if let Some(&miss) = self.pending.get(&key) {
                 Source::Evaluated(miss)
-            } else if let Some(found) = shared.shard(&key).read().expect("shared masters").get(&key)
-            {
+            } else if let Some(found) = shared.and_then(|shared| {
+                shared
+                    .shard(&key)
+                    .read()
+                    .expect("shared masters")
+                    .get(&key)
+                    .copied()
+            }) {
                 let offset = self.values.len();
                 self.entries.insert(key, offset);
                 self.values.extend_from_slice(&found[..width]);
@@ -567,69 +755,17 @@ impl<M: FastMasters> MasterCache<M> {
                 let miss = self.pending_keys.len();
                 self.pending.insert(key, miss);
                 self.pending_keys.push(key);
-                self.miss_args.extend_from_slice(row);
+                self.miss_args.extend_from_slice(canonical);
                 Source::Evaluated(miss)
             };
+            if relabelled {
+                self.asked.insert(asked, source);
+                if let Source::Evaluated(_) = source {
+                    self.asked_misses.push(asked);
+                }
+            }
             self.sources.push(source);
         }
-        let misses = self.pending_keys.len();
-        self.miss_out.clear();
-        self.miss_out.resize(misses * width, [C64::ZERO; 3]);
-        self.miss_ok.clear();
-        self.miss_ok.resize(misses, false);
-        if misses > 0 {
-            let (miss_args, mut miss_out, mut miss_ok) = (
-                std::mem::take(&mut self.miss_args),
-                std::mem::take(&mut self.miss_out),
-                std::mem::take(&mut self.miss_ok),
-            );
-            let result = self.provider(family, &miss_args, &mut miss_out, &mut miss_ok);
-            (self.miss_args, self.miss_out, self.miss_ok) = (miss_args, miss_out, miss_ok);
-            result?;
-        }
-        // A successful row is evaluated when its value is the first stored
-        // under its key; a failed row always (as the serial cache counts it).
-        let mut evaluated = 0;
-        for (miss, key) in self.pending_keys.iter().enumerate() {
-            if !self.miss_ok[miss] {
-                evaluated += 1;
-                continue;
-            }
-            let outputs = &self.miss_out[miss * width..(miss + 1) * width];
-            self.entries.insert(*key, self.values.len());
-            self.values.extend_from_slice(outputs);
-            let mut value = [[C64::ZERO; 3]; MAX_OUTPUTS];
-            value[..width].copy_from_slice(outputs);
-            if let std::collections::hash_map::Entry::Vacant(entry) = shared
-                .shard(key)
-                .write()
-                .expect("shared masters")
-                .entry(*key)
-            {
-                entry.insert(value);
-                evaluated += 1;
-            }
-        }
-        self.statistics.evaluated[index] += evaluated as u64;
-        self.statistics.hits[index] += (rows - evaluated) as u64;
-        for ((source, target), status) in self
-            .sources
-            .iter()
-            .zip(out.chunks_exact_mut(width))
-            .zip(ok.iter_mut())
-        {
-            match *source {
-                Source::Cached(offset) => {
-                    target.copy_from_slice(&self.values[offset..offset + width]);
-                    *status = true;
-                }
-                Source::Evaluated(miss) => {
-                    target.copy_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
-                    *status = self.miss_ok[miss];
-                }
-            }
-        }
-        Ok(())
     }
 }
 
@@ -773,5 +909,160 @@ mod tests {
         assert_eq!(statistics.total_requests(), 6);
         assert_eq!(statistics.total_evaluated(), 3);
         assert_eq!(statistics.total_hits(), 3);
+    }
+
+    /// Fails the whole call (an error, not row statuses) while `broken`.
+    struct Breakable {
+        counting: Counting,
+        broken: bool,
+    }
+    impl FastMasters for Breakable {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            if self.broken {
+                return Err(ninjars::Error::Shape {
+                    name: "broken provider",
+                    expected: 0,
+                    actual: 1,
+                });
+            }
+            self.counting.evaluate(family, args, out, ok)
+        }
+    }
+
+    fn evaluate_rows<M: FastMasters>(
+        cache: &mut MasterCache<M>,
+        family: FastMaster,
+        rows: &[Vec<C64>],
+    ) -> Result<(Vec<[C64; 3]>, Vec<bool>)> {
+        let args = rows.concat();
+        let mut out = vec![[C64::ZERO; 3]; rows.len() * family.outputs()];
+        let mut ok = vec![false; rows.len()];
+        cache.evaluate(family, &args, &mut out, &mut ok)?;
+        Ok((out, ok))
+    }
+
+    /// Relabelled boxes asked again, in one call and across calls, get the
+    /// value of their canonical row, which reaches the provider once; counts
+    /// as without the memo of asked rows.
+    #[test]
+    fn repeated_relabelled_rows_resolve_to_their_canonical_value() {
+        let s = [
+            [0., 1.5, -7.25, 0.],
+            [1.5, 0., 0., -3.5],
+            [-7.25, 0., 0., 2.125],
+            [0., -3.5, 2.125, 0.],
+        ];
+        let m = [0., 0., 30.25, 30.25];
+        let rows: Vec<Vec<C64>> = [[0, 1, 2, 3], [1, 2, 3, 0], [0, 1, 2, 3], [3, 2, 1, 0]]
+            .iter()
+            .map(|lines| box_row(&s, m, *lines))
+            .collect();
+        let crossed = box_row(&s, m, [0, 2, 1, 3]);
+        let mut cache = MasterCache::new(Counting(0), true);
+        let (first, ok) = evaluate_rows(&mut cache, FastMaster::D0, &rows).unwrap();
+        assert!(ok.iter().all(|ok| *ok));
+        assert!(first.iter().all(|value| *value == first[0]));
+        assert_eq!(cache.inner.0, 1);
+        let later = [rows[1].clone(), crossed.clone(), rows[0].clone(), crossed];
+        let (second, ok) = evaluate_rows(&mut cache, FastMaster::D0, &later).unwrap();
+        assert!(ok.iter().all(|ok| *ok));
+        assert_eq!([second[0], second[2]], [first[0], first[0]]);
+        assert_eq!(second[1], second[3]);
+        assert_eq!(cache.inner.0, 2);
+        let statistics = cache.statistics();
+        assert_eq!(statistics.total_requests(), 8);
+        assert_eq!(statistics.total_evaluated(), 2);
+        assert_eq!(statistics.total_hits(), 6);
+        // The same values uncached (every row canonicalised and evaluated).
+        let mut plain = MasterCache::new(Counting(0), false);
+        let (uncached, _) = evaluate_rows(&mut plain, FastMaster::D0, &later).unwrap();
+        assert_eq!(uncached, second);
+        // Cleared: asked again, evaluated again.
+        cache.clear();
+        evaluate_rows(&mut cache, FastMaster::D0, &rows).unwrap();
+        assert_eq!(cache.inner.0, 3);
+    }
+
+    /// A failed triangle row and the rows of a call whose provider failed
+    /// are not remembered: asked again, they are evaluated again.
+    #[test]
+    fn failed_rows_and_failed_calls_are_asked_again() {
+        let triangle = |[a, b, c]: [f64; 3], [m0, m1, m2]: [f64; 3]| {
+            vec![
+                value(a),
+                value(b),
+                value(c),
+                value(m0),
+                value(m1),
+                value(m2),
+                value(4.),
+            ]
+        };
+        // Every invariant negative: the canonical row starts negative and fails.
+        let failing = triangle([-2., -5., -11.], [0., 3., 7.]);
+        let good = triangle([2., -5., 11.], [0., 3., 7.]);
+        // `good` with its lines relabelled (1, 2, 0).
+        let relabelled_good = triangle([-5., 11., 2.], [3., 7., 0.]);
+        let mut cache = MasterCache::new(
+            Breakable {
+                counting: Counting(0),
+                broken: false,
+            },
+            true,
+        );
+        let rows = [failing.clone(), good.clone(), failing.clone()];
+        let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
+        assert_eq!(ok, [false, true, false]);
+        assert_eq!(cache.inner.counting.0, 2);
+        let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
+        assert_eq!(ok, [false, true, false]);
+        assert_eq!(cache.inner.counting.0, 3);
+        // A call that fails as a whole: its new rows are not remembered.
+        cache.inner.broken = true;
+        let fresh = [
+            relabelled_good.clone(),
+            triangle([1., 1., 1.], [0., 3., 7.]),
+        ];
+        assert!(evaluate_rows(&mut cache, FastMaster::C0, &fresh).is_err());
+        cache.inner.broken = false;
+        let (values, ok) = evaluate_rows(&mut cache, FastMaster::C0, &fresh).unwrap();
+        assert_eq!(ok, [true, true]);
+        assert_eq!(cache.inner.counting.0, 4);
+        let mut plain = MasterCache::new(Counting(0), false);
+        let (expected, _) = evaluate_rows(&mut plain, FastMaster::C0, &fresh).unwrap();
+        assert_eq!(values, expected);
+        let statistics = cache.statistics();
+        assert_eq!(statistics.total_requests(), 10);
+        assert_eq!(statistics.total_evaluated(), 2 + 1 + 1 + 1);
+    }
+
+    /// Keys differ when any bit of a row does (signed zeros, one unit in the
+    /// last place, an imaginary part).
+    #[test]
+    fn rows_differing_in_one_bit_are_different_masters() {
+        let bubble = |p: C64| vec![p, value(0.), value(9.), value(4.)];
+        let next = f64::from_bits(5f64.to_bits() + 1);
+        let rows = [
+            bubble(value(0.)),
+            bubble(value(-0.)),
+            bubble(value(5.)),
+            bubble(value(next)),
+            bubble(C64::new(5., 1e-300)),
+            bubble(value(5.)),
+        ];
+        let mut cache = MasterCache::new(Counting(0), true);
+        evaluate_rows(&mut cache, FastMaster::BubbleRank2, &rows).unwrap();
+        assert_eq!(cache.inner.0, 5);
+        assert_eq!(cache.len(), 5);
+        let key = |row: &[C64]| Key::new(FastMaster::BubbleRank2, row);
+        assert!(key(&rows[0]) != key(&rows[1]));
+        assert!(key(&rows[2]) == key(&rows[5]));
+        assert!(Key::new(FastMaster::BubbleRank3, &rows[2]) != key(&rows[2]));
     }
 }
