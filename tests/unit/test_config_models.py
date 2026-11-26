@@ -86,8 +86,9 @@ def test_schema_v1_registry_contains_every_contract_leaf() -> None:
     # benchmark.all_backends (`profile --all-backends`); 160:
     # benchmark.measured_precisions (`profile --measured-precisions`); 163:
     # evaluation.phase_space.pt_min, delta_r_min and cut_attempts (`--pt-min`,
-    # `--delta-r-min`).
-    assert len(FIELD_REGISTRY) == 163
+    # `--delta-r-min`); 164: check.tolerance (`check --tolerance`, the
+    # threshold rule's K).
+    assert len(FIELD_REGISTRY) == 164
     assert FIELD_REGISTRY["benchmark.measured_precisions"].default == ("binary64",)
     assert FIELD_REGISTRY["evaluation.threads"].default is None
     assert FIELD_REGISTRY["evaluation.threads"].nullable

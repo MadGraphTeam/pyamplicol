@@ -21,26 +21,26 @@ and Ward checks of a one-loop request regenerated in memory
   internal species, not the cms-external-width refusal of an unstable leg.
 * **Exit codes and statuses** of the report (pure records), and a process
   with nothing to check (an exact colour zero, h > g a) exits 3.
-* **Rows without a criterion** (pure records): a binary64 pole or Ward row
-  without its estimate or out of the binary64 scope is "not run" (the next
-  carrier decides; with binary64 alone no pass), and a sector without a
-  pole row is listed "no prediction", never omitted.
+* **The threshold rule** (USER 2026-11-25; pure records): every row passes
+  iff R < K S (equality a miss), is inconclusive iff R or S cannot be
+  computed (not a finite number, a missing operand, a vanishing S, 0/0
+  included), and a row made of several required rows fails if one fails;
+  K is ``check.tolerance``, else the requested relative accuracy, and
+  changes the verdict; a planted violation fails and a non-finite row is
+  inconclusive; a sector without a pole row is listed "no prediction",
+  never omitted.
 * **An artifact is checked on what it stores**: an API-generated artifact
   whose configuration names another process is checked on its stored
   process; a model that is not the stored one (content hash) or a source
   that does not resolve is refused (``ArtifactError``), and ``--model`` /
   ``model=`` names the stored model's source.
-* **The arbitrary-precision rung** (DECISIONS 2026-11-10 00:08; scripted
-  carrier results): a row double-double fails while within ten times its own
-  estimate (asked for only then) is re-run alone in arbitrary precision at
-  the derived digits and decided there, by the double-double criterion; one
-  still undecided there reads "undecided" and fails its process (exit 1); a
-  double-double residual far above its estimate fails with no
-  arbitrary-precision run; ``check.arbitrary_digits`` sets the digits; an
-  explicit carrier runs no rung (its undecided rows read "undecided"); the
-  loop-induced probes' criterion is their own estimate, so the predicate
-  never holds for them. The real decision is a nightly id
-  (``test_loop_v2_check_ap``).
+* **The carrier ladder and the arbitrary-precision rung** (scripted carrier
+  results): a row binary64 does not pass runs in double-double, a row
+  double-double does not pass runs alone in arbitrary precision at twice
+  double-double's digits (or ``check.arbitrary_digits``) and takes the
+  verdict there, pole and Ward rows alike; a row still failing there fails
+  its process (exit 1); an explicit carrier runs no rung; a later carrier's
+  refusal leaves the row inconclusive, never a pass.
 * **Ward rows not applicable** (USER 2026-11-10 ~00:17; records on a toy
   model): a request whose corrections include one other than the model's
   strong correction AND with an on-shell zero-width external massive quark
@@ -348,25 +348,142 @@ def test_the_stored_rescue_stages_never_meet_an_uncertified_level():
 
 
 @pytest.mark.loop_fast
-def test_a_criterion_with_uncertified_lanes_is_three_way():
-    """``ward.judged`` / ``checks.uncertified_verdict``: a residual with
-    lanes served without accuracy evidence of bound B passes only when
-    residual + B is within the bound, fails only when residual - B is
-    above it, is inconclusive between and for an infinite B; without such
-    lanes (B = 0) it is the plain criterion."""
+def test_the_threshold_rule():
+    """``checks.threshold``: PASS iff R < K S (equality is a miss), FAIL iff
+    R >= K S, INCONCLUSIVE iff R or S cannot be computed (None, NaN,
+    infinite, negative R, S not positive, 0/0 included); compared as R / S <
+    K, so neither K S nor R / S underflows to a false verdict. A row of
+    several required rows fails if one fails, else is inconclusive if one
+    is (or none was compared). The magnitudes: a non-finite or unconvertible
+    value is None, never a raise. K: ``tolerating``, else the reduction
+    target in effect, else the default target."""
 
     import math
+    from decimal import Decimal
 
     from pyamplicol.loops.v2 import checks
+    from pyamplicol.loops.v2.reduction import default_target, targeting
     from pyamplicol.loops.v2.ward import judged
 
+    t = checks.threshold
+    assert t(0.9e-5, 1.0, 1e-5) == checks.PASS
+    assert t(1e-5, 1.0, 1e-5) == checks.FAIL  # equality is a miss
+    assert t(2e-5, 1.0, 1e-5) == checks.FAIL
+    assert t(0.0, 1.0, 1e-5) == checks.PASS
+    for residual, scale in (
+        (0.0, 0.0),
+        (1e-20, 0.0),
+        (None, 1.0),
+        (1.0, None),
+        (math.nan, 1.0),
+        (1.0, math.nan),
+        (math.inf, 1.0),
+        (0.0, math.inf),
+        (-1.0, 1.0),
+        (0.0, -1.0),
+    ):
+        assert t(residual, scale, 1e-5) == checks.INCONCLUSIVE, (residual, scale)
+    # Tiny and huge operands: R / S is formed, never K S.
+    assert t(1e-320, 1e-300, 1e-5) == checks.PASS
+    assert t(1e-310, 1e-306, 1e-5) == checks.FAIL
+    assert t(1e300, 1e308, 1e-5) == checks.PASS
+    assert checks.combined([checks.PASS, checks.INCONCLUSIVE]) == checks.INCONCLUSIVE
+    assert checks.combined([checks.INCONCLUSIVE, checks.FAIL]) == checks.FAIL
+    assert checks.combined([checks.PASS, checks.PASS]) == checks.PASS
+    assert checks.combined([]) == checks.INCONCLUSIVE
+    assert checks.magnitude(complex(3, 4)) == 5.0
+    assert checks.magnitude(Decimal("1e400")) is None
+    assert checks.magnitude(complex(math.nan, 0)) is None
+    assert checks.magnitude("not a number") is None
+    assert checks.real_gap(2.0 + 5j, 1.5 - 7j) == 0.5
+    assert checks.real_gap(math.inf, 1.0) is None
+    assert checks.real_gap(Decimal("1e400"), Decimal("1e400")) == 0.0
+    with checks.tolerating(None):
+        assert checks.tolerance() == default_target()
+        with targeting(1e-7):
+            assert checks.tolerance() == 1e-7
+            with checks.tolerating(1e-3):
+                assert checks.tolerance() == 1e-3
+    # The rule per row (``judge``): incomplete or non-finite is
+    # inconclusive (never vacuous); no term at all is vacuous; a known-zero
+    # reference is judged term-relative; R < K P passes on the physical
+    # scale; a miss that K T would pass is ambiguous only where P may be
+    # noise (P = 0 from cancelling terms, or P <= 10 E_P), else a physical
+    # failure.
+    measure = checks.Measure
+
+    def verdict(*args, **options):
+        found = checks.judge(measure("x", *args, **options), 1e-5)
+        return found.verdict, found.scale
+
+    assert verdict(1e-6, 1.0, 1e5) == (checks.PASS, checks.PHYSICAL)
+    assert verdict(1e-3, 1.0, 1e5) == (checks.FAIL, checks.PHYSICAL)
+    assert verdict(1e-3, 1.0, 1e5, physical_error=0.11) == (checks.AMBIGUOUS, None)
+    assert verdict(1e-3, 1.0, 1e5, physical_error=0.01) == (
+        checks.FAIL,
+        checks.PHYSICAL,
+    )
+    assert verdict(1e-3, 0.0, 1e5) == (checks.AMBIGUOUS, None)
+    assert verdict(1e-3, 0.0, 1e5, zero_reference=True) == (
+        checks.PASS,
+        checks.TERM_RELATIVE,
+    )
+    assert verdict(2.0, 0.0, 1e5, zero_reference=True) == (
+        checks.FAIL,
+        checks.TERM_RELATIVE,
+    )
+    assert verdict(0.0, 0.0, 0.0) == (checks.VACUOUS, None)
+    assert verdict(0.0, float("nan"), 0.0)[0] == checks.INCONCLUSIVE
+    assert verdict(0.0, 0.0, 0.0, complete=False)[0] == checks.INCONCLUSIVE
+    assert verdict(0.0, None, 1.0)[0] == checks.INCONCLUSIVE
+    # An ambiguous row against a narrower carrier's measurement (``settle``):
+    # P reproduces (a physical miss), collapses with the carriers' noise
+    # (term-relative), or neither (inconclusive).
+    double, double_double = 2.0**-53, 2.0**-104
+
+    def ambiguous(p_before, p_now, residue=1e-3, terms=1e5):
+        before = checks.Judgement(
+            checks.FAIL,
+            checks.PHYSICAL,
+            None,
+            None,
+            measure("x", 1.0, p_before, terms),
+            "double",
+            double,
+        )
+        now = checks.Judgement(
+            checks.AMBIGUOUS,
+            None,
+            None,
+            None,
+            measure("x", residue, p_now, terms),
+            "double-double",
+            double_double,
+        )
+        found = checks.settle(now, before, 1e-5)
+        return found.verdict, found.scale
+
+    assert ambiguous(1.0, 1.0) == (checks.FAIL, checks.PHYSICAL)
+    assert ambiguous(1e-17, 1e-33) == (checks.PASS, checks.TERM_RELATIVE)
+    assert ambiguous(1e-17, 1e-18)[0] == checks.INCONCLUSIVE
+    assert (
+        checks.settle(
+            checks.Judgement(checks.AMBIGUOUS, None, None, None, measure("x", 1, 1, 1)),
+            None,
+            1e-5,
+        ).verdict
+        == checks.INCONCLUSIVE
+    )
+    # A row every part of which is vacuous; a process of vacuous rows passes.
+    cells = {"x": checks.judge(measure("x", 0.0, 0.0, 0.0), 1e-5)}
+    row = checks.row_from_cells("poles", "x", 0, cells, 1e-5)
+    assert row.verdict == checks.VACUOUS and row.vacuous == 1
+    assert row.reason.startswith("nothing to test")
+    assert checks.status_of([checks.VACUOUS, checks.NOT_APPLICABLE]) == checks.PASSED
+    assert checks.status_of([checks.NOT_APPLICABLE]) == checks.NOTHING_CHECKED
+    # The stored-process harness keeps its three-way rule (``ward.judged``).
     assert judged(0.5, 1.0, 0.0) is True and judged(1.5, 1.0, 0.0) is False
-    assert judged(0.5, 1.0, 0.4) is True
     assert judged(0.5, 1.0, 0.6) is None
-    assert judged(2.0, 1.0, 0.5) is False
-    assert judged(0.0, 1.0, math.inf) is None
-    assert checks.uncertified_verdict(0.5, 1.0, 0.6) == checks.INCONCLUSIVE
-    assert checks.uncertified_verdict(0.5, 1.0, 0.0) == checks.PASS
 
 
 @pytest.mark.loop_fast
@@ -387,35 +504,110 @@ def test_the_catani_criterion_is_the_harness_rule():
     assert not catani_dd_comparison([0.0, 2.0 * (1 + 1e-11), -3.0], poles)[2]
 
 
+def _pole_rows(result, tolerance):
+    """The pole check rows of one evaluation (``checks._pole_measures``,
+    each judged at one carrier)."""
+
+    from pyamplicol.loops.v2 import checks
+
+    return {
+        key: checks.row_from_cells(
+            "poles", m.label, 0, {key: checks.judge(m, tolerance)}, tolerance
+        )
+        for key, m in checks._pole_measures(result).items()
+    }
+
+
+def _ward_row(measures, tolerance):
+    """One Ward check row from its required rows, judged at one carrier."""
+
+    from pyamplicol.loops.v2 import checks
+
+    cells = {label: checks.judge(m, tolerance) for label, m in measures.items()}
+    return checks.row_from_cells("ward", "leg 1, c = 1", 0, cells, tolerance)
+
+
+def _laurent(*values):
+    from types import SimpleNamespace as NS
+
+    return NS(coefficients=list(values))
+
+
+def _pole_result(sector, virtual, poles, parts=None, stability=None):
+    """A pole evaluation stand-in: the virtual's Laurent coefficients, its
+    parts (default: one bare part equal to the virtual) and Catani's (1/eps,
+    1/eps^2)."""
+
+    from types import SimpleNamespace as NS
+
+    components = {"virtual": {sector: _laurent(*virtual)}}
+    for name, values in (parts or {"bare": virtual}).items():
+        components[name] = {sector: _laurent(*values)}
+    return NS(stability=stability, components=components, ir_poles={sector: poles})
+
+
 @pytest.mark.loop_fast
-def test_rows_without_a_criterion_are_not_run_and_no_sector_is_omitted():
+def test_pole_and_ward_rows_judge_r_against_k_s():
+    """Pole rows: R = |Re V_k - Re C_k| against P = max(|Re C_k|, |Re V_k|)
+    (a known-zero analytic C_k: term-relative against T, the largest part);
+    a planted violation fails whatever the parts' cancellation, K changes
+    the verdict, a non-finite coefficient is inconclusive, a coefficient no
+    part has is vacuous, and a sector without a pole row is listed "no
+    prediction" (or "not run" where predicted), never omitted. Ward
+    rows: every Born sector and every virtual sector and coefficient judged
+    on its own; a sector or coefficient only one evaluation has is a missing
+    operand (inconclusive)."""
+
     from types import SimpleNamespace as NS
 
     from pyamplicol.loops.v2 import checks
 
     first, second = (("QCD", 4),), (("QCD", 2), ("QED", 2))
-
-    def laurent(*values):
-        return NS(coefficients=list(values))
-
-    result = NS(
-        stability=None,
-        components={"virtual": {first: laurent(0.0, 2.0, -3.0)}},
-        ir_poles={first: (2.0, -3.0)},
+    exact = _pole_result(first, (0.5, 2.0, -3.0), (2.0, -3.0))
+    rows = _pole_rows(exact, 1e-5)
+    assert {row.verdict for row in rows.values()} == {checks.PASS}
+    assert all(row.deviation == 0 and row.tolerance == 1e-5 for row in rows.values())
+    # A planted violation of 1e-3 relative on the 1/eps pole.
+    planted = _pole_result(first, (0.5, 2.002, -3.0), (2.0, -3.0))
+    rows = _pole_rows(planted, 1e-5)
+    assert rows[(first, 1)].verdict == checks.FAIL
+    # S = max(|C|, |V|) = 2.002.
+    assert rows[(first, 1)].deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
+    assert rows[(first, 2)].verdict == checks.PASS
+    # K changes the verdict.
+    assert _pole_rows(planted, 1e-2)[(first, 1)].verdict == (checks.PASS)
+    # P = max(|C|, |V|) decides, whatever the parts (T): a bare part of 20 or
+    # of 1e6 cancelling against the UV part changes nothing (the reviewer's
+    # case: a per-mille violation never hides behind the term scale).
+    parted = _pole_result(
+        first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 20.0, -3.0)}
     )
-    rows = checks._pole_rows_binary64(result, 0, 1e-5)
-    assert {row.verdict for row in rows.values()} == {checks.NOT_RUN}
-    assert all(row.reason.startswith("no criterion") for row in rows.values())
-    scoped = NS(
-        relative=1e-3,
-        absolute={first: laurent(0.0, 1e-12, 1e-12)},
-        scale={first: laurent(1.0, 1.0, 1.0)},
+    row = _pole_rows(parted, 1e-5)[(first, 1)]
+    assert (row.scale_by, row.physical, row.terms) == ("physical", 2.0, 20.0)
+    assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
+    assert row.verdict == checks.FAIL and row.residue == pytest.approx(2e-3)
+    cancelled = _pole_result(
+        first, (0.5, 2.002, -3.0), (2.0, -3.0), parts={"bare": (1.0, 1e6, -3.0)}
     )
-    rows = checks._pole_rows_binary64(
-        NS(**{**vars(result), "stability": scoped}), 0, 1e-5
-    )
-    assert {row.verdict for row in rows.values()} == {checks.NOT_RUN}
-    assert all("binary64 scope" in row.reason for row in rows.values())
+    row = _pole_rows(cancelled, 1e-5)[(first, 1)]
+    assert row.scale_by == "physical" and row.verdict == checks.FAIL
+    assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
+    # A non-finite coefficient: inconclusive, never a raise or a pass.
+    broken = _pole_result(first, (0.5, float("nan"), -3.0), (2.0, -3.0))
+    rows = _pole_rows(broken, 1e-5)
+    assert rows[(first, 1)].verdict == checks.INCONCLUSIVE
+    assert "cannot be computed" in rows[(first, 1)].reason
+    # A double pole neither the prediction nor any part has (only massive
+    # coloured legs): vacuous, nothing to test.
+    massive = _pole_result(first, (0.5, 2.0, 0.0), (2.0, 0.0))
+    row = _pole_rows(massive, 1e-5)[(first, 2)]
+    assert (row.verdict, row.vacuous) == (checks.VACUOUS, 1)
+    # A spurious double pole against a vanishing analytic prediction (a
+    # known-zero reference): term-relative, R / T = 1, a failure.
+    spurious = _pole_result(first, (0.5, 2.0, 1e-3), (2.0, 0.0))
+    row = _pole_rows(spurious, 1e-5)[(first, 2)]
+    assert row.verdict == checks.FAIL and row.deviation == pytest.approx(1.0)
+    assert row.scale_by == "term-relative"
     # A sector the operators predict but without a pole row at this point:
     # an applicable check that did not run, "not run" (exit 3), not a neutral
     # "no prediction" (DECISIONS 2026-11-09 14:25, lit-examples re-audit
@@ -428,31 +620,66 @@ def test_rows_without_a_criterion_are_not_run_and_no_sector_is_omitted():
     (row,) = checks._unpredicted_rows(slice_, [first, second], True, 0, {first})
     assert row.verdict == checks.NO_PREDICTION
     assert row.reason.startswith("uncorrected exchange")
-    # A Ward row whose virtual part is out of the binary64 scope: not run
-    # (its Born part passed), a failure when its Born part fails.
-    ward = {
-        "leg": 3,
-        "factor": (1, 0),
-        "born": 0.0,
-        "born_passed": True,
-        "parts": {"virtual": [1e-3]},
-        "estimate": [1e-6],
-        "estimate_over": [1.0],
-        "o1_over": [0.5],
-        "in_scope": False,
-        "passed": False,
-    }
-    assert checks._ward_row(ward, "double", 0).verdict == checks.NOT_RUN
-    failed = checks._ward_row({**ward, "born": 1.0, "born_passed": False}, "double", 0)
-    assert failed.verdict == checks.FAIL
+
+    # Ward: physical and substituted evaluations.
+    def evaluation(virtual, born, loop_born=None, sectors=(first,)):
+        return NS(
+            components={"virtual": {s: _laurent(*virtual) for s in sectors}},
+            born=born,
+            loop_born=loop_born,
+            stability=None,
+        )
+
+    physical = evaluation((2.0, 1.0, 0.5), {first: 4.0})
+    clean = evaluation((1e-16, 1e-17, 0.0), {first: 4.0}, {first: 1e-16})
+    measures = checks._ward_measures(physical, clean)
+    assert list(measures) == [
+        "Born QCD^4",
+        "QCD^4 finite",
+        "QCD^4 1/eps",
+        "QCD^4 1/eps^2",
+    ]
+    row = _ward_row(measures, 1e-5)
+    assert row.verdict == checks.PASS and row.deviation == pytest.approx(5e-17)
+    assert row.vacuous == 0 and row.scale_by == "physical" and len(row.cells) == 4
+    planted = evaluation((1e-16, 1e-3, 0.0), {first: 4.0}, {first: 1e-16})
+    row = _ward_row(checks._ward_measures(physical, planted), 1e-5)
+    assert row.verdict == checks.FAIL and row.deviation == pytest.approx(1e-3)
+    # A short Laurent tuple, a missing sector, a missing loop-side Born.
+    short = evaluation((1e-16, 1e-17), {first: 4.0}, {first: 0.0})
+    other = evaluation((0.0, 0.0, 0.0), {first: 4.0}, {first: 0.0}, sectors=(second,))
+    none = evaluation((0.0, 0.0, 0.0), {first: 4.0}, None)
+    for substituted in (short, other, none):
+        row = _ward_row(checks._ward_measures(physical, substituted), 1e-5)
+        assert row.verdict == checks.INCONCLUSIVE, substituted
+    # A Born sector that vanishes at this point (a colour zero) on both sides
+    # is vacuous; a loop-side residue where the physical Born has no term
+    # fails (no cross-row fallback).
+    zero = evaluation((2.0, 1.0, 0.5), {first: 4.0, second: 0.0})
+    measures = checks._ward_measures(
+        zero, evaluation((2.0, 1.0, 0.5), {}, {first: 0.0, second: 0.0})
+    )
+    assert [
+        checks.judge(m, 1e-5).verdict
+        for m in measures.values()
+        if m.label.startswith("Born")
+    ] == [checks.PASS, checks.VACUOUS]
+    measures = checks._ward_measures(
+        zero, evaluation((0.0, 0.0, 0.0), {}, {first: 0.0, second: 1e-3})
+    )
+    born = measures["Born QCD^2 QED^2"]
+    assert (born.residue, born.physical, born.terms) == (1e-3, 0.0, 0.0)
+    assert checks.judge(born, 1e-5).verdict == checks.FAIL
 
 
 @pytest.mark.loop_fast
-def test_a_refused_double_double_run_is_named_on_the_binary64_rows(monkeypatch):
-    """When binary64 evaluated a point and double-double is refused, the rows
-    binary64 left undecided keep its verdict (never a pass) and say that
-    double-double was refused, pole and Ward rows alike (lit-examples
-    re-audit issue 3)."""
+def test_a_refused_double_double_run_leaves_the_binary64_rows_inconclusive(
+    monkeypatch,
+):
+    """When binary64 fails a row and double-double is refused, the row is
+    inconclusive (the carrier that would decide computed no R or S; never a
+    pass), its reason names the refusal and binary64's R / S; pole and Ward
+    rows alike (lit-examples re-audit issue 3)."""
 
     from types import SimpleNamespace as NS
 
@@ -461,43 +688,31 @@ def test_a_refused_double_double_run_is_named_on_the_binary64_rows(monkeypatch):
     sector = (("QCD", 4),)
     carriers = (NS(arithmetic="double"), NS(arithmetic="double-double"))
 
-    def laurent(*values):
-        return NS(coefficients=list(values))
-
-    out_of_scope = NS(
-        relative=1e-3,
-        absolute={sector: laurent(0.0, 1e-12, 1e-12)},
-        scale={sector: laurent(1.0, 1.0, 1.0)},
-    )
-
     def evaluate(_executor, _point, _scale, carrier, _checks):
         if carrier.arithmetic == "double-double":
             raise plan_export.FailedPoints([None], {0: ["ill-conditioned"]})
-        return NS(
-            stability=out_of_scope,
-            components={"virtual": {sector: laurent(0.0, 2.0, -3.0)}},
-            ir_poles={sector: (2.0, -3.0)},
-        )
+        return _pole_result(sector, (0.0, 2.002, -3.0), (2.0, -3.0))
 
-    def ward_check(_executor, _point, _scale, name, *, legs, factors):
+    def ward_check(_executor, _point, _scale, name, *, legs, factors, **_options):
         if name == "double-double":
             raise plan_export.FailedPoints([None], {0: ["ill-conditioned"]})
-        row = {
-            "born": 0.0,
-            "born_passed": True,
-            "parts": {"virtual": [1e-3]},
-            "estimate": [1e-6],
-            "estimate_over": [1.0],
-            "o1_over": [0.5],
-            "in_scope": False,
-            "passed": False,
-        }
+        physical = NS(
+            components={"virtual": {sector: _laurent(2.0, 1.0, 0.5)}},
+            born={sector: 4.0},
+            loop_born=None,
+            stability=None,
+        )
+        result = NS(
+            components={"virtual": {sector: _laurent(1e-3, 0.0, 0.0)}},
+            born={sector: 4.0},
+            loop_born={sector: 0.0},
+            stability=None,
+        )
+        labels = [(leg, factor) for leg in legs for factor in factors]
         return {
-            "rows": [
-                {**row, "leg": leg, "factor": factor}
-                for leg in legs
-                for factor in factors
-            ]
+            "physical": physical,
+            "results": [result] * len(labels),
+            "rows": [{"leg": leg, "factor": factor} for leg, factor in labels],
         }
 
     monkeypatch.setattr(plan_export, "NativeExecutor", lambda *a, **k: None)
@@ -508,12 +723,18 @@ def test_a_refused_double_double_run_is_named_on_the_binary64_rows(monkeypatch):
     # A stand-in target without request data: its Ward rows apply.
     monkeypatch.setattr(checks, "ward_applicability", lambda _t: None)
     target = NS(unpredicted_sectors=lambda: {})
-    rows = checks.born_interfered_rows(target, [(None, 1)], carriers)
-    decided = [row for row in rows if row.check in ("poles", "ward")]
-    assert {row.check for row in decided} == {"poles", "ward"}
-    for row in decided:
-        assert row.verdict == checks.NOT_RUN and row.carrier == "double"
+    with checks.tolerating(1e-5):
+        rows = checks.born_interfered_rows(target, [(None, 1)], carriers)
+    single = [row for row in rows if row.subject == "QCD^4 1/eps"]
+    ward_rows = [row for row in rows if row.check == "ward"]
+    assert len(single) == 1 and len(ward_rows) == 2
+    for row in [*single, *ward_rows]:
+        assert row.verdict == checks.INCONCLUSIVE and row.carrier == "double"
         assert "double-double refused" in row.reason, row
+        # binary64's measurement stays on the row (R / P, the carrier).
+        assert row.deviation is not None and row.deviation > 1e-5, row
+    (double_pole,) = [row for row in rows if row.subject == "QCD^4 1/eps^2"]
+    assert double_pole.verdict == checks.PASS
 
 
 def _toy_target(legs, corrections, fixed):
@@ -625,11 +846,7 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
         assert (
             carrier.arithmetic == "double" and checks_ is stability.RECOMMENDED_CHECKS
         )
-        return NS(
-            stability=estimate,
-            components={"virtual": {sector: NS(coefficients=[0.0, 2.0, -3.0])}},
-            ir_poles={sector: (2.0, -3.0)},
-        )
+        return _pole_result(sector, (0.0, 2.0, -3.0), (2.0, -3.0), stability=estimate)
 
     def never(*_args, **_options):
         raise AssertionError("the Ward evaluation runs for a not-applicable class")
@@ -658,7 +875,7 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
     def point_probes(_executor, _point, _scale, legs, _carriers, _floors, **_options):
         probed.append(list(legs))
         return [{"probe": "finiteness", "carrier": "double"}], [
-            induced.ProbeResult("finiteness", {"k": 0.1})
+            induced.ProbeResult("finiteness", {})
         ]
 
     monkeypatch.setattr(induced, "probe_legs", lambda _target: [1, 2])
@@ -673,36 +890,22 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
 
 
 def _scripted_poles(monkeypatch, script):
-    """``checks._evaluate`` replaced by ``script(carrier, checked)`` -> the
-    1/eps coefficient and its estimate E (None: no checks) of one sector
-    whose Catani 1/eps pole is 2 (1/eps^2: -3, always exact); the calls are
-    recorded as (carrier name, digits, checked)."""
-
-    from types import SimpleNamespace as NS
+    """``checks._evaluate`` replaced by ``script(carrier)`` -> the 1/eps
+    coefficient of one sector whose Catani 1/eps pole is 2 (1/eps^2: -3,
+    always exact; S = 2 for the 1/eps row); the calls are recorded as
+    (carrier name, digits, checked)."""
 
     from pyamplicol.loops.v2 import checks, induced, plan_export, ward
 
     sector = (("QED", 4),)
     calls = []
 
-    def laurent(*values):
-        return NS(coefficients=list(values))
-
     def evaluate(_executor, _point, _scale, carrier, checks_):
         calls.append((carrier.arithmetic, carrier.digits, checks_ is not None))
-        single, error = script(carrier, checks_ is not None)
-        stability = None
-        if error is not None:
-            stability = NS(
-                relative=error,
-                absolute={sector: laurent(0.0, error, 1e-40)},
-                scale={sector: laurent(1.0, 1.0, 1.0)},
-            )
-        return NS(
-            stability=stability,
-            components={"virtual": {sector: laurent(0.0, single, -3.0)}},
-            ir_poles={sector: (2.0, -3.0)},
-        )
+        single = script(carrier)
+        if isinstance(single, Exception):
+            raise single
+        return _pole_result(sector, (0.0, single, -3.0), (2.0, -3.0))
 
     monkeypatch.setattr(plan_export, "NativeExecutor", lambda *a, **k: None)
     monkeypatch.setattr(checks, "_evaluate", evaluate)
@@ -716,28 +919,26 @@ def _rung_rows(rows):
 
 
 @pytest.mark.loop_fast
-def test_a_row_double_double_cannot_decide_is_decided_in_arbitrary_precision(
+def test_the_ladder_takes_a_row_to_arbitrary_precision_until_it_passes(
     monkeypatch,
 ):
-    """Point 0: binary64 out of scope; double-double 1/eps off by 1e-11
-    relative (criterion 1e-12) with its own estimate E = 1e-11 (asked for
-    only now): undecided, re-run alone in arbitrary precision at d =
-    ceil(32.0 + log10(10 E / (1e-12 x 2))) = 34 digits (the point lifted
-    for it), where it passes by the double-double criterion. Point 1 passes
-    in binary64: no other carrier runs. The 1/eps^2 row keeps its
-    double-double pass."""
+    """Point 0: binary64 and double-double miss R < K S on 1/eps (R / S 1e-6
+    and 1e-9 at K 1e-10); the row alone runs in arbitrary precision at twice
+    double-double's digits (64; the point lifted for it) and passes there.
+    Point 1 passes in binary64: no other carrier runs. The 1/eps^2 row keeps
+    its binary64 pass."""
 
     from types import SimpleNamespace as NS
 
     from pyamplicol.loops.v2 import checks
     from pyamplicol.loops.v2.assemble import Precision
 
-    def script(carrier, checked):
+    def script(carrier):
         if carrier.arithmetic == "double":
-            return 2.0, (1e-3 if script.point == 0 else 1e-14)
+            return 2.0 * (1 + 1e-6) if script.point == 0 else 2.0
         if carrier.arithmetic == "double-double":
-            return 2.0 * (1 + 1e-11), (1e-11 if checked else None)
-        return 2.0 * (1 + 1e-30), 1e-31
+            return 2.0 * (1 + 1e-9)
+        return 2.0 * (1 + 1e-30)
 
     calls = _scripted_poles(monkeypatch, script)
     lifted = []
@@ -750,71 +951,63 @@ def test_a_row_double_double_cannot_decide_is_decided_in_arbitrary_precision(
     carriers = (Precision.double(), Precision.double_double())
     target = NS(unpredicted_sectors=lambda: {})
     rows = []
-    for point in (0, 1):
-        script.point = point
-        rows.append(checks.born_interfered_rows(target, [(None, 1)], carriers, rung))
+    with checks.tolerating(1e-10):
+        for point in (0, 1):
+            script.point = point
+            rows.append(
+                checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
+            )
     first, second = _rung_rows(rows[0]), _rung_rows(rows[1])
     single = first["QED^4 1/eps"]
     assert (single.verdict, single.carrier, single.digits) == (
         checks.PASS,
         "arbitrary",
-        34,
+        64,
     )
-    assert single.fallback.startswith("double-double undecided: residual 2e-11")
-    assert "34 digits derived" in single.fallback
-    assert first["QED^4 1/eps^2"].carrier == "double-double"
+    assert single.fallback == (
+        "double: fail, R / physical 1e-06; double-double: fail, R / physical 1e-09"
+    )
+    assert single.deviation == pytest.approx(1e-30)
+    assert first["QED^4 1/eps^2"].carrier == "double"
     assert first["QED^4 1/eps^2"].verdict == checks.PASS
-    assert lifted == [(0, 34)]
-    assert calls[:4] == [
+    assert lifted == [(0, 64)]
+    assert calls == [
         ("double", None, True),
         ("double-double", None, False),
-        ("double-double", None, True),
-        ("arbitrary", 34, True),
+        ("arbitrary", 64, False),
+        ("double", None, True),
     ]
-    assert calls[4:] == [("double", None, True)]
     assert {row.carrier for row in second.values()} == {"double"}
-    # The rule itself: the derivation and the predicate's two failures.
-    part = checks.Part(2e-11, 2e-12, 1e-11)
-    assert checks.undecided([part])
-    assert checks.rung_digits([part], Precision.double_double().unit_roundoff) == 34
-    assert not checks.undecided([checks.Part(2e-11, 2e-12, 1e-13)])
-    assert not checks.undecided([checks.Part(2e-11, 2e-12, None)])
-    assert not checks.undecided([checks.Part(1e-12, 2e-12, 1e-13)])
+    assert checks.rung_digits(Precision.double_double().unit_roundoff) == 64
 
 
 @pytest.mark.loop_fast
-def test_still_undecided_far_above_the_estimate_option_and_explicit_carrier(
+def test_a_row_still_failing_in_arbitrary_precision_fails_its_process(
     monkeypatch,
 ):
-    """A row still undecided at the derived digits reads "undecided" with
-    both carriers' numbers and fails its process (exit 1); a double-double
-    residual far above its own estimate fails with no arbitrary-precision
-    run; ``check.arbitrary_digits`` sets the digits; an explicit carrier runs
-    no rung and its undecided row reads "undecided"."""
+    """A row that misses R < K S in every carrier, arbitrary precision
+    included, fails (exit 1) with the arbitrary carrier's R / S;
+    ``check.arbitrary_digits`` sets the digits; an explicit carrier runs no
+    rung; a refused arbitrary-precision run leaves the row inconclusive."""
 
     from types import SimpleNamespace as NS
 
-    from pyamplicol.loops.v2 import checks
+    from pyamplicol.loops.v2 import checks, plan_export
     from pyamplicol.loops.v2.assemble import Precision
 
     target = NS(unpredicted_sectors=lambda: {})
     carriers = (Precision.double(), Precision.double_double())
     rung = checks.Rung(lambda index, carrier: (None, 1))
 
-    def still(carrier, checked):
-        if carrier.arithmetic == "double":
-            return 2.0, 1e-3
-        if carrier.arithmetic == "double-double":
-            return 2.0 * (1 + 1e-11), (1e-11 if checked else None)
-        return 2.0 * (1 + 1e-11), 1e-11
+    def wrong(carrier):
+        return 2.0 * (1 + 1e-3)
 
-    _scripted_poles(monkeypatch, still)
-    rows = checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
+    _scripted_poles(monkeypatch, wrong)
+    with checks.tolerating(1e-5):
+        rows = checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
     row = _rung_rows(rows)["QED^4 1/eps"]
-    assert row.verdict == checks.UNDECIDED and row.carrier == "arbitrary"
-    assert row.fallback.startswith("double-double undecided")
-    assert row.reason.startswith("double-double undecided: residual 2e-11")
-    assert "; still arbitrary (34 digits) undecided" in row.reason
+    assert (row.verdict, row.carrier, row.digits) == (checks.FAIL, "arbitrary", 64)
+    assert row.deviation == pytest.approx(0.002 / 2.002, rel=1e-3)
     process = checks.ProcessCheck(
         "p", "u u~ > a a", "virtual", "zero", (), "ninjars", tuple(rows), 0.0
     )
@@ -824,112 +1017,96 @@ def test_still_undecided_far_above_the_estimate_option_and_explicit_carrier(
     )
     assert report.exit_code == checks.EXIT_FAILED
 
-    def far(carrier, checked):
-        if carrier.arithmetic == "double":
-            return 2.0, 1e-3
-        return 2.0 * (1 + 1e-11), (1e-20 if checked else None)
+    calls = _scripted_poles(monkeypatch, wrong)
+    option = checks.Rung(lambda index, carrier: (None, 1), digits=60)
+    with checks.tolerating(1e-5):
+        rows = checks.born_interfered_rows(target, [(None, 1)], carriers, option)
+    assert _rung_rows(rows)["QED^4 1/eps"].digits == 60
+    assert ("arbitrary", 60, False) in calls
 
-    calls = _scripted_poles(monkeypatch, far)
-    rows = checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
+    calls = _scripted_poles(monkeypatch, wrong)
+    explicit = (Precision.double_double(),)
+    with checks.tolerating(1e-5):
+        rows = checks.born_interfered_rows(target, [(None, 1)], explicit)
     row = _rung_rows(rows)["QED^4 1/eps"]
     assert row.verdict == checks.FAIL and row.carrier == "double-double"
-    assert row.estimate is not None and row.digits is None
     assert all(carrier != "arbitrary" for carrier, _digits, _checked in calls)
 
-    calls = _scripted_poles(monkeypatch, still)
-    option = checks.Rung(lambda index, carrier: (None, 1), digits=60)
-    rows = checks.born_interfered_rows(target, [(None, 1)], carriers, option)
-    row = _rung_rows(rows)["QED^4 1/eps"]
-    assert row.digits == 60 and "option: 60 digits" in row.fallback
-    assert ("arbitrary", 60, True) in calls
+    def refused(carrier):
+        if carrier.arithmetic == "arbitrary":
+            return plan_export.FailedPoints([None], {0: ["no arbitrary lane"]})
+        return 2.0 * (1 + 1e-3)
 
-    calls = _scripted_poles(monkeypatch, still)
-    explicit = (Precision.double_double(),)
-    rows = checks.born_interfered_rows(target, [(None, 1)], explicit)
+    _scripted_poles(monkeypatch, refused)
+    with checks.tolerating(1e-5):
+        rows = checks.born_interfered_rows(target, [(None, 1)], carriers, rung)
     row = _rung_rows(rows)["QED^4 1/eps"]
-    assert row.verdict == checks.UNDECIDED and row.carrier == "double-double"
-    assert "explicit carrier runs no arbitrary-precision rung" in row.reason
-    assert all(carrier != "arbitrary" for carrier, _digits, _checked in calls)
-    # The loop-induced probes: the criterion is the probe's own estimate, a
-    # failing probe is decided.
+    assert row.verdict == checks.INCONCLUSIVE
+    assert "arbitrary refused" in row.reason
+    # A loop-induced probe: its verdict is its rows' (the threshold rule).
     from pyamplicol.loops.v2.induced import ProbeResult
 
+    def probe(residue, physical=1.0, terms=1.0):
+        measure = checks.Measure("k k=0", residue, physical, terms)
+        return ProbeResult(
+            "ward", {("k", 0): checks.judge(measure, 1e-5)}, tolerance=1e-5
+        )
+
     failed = checks._probe_row(
+        {"probe": "ward", "leg": 1, "carrier": "double-double"}, probe(1e-3), 0
+    )
+    assert failed.verdict == checks.FAIL and failed.deviation == pytest.approx(1e-3)
+    passed = checks._probe_row(
+        {"probe": "ward", "leg": 1, "carrier": "double"}, probe(1e-13), 0
+    )
+    assert passed.verdict == checks.PASS and passed.scale_by == "physical"
+    undefined = checks._probe_row(
         {"probe": "ward", "leg": 1, "carrier": "double-double"},
-        ProbeResult("ward", {"k": 11.0}),
+        probe(float("nan")),
         0,
     )
-    assert failed.verdict == checks.FAIL
+    assert undefined.verdict == checks.INCONCLUSIVE
+    assert "cannot be computed" in undefined.reason
 
 
 @pytest.mark.loop_fast
-def test_ward_rows_take_the_rung_by_the_double_double_criterion(monkeypatch):
-    """A Ward row double-double fails (virtual 4e-22 of the physical scale,
-    bound 1e-25) with its own reduction-direction estimate 1.5e-21 (the u u~
-    > d d~ a a point of lit-ew-blocks §3 (d) in miniature) is re-run in
-    arbitrary precision at ceil(32.0 + log10(10 x 1.5e-21 / 1e-25)) = 38
-    digits and passes the double-double criterion there; the double-double
-    pass criterion is unchanged (judged without the estimate)."""
+def test_ward_rows_take_the_rung_by_the_threshold_rule(monkeypatch):
+    """A Ward row binary64 and double-double fail (virtual 1e-6 and 4e-22 of
+    the physical scale at K 1e-25) is re-run in arbitrary precision at 64
+    digits and passes there (1e-30)."""
 
-    from dataclasses import dataclass, field
     from types import SimpleNamespace as NS
 
-    from pyamplicol.loops.v2 import assemble, checks, plan_export, ward
+    from pyamplicol.loops.v2 import checks, ward
     from pyamplicol.loops.v2.assemble import Precision
-    from pyamplicol.loops.v2.stability import REDUCTION
 
     sector = (("QED", 10),)
-
-    @dataclass(frozen=True)
-    class Result:
-        components: dict = field(default_factory=dict)
-        born: dict = field(default_factory=dict)
-        loop_born: dict | None = None
-        stability: object = None
-
-    def laurent(*values):
-        return NS(coefficients=list(values))
-
-    def result(virtual, error, loop_born=None):
-        components = {
-            name: {sector: laurent(1.0, 1.0, 1.0)} for name in assemble.COMPONENTS
-        }
-        components["virtual"] = {sector: laurent(virtual, 0.0, 0.0)}
-        estimate = None
-        if error is not None:
-            estimate = NS(
-                absolute={sector: laurent(error, 0.0, 0.0)},
-                budgets={REDUCTION: {}},
-            )
-        return Result(components, {sector: 1.0}, loop_born, estimate)
-
     calls = []
 
     def ward_check(_executor, point, _scale, name, *, legs, factors, **options):
         precision = options.get("precision")
-        checked = bool(options.get("checks"))
-        arithmetic = name if precision is None else precision.arithmetic
-        calls.append((arithmetic, getattr(precision, "digits", None), checked))
+        calls.append((precision.arithmetic, precision.digits, options.get("judge")))
         virtual = {"double": 1e-6, "double-double": 4e-22, "arbitrary": 1e-30}
-        error = {"double": 1e-5, "double-double": 1.5e-21, "arbitrary": 1e-31}
-        physical = result(1.0, None)
-        checked = checked or arithmetic == "double"
-        results = [
-            result(
-                virtual[arithmetic],
-                error[arithmetic] if checked else None,
-                {sector: 0.0},
-            )
-            for _leg in legs
-            for _factor in factors
-        ]
-        rows = [
-            {**ward.ward_row(physical, r, name), "leg": leg, "factor": factor}
-            for r, (leg, factor) in zip(
-                results, [(leg, f) for leg in legs for f in factors], strict=True
-            )
-        ]
-        return {"physical": physical, "results": results, "rows": rows}
+        physical = NS(
+            components={"virtual": {sector: _laurent(1.0, 0.0, 0.0)}},
+            born={sector: 1.0},
+            loop_born=None,
+            stability=None,
+        )
+        result = NS(
+            components={
+                "virtual": {sector: _laurent(virtual[precision.arithmetic], 0.0, 0.0)}
+            },
+            born={sector: 1.0},
+            loop_born={sector: 0.0},
+            stability=None,
+        )
+        labels = [(leg, factor) for leg in legs for factor in factors]
+        return {
+            "physical": physical,
+            "results": [result] * len(labels),
+            "rows": [{"leg": leg, "factor": factor} for leg, factor in labels],
+        }
 
     monkeypatch.setattr(ward, "ward_check", ward_check)
     lifted = []
@@ -937,22 +1114,28 @@ def test_ward_rows_take_the_rung_by_the_double_double_criterion(monkeypatch):
         lambda index, carrier: lifted.append(carrier.digits) or (None, 1)
     )
     carriers = (Precision.double(), Precision.double_double())
-    rows = checks._born_ward_rows(None, None, 1, [5], carriers, 2, rung)
+    stages = checks._stages(carriers, rung)
+
+    def at(carrier):
+        if carrier.arithmetic == "arbitrary":
+            return (*rung.lift(2, carrier), None)
+        return None, 1, None
+
+    rows = checks._born_ward_rows(None, 2, stages, at, [5], 1e-25)
     assert len(rows) == 2
     for row in rows:
-        assert (row.verdict, row.carrier, row.digits) == (checks.PASS, "arbitrary", 38)
-        assert row.fallback.startswith("double-double undecided: residual 4e-22")
-        assert row.estimate == pytest.approx(1e-31)
-    assert lifted == [38]
-    # (carrier, digits, checks asked for): binary64 runs WARD_CHECKS by
-    # ward_check's default, double-double on the ladder none.
+        assert (row.verdict, row.carrier, row.digits) == (checks.PASS, "arbitrary", 64)
+        assert row.fallback == (
+            "double: fail, R / physical 1e-06; double-double: fail, R / physical 4e-22"
+        )
+        # The 1/eps and 1/eps^2 rows (no physical part) take the finite scale.
+        assert row.deviation == pytest.approx(1e-30)
+    assert lifted == [64]
     assert calls == [
         ("double", None, False),
         ("double-double", None, False),
-        ("double-double", None, True),
-        ("arbitrary", 38, True),
+        ("arbitrary", 64, False),
     ]
-    assert plan_export  # the executor is not touched: ward_check is scripted
 
 
 # --------------------------------------------------------------- physics
@@ -973,7 +1156,8 @@ def test_a_born_interfered_request_passes_from_card_and_artifact(tmp_path):
     poles = _rows(report, "poles")
     assert {row.subject.split()[-1] for row in poles} == {"1/eps", "1/eps^2"}
     assert all(row.verdict == checks.PASS for row in poles)
-    assert all(row.carrier == "double" and row.ratio <= 1 for row in poles)
+    assert all(row.carrier == "double" and row.ratio < 1 for row in poles)
+    assert all(row.deviation < row.tolerance == 1e-5 for row in poles)
     # A binary64 rung: no improvement (off by default in binary64).
     assert all(row.kinematics is None for row in poles)
     ward = _rows(report, "ward")
@@ -1007,9 +1191,36 @@ def test_a_born_interfered_request_passes_from_card_and_artifact(tmp_path):
         "ratio",
         "deviation",
         "estimate",
+        "tolerance",
         "fallback",
         "reason",
     }
+
+
+@pytest.mark.loop_physics
+def test_the_tolerance_on_the_command_line_changes_the_verdict(tmp_path):
+    """u u~ > g g in binary64 alone: every row's R / S is of binary64's
+    rounding, so the default K (the requested relative accuracy, 1e-5)
+    passes and K = 1e-30 fails every row (exit 1); the report states K."""
+
+    card = _card(tmp_path, "u u~ > g g")
+    code, payload = _cli(str(card), "--precision", "double")
+    assert code == 0 and payload["tolerance"] == 1e-5
+    rows = [
+        row
+        for row in payload["processes"][0]["rows"]
+        if row["check"] in ("poles", "ward")
+    ]
+    assert rows and all(row["verdict"] == "pass" for row in rows)
+    assert all(0 <= row["deviation"] < 1e-10 for row in rows)
+    code, payload = _cli(str(card), "--precision", "double", "--tolerance", "1e-30")
+    assert code == 1 and payload["tolerance"] == 1e-30
+    verdicts = {
+        row["verdict"]
+        for row in payload["processes"][0]["rows"]
+        if row["check"] in ("poles", "ward")
+    }
+    assert "fail" in verdicts
 
 
 @pytest.mark.loop_physics
@@ -1029,7 +1240,7 @@ def test_a_loop_induced_request_passes_its_probes(tmp_path):
     assert sorted({row.subject for row in ward}) == ["leg 1", "leg 3"]
     for row in poles + ward:
         assert row.verdict == checks.PASS and row.carrier == "double"
-        assert row.ratio <= 1 and row.fallback is None
+        assert row.deviation < row.tolerance and row.fallback is None
     (goldstone,) = _rows(report, "goldstone")
     assert goldstone.verdict == checks.NOT_APPLICABLE
 
@@ -1057,15 +1268,16 @@ def test_a_dropped_r2_vertex_fails_the_ward_check(tmp_path):
     ward = _rows(report, "ward")
     assert ward
     for row in ward:
-        # binary64 far beyond ten times its estimate, then double-double too.
+        # binary64 far beyond K, then double-double too (no rung for the
+        # loop-induced probes).
         assert row.verdict == checks.FAIL and row.carrier == "double-double"
         # The double-double rung evaluates its lifted point improved in
         # double-double (m-lit lit-psimprove (G5)); beams along z: MadLoop's
         # z-shift (the default) produces it.
         assert row.kinematics == "z-shift", row
-        assert row.fallback.startswith("double ratio")
-        assert float(row.fallback.split()[2]) > 1e5
-        assert row.ratio > 1e5
+        assert row.fallback.startswith("double: fail, R / physical")
+        assert float(row.fallback.split()[-1]) > 10 * row.tolerance
+        assert row.deviation > 10 * row.tolerance
     # R2 is finite: the finiteness probe passes.
     assert all(row.verdict == checks.PASS for row in _rows(report, "poles"))
     code, payload = _cli(str(card))

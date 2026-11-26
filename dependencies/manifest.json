@@ -23,8 +23,8 @@
       ],
       "url": "https://github.com/alphal00p/ninjars.git",
       "ref": "main",
-      "revision": "e1d94412dd44bb18059471edb0a84310cbaebafd",
-      "note": "e1d94412 = main after PR #23 (local cancellation rescue: measured-cancellation trigger against a caller-supplied target relative accuracy, local re-reduction of the lane in a higher precision, typed outcomes and per-lane records; FastOptions::cancellation_rescue, rescue_target, evaluate_refined_with; the generic engine's cancellation_ladder) and PR #22 on top of a2546170; a2546170 = main after PR #20 (merge of f7f5e165 and the feat/reserve-symbols head 07730ba9, the same tree): main f7f5e165 (PR #16 box-Gram conditioning bound, PR #19 Unstable-cause and box-Gram refusal records) + ninjars_symbolica::reserve (positional slot pool checked, master-integral symbols registered by name, nothing built); pins on Symbolica community d0424f9e, the gammaloop fork ea3faaae and oneloopmaster 07fc754f"
+      "revision": "1f3d9d0ef34a423f9a9843dcdf99962b70236560",
+      "note": "1f3d9d0ef34a423f9a9843dcdf99962b70236560 = main after PR #24: e1d94412 with its oneloopmaster pin moved to cdbc912 (the revision TIRust pins); e1d94412 = main after PR #23 (local cancellation rescue: measured-cancellation trigger against a caller-supplied target relative accuracy, local re-reduction of the lane in a higher precision, typed outcomes and per-lane records; FastOptions::cancellation_rescue, rescue_target, evaluate_refined_with; the generic engine's cancellation_ladder) and PR #22 on top of a2546170; a2546170 = main after PR #20 (merge of f7f5e165 and the feat/reserve-symbols head 07730ba9, the same tree): main f7f5e165 (PR #16 box-Gram conditioning bound, PR #19 Unstable-cause and box-Gram refusal records) + ninjars_symbolica::reserve (positional slot pool checked, master-integral symbols registered by name, nothing built); pins on Symbolica community d0424f9e, the gammaloop fork ea3faaae and oneloopmaster 07fc754f before that re-pin"
     },
     {
       "name": "oneloopmaster",
@@ -33,8 +33,8 @@
       ],
       "url": "https://github.com/alphal00p/oneloopmaster.git",
       "ref": "main",
-      "revision": "07fc754f656c4744c9464f7c0f47d00b708b37e6",
-      "note": "07fc754f (branch symbolica-community-2 = main 2e7afabb + the d0424f9e re-pin) = 3b6f229f's sources (bd703d09 + the per-row dual grouping test) with its standalone [patch] on Symbolica community d0424f9e; features generated-evaluators + rust-codegen"
+      "revision": "cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21",
+      "note": "cdbc912 = main: 07fc754f + oneloopmaster #21 (a cancellation-free series of the native binary64 / double-double C0 at small external momenta; unchanged bit for bit outside its domain); 07fc754f (branch symbolica-community-2 = main 2e7afabb + the d0424f9e re-pin) = 3b6f229f's sources (bd703d09 + the per-row dual grouping test) with its standalone [patch] on Symbolica community d0424f9e; features generated-evaluators + rust-codegen"
     },
     {
       "name": "tirust",
@@ -44,8 +44,8 @@
       ],
       "url": "https://github.com/huashengshao/TIRust.git",
       "ref": "main",
-      "revision": "1c130a81c4d1145ad5368664b580070eab9ebd7c",
-      "note": "1c130a81c4d1145ad5368664b580070eab9ebd7c = main a8dba684 (2b9ba961 = branch symbolica-community-2 = main a5d4afbf + the d0424f9e / oneloopmaster 07fc754f re-pin; + PR #41 supplied-invariant mismatch, PR #42 docs) + PR #43 (direct engine: MPFR rounded at the working precision, issue #40); a5d4afbf = PR #35 + branch symbolica-community (per-row evaluation instead of the batch evaluator in iregi-masters/iregi-rust/iregi-cli/iregi-python; Symbolica community d0424f9e, oneloopmaster 07fc754f); behind the default cargo feature tir of the crates that link it; oneloop 07fc754f and Symbolica d0424f9e as this workspace's (one source each); its own manifests' gammaloop crates are not in this graph; 0BSD (licenses/TIRust.txt)"
+      "revision": "c20d0be2c681a07c63c3762b3ebc27641cd54559",
+      "note": "c20d0be2c681a07c63c3762b3ebc27641cd54559 = main after PR #76 (a relation's constant denominator identity held to the inputs' rounding; issue #73) and PR #77 (exactly dependent triangles kept on their relation at a stability threshold of 0; issue #74), on 6ba4b5315e245f1006f113fdf2e6315549608228 = main after PR #70 (refusal texts that name the failed estimate and what it failed against; the gates documented as conditioning heuristics; no value change), on 100e18b4c7e48a8ac622e15ea7aa0f2042ddd9f2 = main after PR #72 (a triangle refused by its PV estimate or its fixed-precision floor where the Gram gate passes fails as Unstable and goes to a higher precision instead of the affine-relation variants; issue #68), on 8543f604d1af7c2bda5c9220d693b3773e1dafe5 = main after PR #63 (optional lane-independent direct workspaces, DirectWorkspace::set_lane_independent, which every pyAmpliCol workspace uses; tensor-store stored-entry counts; with the flat profile cleared in the lane-independent restart) merged with main 177e1f0e (PRs #44 to #59, #61 and #64: degenerate kinematics decided at the inputs' rounding, P-wave and flat onia, dependent triangles and boxes, the oneloopmaster cdbc912 re-pin, rank-0 triangles at degenerate invariants left to MPFR, triangles near a vanishing Kallen function gated by their PV error growth with a fixed-precision floor) on main 1c130a81c4d1145ad5368664b580070eab9ebd7c; 1c130a81c4d1145ad5368664b580070eab9ebd7c = main a8dba684 (2b9ba961 = branch symbolica-community-2 = main a5d4afbf + the d0424f9e / oneloopmaster 07fc754f re-pin; + PR #41 supplied-invariant mismatch, PR #42 docs) + PR #43 (direct engine: MPFR rounded at the working precision, issue #40); a5d4afbf = PR #35 + branch symbolica-community (per-row evaluation instead of the batch evaluator in iregi-masters/iregi-rust/iregi-cli/iregi-python; Symbolica community d0424f9e, oneloopmaster 07fc754f); behind the default cargo feature tir of the crates that link it; oneloop cdbc912 and Symbolica d0424f9e as this workspace's (one source each); its own manifests' gammaloop crates are not in this graph; 0BSD (licenses/TIRust.txt)"
     },
     {
       "name": "feynkit",

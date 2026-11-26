@@ -3461,13 +3461,15 @@ class GenerationBackend:
         kinematics_improvement=None,
         kinematics_improvement_binary64=None,
         reduction_target=None,
+        tolerance=None,
     ):
         """``pyamplicol check`` of a one-loop request (``loop_service.
         check_loop_requests``; ``stored``: an artifact input's manifest, the
         model and processes the regeneration must match; ``sqrt_s``: the
         points' energy, None the validation convention; ``arbitrary_digits``:
-        the digits of the auto ladder's arbitrary-precision rung, None
-        derived): one ``checks.ProcessCheck`` per process."""
+        the digits of the auto ladder's arbitrary-precision rung, None its
+        default; ``tolerance``: K, None the requested relative accuracy):
+        one ``checks.ProcessCheck`` per process."""
 
         if not self._loop_execution_enabled:
             raise GenerationError(
@@ -3490,6 +3492,7 @@ class GenerationBackend:
             kinematics_improvement=kinematics_improvement,
             kinematics_improvement_binary64=kinematics_improvement_binary64,
             reduction_target=reduction_target,
+            tolerance=tolerance,
         )
 
     def generate(

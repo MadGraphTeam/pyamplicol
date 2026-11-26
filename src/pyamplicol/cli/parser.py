@@ -1279,9 +1279,20 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("auto", "double", "double-double"),
         default=argparse.SUPPRESS,
         help=(
-            "auto (default): binary64 first, double-double only where binary64 "
-            "fails, is refused or is out of scope, arbitrary precision only "
-            "for a row double-double leaves undecided; or one carrier alone"
+            "auto (default): binary64 first, double-double only for a row "
+            "binary64 does not pass, arbitrary precision only for a row "
+            "double-double does not pass; or one carrier alone"
+        ),
+    )
+    check.add_argument(
+        "--tolerance",
+        dest="check.tolerance",
+        type=float,
+        default=argparse.SUPPRESS,
+        metavar="K",
+        help=(
+            "a check row passes iff its residue R < K times its scale S "
+            "(default: the requested relative accuracy, --reduction-target)"
         ),
     )
     check.add_argument(
@@ -1292,7 +1303,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIGITS",
         help=(
             "digits of the auto ladder's arbitrary-precision rung (default: "
-            "derived per row from the double-double shortfall)"
+            "twice double-double's, 64)"
         ),
     )
     check.add_argument(

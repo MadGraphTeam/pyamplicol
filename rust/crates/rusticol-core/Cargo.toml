@@ -40,14 +40,14 @@ brotli = { version = "8.0", optional = true }
 flate2 = { workspace = true, optional = true }
 libloading = { version = "0.9", optional = true }
 libc.workspace = true
-ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "e1d94412dd44bb18059471edb0a84310cbaebafd", optional = true }
+ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560", optional = true }
 # NinjaRS's reserved symbols (`ninjars_symbolica::reserve`), registered before
 # this crate registers any other symbol (`symbol_order`); the revision of
 # `ninjars` (one source per NinjaRS crate: tests/unit/test_ninjars_single_source.py).
-ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "e1d94412dd44bb18059471edb0a84310cbaebafd", optional = true }
+ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560", optional = true }
 # The loop consumer's TIRust pin (rusticol-loop-reduction's `iregi-rust`, the
 # same revision): its capability query only (feature `tir`).
-iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "1c130a81c4d1145ad5368664b580070eab9ebd7c", optional = true }
+iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "c20d0be2c681a07c63c3762b3ebc27641cd54559", optional = true }
 # pyAmpliCol's Symbolica library key (the crate named after the package the
 # key is issued for).
 pyamplicol = { path = "../pyamplicol", optional = true }

@@ -282,6 +282,12 @@ def compare_carriers(
     }
     uncertain_b64, uncertain_dd = _bounds(binary64), _bounds(dd)
     inconclusive = False
+    if set(binary64.components["virtual"]) != set(dd.components["virtual"]):
+        # A sector one carrier lacks is a missing operand: never skipped.
+        out.update(
+            passed=False, inconclusive=True, reason="the carriers' sectors differ"
+        )
+        return out
     for sector, laurent in dd.components["virtual"].items():
         exact = [_c(x).real for x in laurent.coefficients]
         b64 = [_c(x).real for x in binary64.components["virtual"][sector].coefficients]
@@ -433,7 +439,7 @@ def check_process(
             "checked",
             begin,
             points=len(rows),
-            passed=all(r["passed"] for r in rows),
+            passed=bool(rows) and all(r["passed"] is True for r in rows),
             inconclusive=sum(bool(r.get("inconclusive")) for r in rows),
         )
 
@@ -453,13 +459,17 @@ def check_process(
                 row.update(compare_carriers(checked[index], result, require_catani))
             elif require_catani and result.ir_poles is None:
                 row.update(passed=False, catani_formed=False)
+            else:
+                # No checked binary64 evaluation to compare with: not compared
+                # is not passed (a missing comparison never reads as fine).
+                row.update(passed=None, inconclusive=True, reason="not compared")
             rows.append(row)
         record["dd"] = rows
         stage(
             "dd",
             begin,
             points=len(rows),
-            passed=all(r.get("passed", True) for r in rows),
+            passed=bool(rows) and all(r.get("passed") is True for r in rows),
             inconclusive=sum(bool(r.get("inconclusive")) for r in rows),
         )
 
