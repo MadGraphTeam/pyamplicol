@@ -167,9 +167,9 @@ class SpecializationGuard:
         producer: str,
         message: str,
     ) -> SpecializationGuard | None:
-        """The guard that ``expression`` stays real, or ``None`` when it has no
-        mutable dependence (its value is the generation value for every
-        binding)."""
+        """The guard that ``expression`` stays real, or ``None`` when it is real
+        for every binding (no mutable dependence, or provably real in the
+        environment's real parameters: ``is_real_for_every_binding``)."""
 
         return cls._build(
             "real",
@@ -196,6 +196,8 @@ class SpecializationGuard:
         if not parameters:
             return None
         if kind == "vanishing" and _is_identically_zero(resolved):
+            return None
+        if kind == "real" and environment.is_real_for_every_binding(resolved):
             return None
         try:
             program: tuple[tuple[object, ...], ...] | None = compile_program(
@@ -402,6 +404,8 @@ class GuardEnvironment:
     externals: dict[str, complex]
     definitions: dict[str, Any]
     constants: dict[str, complex]
+    #: The externals a binding can only give a real value (declared real).
+    real_externals: frozenset[str] = frozenset()
     _resolved: dict[str, Any] = field(default_factory=dict)
 
     @staticmethod
@@ -424,7 +428,12 @@ class GuardEnvironment:
                 constants[str(parameter.name)] = complex(parameter.value)
             else:
                 definitions[str(parameter.name)] = parameter.expression
-        return GuardEnvironment(externals, definitions, constants)
+        real_externals = frozenset(
+            str(parameter.name)
+            for parameter in model.get_external_parameters()
+            if str(parameter.parameter_type).lower() == "real"
+        )
+        return GuardEnvironment(externals, definitions, constants, real_externals)
 
     @staticmethod
     def from_parameter_records(
@@ -440,11 +449,14 @@ class GuardEnvironment:
         externals: dict[str, complex] = {}
         definitions: dict[str, Any] = {}
         constants: dict[str, complex] = dict(_CONSTANTS)
+        real_externals: set[str] = set()
         for record in records:
             name = str(record.name)
             if str(record.nature).lower() != "internal":
                 value = record.value or (0.0, 0.0)
                 externals[name] = complex(float(value[0]), float(value[1]))
+                if str(getattr(record, "parameter_type", "")).lower() == "real":
+                    real_externals.add(name)
             elif record.expression is None:
                 value = record.value or (0.0, 0.0)
                 constants[name] = complex(float(value[0]), float(value[1]))
@@ -454,7 +466,9 @@ class GuardEnvironment:
             definitions[str(name)] = (
                 E(expression) if isinstance(expression, str) else expression
             )
-        return GuardEnvironment(externals, definitions, constants)
+        return GuardEnvironment(
+            externals, definitions, constants, frozenset(real_externals)
+        )
 
     def generation_value(self, name: str) -> tuple[float, float]:
         value = self.externals[name]
@@ -494,6 +508,31 @@ class GuardEnvironment:
         for source, replacement in replacements:
             expression = expression.replace(source, replacement)
         return expression
+
+    def is_real_for_every_binding(self, resolved: Any) -> bool:
+        """Whether ``resolved`` (written in the externals) is real for every
+        binding: provably real (Symbolica's ``is_real``) once each real
+        external is a real symbol. A square root or a non-integer power of a
+        real parameter is not (it is imaginary where its base is negative)."""
+
+        from .._internal.physics.symbols import _symbol
+
+        expression = _with_imaginary_unit(resolved)
+        for position, symbol in enumerate(resolved.get_all_symbols(False)):
+            name = _short_name(symbol.get_name())
+            if name in self.real_externals:
+                spelling = "".join(c if c.isalnum() else "_" for c in name)
+                expression = expression.replace(
+                    symbol,
+                    _symbol(
+                        f"pyamplicol_guard_real::r{position}_{spelling}",
+                        is_real=True,
+                    ),
+                )
+        try:
+            return bool(expression.is_real())
+        except (TypeError, ValueError):
+            return False
 
     def mutable_dependencies(self, resolved: Any) -> tuple[str, ...]:
         return tuple(
@@ -688,8 +727,37 @@ def _short_name(name: str) -> str:
     return str(name).rsplit("::", 1)[-1]
 
 
+def _with_imaginary_unit(expression: Any) -> Any:
+    """``expression`` with every UFO ``complex(a, b)`` written ``a + b i``."""
+
+    from symbolica import AtomType, Expression
+
+    found: list[Any] = []
+
+    def collect(atom: Any) -> None:
+        kind = atom.get_type()
+        if kind == AtomType.Fn:
+            children = list(atom)
+            if _short_name(atom.get_name()) == "complex" and len(children) == 2:
+                found.append((atom, children))
+                return
+            for child in children:
+                collect(child)
+        elif kind in (AtomType.Add, AtomType.Mul, AtomType.Pow):
+            for child in atom:
+                collect(child)
+
+    collect(expression)
+    for atom, (real, imaginary) in found:
+        expression = expression.replace(
+            atom,
+            _with_imaginary_unit(real) + _with_imaginary_unit(imaginary) * Expression.I,
+        )
+    return expression
+
+
 def _is_identically_zero(expression: Any) -> bool:
-    expanded = expression.expand()
+    expanded = _with_imaginary_unit(expression).expand()
     try:
         return bool(expanded.is_constant()) and complex(expanded.evaluate({})) == 0
     except (TypeError, ValueError):
