@@ -77,6 +77,11 @@ pub(super) struct RecurrencePersistedHelicitySelectorRuntime {
 struct PrimaryLocalColorViewV1 {
     auxiliary_destination_by_local_group: Box<[u32]>,
     local_group_by_primary_destination: Box<[u32]>,
+    /// A sparse view (expanded primary storage with several helicity
+    /// components, whose per-sector blocks need not be complete): the local
+    /// colour matrix over the active owner sectors, the union of the primary's
+    /// per-component entries, on auxiliary destinations.
+    sparse_entries: Option<Box<[RuntimeColorContractionEntry]>>,
 }
 
 impl RecurrencePersistedHelicitySelectorRuntime {
@@ -177,15 +182,13 @@ fn primary_local_color_destination_map(
     contraction: &RecurrenceColorContraction,
     auxiliary_destinations: &[DirectAmplitudeDestinationDescriptor],
 ) -> RusticolResult<PrimaryLocalColorViewV1> {
-    if contraction.storage() == RecurrenceColorStorage::Expanded
-        && contraction.component_count() != 1
-    {
-        return Err(RusticolError::compatibility(
-            "expanded persisted helicity color view must contain exactly one component",
-        ));
-    }
+    // Expanded storage with several helicity components keeps only the
+    // (sector, helicity) groups with diagrams: its view is sparse.
+    let sparse = contraction.storage() == RecurrenceColorStorage::Expanded
+        && contraction.component_count() > 1;
     let component_count = contraction.component_count() as usize;
     let local_group_count = match contraction.storage() {
+        RecurrenceColorStorage::Expanded if sparse => contraction.active_sector_count(),
         RecurrenceColorStorage::Expanded => contraction.group_count() as usize,
         RecurrenceColorStorage::Repeated | RecurrenceColorStorage::ConvolutionKernels => {
             contraction.local_group_count() as usize
@@ -260,6 +263,14 @@ fn primary_local_color_destination_map(
         .map(|destination| destination.id)
         .collect::<Vec<_>>();
 
+    if sparse {
+        return sparse_primary_local_color_view(
+            contraction,
+            &dense_rank_by_sector,
+            auxiliary_destination_by_rank,
+        );
+    }
+
     let ordered_groups = contraction.ordered_group_ids();
     let sectors = contraction.sector_by_group();
     let components = contraction.component_by_group();
@@ -330,6 +341,122 @@ fn primary_local_color_destination_map(
         auxiliary_destination_by_local_group: auxiliary_destination_by_local_group
             .into_boxed_slice(),
         local_group_by_primary_destination: local_group_by_primary_destination.into_boxed_slice(),
+        sparse_entries: None,
+    })
+}
+
+/// The local-colour view of an expanded primary reducer with several helicity
+/// components whose per-sector blocks need not be complete (a colour flow that
+/// vanishes for some helicities). Every group belongs to an active owner
+/// sector, whose dense rank is its local group; every active owner has at
+/// least one group. The colour matrix does not depend on the helicity, so the
+/// local matrix is the union of the per-component entries keyed by sector pair
+/// (orientation normalised, conjugated when swapped); entries for the same
+/// pair in different components must agree exactly. The companion computes
+/// every sector's amplitude at its runtime helicity itself.
+fn sparse_primary_local_color_view(
+    contraction: &RecurrenceColorContraction,
+    dense_rank_by_sector: &[u32],
+    auxiliary_destination_by_rank: Vec<u32>,
+) -> RusticolResult<PrimaryLocalColorViewV1> {
+    let sectors = contraction.sector_by_group();
+    let components = contraction.component_by_group();
+    let destinations = contraction.destination_by_group();
+    let group_count = contraction.group_count() as usize;
+    if sectors.len() != group_count
+        || components.len() != group_count
+        || destinations.len() != group_count
+    {
+        return Err(RusticolError::integrity(
+            "sparse primary color view has inconsistent group tables",
+        ));
+    }
+    let mut local_group_by_group = Vec::with_capacity(group_count);
+    let mut covered = vec![false; auxiliary_destination_by_rank.len()];
+    let mut local_group_by_primary_destination =
+        vec![DIRECT_NONE_U32; contraction.destination_count() as usize];
+    for group in 0..group_count {
+        let sector = sectors[group] as usize;
+        let rank = dense_rank_by_sector
+            .get(sector)
+            .copied()
+            .filter(|&rank| rank != DIRECT_NONE_U32)
+            .ok_or_else(|| {
+                RusticolError::integrity("sparse primary color group belongs to no active owner")
+            })?;
+        if components[group] >= contraction.component_count() {
+            return Err(RusticolError::integrity(
+                "sparse primary color group has an out-of-range helicity component",
+            ));
+        }
+        let slot = local_group_by_primary_destination
+            .get_mut(destinations[group] as usize)
+            .ok_or_else(|| {
+                RusticolError::integrity(
+                    "primary color destination is outside its authenticated domain",
+                )
+            })?;
+        if *slot != DIRECT_NONE_U32 && *slot != rank {
+            return Err(RusticolError::integrity(
+                "primary color destination maps to multiple local groups",
+            ));
+        }
+        *slot = rank;
+        covered[rank as usize] = true;
+        local_group_by_group.push(rank);
+    }
+    if covered.contains(&false) {
+        return Err(RusticolError::integrity(
+            "sparse primary color view has an active owner without a group",
+        ));
+    }
+    let mut local_entries: BTreeMap<(u32, u32), (u64, u64)> = BTreeMap::new();
+    for raw in contraction.entries() {
+        let (left_group, right_group) = (raw.left_group_id as usize, raw.right_group_id as usize);
+        if left_group >= group_count || right_group >= group_count {
+            return Err(RusticolError::integrity(
+                "sparse primary color entry references an absent group",
+            ));
+        }
+        if components[left_group] != components[right_group] {
+            return Err(RusticolError::integrity(
+                "sparse primary color entry joins two helicity components",
+            ));
+        }
+        let mut left = local_group_by_group[left_group];
+        let mut right = local_group_by_group[right_group];
+        let mut coefficient_re = raw.weight_re * raw.symmetry_factor;
+        let mut coefficient_im = raw.weight_im * raw.symmetry_factor;
+        if left > right {
+            std::mem::swap(&mut left, &mut right);
+            coefficient_im = -coefficient_im;
+        }
+        // Normalise signed zeros so that equal coefficients compare equal.
+        coefficient_re += 0.0;
+        coefficient_im += 0.0;
+        let bits = (coefficient_re.to_bits(), coefficient_im.to_bits());
+        match local_entries.insert((left, right), bits) {
+            Some(previous) if previous != bits => {
+                return Err(RusticolError::integrity(
+                    "sparse primary color matrix differs between helicity components",
+                ));
+            }
+            _ => {}
+        }
+    }
+    let sparse_entries = local_entries
+        .into_iter()
+        .map(|((left, right), (re, im))| RuntimeColorContractionEntry {
+            left_destination_id: auxiliary_destination_by_rank[left as usize],
+            right_destination_id: auxiliary_destination_by_rank[right as usize],
+            coefficient_re: f64::from_bits(re),
+            coefficient_im: f64::from_bits(im),
+        })
+        .collect::<Vec<_>>();
+    Ok(PrimaryLocalColorViewV1 {
+        auxiliary_destination_by_local_group: auxiliary_destination_by_rank.into_boxed_slice(),
+        local_group_by_primary_destination: local_group_by_primary_destination.into_boxed_slice(),
+        sparse_entries: Some(sparse_entries.into_boxed_slice()),
     })
 }
 
@@ -3522,6 +3649,27 @@ fn contract_primary_local_direct_tile(
     scale: f64,
     accumulate: &mut impl FnMut(usize, f64),
 ) -> RusticolResult<()> {
+    if let Some(entries) = view.sparse_entries.as_deref() {
+        for entry in entries {
+            let left_re = output.destination_re(entry.left_destination_id)?;
+            let left_im = output.destination_im(entry.left_destination_id)?;
+            let right_re = output.destination_re(entry.right_destination_id)?;
+            let right_im = output.destination_im(entry.right_destination_id)?;
+            for point in 0..output.point_count() as usize {
+                accumulate(
+                    point,
+                    scale
+                        * entry.contract_real_bilinear(
+                            left_re[point],
+                            left_im[point],
+                            right_re[point],
+                            right_im[point],
+                        ),
+                );
+            }
+        }
+        return Ok(());
+    }
     for raw in contraction.entries() {
         let local_group = |stored_group_id: u32| -> RusticolResult<usize> {
             match contraction.storage() {
@@ -4779,6 +4927,55 @@ mod replay_destination_helicity_tests {
             expanded_view.local_group_by_primary_destination.as_ref(),
             &[0]
         );
+    }
+
+    #[test]
+    fn sparse_primary_local_color_view_takes_the_union_of_the_helicity_blocks() {
+        let contraction =
+            RecurrenceColorContraction::expanded_incomplete_helicity_blocks_for_runtime_test(false);
+        let mut auxiliary = auxiliary_physical_destinations(2);
+        auxiliary[0].id = 7;
+        auxiliary[1].id = 3;
+        let view = primary_local_color_destination_map(&contraction, &auxiliary).unwrap();
+        assert_eq!(view.auxiliary_destination_by_local_group.as_ref(), &[7, 3]);
+        assert_eq!(
+            view.local_group_by_primary_destination.as_ref(),
+            &[0, 0, 0, 0, 1]
+        );
+        let entries = view.sparse_entries.as_deref().unwrap();
+        // One diagonal entry per sector, one cross entry, oriented sector 0 ->
+        // sector 1 and so conjugated.
+        assert_eq!(entries.len(), 3);
+        assert_eq!(
+            (entries[0].left_destination_id, entries[0].right_destination_id),
+            (7, 7)
+        );
+        assert_eq!(
+            (
+                entries[1].left_destination_id,
+                entries[1].right_destination_id,
+                entries[1].coefficient_re,
+                entries[1].coefficient_im
+            ),
+            (7, 3, 6.0, -1.0)
+        );
+        assert_eq!(
+            (entries[2].left_destination_id, entries[2].right_destination_id),
+            (3, 3)
+        );
+        // A sector without any group, or a colour matrix that differs between
+        // helicity components, fails closed.
+        assert!(
+            primary_local_color_destination_map(&contraction, &auxiliary_physical_destinations(3))
+                .is_err()
+        );
+        let conflicting =
+            RecurrenceColorContraction::expanded_incomplete_helicity_blocks_for_runtime_test(true);
+        let error = match primary_local_color_destination_map(&conflicting, &auxiliary) {
+            Ok(_) => panic!("a helicity-dependent colour matrix must fail closed"),
+            Err(error) => error,
+        };
+        assert!(error.message().contains("differs between helicity components"));
     }
 
     #[test]

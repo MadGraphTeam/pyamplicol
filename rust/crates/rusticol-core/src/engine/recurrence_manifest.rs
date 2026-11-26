@@ -36,6 +36,11 @@ pub(super) const RECURRENCE_HELICITY_DISPATCH_PATH: &str = "recurrence-helicity-
 pub(super) const RECURRENCE_HELICITY_SELECTOR_COMPANION_KIND: &str =
     "pyamplicol-recurrence-helicity-selector-companion-v2";
 pub(super) const RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW: &str = "primary-local-color-view-v1";
+/// The companion's view of a primary reducer that keeps only the
+/// (sector, helicity) groups with diagrams: expanded storage with several
+/// helicity components, one local group per active owner sector.
+pub(super) const RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW: &str =
+    "primary-sparse-local-color-view-v1";
 pub(super) const RECURRENCE_COLOR_CONTRACTION_PATH: &str = "recurrence-color.bin";
 pub(super) const RECURRENCE_KERNEL_PACK_MANIFEST_PATH: &str = "model/eager-kernel-pack.json";
 pub(super) const RECURRENCE_KERNEL_PAYLOAD_ROOT: &str = "model/eager-kernels";
@@ -1236,7 +1241,9 @@ impl RecurrenceHelicitySelectorColorView {
         color_accuracy: &str,
         selector_inspection: &RecurrenceInspectionSummary,
     ) -> RusticolResult<()> {
-        if self.source != "primary" || self.view != RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW {
+        let sparse = self.view == RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW;
+        if self.source != "primary" || !(sparse || self.view == RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW)
+        {
             return Err(RusticolError::compatibility(
                 "unsupported recurrence helicity-selector color view",
             ));
@@ -1262,21 +1269,36 @@ impl RecurrenceHelicitySelectorColorView {
                 )
                 | ("convolution-kernels", Some("symmetric-group-fourier"))
         );
+        // One local group per physical owner sector but the certified zero
+        // colour flows.
+        let expected_local_groups = selector_inspection.sector_count.checked_sub(
+            selector_inspection
+                .structural_zero_physical_sector_certificate
+                .as_ref()
+                .map_or(0, |certificate| {
+                    certificate.certified_structural_zero_sector_count
+                }),
+        );
+        if sparse {
+            // Expanded storage with several helicity components whose
+            // per-sector blocks need not be complete.
+            if primary.storage != "expanded"
+                || factorization_kind.is_some()
+                || primary.component_count < 2
+                || primary.group_count < primary.active_sector_count
+                || Some(primary.active_sector_count) != expected_local_groups
+            {
+                return Err(RusticolError::integrity(
+                    "recurrence helicity-selector sparse primary local-color view does not match its reducer",
+                ));
+            }
+            return Ok(());
+        }
         if !supported_reducer
             || (primary.storage == "expanded" && primary.component_count != 1)
             || primary.component_count == 0
             || !primary.group_count.is_multiple_of(primary.component_count)
-            // One local group per physical owner sector but the certified
-            // zero colour flows.
-            || Some(primary.group_count / primary.component_count)
-                != selector_inspection.sector_count.checked_sub(
-                    selector_inspection
-                        .structural_zero_physical_sector_certificate
-                        .as_ref()
-                        .map_or(0, |certificate| {
-                            certificate.certified_structural_zero_sector_count
-                        }),
-                )
+            || Some(primary.group_count / primary.component_count) != expected_local_groups
         {
             return Err(RusticolError::integrity(
                 "recurrence helicity-selector primary local-color group shape or reducer mode is incompatible",
