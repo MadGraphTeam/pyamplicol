@@ -239,6 +239,7 @@ from .stage_compiler import (
     build_and_write_generic_stage_evaluator_artifacts,
     write_model_parameter_evaluator_artifact,
 )
+from .stage_planning import lc_zero_color_sector_ids
 from .validation import (
     ValidationPointRecord,
     build_process_validation_point,
@@ -7275,6 +7276,7 @@ class GenerationBackend:
             helicity_sum_execution=helicity_sum_execution,
             helicity_selector_executions=tuple(helicity_selector_executions),
             color_selector_executions=primary_color_selector_executions,
+            zero_color_flow_count=len(lc_zero_color_sector_ids(dag)),
         )
 
     def _process_worker_count(self, process_count: int) -> int:

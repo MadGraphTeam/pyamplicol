@@ -3631,6 +3631,7 @@ fn validate_runtime_capabilities(
         RuntimeCapability::CompiledColorContractionWalshC2kV1,
         RuntimeCapability::CompiledColorContractionWalshV1,
         RuntimeCapability::CompiledColorTopologyLanesV1,
+        RuntimeCapability::CompiledZeroColorFlowsV1,
         RuntimeCapability::CompiledHelicityDualLaneV1,
         RuntimeCapability::CompiledHelicityPrimaryRecurrenceV1,
         RuntimeCapability::CompiledHelicitySelectorUnionV1,

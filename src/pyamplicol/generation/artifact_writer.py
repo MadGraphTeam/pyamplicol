@@ -54,6 +54,7 @@ from .._internal.versions import (
     COMPILED_PLANE_ARENA_RUNTIME_CAPABILITY,
     COMPILED_PLANE_DIRECT_APPLICATION_ABI,
     COMPILED_RUNTIME_SELECTORS_CAPABILITY,
+    COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
     EAGER_DIRECT_ARENA_RUNTIME_CAPABILITY,
     EAGER_DIRECT_TABLE_BINDING_ABI,
     EAGER_DIRECT_TABLE_DESCRIPTOR_ABI,
@@ -258,6 +259,10 @@ class CompiledProcessArtifact:
     umami_physics: Mapping[str, object] | None = None
     umami_color_sectors: tuple[Mapping[str, object], ...] = ()
     umami_structural_keys: Mapping[str, str] | None = None
+    # LC flows the process evaluates as exact zeros (stage_planning
+    # ``lc_zero_color_sector_ids``); nonzero requires
+    # ``rusticol.compiled.zero-color-flows.v1``.
+    zero_color_flow_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -3177,6 +3182,8 @@ def _execution_manifest(
         required_runtime_capabilities.add(
             COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY
         )
+    if process.zero_color_flow_count:
+        required_runtime_capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
     return {
         "schema_version": PROCESS_ARTIFACT_SCHEMA_VERSION,
         "kind": "pyamplicol-runtime-execution",
@@ -5135,6 +5142,8 @@ def _compiled_process_runtime_capabilities(
         )
     if _uses_primary_helicity_recurrence(process):
         capabilities.add(COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY)
+    if process.zero_color_flow_count:
+        capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
     if process.color_selector_executions:
         capabilities.add(COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY)
         capabilities.add(COMPILED_RUNTIME_SELECTORS_CAPABILITY)

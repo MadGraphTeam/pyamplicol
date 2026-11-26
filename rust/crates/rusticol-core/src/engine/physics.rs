@@ -213,6 +213,29 @@ impl PhysicsRuntime {
                 .all(|component| matches!(component, PhysicsColorComponentV1::ContractedColor(_)))
     }
 
+    /// The computed LC flows no reduction group covers: the zero colour flows
+    /// of a process that declares them (`rusticol.compiled.zero-color-flows.v1`).
+    pub(super) fn uncovered_computed_lc_color_indices(&self) -> BTreeSet<usize> {
+        let covered = self
+            .manifest
+            .reduction
+            .groups
+            .iter()
+            .flat_map(|group| &group.physical_color_ids)
+            .filter_map(|id| self.color_index_by_id.get(id).copied())
+            .collect::<BTreeSet<_>>();
+        self.manifest
+            .color_components
+            .iter()
+            .enumerate()
+            .filter(|(index, color)| {
+                matches!(color, PhysicsColorComponentV1::LcFlow(flow) if flow.computed)
+                    && !covered.contains(index)
+            })
+            .map(|(index, _)| index)
+            .collect()
+    }
+
     pub(super) fn color_is_computed(&self, index: usize) -> bool {
         match &self.manifest.color_components[index] {
             PhysicsColorComponentV1::LcFlow(flow) => flow.computed,
@@ -835,6 +858,25 @@ impl ExecutionRuntime {
     pub(super) fn attach_physics(&mut self, physics: Arc<PhysicsRuntime>) -> RusticolResult<()> {
         self.lc_resolved_replay_plan = None;
         self.lc_resolved_replay_selection_cache = None;
+        if self.zero_color_flows_declared {
+            let zero = physics.uncovered_computed_lc_color_indices();
+            if physics.manifest.color_accuracy.as_str() != "lc" || zero.is_empty() {
+                return Err(RusticolError::integrity(
+                    "the execution declares zero colour flows but its physics has no computed LC flow outside the reduction groups",
+                ));
+            }
+            self.zero_color_indices = zero;
+        }
+        let zero_color_indices = self.zero_color_indices.clone();
+        if let Some(sum_runtime) = self.helicity_sum_runtime.as_mut() {
+            sum_runtime.zero_color_indices = zero_color_indices.clone();
+        }
+        for selector_runtime in &mut self.helicity_selector_runtimes {
+            selector_runtime.zero_color_indices = zero_color_indices.clone();
+        }
+        for selector_runtime in self.color_selector_runtimes.values_mut() {
+            selector_runtime.zero_color_indices = zero_color_indices.clone();
+        }
         self.physics = Some(Arc::clone(&physics));
         if let Some(sum_runtime) = self.helicity_sum_runtime.as_mut() {
             let sum_physics =
@@ -1010,22 +1052,25 @@ impl ExecutionRuntime {
             .iter()
             .map(|(sector_id, sector)| (sector.color_index, *sector_id))
             .collect::<BTreeMap<_, _>>();
+        // A zero colour flow has no sector and contributes nothing: a
+        // selection of zero flows only maps to no sector, and the caller
+        // evaluates it on the resolved path, where the flow's components are
+        // exact zeros.
         color_ids
             .iter()
-            .map(|color_id| {
-                let color_index = physics.color_index_by_id.get(color_id).ok_or_else(|| {
-                    RusticolError::integrity(format!(
+            .filter_map(|color_id| {
+                let Some(color_index) = physics.color_index_by_id.get(color_id) else {
+                    return Some(Err(RusticolError::integrity(format!(
                         "LC topology replay selected unknown materialized color {color_id:?}"
-                    ))
-                })?;
-                sector_by_color_index
-                    .get(color_index)
-                    .copied()
-                    .ok_or_else(|| {
-                        RusticolError::integrity(format!(
-                            "LC topology replay color {color_id:?} has no materialized sector"
-                        ))
-                    })
+                    ))));
+                };
+                match sector_by_color_index.get(color_index) {
+                    Some(sector_id) => Some(Ok(*sector_id)),
+                    None if self.zero_color_indices.contains(color_index) => None,
+                    None => Some(Err(RusticolError::integrity(format!(
+                        "LC topology replay color {color_id:?} has no materialized sector"
+                    )))),
+                }
             })
             .collect()
     }

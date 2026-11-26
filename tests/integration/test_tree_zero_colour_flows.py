@@ -15,8 +15,11 @@ identically zero. The tree lanes take such an open-line colour flow as zero:
   whose vertex support depends on the values of mutable parameters (a coupling
   the restriction removed, or a projection the support probe dropped, at the
   card values) is refused (``models.binding_support``);
-- the compiled lane keeps refusing a rootless LC sector, as before, and the
-  eager and on-the-fly lanes take it as zero, as before.
+- the compiled lane lists the flow in public physics outside every reduction
+  group and declares ``rusticol.compiled.zero-color-flows.v1`` (a released
+  reader refuses the artifact); colour-flow selection of it returns an exact
+  zero, alone, per point and in mixed batches;
+- the eager and on-the-fly lanes take it as zero, as before.
 
 The references are MadGraph 3.7.0 standalone, UFO ``sm`` with its default
 restriction and t-channel widths kept, from
@@ -199,22 +202,37 @@ def test_reported_processes_match_madgraph(
     _check(sm_model, tmp_path, process, accuracy)
 
 
-def test_on_the_fly_lane_takes_the_zero_flow_and_the_compiled_lane_refuses_it(
+@pytest.mark.parametrize("execution_mode", ["on-the-fly", "compiled"])
+def test_the_other_lanes_take_the_zero_flow(
+    sm_model: ModelSource, tmp_path: Path, execution_mode: str
+) -> None:
+    """The on-the-fly lane built these processes already; the compiled lane
+    refused a rootless LC sector ("has no amplitude root") before."""
+
+    _check(sm_model, tmp_path, "c d > u s", "lc", execution_mode)
+
+
+def test_the_compiled_lane_declares_its_zero_flows(
     sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    """The on-the-fly lane built these processes already. The compiled lane's
-    LC replay keeps refusing a rootless sector (its colour-flow selector map
-    has no route for one)."""
+    """Only a compiled artifact with a zero colour flow requires the
+    capability, so every other artifact keeps its bytes and a released reader
+    refuses this one at load."""
 
-    _check(sm_model, tmp_path, "c d > u s", "lc", "on-the-fly")
-    with pytest.raises(GenerationError, match="has no amplitude root"):
+    capability = "rusticol.compiled.zero-color-flows.v1"
+    for process, expected in (("c d > u s", True), ("u d > u d", False)):
+        artifact = tmp_path / process.replace(" ", "_").replace(">", "to")
         _runtime(
             sm_model,
-            "c d > u s",
-            tmp_path / "compiled",
+            process,
+            artifact,
             accuracy="lc",
             execution_mode="compiled",
+            limits={"QCD": 0, "QED": 2},
         )
+        manifest = json.loads((artifact / "artifact.json").read_text())
+        declared = manifest["runtime"]["required_runtime_capabilities"]
+        assert (capability in declared) is expected
 
 
 def test_the_zero_flow_is_exactly_zero_in_every_lc_layout(
@@ -291,10 +309,21 @@ def test_full_colour_singleton_helicity_selection_matches_the_resolved_rows(
         assert totals[point] == pytest.approx(entry["total"][point], rel=1e-10)
 
 
-@pytest.mark.parametrize("layout", ["topology-replay", "all-flow-union"])
+@pytest.mark.parametrize(
+    ("execution_mode", "layout"),
+    [
+        ("recurrence", "topology-replay"),
+        ("recurrence", "all-flow-union"),
+        ("compiled", "topology-replay"),
+    ],
+)
 @pytest.mark.parametrize("precision", [16, 32])
 def test_selecting_the_zero_flow_returns_an_exact_zero(
-    sm_model: ModelSource, tmp_path: Path, layout: str, precision: int
+    sm_model: ModelSource,
+    tmp_path: Path,
+    execution_mode: str,
+    layout: str,
+    precision: int,
 ) -> None:
     """Selecting the zero colour flow, alone, per point and next to the live
     flow in one batch, returns exactly zero in binary64 and at 32 digits; the
@@ -306,6 +335,7 @@ def test_selecting_the_zero_flow_returns_an_exact_zero(
         "c d > u s",
         tmp_path / "artifact",
         accuracy="lc",
+        execution_mode=execution_mode,
         lc_flow_layout=layout,
     )
     points = entry["points"]

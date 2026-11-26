@@ -3341,6 +3341,11 @@ impl ExecutionRuntime {
             stage_count: manifest.runtime_schema.stages.len(),
             amplitude_output_count: manifest.runtime_schema.amplitude_stage.output_count,
             lc_topology_replay_enabled: !topology_replay_mappings.is_empty(),
+            zero_color_flows_declared: manifest
+                .required_runtime_capabilities
+                .iter()
+                .any(|capability| capability == COMPILED_ZERO_COLOR_FLOWS_CAPABILITY),
+            zero_color_indices: BTreeSet::new(),
             lc_topology_replay_mappings: Arc::new(topology_replay_mappings),
             lc_topology_replay_public_mappings: topology_replay_public_mappings,
             lc_topology_replay_routes: topology_replay_data.routes,
@@ -4236,6 +4241,21 @@ fn ensure_execution_capabilities_supported(manifest: &ExecutionManifest) -> Rust
     if manifest.color_contraction_payload.is_some() {
         execution_capabilities.insert(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY.to_string());
     }
+    // The zero colour flows are physics, checked when it is attached
+    // (`ExecutionRuntime::attach_physics`): only an LC primary execution may
+    // declare them.
+    if manifest
+        .required_runtime_capabilities
+        .iter()
+        .any(|capability| capability == COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
+    {
+        if manifest.color_accuracy != "lc" {
+            return Err(RusticolError::integrity(
+                "only an LC execution can declare zero colour flows",
+            ));
+        }
+        execution_capabilities.insert(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY.to_string());
+    }
     validate_declared_execution_capabilities(
         &manifest.required_runtime_capabilities,
         &execution_capabilities,
@@ -4666,6 +4686,31 @@ mod walsh_color_contraction_capability_tests {
             supported_runtime_capabilities()
                 .contains(&COMPILED_COLOR_CONTRACTION_WALSH_C2K_CAPABILITY)
         );
+    }
+
+    #[test]
+    fn zero_color_flows_are_declared_by_an_lc_execution_only() {
+        assert!(supported_runtime_capabilities().contains(&COMPILED_ZERO_COLOR_FLOWS_CAPABILITY));
+        for (accuracy, accepted) in [("lc", true), ("full", false)] {
+            let mut value = crate::artifact::tests::minimal_execution_manifest(
+                "p0",
+                "a b > c",
+                DIRECT,
+                crate::artifact::tests::direct_evaluator_manifest("evaluators/direct.symjit"),
+            );
+            value["color_accuracy"] = json!(accuracy);
+            value["required_runtime_capabilities"] =
+                json!([COMPILED_ZERO_COLOR_FLOWS_CAPABILITY, DIRECT]);
+            let manifest: ExecutionManifest =
+                serde_json::from_value(value).expect("deserialize zero-flow fixture");
+            let result = ensure_execution_capabilities_supported(&manifest);
+            if accepted {
+                result.expect("an LC execution declares its zero colour flows");
+            } else {
+                let error = result.expect_err("only LC has colour flows");
+                assert_eq!(error.kind(), crate::RusticolErrorKind::Integrity, "{error}");
+            }
+        }
     }
 
     #[test]

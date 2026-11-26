@@ -213,6 +213,8 @@ impl EagerV3CommonParts {
             stage_count: self.stage_count,
             amplitude_output_count: self.amplitude_output_count,
             lc_topology_replay_enabled: !topology_replay_mappings.is_empty(),
+            zero_color_flows_declared: false,
+            zero_color_indices: BTreeSet::new(),
             lc_topology_replay_mappings: Arc::new(topology_replay_mappings),
             lc_topology_replay_public_mappings: topology_replay_public_mappings,
             lc_topology_replay_routes: self.lc_topology_replay_data.routes,
