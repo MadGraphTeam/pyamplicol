@@ -195,25 +195,98 @@ def test_full_colour_with_a_helicity_dependent_zero_matches_madgraph(
     _check_helicity_selection(runtime, eager, points, _real(eager.evaluate(points)))
 
 
+@pytest.mark.parametrize(
+    ("key", "accuracy"),
+    [
+        ("u u~ > d d~ QCD<=0", "nlc"),
+        ("u u > u u QCD<=0", "full"),
+        ("u u > u u QCD<=0", "nlc"),
+    ],
+)
+def test_next_to_leading_colour_and_identical_flavours(
+    sm_model: ModelSource, tmp_path: Path, key: str, accuracy: str
+) -> None:
+    """Next-to-leading colour has the same primary reducer shape and was
+    refused the same way, as were identical flavours (u u > u u at QCD = 0,
+    t- and u-channel exchanges in both flows): the totals match MadGraph at
+    full colour and the eager lane at both accuracies, every helicity
+    selection matches the eager lane."""
+
+    process, limits = _split(key)
+    runtime = _runtime(
+        sm_model, process, tmp_path / "recurrence", accuracy=accuracy, limits=limits
+    )
+    assert _declares_sparse_view(tmp_path / "recurrence")
+    eager = _runtime(
+        sm_model,
+        process,
+        tmp_path / "eager",
+        accuracy=accuracy,
+        execution_mode="eager",
+        limits=limits,
+    )
+    entry = _references(REFERENCE)[key]
+    points = entry["points"]
+    total = _real(eager.evaluate(points))
+    assert _real(runtime.evaluate(points)) == pytest.approx(total, rel=1e-12, abs=0.0)
+    if accuracy == "full":
+        assert total == pytest.approx(entry["total"], rel=1e-10, abs=0.0)
+    _check_helicity_selection(runtime, eager, points, total)
+
+
 def test_the_built_in_sm_builds_them_at_full_colour(tmp_path: Path) -> None:
     """The same in the built-in SM with the default lane and policy, the
-    request that was refused: every helicity selection against the eager
-    lane."""
+    request that was refused, with identical massive flavours too
+    (b b > b b): every helicity selection against the eager lane, at full
+    and next-to-leading colour."""
+
+    from pyamplicol.generation.phase_space import massive_rambo_final_state
+    from pyamplicol.models import BuiltinSMModel
 
     limits = {"QCD": 0, "QED": 2}
     model = ModelSource.built_in_sm()
-    entry = _references(REFERENCE)["u u~ > d d~ QCD<=0"]
-    for process in ("u u~ > d d~", "u d > u d"):
-        root = tmp_path / process.replace(" ", "_").replace(">", "to")
-        runtime = _runtime(model, process, root / "recurrence", limits=limits)
-        eager = _runtime(
-            model, process, root / "eager", execution_mode="eager", limits=limits
+    for process, accuracy in (
+        ("u u~ > d d~", "full"),
+        ("u d > u d", "full"),
+        ("b b > b b", "full"),
+        ("b b > b b", "nlc"),
+    ):
+        root = tmp_path / f"{process.replace(' ', '_').replace('>', 'to')}-{accuracy}"
+        runtime = _runtime(
+            model, process, root / "recurrence", accuracy=accuracy, limits=limits
         )
-        total = _real(eager.evaluate(entry["points"]))
-        assert _real(runtime.evaluate(entry["points"])) == pytest.approx(
+        eager = _runtime(
+            model,
+            process,
+            root / "eager",
+            accuracy=accuracy,
+            execution_mode="eager",
+            limits=limits,
+        )
+        masses = [
+            BuiltinSMModel().mass(particle.pdg_id)
+            for particle in eager.physics.external_particles
+        ]
+        momentum = (250000.0 - 4.0 * masses[0] ** 2) ** 0.5 / 2.0
+        energy = (momentum**2 + masses[0] ** 2) ** 0.5
+        points = [
+            [
+                [energy, 0.0, 0.0, momentum],
+                [energy, 0.0, 0.0, -momentum],
+                *(
+                    list(vector)
+                    for vector in massive_rambo_final_state(
+                        2, sqrt_s=500.0, masses=masses[2:], seed=seed
+                    )
+                ),
+            ]
+            for seed in (9001, 9002)
+        ]
+        total = _real(eager.evaluate(points))
+        assert _real(runtime.evaluate(points)) == pytest.approx(
             total, rel=1e-12, abs=0.0
         )
-        _check_helicity_selection(runtime, eager, entry["points"], total)
+        _check_helicity_selection(runtime, eager, points, total)
 
 
 def test_complete_helicity_blocks_keep_their_view(
