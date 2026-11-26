@@ -52,8 +52,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The runtime-options TOML reader (`runtime_options`); the lock's toml (symjit's).
 toml = "1.1"
-# A commit of TIRust's main line (after its one history rewrite): 6ba4b531 =
-# main after PR #70 (refusal texts that name the failed estimate; the gates
+# A commit of TIRust's main line (after its one history rewrite): c20d0be2 =
+# main after PRs #76 (a relation's constant denominator identity held to the
+# inputs' rounding) and #77 (exactly dependent triangles kept on their
+# relation at a stability threshold of 0), on 6ba4b531 = PR #70 (refusal texts that name the failed estimate; the gates
 # documented as heuristics), on 100e18b4 = PR #72 (a triangle refused by its
 # PV estimate or its fixed-precision floor where the Gram gate passes fails as
 # Unstable, i.e. is sent to a higher precision, instead of reaching the
@@ -69,5 +71,5 @@ toml = "1.1"
 # its oneloop revision and feature set are this manifest's,
 # its Symbolica requirement ("3.0") resolves to the root [patch.crates-io]
 # revision. Its own manifests' gammaloop crates are not in this graph.
-iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "6ba4b5315e245f1006f113fdf2e6315549608228", optional = true }
-iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "6ba4b5315e245f1006f113fdf2e6315549608228", optional = true }
+iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "c20d0be2c681a07c63c3762b3ebc27641cd54559", optional = true }
+iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "c20d0be2c681a07c63c3762b3ebc27641cd54559", optional = true }

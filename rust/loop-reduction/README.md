@@ -50,7 +50,10 @@ aligns Symbolica with the application's shared core and uses:
   symbolica-dev/symbolica `community` (main `238dc613`, the author's
   state-omitting evaluator saves, plus his community-only commits; see
   `dependencies/README.md`).
-- TIRust `6ba4b531` (main after PR #70, refusal texts that name the failed
+- TIRust `c20d0be2` (main after PRs #76, a relation's constant denominator
+  identity held to the inputs' rounding, and #77, exactly dependent triangles
+  kept on their relation at a stability threshold of 0; on `6ba4b531` = PR #70,
+  refusal texts that name the failed
   estimate, on `100e18b4` = PR #72: a triangle refused by its PV
   estimate or its fixed-precision floor goes to a higher precision instead of
   the affine-relation variants; on `8543f604` = PR #63, optional

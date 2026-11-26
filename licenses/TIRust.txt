@@ -1,8 +1,8 @@
 TIRust (Rust crates iregi-rust and iregi-masters) linked into pyAmpliCol's native libraries
 
 Source: https://github.com/huashengshao/TIRust (formerly huashengshao/iregi-rust),
-revision 6ba4b5315e245f1006f113fdf2e6315549608228 (main after
-PR #70; pinned in rust/loop-reduction/Cargo.toml and Cargo.lock; the cargo
+revision c20d0be2c681a07c63c3762b3ebc27641cd54559 (main after
+PRs #76 and #77; pinned in rust/loop-reduction/Cargo.toml and Cargo.lock; the cargo
 feature tir, on by default, links it).
 
 License: the BSD Zero Clause License (0BSD). The LICENSE file of the pinned

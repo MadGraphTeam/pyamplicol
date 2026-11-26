@@ -45,7 +45,10 @@ publishable until this revision is in a Symbolica release.
 
 TIRust ([huashengshao/TIRust](https://github.com/huashengshao/TIRust), crates
 `iregi-rust` and `iregi-masters`, pinned to a commit after its one history
-rewrite, currently `6ba4b531` (main after PR #70, refusal texts that name
+rewrite, currently `c20d0be2` (main after PRs #76, a relation's constant
+denominator identity held to the inputs' rounding, and #77, exactly
+dependent triangles kept on their relation at a stability threshold of 0; on
+`6ba4b531` = PR #70, refusal texts that name
 the failed estimate, on `100e18b4` = PR #72: a triangle refused by its
 PV estimate or its fixed-precision floor fails as unstable, i.e. goes to a
 higher precision, instead of reaching the affine-relation variants; on

@@ -47,7 +47,7 @@ ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34
 ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560", optional = true }
 # The loop consumer's TIRust pin (rusticol-loop-reduction's `iregi-rust`, the
 # same revision): its capability query only (feature `tir`).
-iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "6ba4b5315e245f1006f113fdf2e6315549608228", optional = true }
+iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "c20d0be2c681a07c63c3762b3ebc27641cd54559", optional = true }
 # pyAmpliCol's Symbolica library key (the crate named after the package the
 # key is issued for).
 pyamplicol = { path = "../pyamplicol", optional = true }
