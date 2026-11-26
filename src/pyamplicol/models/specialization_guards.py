@@ -1001,9 +1001,10 @@ def revived_removed_couplings(
     binary64, and the result must expand to exactly 0. What the expansion
     cannot reduce is not proven, and refused: a square root of a non-square
     (``sqrt(10000000000000001) - 100000000``, zero in binary64 only), a
-    branch identity Symbolica does not take (``sqrt(x^2) = x``), a model
-    function call it cannot evaluate exactly (``complexconjugate``, ``re``),
-    an unresolved name. A term zero at the transformed values but not identically
+    branch identity Symbolica does not take (``sqrt(x^2) = x``), the
+    conjugate of a real runtime parameter (``conj(MT) - MT``: the externals
+    are complex symbols here), a model function it cannot reduce (a
+    ``reglog`` of a non-trivial argument), an unresolved name. A term zero at the transformed values but not identically
     (a binding would revive it) is refused too: the transformed model holds
     no guard for it. Returned in ``removed``'s order."""
 

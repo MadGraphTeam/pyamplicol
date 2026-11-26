@@ -164,7 +164,7 @@ vertices left without a coupling. The compile records what it removed.
   coupling that is non-zero after the transform, one that is zero only at the
   current values of runtime parameters, and one that is zero only in binary64
   or cannot be reduced (for example the square root of a non-square, or a
-  model function of a non-zero argument).
+  model function the expansion cannot evaluate).
 - **Scope (a behaviour change):** the refusal covers the whole model in that
   scheme, including processes that never meet those couplings. On the shipped
   models this is only `loop_sm` with the card `test`, which zeroes the Yukawa
