@@ -2576,10 +2576,11 @@ def _builtin_sm_model(compiled: object | None = None) -> Model:
     ``models.external._prepared_pack_projects_full_inputs``)."""
 
     from ..models import BuiltinSMModel
-    from ..models.external import _prepared_pack_projects_full_inputs
 
     model = BuiltinSMModel()
     if compiled is not None and getattr(compiled, "prepared_bundle", None) is not None:
+        from ..models.external import _prepared_pack_projects_full_inputs
+
         model._project_full_inputs = _prepared_pack_projects_full_inputs(compiled)
     return model
 
