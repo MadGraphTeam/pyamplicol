@@ -69,7 +69,16 @@ def dag_born_amplitude_orders(
     dag: GenericDAG,
     model: Model,
 ) -> frozenset[CouplingOrders]:
-    """Total coupling orders of the amplitude roots of a compiled DAG.
+    """Total coupling orders of the amplitude roots of a compiled DAG."""
+
+    return frozenset(dag_amplitude_root_orders(dag, model))
+
+
+def dag_amplitude_root_orders(
+    dag: GenericDAG,
+    model: Model,
+) -> tuple[CouplingOrders, ...]:
+    """Total coupling orders of every amplitude root, in root order.
 
     A vertex closure adds its vertex's orders to those of its two currents;
     every other root contracts its currents directly.
@@ -80,12 +89,12 @@ def dag_born_amplitude_orders(
         vertices.setdefault(
             (int(model_vertex.kind), tuple(model_vertex.particles)), model_vertex
         )
-    orders: set[CouplingOrders] = set()
+    orders: list[CouplingOrders] = []
     for root in dag.amplitude_roots:
         left = dag.currents[root.left_id].index
         right = dag.currents[root.right_id].index
         if root.kind != "vertex-closure":
-            orders.add(
+            orders.append(
                 _combine_coupling_order_tuples(
                     tuple(left.coupling_orders), tuple(right.coupling_orders)
                 )
@@ -101,12 +110,67 @@ def dag_born_amplitude_orders(
                 f"amplitude root {root.id} of {dag.process.process!r} names no "
                 f"model vertex {root.vertex_kind} {root.vertex_particles}"
             )
-        orders.add(
+        orders.append(
             _combine_coupling_order_tuples(
                 tuple(model.combine_coupling_orders(left, right, vertex))
             )
         )
-    return frozenset(orders)
+    return tuple(orders)
+
+
+#: ``physics.json`` extension of compiled artifacts: the amplitude coupling
+#: order of every amplitude root, which serves ``evaluate_orders``.
+COMPILED_AMPLITUDE_ORDERS_EXTENSION_KEY = "amplitude_orders"
+COMPILED_AMPLITUDE_ORDERS_KIND = "pyamplicol-compiled-amplitude-orders-v1"
+
+
+def compiled_amplitude_orders_extension(
+    model: Model,
+    executions: Mapping[str, GenericDAG],
+) -> dict[str, object]:
+    """Amplitude coupling-order components of the roots of compiled executions.
+
+    ``names`` are the model's coupling-order names in ascending order (the
+    recurrence lane's axis); ``components`` are the distinct power vectors of
+    all roots over those names, ascending; ``executions`` maps every named
+    execution (``primary``, ``helicity_sum``) to the component of each of its
+    amplitude roots in root (evaluator output) order.
+    """
+
+    root_orders = {
+        name: dag_amplitude_root_orders(dag, model) for name, dag in executions.items()
+    }
+    names = sorted(
+        {
+            str(name).upper()
+            for vertex in model.vertices
+            for name, _power in model.vertex_coupling_orders(vertex)
+        }
+        | {
+            name
+            for orders in root_orders.values()
+            for order in orders
+            for name, _power in order
+        }
+    )
+
+    def powers(order: CouplingOrders) -> tuple[int, ...]:
+        values = dict(order)
+        return tuple(int(values.get(name, 0)) for name in names)
+
+    components = sorted(
+        {powers(order) for orders in root_orders.values() for order in orders}
+    )
+    index = {component: position for position, component in enumerate(components)}
+    return {
+        "kind": COMPILED_AMPLITUDE_ORDERS_KIND,
+        "names": names,
+        "components": [list(component) for component in components],
+        "executions": {
+            name: [index[powers(order)] for order in orders]
+            for name, orders in sorted(root_orders.items())
+        },
+    }
 
 
 def process_born_amplitude_orders(

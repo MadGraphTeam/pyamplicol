@@ -4585,6 +4585,9 @@ pub struct NativeRuntime {
     /// The artifact's specialisation guards of this process, evaluated at
     /// every binding (`set_model_parameters`); empty for most artifacts.
     specialization_guards: crate::specialization_guards::SpecializationGuards,
+    /// Amplitude coupling orders of the roots of a compiled process
+    /// (`evaluate_orders`); absent in other lanes and older artifacts.
+    compiled_amplitude_orders: Option<Arc<CompiledAmplitudeOrders>>,
 }
 
 enum NativeExecutionLane {
@@ -4928,7 +4931,7 @@ mod model_parameters;
 use model_parameters::*;
 
 mod evaluation;
-use evaluation::resolved_f64_totals;
+use evaluation::{CompiledAmplitudeOrders, compiled_orders_unrecorded, resolved_f64_totals};
 #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
 mod compiled_direct_prototype;
 mod helicity_lane;

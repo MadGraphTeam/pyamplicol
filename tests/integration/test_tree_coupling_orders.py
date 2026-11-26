@@ -1117,7 +1117,7 @@ def test_symmetric_group_colour_partials_agree_with_exact(
     _assert_matches_exact(runtime, [runtime._backend.validation_momenta()[0]])
 
 
-def test_cli_prints_partials_and_rejects_non_recurrence_lanes(
+def test_cli_prints_partials_and_rejects_the_eager_lane(
     sm_model: ModelSource, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     reference = _reference("u u~ > d d~")
@@ -1146,7 +1146,7 @@ def test_cli_prints_partials_and_rejects_non_recurrence_lanes(
     eager = _runtime(
         sm_model, "u u~ > d d~", tmp_path / "eager", execution_mode="eager"
     )
-    with pytest.raises(CompatibilityError, match="recurrence artifact"):
+    with pytest.raises(CompatibilityError, match="eager artifacts"):
         eager.evaluate_orders(reference["points"])
 
 

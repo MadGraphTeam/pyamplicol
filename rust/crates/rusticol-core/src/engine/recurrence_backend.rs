@@ -166,6 +166,16 @@ impl NativeOnTheFlyPreparedExecutorResolver {
         self.pending_resolved.as_ref().unwrap_or(&self.resolved)
     }
 
+    /// A resolver of its own over the same prepared executor pool, with its
+    /// own source binding, for a second query-family executor.
+    pub(super) fn sibling(
+        &self,
+        source_domains: Vec<DirectSourceDispatchDomainSpec>,
+    ) -> RusticolResult<Self> {
+        let sources = self.pool.bind_source_domains(source_domains)?;
+        Ok(Rc::clone(&self.pool).into_shared_on_the_fly_resolver(sources))
+    }
+
     pub(super) fn semantic_executor_binding_count(&self) -> RusticolResult<u32> {
         u32::try_from(self.effective_resolved().len()).map_err(|_| {
             RusticolError::integrity("on-the-fly semantic executor binding count exceeds u32")

@@ -759,6 +759,38 @@ pub(super) fn resolve_on_the_fly_coupling_policy_from_grammar_v1(
     })
 }
 
+/// The total coupling orders of the diagrams the process admits, within
+/// `limits`: the cold global sweep of the minimal policy (whatever the
+/// policy), ascending. Every order a tree of the process carries is one of
+/// these: the sweep keeps the componentwise Pareto-minimal orders per
+/// structural state, and the trees of one process all carry the same number
+/// of coupling powers per state (each vertex adds its own), so no order of a
+/// tree is dominated by another.
+pub(super) fn viable_amplitude_orders_v1(
+    templates: &ValidatedRecurrenceTemplateInput,
+    seed: &OnTheFlyProcessSeedV1,
+    grammar: &PreparedOnTheFlyGrammarV1,
+    limits: &[Option<u32>],
+) -> RusticolResult<Vec<Box<[u32]>>> {
+    let mut census = OnTheFlyCouplingPolicyCensusV1::default();
+    let nodes = build_global_topologies(templates, seed, grammar, &mut census)?;
+    let mut totals = collect_viable_total_orders(templates, seed, grammar, &nodes, &mut census)?;
+    if totals.iter().any(|orders| orders.len() != limits.len()) {
+        return Err(invalid(
+            "viable coupling orders do not match the coupling-order limits",
+        ));
+    }
+    totals.retain(|orders| {
+        orders
+            .iter()
+            .zip(limits)
+            .all(|(power, limit)| limit.is_none_or(|maximum| *power <= maximum))
+    });
+    totals.sort_unstable();
+    totals.dedup();
+    Ok(totals)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

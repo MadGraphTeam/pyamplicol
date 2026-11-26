@@ -53,6 +53,9 @@ use std::time::{Duration, Instant};
 mod cache;
 pub(super) use cache::OnTheFlyLaneSnapshotV1;
 
+#[path = "on_the_fly_orders.rs"]
+mod orders;
+
 #[cfg(feature = "on-the-fly-test-support")]
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct OnTheFlyExecutionDiagnosticCurrentV1 {
@@ -233,6 +236,11 @@ pub(super) struct OnTheFlyNativeRuntime {
     source_momenta_scratch: Vec<f64>,
     amplitude_scratch: Vec<(f64, f64)>,
     symmetric_group_color_workspace: Option<RuntimeSymmetricGroupColorWorkspace>,
+    /// Amplitude and squared coupling-order axes (cold, built on first use).
+    order_catalog: std::cell::OnceCell<crate::engine::AmplitudeOrderCatalog>,
+    /// The order-split family of the last `evaluate_orders` selection; never
+    /// part of the ordinary evaluation.
+    order_state: Option<Box<orders::OnTheFlyOrderStateV1>>,
 }
 
 fn emit_progress(
@@ -403,6 +411,8 @@ impl OnTheFlyNativeRuntime {
             source_momenta_scratch: Vec::new(),
             amplitude_scratch: Vec::new(),
             symmetric_group_color_workspace: None,
+            order_catalog: std::cell::OnceCell::new(),
+            order_state: None,
         })
     }
 
@@ -1685,6 +1695,7 @@ impl OnTheFlyNativeRuntime {
         }
         self.source_momenta_scratch = Vec::new();
         self.amplitude_scratch = Vec::new();
+        self.order_state = None;
         Ok(())
     }
 

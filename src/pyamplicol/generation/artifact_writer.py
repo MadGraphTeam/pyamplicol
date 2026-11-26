@@ -105,6 +105,7 @@ from ..models.specialization_guards import (
     guard_file_payload,
     guards_from_file_payload,
 )
+from .born_orders import COMPILED_AMPLITUDE_ORDERS_EXTENSION_KEY
 from .contracts import RuntimeExpressionSchema
 from .eager_columnar import EAGER_LOWERING_INPUT_ABI
 from .eager_lowering import EAGER_RUNTIME_KIND
@@ -274,6 +275,10 @@ class CompiledProcessArtifact:
     #: (``models.specialization_guards``); the model's own are added to every
     #: process by the writer.
     specialization_guards: tuple[SpecializationGuard, ...] = ()
+    #: The amplitude coupling order of every amplitude root of the primary
+    #: and helicity-sum executions (``born_orders.
+    #: compiled_amplitude_orders_extension``), a ``physics.json`` extension.
+    amplitude_orders: Mapping[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -2055,6 +2060,19 @@ def _write_process_payloads(
     else:
         schema = _runtime_schema_mapping(process.runtime_schema)
         physics = _mapping(schema.get("physics"))
+        if (
+            isinstance(process, CompiledProcessArtifact)
+            and process.amplitude_orders is not None
+        ):
+            physics = {
+                **physics,
+                "extensions": {
+                    **_mapping(physics.get("extensions", {})),
+                    COMPILED_AMPLITUDE_ORDERS_EXTENSION_KEY: _plain_mapping(
+                        process.amplitude_orders
+                    ),
+                },
+            }
     if physics.get("process_id") != process.process_id:
         raise ValueError(
             f"runtime physics process ID does not match {process.process_id!r}"

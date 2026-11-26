@@ -939,6 +939,63 @@ impl OnTheFlyExecutionRuntime {
         })
     }
 
+    /// Amplitude and squared coupling-order axes of the process.
+    pub(super) fn amplitude_order_catalog(&self) -> RusticolResult<&AmplitudeOrderCatalog> {
+        self.lane.amplitude_order_catalog()
+    }
+
+    /// Point-major squared coupling-order partials of the selection.
+    pub(super) fn run_order_partials_into(
+        &mut self,
+        common: &ExecutionRuntime,
+        batch: F64MomentumBatchView<'_>,
+        selected_helicities: Option<&BTreeSet<String>>,
+        selected_colors: Option<&BTreeSet<String>>,
+        partials: &mut [f64],
+    ) -> RusticolResult<()> {
+        let result = (|| {
+            let point_count = batch.point_count();
+            self.prepare_selection(selected_helicities, selected_colors, point_count)?;
+            let input_len = self.fill_point_major(batch)?;
+            let native_point_count = u32::try_from(point_count).map_err(|_| {
+                RusticolError::invalid_argument("on-the-fly point count exceeds u32")
+            })?;
+            match &self.reduction {
+                OnTheFlyReductionV1::Lc => self.lane.run_lc_order_partials_f64(
+                    &self.point_major_scratch[..input_len],
+                    native_point_count,
+                    &common.model_parameter_values_f64,
+                    common.normalization_factor,
+                    partials,
+                ),
+                OnTheFlyReductionV1::Contracted(plan) => {
+                    let helicity_ordinals = self.lane.contracted_helicity_ordinals()?;
+                    self.lane.run_contracted_order_partials_f64(
+                        &self.selectors,
+                        &helicity_ordinals,
+                        &plan.destination_by_owner_ordinal,
+                        &plan.plan,
+                        &self.point_major_scratch[..input_len],
+                        native_point_count,
+                        &common.model_parameter_values_f64,
+                        common.normalization_factor,
+                        partials,
+                    )
+                }
+            }
+        })();
+        match result {
+            Ok(()) => {
+                self.commit_pending_selection();
+                Ok(())
+            }
+            Err(error) => {
+                self.discard_pending_selection()?;
+                Err(error)
+            }
+        }
+    }
+
     pub(super) fn run_total_into_unprofiled(
         &mut self,
         common: &ExecutionRuntime,
@@ -1707,6 +1764,12 @@ impl NativeRuntime {
         model_parameters_path: Option<&Path>,
         specialization_guards: crate::specialization_guards::SpecializationGuards,
     ) -> Result<Self, RusticolError> {
+        let compiled_amplitude_orders = if matches!(&execution_lane, NativeExecutionLane::Compiled)
+        {
+            CompiledAmplitudeOrders::from_physics(&physics_v1)?.map(Arc::new)
+        } else {
+            None
+        };
         let process = selection.public_expression.clone();
         let process_key = selection.requested_id.clone();
         let representative_process_id = selection.process.id.clone();
@@ -1831,6 +1894,7 @@ impl NativeRuntime {
             point_selector_scratch: PointSelectorExecutionScratch::default(),
             selector_simd_lane_width,
             correlated: None,
+            compiled_amplitude_orders,
             specialization_guards,
         };
         if let Some(path) = model_parameters_path {
@@ -2036,6 +2100,7 @@ impl NativeRuntime {
                 point_selector_scratch: PointSelectorExecutionScratch::default(),
                 selector_simd_lane_width: 1,
                 correlated: None,
+                compiled_amplitude_orders: None,
                 specialization_guards,
             };
             if let Some(path) = model_parameters_path {
@@ -2989,11 +3054,21 @@ impl NativeRuntime {
     /// Amplitude and squared coupling-order axes of a recurrence artifact.
     pub fn amplitude_order_catalog(&self) -> RusticolResult<&AmplitudeOrderCatalog> {
         match &self.execution_lane {
+            NativeExecutionLane::Compiled => self
+                .compiled_amplitude_orders
+                .as_deref()
+                .map(CompiledAmplitudeOrders::catalog)
+                .ok_or_else(compiled_orders_unrecorded),
             #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
             NativeExecutionLane::Recurrence(runtime) => Ok(runtime.amplitude_order_catalog()),
-            _ => Err(RusticolError::compatibility(
-                "squared coupling-order partials require a recurrence artifact",
+            #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+            NativeExecutionLane::Eager(_) => Err(RusticolError::compatibility(
+                "squared coupling-order partials are not available for eager artifacts; \
+                 regenerate with evaluator.execution_mode 'compiled', 'recurrence' or \
+                 'on-the-fly'",
             )),
+            #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+            NativeExecutionLane::OnTheFly(runtime) => runtime.amplitude_order_catalog(),
         }
     }
 
@@ -3042,12 +3117,33 @@ impl NativeRuntime {
             )));
         }
         self.validate_selector_capabilities(helicity_ids.is_some(), color_ids.is_some())?;
+        #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+        if matches!(&self.execution_lane, NativeExecutionLane::OnTheFly(_)) {
+            return self.evaluate_on_the_fly_orders_f64_into(
+                momenta,
+                point_count,
+                helicity_ids,
+                color_ids,
+                totals,
+                partials,
+            );
+        }
+        if matches!(&self.execution_lane, NativeExecutionLane::Compiled) {
+            return self.evaluate_compiled_orders_f64_into(
+                momenta,
+                point_count,
+                helicity_ids,
+                color_ids,
+                totals,
+                partials,
+            );
+        }
         let color_ids = self.execution_color_ids(color_ids);
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         {
             let NativeExecutionLane::Recurrence(runtime) = &mut self.execution_lane else {
                 return Err(RusticolError::compatibility(
-                    "squared coupling-order partials require a recurrence artifact",
+                    "squared coupling-order partials are not available for this artifact's execution lane",
                 ));
             };
             let crossing_lookup = std::mem::take(&mut self.input_crossing_map);
@@ -3085,9 +3181,149 @@ impl NativeRuntime {
         {
             let _ = (color_ids, partials);
             Err(RusticolError::compatibility(
-                "squared coupling-order partials require a recurrence artifact",
+                "squared coupling-order partials are not available for this artifact's execution lane",
             ))
         }
+    }
+
+    /// Compiled lane of [`Self::evaluate_orders_f64_into_with_selectors`]:
+    /// totals are the ordinary evaluation's, partials are reduced from the
+    /// recorded amplitude-root orders.
+    fn evaluate_compiled_orders_f64_into(
+        &mut self,
+        momenta: &[f64],
+        point_count: usize,
+        helicity_ids: Option<&[String]>,
+        color_ids: Option<&[String]>,
+        totals: &mut [f64],
+        partials: &mut [f64],
+    ) -> RusticolResult<()> {
+        let orders = self
+            .compiled_amplitude_orders
+            .clone()
+            .ok_or_else(compiled_orders_unrecorded)?;
+        let squared_count = orders.catalog().squared_orders().len();
+        if partials.len() != point_count * squared_count {
+            return Err(RusticolError::invalid_argument(format!(
+                "partial output has length {}, expected {}",
+                partials.len(),
+                point_count * squared_count
+            )));
+        }
+        self.evaluate_f64_into_with_selectors(
+            momenta,
+            point_count,
+            helicity_ids,
+            color_ids,
+            None,
+            None,
+            totals,
+        )?;
+        if squared_count == 1 {
+            // One amplitude component: its one partial is the total.
+            partials.copy_from_slice(totals);
+            return Ok(());
+        }
+        let color_ids = self.execution_color_ids(color_ids);
+        let crossing_lookup = std::mem::take(&mut self.input_crossing_map);
+        let mut selector_scratch = std::mem::take(&mut self.point_selector_scratch);
+        let result = (|| {
+            let selected_helicities = selector_scratch
+                .helicity_selector_sets
+                .resolve(helicity_ids, "helicity")?;
+            let selected_colors = selector_scratch
+                .color_selector_sets
+                .resolve(color_ids.as_deref(), "color component")?;
+            let batch = F64MomentumBatchView::from_contiguous_prevalidated(
+                momenta,
+                point_count,
+                self.runtime.external_count,
+                crossing_lookup.as_deref(),
+            )?;
+            self.runtime.run_order_partials_f64(
+                &orders,
+                batch,
+                selected_helicities,
+                selected_colors,
+                partials,
+            )
+        })();
+        self.input_crossing_map = crossing_lookup;
+        self.point_selector_scratch = selector_scratch;
+        result?;
+        self.apply_process_group_factor(partials);
+        Ok(())
+    }
+
+    /// On-the-fly lane of [`Self::evaluate_orders_f64_into_with_selectors`]:
+    /// totals are the ordinary evaluation's, partials come from the
+    /// order-split family of the same selection.
+    #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+    fn evaluate_on_the_fly_orders_f64_into(
+        &mut self,
+        momenta: &[f64],
+        point_count: usize,
+        helicity_ids: Option<&[String]>,
+        color_ids: Option<&[String]>,
+        totals: &mut [f64],
+        partials: &mut [f64],
+    ) -> RusticolResult<()> {
+        let squared_count = self.amplitude_order_catalog()?.squared_orders().len();
+        if partials.len() != point_count * squared_count {
+            return Err(RusticolError::invalid_argument(format!(
+                "partial output has length {}, expected {}",
+                partials.len(),
+                point_count * squared_count
+            )));
+        }
+        self.evaluate_f64_into_with_selectors(
+            momenta,
+            point_count,
+            helicity_ids,
+            color_ids,
+            None,
+            None,
+            totals,
+        )?;
+        if squared_count == 1 {
+            // One amplitude component: its one partial is the total.
+            partials.copy_from_slice(totals);
+            return Ok(());
+        }
+        let color_ids = self.execution_color_ids(color_ids);
+        let crossing_lookup = std::mem::take(&mut self.input_crossing_map);
+        let mut selector_scratch = std::mem::take(&mut self.point_selector_scratch);
+        let result = (|| {
+            let selected_helicities = selector_scratch
+                .helicity_selector_sets
+                .resolve(helicity_ids, "helicity")?;
+            let selected_colors = selector_scratch
+                .color_selector_sets
+                .resolve(color_ids.as_deref(), "color component")?;
+            let batch = F64MomentumBatchView::from_contiguous_prevalidated(
+                momenta,
+                point_count,
+                self.runtime.external_count,
+                crossing_lookup.as_deref(),
+            )?;
+            let NativeExecutionLane::OnTheFly(runtime) = &mut self.execution_lane else {
+                return Err(RusticolError::integrity(
+                    "on-the-fly partials lost their execution lane",
+                ));
+            };
+            runtime.run_order_partials_into(
+                &self.runtime,
+                batch,
+                selected_helicities,
+                selected_colors,
+                partials,
+            )
+        })();
+        self.input_crossing_map = crossing_lookup;
+        self.point_selector_scratch = selector_scratch;
+        result?;
+        self.apply_process_group_factor(partials);
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

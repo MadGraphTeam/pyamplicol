@@ -707,7 +707,8 @@ of the C ABI sequence `(point, helicity, color)`.
 
 ### Squared coupling-order partials
 
-Recurrence artifacts split totals by squared coupling order in one pass.
+Recurrence, compiled and on-the-fly artifacts split totals by squared
+coupling order (eager artifacts return a compatibility status).
 `rusticol_runtime_coupling_orders_json` describes the axes
 (`rusticol-amplitude-orders-v1`: coupling-order `names`, amplitude
 `components` and `squared` orders with their ordered component `pairs`),
