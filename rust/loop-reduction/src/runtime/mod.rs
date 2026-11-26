@@ -26,7 +26,7 @@ pub use coefficients::{CoefficientEvaluator, exact_state};
 pub use exact::decimal_rational;
 #[cfg(feature = "tir")]
 pub(crate) use master_cache::canonicalise as canonical_master_row;
-pub use master_cache::{MasterCache, MasterStatistics};
+pub use master_cache::{GroupedCall, MasterCache, MasterStatistics};
 pub use ninjars::fast::tensor_layout::monomials as tensor_monomials;
 pub use reduction::{
     DecimalMomentum, PolynomialPlan, RawLane, ReductionBatch, light_mass_needs_invariants,

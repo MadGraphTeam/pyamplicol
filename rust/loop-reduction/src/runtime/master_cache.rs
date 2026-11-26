@@ -24,13 +24,27 @@
 //! Only successful rows are cached; keys are exact, so entries never go stale,
 //! and [`MasterCache::clear`] only bounds memory.
 //!
-//! **Failed rows.** A row the provider fails is not cached across reduction
-//! calls (a later call asks the provider again), but within one call
-//! ([`MasterCache::begin_call`]) its key is remembered: it is evaluated and
-//! counted once per call, the later requests of the call are hits served
-//! failed. So `evaluated` does not depend on how a call is cut into engine
-//! calls or into the slices of a parallel reduction (the shared tier
-//! remembers the call's failed keys for all workers).
+//! **Failed rows.** A row the provider fails (its status false) is never
+//! cached. By default every `evaluate` is a call of its own: a row that
+//! failed in an earlier `evaluate` is asked of the provider again (and
+//! cached if it now succeeds); within one `evaluate`, a row asked several
+//! times reaches the provider once and every request gets its status (one
+//! evaluated, the others hits). A caller that cuts one call into several
+//! `evaluate`s (the v2 reducer's reduction call, cut into engine calls and
+//! into the slices of a parallel reduction) opens a grouped call
+//! ([`MasterCache::begin_call`]): while its [`GroupedCall`] lives, a key the
+//! provider failed is remembered, so it is evaluated and counted once in the
+//! whole grouped call and its later requests are hits served failed, and
+//! `evaluated` does not depend on how the call is cut. A grouped call is
+//! opened on the cache's failure scope at that moment: its shared tier when
+//! it has one (every engine on the tier is then in the call), the cache
+//! itself otherwise. It ends when its [`GroupedCall`] is dropped (also when a
+//! panic unwinds past it) or by [`MasterCache::discard_call`]; the failed
+//! keys it remembered are never read again, so the calls after it are
+//! ordinary calls as if it had not happened. [`MasterCache::clear`],
+//! [`MasterCache::release`] and a change of tier ([`MasterCache::share`])
+//! drop the failed keys they drop the values of, and neither open nor end a
+//! grouped call.
 //!
 //! **Shared tier (parallel reduction).** The engines of one parallel
 //! reduction (`crate::lane_slices`) share one [`SharedMasters`]
@@ -68,7 +82,8 @@ use ninjars::Result;
 use ninjars::fast::{C64, FastMaster, FastMasters};
 use std::collections::HashMap;
 use std::hash::{BuildHasher, BuildHasherDefault, Hash, Hasher};
-use std::sync::{Arc, RwLock};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
 const FAMILIES: [FastMaster; 6] = [
@@ -329,16 +344,80 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
     out.copy_from_slice(&best[..arity]);
 }
 
+/// The grouped call open on a failure scope (a cache, or a shared tier),
+/// if any (module docs, 'Failed rows').
+#[derive(Default)]
+struct Calls {
+    /// The id of the open grouped call; zero when none is open.
+    open: AtomicU64,
+    /// The last id given (ids are never reused, so failed keys stamped with
+    /// an ended call's id are never read again).
+    last: AtomicU64,
+}
+
+impl Calls {
+    /// Open a new grouped call (ending any open one) and return its id.
+    fn open(&self) -> u64 {
+        let id = self.last.fetch_add(1, Ordering::Relaxed) + 1;
+        self.open.store(id, Ordering::Release);
+        id
+    }
+
+    /// The id of the open grouped call, or zero (ordinary calls).
+    fn current(&self) -> u64 {
+        self.open.load(Ordering::Acquire)
+    }
+
+    /// End grouped call `id` if it is still the open one.
+    fn close(&self, id: u64) {
+        let _ = self
+            .open
+            .compare_exchange(id, 0, Ordering::AcqRel, Ordering::Relaxed);
+    }
+
+    /// End whatever grouped call is open.
+    fn close_any(&self) {
+        self.open.store(0, Ordering::Release);
+    }
+}
+
+/// An open grouped call of a [`MasterCache`] ([`MasterCache::begin_call`];
+/// module docs, 'Failed rows'): until it is dropped, the cache's `evaluate`
+/// calls (and those of every engine on its shared tier) are one call for
+/// failed rows. Dropping it ends the grouped call, also when a panic
+/// unwinds past it.
+#[must_use = "the grouped call ends when this is dropped"]
+pub struct GroupedCall {
+    calls: Arc<Calls>,
+    id: u64,
+}
+
+impl Drop for GroupedCall {
+    fn drop(&mut self) {
+        self.calls.close(self.id);
+    }
+}
+
+/// The failed keys of a shared tier's grouped call.
+#[derive(Default)]
+struct Failures {
+    /// The grouped call the keys belong to ([`Calls`]).
+    call: u64,
+    keys: ExactMap<()>,
+}
+
 /// The master values the engines of one parallel reduction share
 /// ([`MasterCache::share`]; module docs): successful rows by their exact
 /// canonical key, in shards (each a reader-writer lock) so that the workers
 /// rarely wait for one another.
 pub struct SharedMasters {
     shards: Vec<RwLock<ExactMap<[[C64; 3]; MAX_OUTPUTS]>>>,
-    /// The keys the provider failed in the current reduction call
-    /// ([`MasterCache::begin_call`]): each counts once per call however the
-    /// call is sliced, as in the serial cache. Looked at on a miss only.
-    failed: std::sync::Mutex<ExactMap<()>>,
+    /// The grouped call open on this tier ([`MasterCache::begin_call`]).
+    calls: Arc<Calls>,
+    /// The keys the provider failed in the tier's grouped call: each counts
+    /// once in the call however it is sliced, as in the serial cache. Looked
+    /// at on a miss only, and only in a grouped call.
+    failed: Mutex<Failures>,
 }
 
 impl SharedMasters {
@@ -350,7 +429,8 @@ impl SharedMasters {
             shards: (0..shards)
                 .map(|_| RwLock::new(ExactMap::default()))
                 .collect(),
-            failed: std::sync::Mutex::new(ExactMap::default()),
+            calls: Arc::default(),
+            failed: Mutex::default(),
         }
     }
 
@@ -369,15 +449,28 @@ impl SharedMasters {
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .clear();
         }
-        self.forget_failures();
-    }
-
-    /// Forget the current call's failed keys (a new reduction call).
-    fn forget_failures(&self) {
         self.failed
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .keys
             .clear();
+    }
+
+    /// Whether the provider failed `key` in grouped call `call`.
+    fn has_failed(&self, call: u64, key: &Key) -> bool {
+        let failures = self.failed.lock().expect("shared masters");
+        failures.call == call && failures.keys.contains_key(key)
+    }
+
+    /// Remember that the provider failed `key` in grouped call `call`
+    /// (forgetting the keys of an earlier one); whether it is new.
+    fn record_failure(&self, call: u64, key: Key) -> bool {
+        let mut failures = self.failed.lock().expect("shared masters");
+        if failures.call != call {
+            failures.keys.clear();
+            failures.call = call;
+        }
+        failures.keys.insert(key, ()).is_none()
     }
 
     /// Number of distinct stored rows.
@@ -395,7 +488,7 @@ impl SharedMasters {
 
 /// Where a request row's outputs come from: a cached value (its offset in
 /// the cache's values), a miss of the current call (its index), or a key the
-/// provider already failed in the current reduction call (no value).
+/// provider already failed in the open grouped call (no value).
 #[derive(Clone, Copy)]
 enum Source {
     Cached(usize),
@@ -453,11 +546,15 @@ pub struct MasterCache<M> {
     miss_ok: Vec<bool>,
     /// The shared tier of a parallel reduction ([`Self::share`]).
     shared: Option<Arc<SharedMasters>>,
-    /// The keys the provider failed in the current reduction call
-    /// ([`Self::begin_call`]): a failed row is not cached, but within one
-    /// call it is evaluated and counted once, so that the count does not
-    /// depend on how the call is cut into engine calls or slices.
+    /// The grouped call open on this cache itself ([`Self::begin_call`];
+    /// with a shared tier, the tier's is used instead).
+    calls: Arc<Calls>,
+    /// The keys the provider failed in grouped call `failed_call` of this
+    /// cache (without a shared tier): a failed row is not cached, but within
+    /// a grouped call it is evaluated and counted once, so that the count
+    /// does not depend on how the call is cut into engine calls.
     failed: ExactMap<()>,
+    failed_call: u64,
 }
 
 impl<M: FastMasters> MasterCache<M> {
@@ -480,18 +577,31 @@ impl<M: FastMasters> MasterCache<M> {
             miss_out: Vec::new(),
             miss_ok: Vec::new(),
             shared: None,
+            calls: Arc::default(),
             failed: ExactMap::default(),
+            failed_call: 0,
         }
     }
 
-    /// A new reduction call: forget the failed keys of the last one (this
-    /// cache's and its shared tier's). A failed row is asked of the provider
-    /// again in a later call, as before; within a call it is evaluated and
-    /// counted once (module docs).
-    pub fn begin_call(&mut self) {
-        self.failed.clear();
-        if let Some(shared) = &self.shared {
-            shared.forget_failures();
+    /// Open a grouped call on this cache's failure scope (its shared tier's
+    /// when it has one, else its own), ending any grouped call open there:
+    /// until the returned [`GroupedCall`] is dropped (or
+    /// [`Self::discard_call`]), a row the provider fails is evaluated and
+    /// counted once in all the `evaluate` calls of this cache and of every
+    /// engine on its tier, its later requests served failed. Without one,
+    /// every `evaluate` is a call of its own (module docs, 'Failed rows').
+    pub fn begin_call(&mut self) -> GroupedCall {
+        let calls = self.scope().clone();
+        let id = calls.open();
+        GroupedCall { calls, id }
+    }
+
+    /// The failure scope of this cache: its shared tier's grouped calls, or
+    /// its own.
+    fn scope(&self) -> &Arc<Calls> {
+        match &self.shared {
+            Some(shared) => &shared.calls,
+            None => &self.calls,
         }
     }
 
@@ -611,8 +721,9 @@ impl<M: FastMasters> MasterCache<M> {
 
     /// Discard a failed reduction call (an error or a caught panic): the
     /// statistics back to `before` (those at the call's start), every value,
-    /// remembered row and failed key dropped, the shared tier's too. The next
-    /// call starts as after the serial reduction's failure, whatever the
+    /// remembered row and failed key dropped, the shared tier's too, and the
+    /// grouped call open on this cache's failure scope ended. The next call
+    /// starts as after the serial reduction's failure, whatever the
     /// interrupted call had reached.
     pub fn discard_call(&mut self, before: MasterStatistics) {
         self.statistics = before;
@@ -620,6 +731,7 @@ impl<M: FastMasters> MasterCache<M> {
         if let Some(shared) = &self.shared {
             shared.clear();
         }
+        self.scope().close_any();
     }
 
     /// Add another cache's statistics to this one's (a parallel reduction's
@@ -721,7 +833,14 @@ impl<M: FastMasters> MasterCache<M> {
         }
         let shared = self.shared.clone();
         let shared = shared.as_deref();
-        self.resolve(family, args, shared);
+        // The open grouped call (zero: this call is an ordinary one). The
+        // failed keys of an ended one are never read again.
+        let call = self.scope().current();
+        if shared.is_none() && call != self.failed_call {
+            self.failed.clear();
+            self.failed_call = call;
+        }
+        self.resolve(family, args, shared, call);
         let misses = self.pending_keys.len();
         if shared.is_none() {
             // The serial cache counts before evaluating (also when the
@@ -745,25 +864,26 @@ impl<M: FastMasters> MasterCache<M> {
             // misses in `asked` are left to its id ([`Asked::Miss`]).
             result?;
         }
-        // Store the successful misses and remember the failed ones for the
-        // rest of the call. On the shared tier, a row is evaluated when it is
-        // the first stored under its key, its value or, for a failed row, its
-        // failure (once per call, as the serial cache counts it).
+        // Store the successful misses and, in a grouped call, remember the
+        // failed ones for the rest of it. On the shared tier, a row is
+        // evaluated when it is the first stored under its key, its value or,
+        // for a failed row, its failure (once per grouped call, as the serial
+        // cache counts it; every time in an ordinary call).
         self.stored.clear();
         let mut evaluated = 0;
         for (miss, key) in self.pending_keys.iter().enumerate() {
             if !self.miss_ok[miss] {
                 self.stored.push(None);
-                self.failed.insert(*key, ());
-                if let Some(shared) = shared
-                    && shared
-                        .failed
-                        .lock()
-                        .expect("shared masters")
-                        .insert(*key, ())
-                        .is_none()
-                {
-                    evaluated += 1;
+                match shared {
+                    _ if call == 0 => evaluated += 1,
+                    None => {
+                        self.failed.insert(*key, ());
+                    }
+                    Some(shared) => {
+                        if shared.record_failure(call, *key) {
+                            evaluated += 1;
+                        }
+                    }
                 }
                 continue;
             }
@@ -833,10 +953,17 @@ impl<M: FastMasters> MasterCache<M> {
     /// (`self.pending_keys`, their canonical rows in `self.miss_args`): a
     /// row's canonical key is looked up in the cache's values, then among the
     /// call's misses, then in the shared tier (whose value the cache then
-    /// keeps, so that a row it has seen takes no lock), else it is a new miss.
+    /// keeps, so that a row it has seen takes no lock), then, in grouped call
+    /// `call` (nonzero), among the keys it failed, else it is a new miss.
     /// A triangle or box row asked before resolves to the source its first
     /// occurrence found (module docs, 'Look-ups').
-    fn resolve(&mut self, family: FastMaster, args: &[C64], shared: Option<&SharedMasters>) {
+    fn resolve(
+        &mut self,
+        family: FastMaster,
+        args: &[C64],
+        shared: Option<&SharedMasters>,
+        call: u64,
+    ) {
         let arity = family.arity();
         let width = family.outputs();
         let relabelled = relabelled(family);
@@ -846,7 +973,7 @@ impl<M: FastMasters> MasterCache<M> {
         self.asked_misses.clear();
         self.miss_args.clear();
         self.call += 1;
-        let call = self.call;
+        let this = self.call;
         let mut canonical = [C64::ZERO; MAX_ARITY];
         for row in args.chunks_exact(arity) {
             let asked = Key::new(family, row);
@@ -856,7 +983,7 @@ impl<M: FastMasters> MasterCache<M> {
                         self.sources.push(Source::Cached(offset));
                         continue;
                     }
-                    Some(&Asked::Miss { call: of, miss }) if of == call => {
+                    Some(&Asked::Miss { call: of, miss }) if of == this => {
                         self.sources.push(Source::Evaluated(miss));
                         continue;
                     }
@@ -892,17 +1019,15 @@ impl<M: FastMasters> MasterCache<M> {
                 self.entries.insert(key, offset);
                 self.values.extend_from_slice(&found[..width]);
                 Source::Cached(offset)
-            } else if self.failed.contains_key(&key)
-                || shared.is_some_and(|shared| {
-                    shared
-                        .failed
-                        .lock()
-                        .expect("shared masters")
-                        .contains_key(&key)
-                })
+            } else if call != 0
+                && match shared {
+                    None => self.failed.contains_key(&key),
+                    Some(shared) => shared.has_failed(call, &key),
+                }
             {
-                // Failed earlier in this call (here or on another worker):
-                // a hit without a value, not evaluated again.
+                // Failed earlier in this grouped call (here or on another
+                // engine of the tier): a hit without a value, not evaluated
+                // again.
                 Source::Failed
             } else {
                 let miss = self.pending_keys.len();
@@ -912,13 +1037,13 @@ impl<M: FastMasters> MasterCache<M> {
                 Source::Evaluated(miss)
             };
             if relabelled {
-                // A row failed earlier in this reduction call is not
+                // A row failed earlier in this grouped call is not
                 // remembered as asked: it is looked up again (and fails).
                 let entry = match source {
                     Source::Cached(offset) => Some(Asked::Cached(offset)),
                     Source::Evaluated(miss) => {
                         self.asked_misses.push(asked);
-                        Some(Asked::Miss { call, miss })
+                        Some(Asked::Miss { call: this, miss })
                     }
                     Source::Failed => None,
                 };
@@ -1055,22 +1180,24 @@ mod tests {
         .concat();
         let mut out = vec![[C64::ZERO; 3]; 12];
         let mut ok = vec![false; 3];
+        let call = cache.begin_call();
         cache
             .evaluate(FastMaster::BubbleRank3, &rows, &mut out, &mut ok)
             .unwrap();
         assert_eq!(ok, [true, true, false]);
         assert_eq!(out[..4], out[4..8]);
         assert_eq!(cache.inner.0, 2);
-        // Asked again in the same reduction call: the failed row is not
+        // Asked again in the same grouped call: the failed row is not
         // evaluated (nor counted) again, and still fails.
         cache
             .evaluate(FastMaster::BubbleRank3, &rows, &mut out, &mut ok)
             .unwrap();
         assert_eq!(ok, [true, true, false]);
         assert_eq!(cache.inner.0, 2);
-        // A new call: the successful row is cached; the failed one is
-        // evaluated again.
-        cache.begin_call();
+        // A new grouped call: the successful row is cached; the failed one
+        // is evaluated again.
+        drop(call);
+        let _call = cache.begin_call();
         cache
             .evaluate(FastMaster::BubbleRank3, &rows, &mut out, &mut ok)
             .unwrap();
@@ -1193,7 +1320,7 @@ mod tests {
         let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
         assert_eq!(ok, [false, true, false]);
         assert_eq!(cache.inner.counting.0, 2);
-        cache.begin_call();
+        let _call = cache.begin_call();
         let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
         assert_eq!(ok, [false, true, false]);
         assert_eq!(cache.inner.counting.0, 3);
@@ -1444,5 +1571,260 @@ mod tests {
             assert_eq!((scales(&out), ok), (vec![2., 3., 5., 2.], vec![true; 4]));
         }
         assert_eq!(tier.len(), 3);
+    }
+
+    /// Fails the first `failures` rows it evaluates (`Ok`, with the row's
+    /// status false), then evaluates every row as [`Scaled`] does.
+    #[derive(Default)]
+    struct Recovering {
+        rows: usize,
+        failures: usize,
+    }
+    impl FastMasters for Recovering {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            let (arity, width) = (family.arity(), family.outputs());
+            for (r, (row, values)) in args
+                .chunks_exact(arity)
+                .zip(out.chunks_exact_mut(width))
+                .enumerate()
+            {
+                self.rows += 1;
+                for triple in values.iter_mut() {
+                    *triple = [row[arity - 1], value(row[0].re), value(1.)];
+                }
+                ok[r] = self.failures == 0;
+                self.failures = self.failures.saturating_sub(1);
+            }
+            Ok(())
+        }
+    }
+
+    /// A caller that never opens a grouped call: each `evaluate` asks the
+    /// provider again for a row it failed before, and caches the row once it
+    /// succeeds, with or without a shared tier. Within one `evaluate` a row
+    /// asked twice is evaluated once and both requests get its status.
+    #[test]
+    fn ordinary_calls_ask_the_provider_again_for_a_failed_row() {
+        let bubble = [2., 0., 9., 4.].map(value).to_vec();
+        for shared in [false, true] {
+            for (family, row) in [
+                (FastMaster::C0, scaled_triangle(4.)),
+                (FastMaster::BubbleRank2, bubble.clone()),
+            ] {
+                let mut cache = MasterCache::new(
+                    Recovering {
+                        failures: 1,
+                        ..Recovering::default()
+                    },
+                    true,
+                );
+                if shared {
+                    cache.share(Some(Arc::new(SharedMasters::new(2))));
+                }
+                let twice = [row.clone(), row.clone()];
+                let (_, ok) = evaluate_rows(&mut cache, family, &twice).unwrap();
+                assert_eq!((ok, cache.inner.rows), (vec![false; 2], 1), "{shared}");
+                let (out, ok) = evaluate_rows(&mut cache, family, &twice).unwrap();
+                assert_eq!((ok, cache.inner.rows), (vec![true; 2], 2), "{shared}");
+                assert_eq!(scales(&out)[0], 4.);
+                let (again, ok) = evaluate_rows(&mut cache, family, &twice).unwrap();
+                assert_eq!((ok, cache.inner.rows), (vec![true; 2], 2), "{shared}");
+                assert_eq!(again, out);
+                assert_eq!(cache.len(), 1);
+                let statistics = cache.statistics();
+                assert_eq!(statistics.total_requests(), 6);
+                assert_eq!(statistics.total_evaluated(), 2);
+                assert_eq!(statistics.total_hits(), 4);
+            }
+        }
+    }
+
+    /// Fails the rows whose first argument is negative (`Ok`, the row's
+    /// status false) and evaluates the others as [`Scaled`] does; panics in
+    /// `evaluate` while `panic` is set, returns an error while `error` is.
+    #[derive(Default)]
+    struct Faulty {
+        rows: usize,
+        panic: bool,
+        error: bool,
+    }
+    impl FastMasters for Faulty {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            let mut scaled = Scaled {
+                panic: self.panic,
+                error: self.error,
+                ..Scaled::default()
+            };
+            scaled.evaluate(family, args, out, ok)?;
+            self.rows += scaled.rows;
+            for (r, row) in args.chunks_exact(family.arity()).enumerate() {
+                ok[r] = row[0].re >= 0.;
+            }
+            Ok(())
+        }
+    }
+
+    /// Asks a failing triangle row once: it fails, the provider has seen
+    /// `rows` rows so far, and the cache counted one request and, as
+    /// evaluated, exactly the rows the provider saw.
+    #[track_caller]
+    fn ask_failing(cache: &mut MasterCache<Faulty>, row: &[C64], rows: usize) {
+        let (before, seen) = (cache.statistics(), cache.inner.rows);
+        let (_, ok) = evaluate_rows(cache, FastMaster::C0, &[row.to_vec()]).unwrap();
+        assert_eq!((ok, cache.inner.rows), (vec![false], rows));
+        let after = cache.statistics();
+        assert_eq!(after.total_requests(), before.total_requests() + 1);
+        assert_eq!(
+            after.total_evaluated() - before.total_evaluated(),
+            (rows - seen) as u64
+        );
+    }
+
+    /// Failed rows are coalesced exactly while a grouped call is open, in
+    /// every order of grouped and ordinary calls, with and without a shared
+    /// tier: once a grouped call has ended (its handle dropped, by
+    /// `discard_call`, by an error, or by a panic unwinding past the handle
+    /// with nobody calling `discard_call`), a failed row is asked of the
+    /// provider again; `clear`, `release` and a change of tier drop failed
+    /// keys without ending the grouped call of the scope.
+    #[test]
+    fn failed_rows_are_coalesced_only_inside_a_grouped_call() {
+        let f = [-2., -5., -11., 0., 3., 7., 4.].map(value).to_vec();
+        for shared in [false, true] {
+            let mut cache = MasterCache::new(Faulty::default(), true);
+            if shared {
+                cache.share(Some(Arc::new(SharedMasters::new(2))));
+            }
+            // Ordinary, grouped, ordinary.
+            ask_failing(&mut cache, &f, 1);
+            ask_failing(&mut cache, &f, 2);
+            let call = cache.begin_call();
+            ask_failing(&mut cache, &f, 3);
+            ask_failing(&mut cache, &f, 3);
+            drop(call);
+            ask_failing(&mut cache, &f, 4);
+            ask_failing(&mut cache, &f, 5);
+            // Ended by `discard_call` while its handle lives; that handle,
+            // dropped during a later grouped call, does not end it.
+            let call = cache.begin_call();
+            ask_failing(&mut cache, &f, 6);
+            ask_failing(&mut cache, &f, 6);
+            cache.discard_call(cache.statistics());
+            ask_failing(&mut cache, &f, 7);
+            ask_failing(&mut cache, &f, 8);
+            let next = cache.begin_call();
+            ask_failing(&mut cache, &f, 9);
+            drop(call);
+            ask_failing(&mut cache, &f, 9);
+            drop(next);
+            ask_failing(&mut cache, &f, 10);
+            // A panic unwinding out of the provider (on a new row) and past
+            // the handle.
+            let unwound = catch(|| {
+                let _call = cache.begin_call();
+                ask_failing(&mut cache, &f, 11);
+                ask_failing(&mut cache, &f, 11);
+                cache.inner.panic = true;
+                let _ = evaluate_rows(&mut cache, FastMaster::C0, &[scaled_triangle(9.)]);
+            });
+            let payload = unwound.expect_err("the provider panics");
+            assert_eq!(
+                payload.downcast_ref::<&str>(),
+                Some(&"provider panic (test)")
+            );
+            cache.inner.panic = false;
+            ask_failing(&mut cache, &f, 12);
+            ask_failing(&mut cache, &f, 13);
+            // A provider error ending the grouped call.
+            let grouped = |cache: &mut MasterCache<Faulty>| -> Result<()> {
+                let _call = cache.begin_call();
+                ask_failing(cache, &f, 14);
+                ask_failing(cache, &f, 14);
+                cache.inner.error = true;
+                evaluate_rows(cache, FastMaster::C0, &[scaled_triangle(10.)])?;
+                Ok(())
+            };
+            assert!(grouped(&mut cache).is_err());
+            cache.inner.error = false;
+            ask_failing(&mut cache, &f, 15);
+            ask_failing(&mut cache, &f, 16);
+            // A successful row next to the failing one is cached throughout.
+            let good = scaled_triangle(4.);
+            let (out, ok) =
+                evaluate_rows(&mut cache, FastMaster::C0, std::slice::from_ref(&good)).unwrap();
+            assert_eq!(
+                (scales(&out)[0], ok, cache.inner.rows),
+                (4., vec![true], 17)
+            );
+            let _call = cache.begin_call();
+            let (_, ok) =
+                evaluate_rows(&mut cache, FastMaster::C0, &[good.clone(), f.clone()]).unwrap();
+            assert_eq!((ok, cache.inner.rows), (vec![true, false], 18));
+        }
+
+        // Without a shared tier: `clear` and `release` drop the failed keys
+        // of the open grouped call, which goes on; joining a tier with no
+        // grouped call open makes the calls ordinary, leaving it returns to
+        // the cache's own grouped call.
+        let mut cache = MasterCache::new(Faulty::default(), true);
+        let call = cache.begin_call();
+        ask_failing(&mut cache, &f, 1);
+        ask_failing(&mut cache, &f, 1);
+        cache.clear();
+        ask_failing(&mut cache, &f, 2);
+        ask_failing(&mut cache, &f, 2);
+        cache.release();
+        ask_failing(&mut cache, &f, 3);
+        ask_failing(&mut cache, &f, 3);
+        let tier = Arc::new(SharedMasters::new(2));
+        cache.share(Some(tier.clone()));
+        ask_failing(&mut cache, &f, 4);
+        ask_failing(&mut cache, &f, 5);
+        cache.share(None);
+        ask_failing(&mut cache, &f, 6);
+        ask_failing(&mut cache, &f, 6);
+        drop(call);
+        ask_failing(&mut cache, &f, 7);
+
+        // On a shared tier: a grouped call opened by one cache holds for
+        // every cache on the tier; `clear` drops the tier's failed keys; a
+        // cache that leaves the tier (`release`, `share(None)`) makes
+        // ordinary calls, and one that comes back is in the call again.
+        let on_tier = || {
+            let mut cache = MasterCache::new(Faulty::default(), true);
+            cache.share(Some(tier.clone()));
+            cache
+        };
+        let (mut a, mut b) = (on_tier(), on_tier());
+        let call = a.begin_call();
+        ask_failing(&mut b, &f, 1);
+        ask_failing(&mut a, &f, 0);
+        a.clear();
+        ask_failing(&mut b, &f, 2);
+        ask_failing(&mut b, &f, 2);
+        a.release();
+        ask_failing(&mut a, &f, 1);
+        ask_failing(&mut a, &f, 2);
+        ask_failing(&mut b, &f, 2);
+        b.share(None);
+        ask_failing(&mut b, &f, 3);
+        ask_failing(&mut b, &f, 4);
+        b.share(Some(tier.clone()));
+        ask_failing(&mut b, &f, 4);
+        drop(call);
+        ask_failing(&mut b, &f, 5);
+        ask_failing(&mut b, &f, 6);
     }
 }

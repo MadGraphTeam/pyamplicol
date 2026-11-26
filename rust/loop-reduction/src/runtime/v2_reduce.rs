@@ -2530,8 +2530,10 @@ impl V2Reducer {
             )),
             Engines::Fast(engine) => {
                 engine.share_masters(lane_slices::workers());
-                // A failed master row counts once per call (master_cache).
-                engine.masters.begin_call();
+                // A failed master row counts once per call (master_cache):
+                // the call's engine calls and slices are one grouped call,
+                // ended when `_call` is dropped.
+                let _call = engine.masters.begin_call();
                 let lanes = double()?;
                 let before = engine.counters();
                 let sliced = &mut self.sliced;
