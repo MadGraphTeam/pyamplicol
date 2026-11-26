@@ -58,8 +58,13 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
 - The electroweak and Higgs interactions are complete: photon, Z and W
   exchange between quark lines when the coupling orders allow it
   (`u u~ > d d~` with `max_coupling_orders = { QCD = 0, QED = 2 }`), the
-  neutrino exchange of `e+ e- > w+ w-`, and the H H V V and four-Higgs
-  contacts.
+  neutrino exchange of `e+ e- > w+ w-`, the H H V V and four-Higgs
+  contacts, and Higgs exchange between two fermion lines (`t t~ > t t~`,
+  `t t > t t`), which earlier versions dropped without a message: a
+  fermion pair fuses into the Higgs current. Artifacts of processes with two
+  or more top lines generated before this change keep their old, too small
+  electroweak values (the built-in SM source digest changed: they load with
+  a warning); regenerate them.
 - A request whose Born amplitudes carry several coupling orders (for example
   `u u~ > d d~` with `{ QCD = 2, QED = 2 }`, where gluon and electroweak
   exchange interfere) is served in every execution mode and at every colour
