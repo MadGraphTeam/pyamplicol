@@ -72,10 +72,9 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
   `b b~ > w+ w-`, `t~ > b~ w-`) is served in every tree mode: the W has a
   single chiral projector, so the b current that passed the top is a Weyl
   state again at its massless end.
-- Still refused, with typed errors, as for the UFO `sm`: in the recurrence
-  execution mode at full colour, four-quark processes at `QCD = 0`, whose W
-  exchange exists for some helicities only (leading colour and the other
-  modes build them; four quark flavours build at both accuracies).
+- Four-quark processes at `QCD = 0` are served in every mode at both colour
+  accuracies, including the recurrence mode at full colour, where the W
+  exchange between the lines exists for some helicities only.
 
 ## Built-in scalar HEFT model
 

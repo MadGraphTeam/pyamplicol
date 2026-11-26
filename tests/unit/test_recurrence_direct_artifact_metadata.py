@@ -594,28 +594,51 @@ def test_recurrence_selector_v2_manifest_authenticates_persisted_direct_plan() -
         )
 
     process.helicity_selector_companion = companion
+    selector_arguments = {
+        "schedule_path": (
+            f"recurrence/schedules/{_digest('f')}/recurrence-runtime.pacbin"
+        ),
+        "binding": {
+            **binding,
+            "schedule_digest": _digest("f"),
+            "process_semantic_digest": _digest("c"),
+            "path": "recurrence-binding.bin",
+        },
+        "color_contraction_record": SimpleNamespace(
+            size_bytes=5,
+            sha256=_digest("0"),
+        ),
+        "companion_binding": binding,
+    }
+    # An expanded reducer with several helicity components (incomplete
+    # per-sector blocks) takes the sparse view, with one local group per
+    # active owner sector.
+    dense_summary = process.color_contraction_summary
+    process.color_contraction_summary = {
+        **dense_summary,
+        "storage": "expanded",
+        "factorization": None,
+        "active_sector_count": companion.physical_destination_count,
+    }
+    manifest = artifact_writer._recurrence_execution_manifest(
+        process, **selector_arguments
+    )
+    assert "primary-sparse-local-color-view-v1" in json.dumps(manifest)
+    assert "primary-local-color-view-v1" not in json.dumps(manifest)
     process.color_contraction_summary = {
         **process.color_contraction_summary,
-        "storage": "expanded",
+        "active_sector_count": companion.physical_destination_count + 1,
     }
-    with pytest.raises(ValueError, match="direct, Walsh, or symmetric-group"):
-        artifact_writer._recurrence_execution_manifest(
-            process,
-            schedule_path=(
-                f"recurrence/schedules/{_digest('f')}/recurrence-runtime.pacbin"
-            ),
-            binding={
-                **binding,
-                "schedule_digest": _digest("f"),
-                "process_semantic_digest": _digest("c"),
-                "path": "recurrence-binding.bin",
-            },
-            color_contraction_record=SimpleNamespace(
-                size_bytes=5,
-                sha256=_digest("0"),
-            ),
-            companion_binding=binding,
-        )
+    with pytest.raises(ValueError, match="physical destinations do not match"):
+        artifact_writer._recurrence_execution_manifest(process, **selector_arguments)
+    # A reducer without a local-colour view still refuses.
+    process.color_contraction_summary = {
+        **dense_summary,
+        "storage": "convolution-kernels",
+        "factorization": None,
+    }
+    with pytest.raises(ValueError, match="direct, sparse, Walsh, or symmetric-group"):
+        artifact_writer._recurrence_execution_manifest(process, **selector_arguments)
 
 
 def test_recurrence_rejects_retired_on_the_fly_selector_companion() -> None:
