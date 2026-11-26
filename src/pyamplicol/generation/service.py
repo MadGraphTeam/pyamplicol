@@ -110,7 +110,11 @@ from .artifact_writer import (
     write_schema_v3_artifact,
 )
 from .born_orders import process_born_amplitude_orders
-from .contracts import RuntimeExpressionSchema, StageCompilationInput
+from .contracts import (
+    RuntimeExpressionSchema,
+    StageCompilationInput,
+    runtime_coupling_component_guards,
+)
 from .dag_algorithms import (
     _closure_totals_from_color_plan,
     _minimal_coupling_order_limits_from_totals,
@@ -6864,16 +6868,20 @@ class GenerationBackend:
             raise GenerationError("eager generation has no evaluator configuration")
         ir = process.expanded.process_ir
         dag = process.dag
+        parameter_records = runtime_model_parameter_records_from_eager_input(
+            lowering_input
+        )
         physics = build_resolved_physics_from_dag(
             dag,
             model,
             process_id=process_name,
             native_eager_plan_v3_reduction_groups=True,
-            runtime_model_parameters=(
-                runtime_model_parameter_records_from_eager_input(lowering_input)
-            ),
+            runtime_model_parameters=parameter_records,
         )
         return EagerPlanV3ProcessArtifact(
+            specialization_guards=runtime_coupling_component_guards(
+                model, parameter_records
+            ),
             process_id=process_name,
             expression=ir.process,
             color_accuracy=ir.color_accuracy,
@@ -7220,6 +7228,9 @@ class GenerationBackend:
         ir = process.compiled.expanded.process_ir
         dag = process.compiled.dag
         return CompiledProcessArtifact(
+            specialization_guards=runtime_coupling_component_guards(
+                model, process.runtime_schema.to_mapping().get("model_parameters", ())
+            ),
             process_id=process_id,
             expression=ir.process,
             color_accuracy=public_color_accuracy(dag),
