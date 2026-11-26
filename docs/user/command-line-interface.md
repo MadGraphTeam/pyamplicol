@@ -1549,36 +1549,84 @@ sets a scattering's energy in the model's mass unit, above its threshold),
 lifted to exact momentum conservation, at mu_R^2 = the squared invariant mass
 of the initial state, on NinjaRS at every carrier:
 
-| Check | Born-interfered | Loop-induced | Criterion |
-| --- | --- | --- | --- |
-| poles | every squared-order sector's 1/eps and 1/eps^2 against Catani's operator of the requested corrections (QCD; QED where requested), formed natively | the finiteness probe: the amplitude's poles against the row term floor S_k(h) (the pre-cancellation scale) | binary64 with the recommended checks: \|pole - Catani\| <= 10 E + 1e-12 \|Catani\|; double-double: 1e-12 relative; finiteness: within 10 x its own estimate |
-| ward | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i, Born and virtual parts (`ward.ward_row`) | epsilon_j -> p_j / E_j on one leg of every gluon and photon species, amplitude level | binary64: \|V\| <= max(1e-12 S, E) and \|V\| <= 10 max(E, n u S) with E <= 1e-9 S (scope; n u S: the binary64 resolution of a sum of the evaluation's n reduction lanes, u = 2^-53, since the reduction-direction estimate does not see the binary64 numerators' rounding); double-double: 1e-25 S; Born 1e-12 / 1e-24; probes: 10 x their estimate |
-| goldstone | not applicable (the probe is amplitude-level) | k.A(V) = eta M_V A(G) on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge | within 10 x its estimate |
+**The rule.** Every row is judged from its residue R, its **physical
+reference** P (the size of the physical quantities whose difference or
+vanishing the identity tests, at the same point, carrier and row or sector),
+the estimate E_P of P's own numerical uncertainty where the evaluation forms
+one, and its **term scale** T (the size of the terms that cancel into it).
+K is `--tolerance K` (`check.tolerance`), by default the requested relative
+accuracy (`--reduction-target`, `evaluation.reduction_target`, default
+1e-5), so K is of the order of the requested number of stable digits.
 
-`--precision auto` (default) runs binary64 first and double-double only for a
-row whose binary64 run fails, is refused or is out of its criterion's scope
-(a pole row whose relative estimate exceeds the default target accuracy
-1e-5 or that carries no estimate; a Ward row with E above 1e-9 of the
-physical scale or without an estimate); `double` or `double-double` runs one
-carrier alone, and there a row out of its carrier's scope reads "not run"
-(exit 3), never a failure or a pass. When binary64 evaluated a point and
-the double-double run is refused, the rows binary64 left undecided keep its
-verdict and say that double-double was refused. In `auto`, a row
-double-double fails while its residual is within 10 x double-double's own
-estimate (asked for only then: the recommended checks for poles, the
-reduction-direction check for Ward) has run out of digits: only such rows,
-at their points, are re-run in **arbitrary precision** at the digit count
-derived from the shortfall, d = ceil(32.0 + log10(10 E / B)) for an
-estimate E and a bound B (32.0: double-double's decimal digits, 1 +
-log10(0.5 / 2^-104); the largest over the point's rows; `--arbitrary-digits N`,
-`check.arbitrary_digits`, sets it), the point lifted again at those digits,
-and judged by their double-double criterion (no new bound; the row shows
-carrier `arbitrary`, its digits and the double-double numbers); a
-double-double residual far above its own estimate stays a failure. A row
-still undecided there, or undecided at an explicit carrier, reads
-"undecided" with both carriers' numbers and counts as a failure (exit 1).
-The loop-induced probes' criterion is their own estimate, so they never
-take this rung. Each double-double and arbitrary-precision rung (and the
+1. A required operand missing or not a finite number: `inconclusive`.
+2. No contributing term at all (R = 0 and T = 0): `vacuous`, skipped.
+3. A known-zero reference (a Catani pole that vanishes exactly; the poles of
+   a loop-induced amplitude on both sides of the Goldstone identity): passes
+   iff R < K T, labelled term-relative.
+4. R < K P: passes on the physical scale (equality is a miss).
+5. Otherwise a miss. Where R < K T would pass and P may be noise (P = 0 from
+   cancelling terms, or P <= 10 E_P; with no estimate a finite P > 0 is
+   physical), only that row is evaluated at the next carrier at the same
+   point: if P **reproduces** (agrees within K) the row fails on the
+   physical scale; if P **collapses** with the carrier's noise (it falls by
+   at least the square root of the ratio of the two carriers' unit
+   roundoffs) the row is judged R < K T, labelled term-relative; otherwise,
+   or without a wider carrier, it is `inconclusive` (physical normalisation
+   unresolved). Any other miss climbs the carrier ladder and fails if the
+   last carrier still misses.
+6. A loop-induced row (finiteness, Ward) that would fail is deferred when
+   every operand is at the numerical resolution of its comparable
+   helicities: R, P, T and E_P finite, P <= 10 E_P, and max(R, P, T) <=
+   10 min(u_floor, u_work) T_max, with T_max the largest term floor of the
+   same probe, point, loop order and Laurent coefficient over the
+   helicities, u_floor the unit roundoff of the carrier that produced the
+   term floors and u_work the current carrier's. The row is evaluated
+   again at the next carrier, where the rules above judge its actual
+   measurements (a resolved P or a significant R decides); at the last
+   carrier it is `inconclusive` ("helicity row below numerical
+   resolution", its operands and carrier recorded). This never passes a
+   row, never makes it term-relative and never makes it vacuous; it can
+   defer a genuine tiny violation to inconclusive (an angular-momentum
+   forbidden helicity of g g > Z, whose term floor is 1e-30 against 23.5
+   for the allowed ones, reads inconclusive, not failed).
+
+Each independently required row (a point, a sector or loop order and
+helicity row, a leg and factor, a Laurent coefficient) is decided on its
+own: it keeps its first decision up the ladder, a pending row a later
+carrier lacks is inconclusive, and a check's verdict is formed at the end
+from its rows' verdicts (fail, else inconclusive, else pass, else vacuous).
+R, P and T are linear in the amplitude: an amplitude-level row compares
+colour-metric norms (the square roots of the squared forms, recomputed
+exactly from the carrier values where the form cancels below its terms'
+rounding), an interference-level row the interference itself, so K is a
+relative accuracy of the checked quantity. The comparison uses the
+carrier's ordinary arithmetic: this is a tolerance, not a certificate.
+
+| Check | R | P | T |
+| --- | --- | --- | --- |
+| poles, Born-interfered | \|Re V_k - Re C_k\| per squared-order sector and pole coefficient k (V the renormalised virtual, C Catani's prediction of the requested corrections, QCD; QED where requested, formed natively) | max(\|Re C_k\|, \|Re V_k\|) (a C_k exactly zero: a known zero) | the largest of the virtual and its parts (bare, R2, UV) of that sector and coefficient |
+| poles, loop-induced (finiteness) | the colour-metric norm of each pole coefficient of each loop order and helicity row | the norm of that row's physical finite amplitude (with its estimate E_P) | the row's term floor S_k(h) |
+| ward, Born-interfered | epsilon_j -> c p_j / p_j^0 on every external gluon and photon, c = 1 and i: per Born sector \|loop-side Born\|; per virtual sector and coefficient \|V_k\| | per Born sector \|physical Born\|; per virtual sector and coefficient \|V_k\| of the physical evaluation (E_P its estimate in binary64) | per Born sector \|physical Born\|; per virtual sector and coefficient its largest physical part |
+| ward, loop-induced | epsilon_j -> p_j / E_j on one leg of every gluon and photon species: the norm of the substituted amplitude at every coefficient | the norm of the physical finite amplitude of that row (the largest over the substituted leg's helicities) | the physical row's term floor |
+| goldstone | \|\|A(V)_k - eta (M/E) A(G)_k\|\| over the rows of both sides, on one leg of every massive-vector species with a Goldstone partner, in 't Hooft-Feynman gauge (loop-induced) | max(\|\|A(V)_k\|\|, \|\|eta (M/E) A(G)_k\|\|) (the poles: a known zero) | the vector row's floor plus M/E times the Goldstone row's |
+
+A check every row of which is vacuous has nothing to test (the amplitude
+vanishes identically, e.g. a zero coupling): it reads `vacuous`, prints a
+warning line and does not change the exit code. A row whose R, P or T cannot
+be computed (not a finite number, a sector, row or coefficient only one of
+the compared evaluations has, a refused run) is `inconclusive`, never a
+pass.
+
+`--precision auto` (default) runs binary64 first, double-double only for a
+row binary64 does not pass, and, for a Born-interfered row double-double does
+not pass, **arbitrary precision** at `--arbitrary-digits N`
+(`check.arbitrary_digits`, default twice double-double's digits, 64), the
+point lifted again at those digits; the verdict is the first carrier's that
+passes the row, else the last carrier's (`fail` if the highest carrier still
+measures R >= K S). The loop-induced probes take binary64 and double-double.
+`double` or `double-double` runs one carrier alone. A later carrier that is
+refused leaves the row `inconclusive` with the refusal and the earlier
+carrier's R / S. Each double-double and arbitrary-precision rung (and the
 binary64 one under `--kinematics-improvement-binary64`) first improves its
 lifted point per `--kinematics-improvement` (`evaluation.
 kinematics_improvement`, default `z-shift`) in its own carrier, exactly as
@@ -1602,39 +1650,32 @@ external gluon or photon, no massive vector, a unitary-gauge request) reads
 "not run". None of these is a pass.
 
 Every row names the check, its subject (sector and pole, leg and factor),
-the point, the carrier that decided, `ratio` (the measured value over its
-bound: <= 1 passes), the deviation and E over the row's scale where formed
-(`dev / scale`, `E / scale`: a binary64 pole row's pre-cancellation scale S;
-a double-double pole row's |Catani|, its criterion being relative; a
-Born-interfered Ward row's physical scale; a probe's row term floor
-S_k(h)), the fallback's reason and the verdict. A row whose residual
-includes reduction lanes served without accuracy evidence is judged with their
-reducer-stated absolute bound B (propagated to the row's quantity with each
-lane's contraction weight; only the fast engine's double-double re-reduction
-states a bound, when finite, normal and positive: a lane of the generic
-engine's ladder has none): residual + B within the bound passes, residual - B
-above it fails, anything between (or a lane without a bound) is
-`inconclusive`, never a pass. A Ward row's physical scale takes the interval
-its own such lanes give it: the row passes only if it passes at every scale
-in the interval and fails only if it fails at every one; the next carrier of the ladder evaluates it
-again and the deciding carrier is recorded. Loop-induced probes that served
-such a lane are inconclusive (the bound of |A|^2, a product, is not formed).
-A process's status is a closed aggregate: `failed` if a row failed or is
-undecided; else `inconclusive` if a row is inconclusive or carries an
-unrecognized verdict; else `nothing checked` if no row passed or an
-applicable check did not run; else `passed`. The exit code is 0 iff every
-process passed, 1 on any failure, 4 when a process is inconclusive (and none
-failed), and 3 when a process had nothing to check (or an applicable check
-did not run); an "undecided" row counts as a failure (1). `--json` returns the
-`CheckReport` (`source`, `source_kind`, `points`, `seed`, `precision`,
-`carriers`, `regeneration`, `seconds`, `exit_code`, and per process `process`,
-`expression`, `contribution`, `widths`, `zeroed_widths`, `reduction`,
-`status`, `seconds` and `rows` with the fields above and `digits`, the
-arbitrary-precision carrier's digit count); `carriers` ends with `arbitrary`
-under `auto`; `source` names the run card or artifact checked. Python:
-`pyamplicol.api.check(target, points=..., seed=..., precision=..., model=...,
-sqrt_s=..., arbitrary_digits=..., cuts=..., kinematics_improvement=...,
-kinematics_improvement_binary64=...)` (`cuts`: a
+the point, the carrier that decided, `R / scale` (of the row that decided;
+`deviation` in JSON) with that row's `R`, `P`, `E_P` and `T` (`residue`,
+`physical`, `physical_error`, `terms`) and `scale` (`scale_by`: physical,
+term-relative or vacuous), every required row's record (`cells` in JSON:
+label, verdict, scale, ratio, R, P, E_P, T, deciding carrier, reason), the
+count of its vacuous rows (`vacuous`), `K` (`tolerance`), the evaluation's
+error
+estimate over the same scale (`E / S (info)`, `estimate`: reported, it
+decides nothing), the fallback's reason and the verdict; `ratio` in JSON is
+(R / S) / K (below 1 passes). A process's status is a closed aggregate:
+`failed` if a row failed; else `inconclusive` if a row is inconclusive or
+carries an unrecognized verdict; else `nothing checked` if no row passed or
+was vacuous, or an applicable check did not run; else `passed`. The exit code is 0 iff
+every process passed, 1 on any failure, 4 when a process is inconclusive
+(and none failed), and 3 when a process had nothing to check (or an
+applicable check did not run). `--json` returns the `CheckReport`
+(`source`, `source_kind`, `points`, `seed`, `precision`, `carriers`,
+`tolerance`, `regeneration`, `seconds`, `exit_code`, and per process
+`process`, `expression`, `contribution`, `widths`, `zeroed_widths`,
+`reduction`, `status`, `seconds` and `rows` with the fields above and
+`digits`, the arbitrary-precision carrier's digit count); `carriers` ends
+with `arbitrary` under `auto`; `source` names the run card or artifact
+checked. Python: `pyamplicol.api.check(target, points=..., seed=...,
+precision=..., model=..., sqrt_s=..., arbitrary_digits=..., tolerance=...,
+cuts=..., kinematics_improvement=..., kinematics_improvement_binary64=...,
+reduction_target=...)` (`cuts`: a
 `pyamplicol.generation.phase_space_cuts.PhaseSpaceCuts`; its None values keep
 the configuration's, its zeros switch that cut off).
 

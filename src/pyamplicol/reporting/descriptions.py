@@ -695,9 +695,6 @@ def _virtual(value: Any) -> list[Block]:
 
 
 def _check(report: Any) -> list[Block]:
-    from pyamplicol.loops.v2 import checks
-    from pyamplicol.loops.v2.induced import ESTIMATE_FACTOR
-
     return [
         (
             "pyAmpliCol check",
@@ -711,7 +708,16 @@ def _check(report: Any) -> list[Block]:
                 (
                     "carriers",
                     "the precisions tried in order: binary64, then double-double "
-                    "where binary64 cannot decide, then arbitrary precision",
+                    "for a row binary64 does not pass, then arbitrary precision",
+                ),
+                (
+                    "rule",
+                    "per row R < K P: R its residue, P its physical reference, "
+                    "K the check's tolerance (--tolerance; default the requested "
+                    "relative accuracy); a known-zero reference R < K T (T its "
+                    "term scale, term-relative); a P that may be noise is "
+                    "settled by a wider carrier at the same point. A row with "
+                    "no term is vacuous. A tolerance, not a certificate",
                 ),
                 ("seconds", "the wall time of the whole check"),
                 (None, f"Regeneration: {report.regeneration}."),
@@ -729,17 +735,28 @@ def _check(report: Any) -> list[Block]:
                 ),
                 ("subject", "the sector, coefficient or leg tested"),
                 ("carrier", "the precision that decided the row"),
-                ("ratio", "the deviation over its allowed bound; at most 1 passes"),
-                ("dev / scale", "the deviation over the row's scale"),
-                ("E / scale", "the error estimate over the same scale"),
                 (
-                    None,
-                    f"Bounds: poles |pole - Catani| <= {checks.ESTIMATES} E + "
-                    f"{checks.CATANI_FLOOR:g} |Catani| in binary64 and "
-                    f"{checks.CATANI_DD_FLOOR:g} relative in double-double; probes "
-                    f"within {ESTIMATE_FACTOR} times their own estimate.",
+                    "R / scale",
+                    "the deciding row's residue over the scale that decided it; "
+                    "below K passes",
                 ),
-                ("verdict", "pass, fail, undecided, not applicable or not run"),
+                (
+                    "R, P, E_P, T",
+                    "that row's residue, physical reference, the reference's own "
+                    "estimate and term scale",
+                ),
+                ("scale", "physical, term-relative or vacuous"),
+                ("K", "the tolerance the row was judged with"),
+                (
+                    "E / S (info)",
+                    "the evaluation's error estimate over the same scale; it "
+                    "decides nothing",
+                ),
+                (
+                    "verdict",
+                    "pass, fail, inconclusive (R or S cannot be computed), "
+                    "vacuous (no term: nothing to test), not applicable or not run",
+                ),
                 (
                     "fallback / reason",
                     "why a carrier did not decide, or why no verdict",

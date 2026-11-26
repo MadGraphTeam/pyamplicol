@@ -351,6 +351,8 @@ Settings of the `check` action (`pyamplicol check`):
 - `precision: auto | double | double-double = auto`
 - `model: str | null` (the model source of a UFO-directory artifact)
 - `sqrt_s: float | null`, `arbitrary_digits: int | null`
+- `tolerance: float | null` (K of every check row and generation-time probe:
+  a row passes iff R < K P; null takes `evaluation.reduction_target`)
 
 ## Benchmark
 

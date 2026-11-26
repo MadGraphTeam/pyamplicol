@@ -14,15 +14,18 @@ on 2026-11-08 22:34 (3), package lit-probe).
   screened).
 * **Opt-in** ``generation.loop_induced_probes`` in the run config, the CLI
   and the Python config object; any other value refused with one message.
-  Every probe runs first in binary64; only a probe whose binary64 run fails
-  its verdict or is refused runs again in double-double (a test seam forces
-  either); a probe that fails after the fallback refuses the process unless
-  ``generation.allow_failed_probes``, which stores it with the failure.
+  Every probe runs first in binary64; only a probe binary64 does not pass
+  (R < K S, ``checks.threshold``) or refuses runs again in double-double (a
+  test seam forces either); a probe that fails after the fallback refuses
+  the process unless ``generation.allow_failed_probes``, which stores it
+  with the failure; a probe refused in every carrier is recorded
+  inconclusive (never a pass) and generation continues.
 * **A real gauge check**: g g > a a (massless quarks, nf5) generated from a
   test-only copy of the shipped loop_sm without the R2 vertex whose legs are
   the row's external particles (selected by PDG codes from the model's own
   files): the finite part changes far beyond its estimate, the finiteness
-  probe still passes (R2 is finite), the binary64 Ward probe fails by far,
+  probe still passes (R2 is finite), the binary64 Ward probe fails (R / S
+  70 times K),
   the double-double fallback fails too (a defect, not rounding), and the
   public generation refuses (``loop-induced-probe``) unless allowed; the
   unmodified copy passes in binary64 with no fallback.
@@ -234,9 +237,16 @@ def test_default_generation_runs_no_probe_and_equals_the_opt_in_artifact(
     assert off_filters["loop_induced_probes"] == {"status": "off"}
     probes = on_filters["loop_induced_probes"]
     assert probes["status"] == "run" and "failed" not in probes
-    assert probes["fallbacks"] == 0 and probes["finiteness"]["passed"]
+    # g g > h keeps the helicity rows that vanish by angular momentum (no
+    # screening: counterterm kets): their physical reference is an exact
+    # computed zero from cancelling terms, which double-double settles (the
+    # finiteness probe's one fallback).
+    zero_rows = not screened
+    assert probes["fallbacks"] == int(zero_rows) and probes["finiteness"]["passed"]
     assert probes["ward"]["passed"] and probes["ward"]["legs"] == [1]
-    assert {entry["carrier"] for entry in probes["probes"]} == {"double"}
+    assert probes["finiteness"]["carrier"] == (
+        "double-double" if zero_rows else "double"
+    )
     assert probes["reduction"] == {
         "requested": "ninjars",
         "effective": "ninjars",
@@ -341,46 +351,53 @@ def test_only_the_probe_refused_in_binary64_runs_in_double_double(gg_h, monkeypa
     record = induced.generation_probes(
         gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
     )
+    # The finiteness probe's rows that vanish by angular momentum (an exact
+    # computed zero P) are settled in double-double too, with the Ward probe.
     assert passes == [
         ("double", ["finiteness", "ward"]),
-        ("double-double", ["ward"]),
+        ("double-double", ["finiteness", "ward"]),
     ]
     assert record["finiteness"] == {
         "worst": record["finiteness"]["worst"],
         "passed": True,
-        "carrier": "double",
+        "verdict": "pass",
+        "carrier": "double-double",
     }
     assert record["ward"]["passed"] and record["ward"]["carriers"] == {
         "1": "double-double"
     }
     finiteness, ward = record["probes"]
-    assert "fallback" not in finiteness
+    assert finiteness["fallback"]["verdict"] == "inconclusive"
     assert ward["fallback"] == {
         "carrier": "double",
         "reason": "refused",
         "detail": "the probe point failed: forced refusal (test seam)",
     }
-    assert record["fallbacks"] == 1 and "failed" not in record
+    assert record["fallbacks"] == 2 and "failed" not in record
     assert set(record["seconds"]) >= {"double", "double-double", "total"}
 
 
 @pytest.mark.loop_physics
 def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypatch):
-    """A finiteness verdict failed in binary64 (a test seam: ratio 1e3) is
+    """A finiteness verdict failed in binary64 (a test seam: R / S 1e3) is
     re-run in double-double, where it passes, which decides it; the Ward
     probe keeps its binary64 verdict."""
 
-    from types import MappingProxyType
+    from dataclasses import replace
 
-    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2 import checks, induced
 
     def force(carrier, ward, result):
         if carrier == "double" and ward is None:
-            return induced.ProbeResult(
-                "finiteness",
-                MappingProxyType(dict.fromkeys(result.ratios, 1e3)),
-                result.scales,
-            )
+            # Every row's residue 1e3 times its physical reference.
+            cells = {
+                key: checks.judge(
+                    replace(cell.measure, residue=1e3 * cell.measure.physical),
+                    result.tolerance,
+                )
+                for key, cell in result.cells.items()
+            }
+            return replace(result, cells=cells)
         return result
 
     passes = _seam(monkeypatch, force)
@@ -396,6 +413,7 @@ def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypa
     assert finiteness["fallback"] == {
         "carrier": "double",
         "reason": "verdict",
+        "verdict": "fail",
         "worst": 1000.0,
     }
     assert ward["carrier"] == "double" and "fallback" not in ward
@@ -404,15 +422,15 @@ def test_only_the_probe_failing_in_binary64_runs_in_double_double(gg_h, monkeypa
 
 
 @pytest.mark.loop_physics
-def test_a_probe_refused_in_every_carrier_fails_generation_unless_allowed(
-    gg_h, monkeypatch
+def test_a_probe_refused_in_every_carrier_is_recorded_inconclusive(
+    gg_h, monkeypatch, caplog
 ):
-    """A probe without a verdict in any carrier is a failure, never a pass:
-    ``ProbeFailure`` (``loop-induced-probe``) unless allowed, which records
-    the refusal and the carrier that last refused it."""
+    """A probe without R and S in any carrier (refused everywhere) is
+    inconclusive, never a pass: recorded with the carrier that last refused
+    it and logged as a warning by the generation; generation continues (only
+    a decisive failure refuses the process, ``ProbeFailure``)."""
 
     from pyamplicol.loops.v2 import induced
-    from pyamplicol.loops.v2.refusals import LoopEngineRefusal, keyed_error
 
     def force(carrier, ward, result):
         if ward is not None:
@@ -420,23 +438,77 @@ def test_a_probe_refused_in_every_carrier_fails_generation_unless_allowed(
         return result
 
     _seam(monkeypatch, force)
-    with pytest.raises(induced.ProbeFailure, match="ward probe") as refused:
-        induced.generation_probes(
-            gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
-        )
-    typed = keyed_error(refused.value)
-    assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
     record = induced.generation_probes(
-        gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates, allow_failure=True
+        gg_h.slice, gg_h.compiled, gg_h.native, gg_h.candidates
     )
-    assert record["allowed_failure"] and not record["ward"]["passed"]
+    assert "failed" not in record and "allowed_failure" not in record
+    assert not record["ward"]["passed"]
     (ward,) = (entry for entry in record["probes"] if entry["probe"] == "ward")
     assert ward["carrier"] == "double-double" and not ward["passed"]
+    assert ward["verdict"] == "inconclusive"
     assert ward["refused"].endswith("forced refusal in double-double")
     assert ward["fallback"]["reason"] == "refused"
-    assert record["finiteness"]["passed"] and record["finiteness"]["carrier"] == (
-        "double"
+    (line,) = record["inconclusive"]
+    assert line.startswith("ward probe (leg 1): inconclusive, refused in")
+    assert record["finiteness"]["passed"]
+    json.dumps(record, allow_nan=False)
+
+
+@pytest.mark.loop_fast
+def test_a_probe_verdict_is_the_threshold_rule():
+    """A probe's verdict is its rows' (``checks.judge`` per (loop order,
+    row) and Laurent coefficient, then ``checks.aggregate``): R the
+    colour-metric residue, P the row's physical finite-amplitude norm at the
+    same carrier (with E_P), T its term floor. The required rows are the
+    union of the evaluation's and the floors' rows at every coefficient of
+    the required width: a row or coefficient one operand lacks, or a
+    non-finite residue, is inconclusive, never skipped; a row without any
+    term is vacuous; a probe every row of which is vacuous has nothing to
+    test. Its failure is the keyed ``loop-induced-probe`` refusal."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.refusals import LoopEngineRefusal, keyed_error
+
+    typed = keyed_error(induced.ProbeFailure("'g g > a a': ward probe failed"))
+    assert isinstance(typed, LoopEngineRefusal) and typed.key == "loop-induced-probe"
+
+    def probe(estimates, floors, references, width=3, first=1):
+        measures = induced.probe_measures(estimates, floors, first, references, width)
+        return induced.ProbeResult(
+            "finiteness", induced.judged_cells(measures, 1e-5), tolerance=1e-5
+        )
+
+    references = {"a": (1.0, 1e-14), "b": (1.0, 1e-14), "d": (1.0, 1e-14)}
+    floors = {"a": [1e5] * 3, "b": [1.0] * 3, "d": [1.0] * 3}
+    estimates = {
+        "a": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
+        "b": ((1.0, 0.1), (float("nan"), 0.1), (0.0, 0.1)),
+        "c": ((1.0, 0.1), (1e-15, 0.1), (0.0, 0.1)),
+    }
+    result = probe(estimates, floors, references)
+    assert result.verdict == "inconclusive"
+    assert result.ratios == {"a": 1e-15, "b": 0.0}
+    # b k=1 (NaN), c k=1, c k=2 (no floor), d k=1, d k=2 (no amplitude row).
+    assert len(result.undefined) == 5
+    assert any(text.startswith("d k=1") for text in result.undefined)
+    # A coefficient the evaluation does not supply (width 3, two given).
+    short = probe({"a": ((1.0, 0.1), (1e-15, 0.1))}, {"a": [1.0] * 3}, references)
+    assert short.verdict == "inconclusive"
+    # A resolved row with T / P 1e7 and a 1e-3 violation fails (the reviewer's
+    # case: the term scale never hides a physical miss).
+    heavy = probe(
+        {"a": ((1.0, 0.1), (1e-3, 0.1))},
+        {"a": [1e7, 1e7]},
+        {"a": (1.0, 1e-12)},
+        width=2,
     )
+    assert heavy.verdict == "fail" and heavy.worst == pytest.approx(1e-3)
+    # Every row vacuous (no term: the amplitude vanishes identically).
+    empty = probe(
+        {"z": ((0.0, 0.0), (0.0, 0.0))}, {"z": [0.0, 0.0]}, {"z": (0.0, 0.0)}, width=2
+    )
+    assert empty.verdict == "vacuous" and empty.passed and empty.vacuous == 1
+    assert empty.reason.startswith("nothing to test")
 
 
 @pytest.mark.loop_fast
@@ -451,11 +523,16 @@ def test_a_goldstone_probe_refused_in_binary64_runs_in_double_double(monkeypatch
 
     calls: list[tuple[int, str]] = []
 
-    def probe(vector, partner, point, scale, leg, *, precision, physical):
+    from pyamplicol.loops.v2.checks import Measure
+
+    def probe(vector, partner, point, scale, leg, *, precision, physical, tolerance):
         calls.append((leg, precision.arithmetic))
         if leg == 3 and precision.arithmetic == "double":
             raise induced.ProbePointRefused("the probe point failed: forced (seam)")
-        return GoldstoneResult(leg, {("o", "r"): 0.5}, None, 0.1)
+        cells = induced.judged_cells(
+            {(("o", "r"), 0): Measure("x", 1e-13, 1.0, 1.0)}, 1e-5, precision
+        )
+        return GoldstoneResult(leg, cells, None, 0.1, tolerance=1e-5)
 
     monkeypatch.setattr(
         goldstone, "massive_vector_legs", lambda target: {3: 250, 4: 251}
@@ -582,6 +659,7 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     assert dropped_record["finiteness"] == {
         "worst": dropped_record["finiteness"]["worst"],
         "passed": True,
+        "verdict": "pass",
         "carrier": "double",
     }
     wards = [e for e in dropped_record["probes"] if e["probe"] == "ward"]
@@ -589,9 +667,11 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     for entry in wards:
         assert entry["fallback"]["carrier"] == "double"
         assert entry["fallback"]["reason"] == "verdict"
-        assert entry["fallback"]["worst"] > 1e6
+        # R / S 7e-4 at K 1e-5 in both carriers (a defect, not rounding).
+        assert entry["fallback"]["worst"] > 10 * dropped_record["tolerance"]
         assert entry["carrier"] == "double-double" and not entry["passed"]
-        assert entry["worst"] > 1e6
+        assert entry["verdict"] == "fail"
+        assert entry["worst"] > 10 * dropped_record["tolerance"]
     assert dropped_record["allowed_failure"] and dropped_record["fallbacks"] == 2
     # The public route with the option: refused, or stored with the failure.
     expression = "g g > a a"
@@ -624,3 +704,61 @@ def test_the_binary64_ward_probe_catches_a_dropped_r2_vertex(tmp_path):
     assert probes["allowed_failure"] and not probes["ward"]["passed"]
     assert probes["ward"]["carriers"] == {"1": "double-double", "3": "double-double"}
     assert all("in double-double" in failure for failure in probes["failed"])
+
+
+@pytest.mark.loop_physics
+def test_g_g_to_z_generates_with_its_rows_below_resolution_inconclusive(
+    tmp_path, caplog
+):
+    """g g > Z (a Landau-Yang zero) at the generator's probe point: the
+    helicity rows (-,+,-) and (+,-,+) that angular momentum forbids have a
+    term floor of 1e-30 against the k = 1 maximum 23.5 of the same order, and
+    R, P of 1e-31 in both carriers. Their otherwise failing miss is deferred
+    ("helicity row below numerical resolution"): generation succeeds with
+    the finiteness probe recorded inconclusive and a warning, never a pass;
+    ``pyamplicol check`` on the artifact is inconclusive (exit 4) with the
+    same rows, their operands and T_max recorded."""
+
+    import logging
+
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+    from pyamplicol.api.services import check
+    from pyamplicol.config import resolve_config
+    from pyamplicol.loops.v2 import checks, induced
+    from tools.loop_benchmark import li_manifest as lm
+
+    data = lm.fixture("li_gg_z")
+    compiled = lm.compile_model(data, tmp_path / "model-cache")
+    output = tmp_path / "artifact"
+    process = lm.expression(data, compiled)
+    card = tmp_path / "card.toml"
+    card.write_text(lm.card(data, output, set(compiled.parameter_defaults), process))
+    with caplog.at_level(logging.WARNING):
+        Generator(resolve_config(card)).generate(
+            ProcessSet((ProcessRequest.parse(process, name="p"),)), output
+        )
+    record = lm._artifact_probes(output)
+    (finiteness,) = [p for p in record["probes"] if p["probe"] == "finiteness"]
+    assert finiteness["verdict"] == "inconclusive" and not finiteness["passed"]
+    assert finiteness["below_resolution"] == 2 and record["rule"] == checks.RULE
+    assert "failed" not in record
+    assert any(
+        "finiteness probe: inconclusive" in m and "generation continues" in m
+        for m in caplog.messages
+    )
+    report = check(output, points=1, seed=12345)
+    assert report.exit_code == checks.EXIT_INCONCLUSIVE, report
+    (poles,) = [r for r in report.processes[0].rows if r.check == "poles"]
+    assert poles.verdict == checks.INCONCLUSIVE
+    deferred = [
+        c
+        for c in poles.cells
+        if (c["reason"] or "").startswith(induced.BELOW_RESOLUTION)
+    ]
+    assert len(deferred) == 2
+    for cell in deferred:
+        assert cell["carrier"] == "double-double" and cell["terms"] < 1e-29
+        assert max(cell["residue"], cell["physical"]) < 1e-30
+        # the comparable coefficient's maximum, verified: (-,-,0) at k = 1
+        assert "T_max 23.5 over the helicities of" in cell["reason"]
+        assert "k=1" in cell["reason"]

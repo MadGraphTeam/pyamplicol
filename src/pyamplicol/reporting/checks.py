@@ -13,6 +13,7 @@ _VERDICT_COLOURS = {
     "no prediction": "YELLOW",
     "not run": "YELLOW",
     "inconclusive": "YELLOW",
+    "vacuous": "YELLOW",
 }
 _STATUS_COLOURS = {
     "passed": "GREEN",
@@ -27,10 +28,14 @@ def _number(value: float | None) -> str:
 
 
 def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
-    """The header (what was checked and how), one table per process (every
-    row: check, subject, point, deciding carrier, ratio to its bound,
-    deviation and E over the row's scale (``checks.CheckRow``), verdict,
-    fallback or reason) and the overall verdict with the exit code."""
+    """The header (what was checked and how, the tolerance K), one table per
+    process (every row: check, subject, point, deciding carrier, the
+    measured R over the scale that decided (physical P or term-relative T)
+    with its R, P, E_P and T, the K it was judged with, the estimate E over
+    that scale for information
+    (``checks.CheckRow``), verdict, fallback or reason), a warning line per
+    vacuous row (nothing to test) and the overall verdict with the exit
+    code."""
 
     from .summary import _paint
 
@@ -52,6 +57,17 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 if len(report.carriers) > 1
                 else f"{report.precision}: {report.carriers[0]}",
             ),
+            (
+                "rule",
+                "per row R < K P (R its residue, P its physical reference); a "
+                "known-zero reference R < K T (T its term scale, term-relative); "
+                "a tolerance, not a certificate"
+                + (
+                    ""
+                    if getattr(report, "tolerance", None) is None
+                    else f"; K = {report.tolerance:g}"
+                ),
+            ),
             ("seconds", f"{report.seconds:.3g}"),
         )
     )
@@ -63,9 +79,14 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 "subject",
                 "point",
                 "carrier",
-                "ratio",
-                "dev / scale",
-                "E / scale",
+                "R / scale",
+                "R",
+                "P",
+                "E_P",
+                "T",
+                "scale",
+                "K",
+                "E / S (info)",
                 "verdict",
                 "fallback / reason",
             )
@@ -101,8 +122,13 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                     f"{row.carrier} ({row.digits} digits)"
                     if row.digits
                     else row.carrier or "",
-                    _number(row.ratio),
                     _number(row.deviation),
+                    _number(getattr(row, "residue", None)),
+                    _number(getattr(row, "physical", None)),
+                    _number(getattr(row, "physical_error", None)),
+                    _number(getattr(row, "terms", None)),
+                    getattr(row, "scale_by", None) or "",
+                    _number(getattr(row, "tolerance", None)),
                     _number(row.estimate),
                     verdict,
                     # An undecided row's reason holds both carriers' numbers.
@@ -112,6 +138,16 @@ def check_report_summary(report: Any, *, prettytable: Any, color: bool) -> str:
                 )
             )
         blocks.append(table.get_string())
+        for row in process.rows:
+            if row.verdict == "vacuous":
+                blocks.append(
+                    _paint(
+                        f"warning: {process.process}, {row.check} {row.subject}, "
+                        f"point {row.point}: {row.reason}",
+                        "YELLOW",
+                        enabled=color,
+                    )
+                )
     verdict = {0: "PASSED", 1: "FAILED", 4: "INCONCLUSIVE"}.get(
         report.exit_code, "NOTHING CHECKED"
     )

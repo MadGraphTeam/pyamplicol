@@ -881,8 +881,9 @@ LOOP_INTERNAL_REFUSALS = (
         "loop-induced-probe",
         "a loop-induced process whose generation-time finiteness, Ward or "
         "Goldstone probe (run with generation.loop_induced_probes = true; "
-        "binary64, double-double where binary64 fails or is refused) "
-        "exceeds ten times its own estimate (induced.ProbeFailure)",
+        "binary64, double-double where binary64 does not pass) fails R < K S, "
+        "its residue against K times its row's scale (induced.ProbeFailure; "
+        "an inconclusive probe is recorded and does not refuse)",
         "a loop-induced amplitude is finite and gauge invariant: its poles "
         "and its Ward residues vanish within rounding (m-lit Q12)",
         "report the request (a missing family, counterterm or R2 vertex); "

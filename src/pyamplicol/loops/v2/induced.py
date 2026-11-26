@@ -54,6 +54,7 @@ import math
 import time
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from decimal import Decimal
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Any
@@ -1459,8 +1460,10 @@ def point_finiteness(evaluation: Any) -> float | None:
     return max(finiteness(evaluation).values(), default=0.0)
 
 
-# The user's x10 rule (m-lit Q12): a probe residue passes within ten times
-# its own stability estimate.
+# The x10 rule (m-lit Q12): a residue within ten times its own stability
+# estimate. The helicity-zero filter's binary64 screen reads it
+# (``helicity_filter``); the probes' verdicts are the threshold rule's
+# (``ProbeResult``, ``checks.threshold``).
 ESTIMATE_FACTOR = 10
 
 
@@ -1534,40 +1537,252 @@ def amplitude_estimates(
     return out
 
 
-@dataclass(frozen=True)
-class ProbeResult:
-    """A loop-induced probe of one point (``probe``): per (loop order, row)
-    the largest ratio |residue| / E over the probed Laurent coefficients
-    (``amplitude_estimates``) and whether every ratio is within
-    ``ESTIMATE_FACTOR`` (the x10 rule; pass/fail from the probe's own
-    estimate, never a fixed tolerance, m-lit Q12); ``scales`` are the
-    physical amplitude's row term floors the estimates stand on;
-    ``relative`` holds, per (loop order, row), the residue and E over the
-    term floor S_k(h) of the coefficient with the largest ratio (the
-    measured sizes ``pyamplicol check`` reports; no verdict reads them)."""
+def _default_tolerance() -> float:
+    from .checks import tolerance
 
-    kind: str
-    ratios: Mapping[tuple[Orders, rx.Row], float]
-    scales: Mapping[tuple[Orders, rx.Row], Sequence[float]] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
-    relative: Mapping[tuple[Orders, rx.Row], tuple[float, float]] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
-    # Whether a run of the probe (its evaluation or a rotated one) served a
-    # reduction lane without accuracy evidence (``PointResult.
-    # uncertified_bound``): |A|^2 and the amplitude-level residue are not
-    # covered by the lane's bound here (the bound of a product is not formed),
-    # so ``pyamplicol check`` reads such a probe as inconclusive, never a pass.
-    uncertified: bool = False
+    return tolerance()
+
+
+class _Judged:
+    """The verdict properties of a probe result from its rows' judgements
+    (``cells``: row key -> ``checks.Judgement``; ``tolerance``): every
+    independently required row decides on its own, the aggregate is formed
+    from the rows' final verdicts (``checks.aggregate``)."""
+
+    cells: Mapping[Any, Any]
+    tolerance: float
+
+    @property
+    def final(self) -> dict[Any, Any]:
+        from .checks import finished
+
+        return finished(self.cells)
+
+    @property
+    def verdict(self) -> str:
+        from .checks import aggregate
+
+        return aggregate(self.final)
+
+    @property
+    def passed(self) -> bool:
+        """Decided without a failure: every row with a term passes, or every
+        row is vacuous (nothing to test, ``verdict`` "vacuous")."""
+
+        return self.verdict in ("pass", "vacuous")
+
+    @property
+    def ratios(self) -> dict[Any, float]:
+        """Per (loop order, row) the largest R over its deciding scale."""
+
+        out: dict[Any, float] = {}
+        for (key, _k), cell in self.final.items():
+            if cell.ratio is not None and cell.verdict in ("pass", "fail"):
+                out[key] = max(out.get(key, 0.0), cell.ratio)
+        return out
 
     @property
     def worst(self) -> float:
         return max(self.ratios.values(), default=0.0)
 
     @property
-    def passed(self) -> bool:
-        return self.worst <= ESTIMATE_FACTOR
+    def relative(self) -> dict[Any, tuple[float, float | None]]:
+        """Per (loop order, row): R / scale and E / scale of its deciding
+        coefficient (E reported only)."""
+
+        out: dict[Any, tuple[float, float | None]] = {}
+        for (key, _k), cell in self.final.items():
+            if cell.ratio is None or cell.verdict not in ("pass", "fail"):
+                continue
+            if key in out and out[key][0] > cell.ratio:
+                continue
+            m = cell.measure
+            scale = m.physical if cell.scale == "physical" else m.terms
+            error = None if m.estimate is None or not scale else m.estimate / scale
+            out[key] = (cell.ratio, error)
+        return out
+
+    @property
+    def undefined(self) -> tuple[str, ...]:
+        return tuple(
+            f"{cell.measure.label}: {cell.reason}"
+            for cell in self.final.values()
+            if cell.verdict == "inconclusive"
+        )
+
+    @property
+    def vacuous(self) -> int:
+        return sum(1 for cell in self.final.values() if cell.verdict == "vacuous")
+
+    @property
+    def deciding(self) -> Any:
+        """The row that decided the aggregate (``checks.worst_cell``)."""
+
+        from .checks import worst_cell
+
+        return worst_cell(self.final)
+
+    @property
+    def worst_row(self) -> tuple[Any, ...] | None:
+        """(label, R, P, T, scale) of the deciding row."""
+
+        cell = self.deciding
+        if cell is None:
+            return None
+        m = cell.measure
+        return (m.label, m.residue, m.physical, m.terms, cell.scale)
+
+    @property
+    def measures(self) -> tuple[tuple[Any, Any], ...]:
+        return tuple((key, cell.measure) for key, cell in self.cells.items())
+
+    @property
+    def reason(self) -> str | None:
+        """Why the probe is inconclusive, or that it has nothing to test
+        (None otherwise)."""
+
+        verdict = self.verdict
+        if verdict == "vacuous":
+            return (
+                "nothing to test: the amplitude vanishes identically (every row "
+                "vacuous: no term)"
+            )
+        if verdict != "inconclusive":
+            return None
+        undefined = self.undefined
+        if not undefined:
+            return "nothing compared"
+        more = len(undefined) - 1
+        return undefined[0] + (f" (and {more} more)" if more else "")
+
+
+def judged_cells(
+    measures: Mapping[Any, Any], tolerance: float, carrier: Any = None
+) -> dict[Any, Any]:
+    """The rows' judgements at one carrier (``checks.judge`` each; the
+    carrier's name and unit roundoff recorded for the ladder)."""
+
+    from dataclasses import replace
+
+    from .checks import judge
+
+    name = None if carrier is None else carrier.arithmetic
+    roundoff = None if carrier is None else carrier.unit_roundoff
+    return {
+        key: replace(judge(measure, tolerance), carrier=name, unit_roundoff=roundoff)
+        for key, measure in measures.items()
+    }
+
+
+def physical_references(estimates: Mapping) -> dict[Any, tuple[Any, Any]]:
+    """Per (loop order, row) of a physical evaluation its finite amplitude's
+    colour-metric norm P and that norm's estimate E_P (``amplitude_
+    estimates``' k = 0 entry): the probes' physical reference."""
+
+    return {
+        key: (_finite(entries[0][0]), _finite(entries[0][1]))
+        for key, entries in estimates.items()
+        if entries
+    }
+
+
+def ward_references(references: Mapping, leg: int) -> dict[Any, tuple[Any, Any]]:
+    """``physical_references`` for a Ward probe of leg ``leg``: per row the
+    largest P and E_P over the rows that differ from it only in that leg's
+    helicity (``ward_floors``); None where one of them is None."""
+
+    def merged(row):
+        return tuple((i, 0 if i == leg - 1 else h) for i, h in row)
+
+    widest: dict[Any, tuple[Any, Any]] = {}
+    for (order, row), (size, error) in references.items():
+        key = (order, merged(row))
+        known = widest.get(key, (0.0, 0.0))
+        widest[key] = (
+            None if size is None or known[0] is None else max(size, known[0]),
+            None if error is None or known[1] is None else max(error, known[1]),
+        )
+    return {(order, row): widest[(order, merged(row))] for order, row in references}
+
+
+def probe_measures(
+    estimates: Mapping,
+    floors: Mapping,
+    first: int,
+    references: Mapping | None,
+    width: int,
+) -> dict[Any, Any]:
+    """The required rows of one probe ((loop order, row), k) -> ``checks.
+    Measure``: every row of the evaluation OR of the floors (their union)
+    and every Laurent coefficient k >= ``first`` of ``width``: R the
+    colour-metric residue (``amplitude_estimates``), P and E_P the row's
+    physical reference at the same point and carrier
+    (``physical_references``; None: unavailable), T the row's term floor at
+    k. A row or coefficient one operand lacks is incomplete (inconclusive),
+    never skipped."""
+
+    from .checks import Measure
+
+    references = references or {}
+    out: dict[Any, Any] = {}
+    for key in dict.fromkeys([*estimates, *floors]):
+        entries = estimates.get(key)
+        floor = floors.get(key)
+        size, error = references.get(key, (None, None))
+        for k in range(first, width):
+            present = (
+                entries is not None
+                and len(entries) > k
+                and floor is not None
+                and len(floor) > k
+                and key in references
+            )
+            out[(key, k)] = Measure(
+                f"{key} k={k}",
+                _finite(entries[k][0]) if present else None,
+                size if present else None,
+                _finite(floor[k]) if present else None,
+                _finite(entries[k][1]) if present else None,
+                error if present else None,
+                complete=present,
+            )
+    return out
+
+
+def _finite(value: Any) -> float | None:
+    """A non-negative magnitude as a finite binary64 number, else None."""
+
+    try:
+        found = float(value)
+    except (ArithmeticError, TypeError, ValueError):
+        return None
+    return found if math.isfinite(found) else None
+
+
+@dataclass(frozen=True)
+class ProbeResult(_Judged):
+    """A loop-induced probe of one point (``probe``): per required row
+    ((loop order, row), Laurent coefficient) its judgement (``cells``,
+    ``checks.judge``; R the colour-metric residue, P the norm of the
+    physical finite amplitude of that row at the same point and carrier
+    with its estimate E_P, T the row's term floor); the verdict and the
+    reported figures follow from them (``_Judged``). ``scales`` are the
+    physical amplitude's row term floors."""
+
+    kind: str
+    cells: Mapping[Any, Any]
+    scales: Mapping[tuple[Orders, rx.Row], Sequence[float]] = field(
+        default_factory=lambda: MappingProxyType({})
+    )
+    # Whether a run of the probe (its evaluation or a rotated one) served a
+    # reduction lane without accuracy evidence (``PointResult.
+    # uncertified_bound``): recorded; the verdict is the threshold rule's.
+    uncertified: bool = False
+    tolerance: float = field(default_factory=_default_tolerance)
+    # The unit roundoff of the carrier that produced the term floors T
+    # (``RowFloors.unit_roundoff``; None: not recorded): the resolution
+    # bound of ``withhold`` reads it.
+    floor_roundoff: float | None = None
 
 
 class ProbePointRefused(ArithmeticError):
@@ -1645,7 +1860,36 @@ def physical_floors(
         None,
         True,
     )
-    return row_scales(evaluation)
+    floors = row_floors(evaluation)
+    floors.unit_roundoff = _carrier.unit_roundoff
+    return floors
+
+
+class RowFloors(dict):
+    """Per (loop order, row) the term floor T_k of each Laurent coefficient
+    (``row_scales``), with ``finite``: per row the colour-metric norm of the
+    physical finite amplitude ||a_0(h)||, the probes' physical reference P
+    (None where it cannot be computed), and ``unit_roundoff``: that of the
+    carrier that produced them (None: not recorded)."""
+
+    finite: dict
+    unit_roundoff: float | None = None
+
+
+def row_floors(evaluation: Any) -> RowFloors:
+    """``RowFloors`` of a physical evaluation: its row term floors and the
+    norm of each row's finite amplitude."""
+
+    floors = RowFloors(row_scales(evaluation))
+    numbers = evaluation.numbers
+    gram = evaluation.gram
+    size = len(evaluation.slice.amplitude)
+    with numbers.scope():
+        floors.finite = {
+            key: _finite(g_norm([vector[t][0] for t in range(size)], gram, numbers))
+            for key, vector in evaluation.amplitude_vectors.items()
+        }
+    return floors
 
 
 def probe_floors(
@@ -1674,11 +1918,13 @@ def probe_floors(
         }
 
 
-def ward_floors(physical: Mapping, leg: int) -> dict:
-    """The term floors a Ward probe of leg ``leg`` (1-based) stands on: per
-    (loop order, row) the largest physical floor over the rows that differ
-    from it only in that leg's helicity (the substituted leg reads one
-    vector for every helicity, so its rows repeat the same amplitude)."""
+def ward_floors(physical: Mapping, leg: int) -> RowFloors:
+    """The term floors and physical references a Ward probe of leg ``leg``
+    (1-based) stands on: per (loop order, row) the largest physical floor
+    and the largest physical finite-amplitude norm (``RowFloors.finite``)
+    over the rows that differ from it only in that leg's helicity (the
+    substituted leg reads one vector for every helicity, so its rows repeat
+    the same amplitude)."""
 
     def merged(row):
         return tuple((i, 0 if i == leg - 1 else h) for i, h in row)
@@ -1692,7 +1938,20 @@ def ward_floors(physical: Mapping, leg: int) -> dict:
             if found is None
             else [max(a, b) for a, b in zip(found, values, strict=True)]
         )
-    return {(order, row): out[(order, merged(row))] for order, row in physical}
+    floors = RowFloors(
+        {(order, row): out[(order, merged(row))] for order, row in physical}
+    )
+    finite = getattr(physical, "finite", None) or {}
+    widest: dict = {}
+    for (order, row), value in finite.items():
+        key = (order, merged(row))
+        known = widest.get(key, 0.0)
+        widest[key] = None if value is None or known is None else max(known, value)
+    floors.finite = {
+        (order, row): widest[(order, merged(row))] for order, row in finite
+    }
+    floors.unit_roundoff = getattr(physical, "unit_roundoff", None)
+    return floors
 
 
 def probe(
@@ -1705,6 +1964,7 @@ def probe(
     ward: Any = None,
     checks: Any = None,
     physical: Mapping | None = None,
+    tolerance: float | None = None,
 ) -> ProbeResult:
     """The finiteness probe (``ward`` None) or the amplitude-level Ward
     probe of a loop-induced point on a native executor of its slice
@@ -1749,6 +2009,7 @@ def probe(
         precision=precision,
         checks=checks,
         physical=physical,
+        tolerance=tolerance,
     )
     return result
 
@@ -1763,6 +2024,7 @@ def probes(
     precision: Any = None,
     checks: Any = None,
     physical: Mapping | None = None,
+    tolerance: float | None = None,
 ) -> list[ProbeResult]:
     """``probe`` for every Ward value of ``wards`` (None: the finiteness
     probe) at one point: the probes' runs in one native batch with the
@@ -1779,6 +2041,7 @@ def probes(
         precision=precision,
         checks=checks,
         physical=physical,
+        tolerance=tolerance,
     )
     for result in found:
         if isinstance(result, str):
@@ -1796,39 +2059,55 @@ def probe_results(
     precision: Any = None,
     checks: Any = None,
     physical: Mapping | None = None,
+    tolerance: float | None = None,
 ) -> list[ProbeResult | str]:
-    """``probes``, with a probe whose run (direct or rotated) the backend
-    refuses in the carrier returned as the refusal's text ("the probe point
-    failed: ..."), the other probes' results unchanged (the runs of a batch
-    are independent points)."""
+    """``probes``, with a probe whose direct run the backend refuses in the
+    carrier returned as the refusal's text ("the probe point failed: ..."),
+    the other probes' results unchanged (the runs of a batch are
+    independent points). The physical evaluation (Ward value None) is in
+    every batch: its finite amplitude per row is the probes' physical
+    reference P with its estimate E_P (``physical_references``), at the same
+    point and carrier as the residues; refused, the rows have no P
+    (inconclusive). A refused rotated run only drops that rotation from the
+    estimates (R, P and T do not read it). ``tolerance``: K (None:
+    ``checks.tolerance``)."""
 
     from .assemble import Precision, _fraction
     from .stability import RECOMMENDED_CHECKS
     from .ward import rotated_ward, ward_leg
 
     precision = precision or Precision.double_double()
+    tolerance = _default_tolerance() if tolerance is None else tolerance
     checks = RECOMMENDED_CHECKS if checks is None else checks
     frame = checks.frame
     if frame is None:
         raise ValueError("a probe needs the reduction re-test")
+    runs_of = list(wards) if None in wards else [*wards, None]
+    reference = runs_of.index(None)
     exact = tuple(tuple(_fraction(x) for x in p) for p in point)
     moved = [rotation.apply(exact) for rotation in checks.rotations]
     stride = len(moved)
     # Two batches: the probes' runs with the re-test, their rotated runs
     # without it (a rotation compares values, ``rotation_errors``).
     carrier, evaluations, failures = _probe_batch(
-        executor, [(point, ward) for ward in wards], scale, parameters, precision, frame
+        executor,
+        [(point, ward) for ward in runs_of],
+        scale,
+        parameters,
+        precision,
+        frame,
     )
     refused: dict[int, str] = {
         index: f"the probe point failed: {failures[index]}" for index in failures
     }
     rotated = []
+    turned_failures: dict = {}
     if moved:
         _carrier, rotated, turned_failures = _probe_batch(
             executor,
             [
                 (turned, None if ward is None else rotated_ward(rotation, ward))
-                for ward in wards
+                for ward in runs_of
                 for rotation, turned in zip(checks.rotations, moved, strict=True)
             ],
             scale,
@@ -1836,59 +2115,62 @@ def probe_results(
             precision,
             None,
         )
-        for index in sorted(turned_failures):
-            refused.setdefault(
-                index // stride,
-                f"the probe point failed: {turned_failures[index]}",
-            )
     # The term floor is the physical amplitude's, a magnitude: formed once in
     # binary64 (``physical_floors``; in double-double the term scale's unit
     # reductions would dominate the probe's cost) and shared by the Ward
     # probes of the point (``physical``).
     if physical is None:
         physical = physical_floors(executor, point, scale, parameters)
+
+    def estimates_of(index: int, floors: Mapping) -> tuple[dict, list]:
+        evaluation = evaluations[index]
+        kept = [
+            run
+            for position, run in enumerate(
+                rotated[index * stride : (index + 1) * stride], start=index * stride
+            )
+            if position not in turned_failures
+        ]
+        turned = [rotation_errors(evaluation, run) for run in kept]
+        return (
+            amplitude_estimates(evaluation, carrier.unit_roundoff, floors, turned),
+            [evaluation, *kept],
+        )
+
+    references = None
+    if reference not in refused:
+        references = physical_references(estimates_of(reference, physical)[0])
     out: list[ProbeResult | str] = []
     for index, ward in enumerate(wards):
         if index in refused:
             out.append(refused[index])
             continue
-        evaluation = evaluations[index]
-        turned = [
-            rotation_errors(evaluation, run)
-            for run in rotated[index * stride : (index + 1) * stride]
-        ]
         floors = physical if ward is None else ward_floors(physical, ward_leg(ward))
-        estimates = amplitude_estimates(
-            evaluation, carrier.unit_roundoff, floors, turned
+        estimates, runs = estimates_of(index, floors)
+        refs = (
+            None
+            if references is None
+            else references
+            if ward is None
+            else ward_references(references, ward_leg(ward))
         )
-        first = 0 if ward is not None else 1
-        ratios = {}
-        relative = {}
-        for key, entries in estimates.items():
-            ratio = 0.0
-            floor = floors.get(key, ())
-            for k, (residue, estimate) in enumerate(entries):
-                if k < first or not residue:
-                    continue
-                found = residue / estimate if estimate else float("inf")
-                if found >= ratio:
-                    ratio = found
-                    size = floor[k] if k < len(floor) else 0.0
-                    relative[key] = (
-                        residue / size if size else float("inf"),
-                        estimate / size if size else float("inf"),
-                    )
-            ratios[key] = ratio
-        runs = [evaluation, *rotated[index * stride : (index + 1) * stride]]
+        measures = probe_measures(
+            estimates,
+            floors,
+            0 if ward is not None else 1,
+            refs,
+            width_of(evaluations[index]),
+        )
         out.append(
             ProbeResult(
                 "ward" if ward is not None else "finiteness",
-                ratios,
+                judged_cells(measures, tolerance, carrier),
                 MappingProxyType(physical),
-                MappingProxyType(relative),
                 uncertified=any(
                     getattr(run, "uncertified_bound", None) for run in runs
                 ),
+                tolerance=tolerance,
+                floor_roundoff=getattr(floors, "unit_roundoff", None),
             )
         )
     return out
@@ -1898,8 +2180,9 @@ def probe_results(
 
 
 class ProbeFailure(ArithmeticError):
-    """A generation-time probe of a loop-induced request outside ten times
-    its own estimate (m-lit Q12: generation fails unless overridden)."""
+    """A generation-time probe of a loop-induced request that fails R < K S
+    (``checks.threshold``; m-lit Q12: generation fails unless
+    overridden)."""
 
     refusal_key = "loop-induced-probe"
 
@@ -2113,40 +2396,214 @@ def probe_lanes(runs: int) -> int:
 
 
 def _fallback(result: Any) -> dict[str, Any]:
-    """Why a probe's run in one carrier did not decide it (the next carrier
-    re-runs it): the backend's refusal, or the ratio of its failed verdict."""
+    """An earlier carrier's outcome of a probe (the next carrier re-ran its
+    pending rows): the backend's refusal, or its verdict and largest R over
+    its scale."""
 
     if isinstance(result, str):
         return {"reason": "refused", "detail": result}
-    return {"reason": "verdict", "worst": _short(result.worst)}
+    return {
+        "reason": "verdict",
+        "verdict": result.verdict,
+        "worst": _short(result.worst),
+    }
+
+
+def ladder(
+    cells: dict[Any, Any],
+    result: Any,
+    carrier: Any,
+    tolerance: float,
+) -> None:
+    """One carrier of a probe's per-row ladder (``checks.ladder_step``), in
+    place on ``cells``: a refused run leaves its pending rows inconclusive
+    for the next carrier to decide; a result's rows are judged where still
+    pending (a decided row keeps its first decision, a pending row the
+    carrier lacks is inconclusive)."""
+
+    from .checks import ladder_step, refused_step
+
+    name = carrier.arithmetic
+    if isinstance(result, str):
+        refused_step(cells, result, name)
+        return
+    ladder_step(
+        cells,
+        {key: cell.measure for key, cell in result.cells.items()},
+        name,
+        carrier.unit_roundoff,
+        tolerance,
+    )
+    withhold(cells, result, carrier)
+
+
+# The reason of a loop-induced row whose miss is deferred (``withhold``).
+BELOW_RESOLUTION = "helicity row below numerical resolution"
+
+
+def withhold(cells: dict[Any, Any], result: Any, carrier: Any) -> list[Any]:
+    """Defer an otherwise failing loop-induced row whose operands are all at
+    the numerical resolution of its comparable helicities (the reviewer's
+    ruling on g g > Z), in place on ``cells``; returns the deferred keys.
+
+    A row that FAILs at ``carrier`` (the ordinary per-row test, ``checks.
+    ladder_step``; a physical reference that reproduced between carriers
+    keeps its decision) is deferred only when all of the following hold at
+    this carrier:
+
+    * its comparison is complete: R, P, T and E_P finite and nonnegative,
+      P measured (not a known-zero reference) and P <= ESTIMATE_FACTOR E_P;
+    * T_max, the largest term floor of the rows of the same probe at this
+      point with the same loop order and Laurent coefficient (the comparable
+      helicities; no other sector, coefficient, point or backend), is finite
+      and positive;
+    * max(R, P, T) <= ESTIMATE_FACTOR min(u_floor, u_work) T_max, u_floor
+      the unit roundoff of the carrier that produced the term floors
+      (``ProbeResult.floor_roundoff``; not recorded: nothing is deferred),
+      u_work this carrier's.
+
+    A deferred row is INCONCLUSIVE ("helicity row below numerical
+    resolution"), with its operands and carrier kept: it is pending, so the
+    next carrier evaluates it again and the ordinary rule judges its actual
+    measurements there (a resolved physical reference or a significant
+    residue decides; a row ambiguous on its own row at that carrier is
+    settled by the existing rule); at the last carrier it stays
+    INCONCLUSIVE. The deferral never passes a row, never settles it
+    term-relative and never makes it vacuous."""
+
+    from dataclasses import replace
+
+    from .checks import FAIL, INCONCLUSIVE
+
+    floor = getattr(result, "floor_roundoff", None)
+    work = getattr(carrier, "unit_roundoff", None)
+    cells_of = getattr(result, "cells", None)
+    if floor is None or work is None or not cells_of:
+        return []
+    u = min(floor, work)
+
+    def group(key: Any) -> Any:
+        try:
+            (order, _row), k = key
+        except (TypeError, ValueError):
+            return None
+        return (order, k)
+
+    largest: dict[Any, float] = {}
+    for key, cell in cells_of.items():
+        t = cell.measure.terms
+        g = group(key)
+        if g is None or t is None or not math.isfinite(t) or t < 0:
+            continue
+        largest[g] = max(largest.get(g, 0.0), t)
+    deferred = []
+    for key, cell in list(cells.items()):
+        if cell.verdict != FAIL or cell.carrier != carrier.arithmetic:
+            continue
+        if (cell.reason or "").startswith("P reproduces"):
+            continue
+        m = cell.measure
+        operands = (m.residue, m.physical, m.terms, m.physical_error)
+        if (
+            m.zero_reference
+            or not m.complete
+            or any(x is None or not math.isfinite(x) or x < 0 for x in operands)
+            or m.physical > ESTIMATE_FACTOR * m.physical_error
+        ):
+            continue
+        t_max = largest.get(group(key))
+        if t_max is None or not math.isfinite(t_max) or t_max <= 0:
+            continue
+        bound = ESTIMATE_FACTOR * u * t_max
+        size = max(m.residue, m.physical, m.terms)
+        if size > bound:
+            continue
+        order, k = group(key)
+        cells[key] = replace(
+            cell,
+            verdict=INCONCLUSIVE,
+            reason=(
+                f"{BELOW_RESOLUTION}: max(R, P, T) {size:.3g} <= "
+                f"{ESTIMATE_FACTOR} min(u_floor, u_work) T_max {bound:.3g} "
+                f"(T_max {t_max:.3g} over the helicities of {order} k={k}; "
+                f"floors at u {floor:.3g}, {carrier.arithmetic} at u {work:.3g}; "
+                f"R {m.residue:.3g}, P {m.physical:.3g} <= {ESTIMATE_FACTOR} E_P "
+                f"{m.physical_error:.3g}, T {m.terms:.3g}): an otherwise failing "
+                "miss deferred to a wider carrier, inconclusive at the last"
+            ),
+        )
+        deferred.append(key)
+    return deferred
+
+
+def pending(cells: Mapping[Any, Any], runs: Sequence[Any]) -> bool:
+    """Whether a probe still has a row to decide (or no measured row yet)."""
+
+    if not cells:
+        return True
+    return any(cell.verdict not in ("pass", "vacuous") for cell in cells.values())
 
 
 def _decided(
     entries: list[dict[str, Any]],
     outcomes: Sequence[Any],
     carriers: Sequence[Any],
-    uncertified_fails: bool = False,
+    cells: Sequence[dict[Any, Any]],
+    tolerance: float,
 ) -> list[Any]:
-    """The verdict of each probe: its result in the first carrier that gave
-    a passing one, else in the last carrier that ran it (a refusal text
-    where every carrier refused); ``entries`` gets the record per probe."""
+    """The verdict of each probe from its rows' final verdicts up the ladder
+    (``cells``; a probe no carrier measured keeps its last refusal text:
+    inconclusive, never a pass); ``entries`` gets the record per probe: the
+    deciding row's carrier, ``passed``, ``verdict``, the largest R over its
+    scale (``worst``) and K (``tolerance``), the reason of an inconclusive
+    or vacuous one, each earlier carrier's outcome (``fallback``)."""
+
+    from dataclasses import replace
 
     out = []
-    for entry, runs in zip(entries, outcomes, strict=True):
-        result = runs[-1]
-        carrier = carriers[len(runs) - 1]
-        entry["carrier"] = carrier.arithmetic
-        if isinstance(result, str):
+    for entry, runs, rows in zip(entries, outcomes, cells, strict=True):
+        measured = [run for run in runs if not isinstance(run, str)]
+        if not rows or not measured:
+            result = runs[-1]
+            carrier = carriers[len(runs) - 1]
+            entry["carrier"] = carrier.arithmetic
             entry["passed"] = False
+            entry["verdict"] = "inconclusive"
             entry["refused"] = result
+            entry["inconclusive"] = f"refused in {carrier.arithmetic}: {result}"
         else:
-            entry["worst"] = _short(result.worst)
-            # ``pyamplicol check``: never a pass on a run that served a lane
-            # without accuracy evidence (``ProbeResult.uncertified``).
-            entry["passed"] = result.passed and not (
-                uncertified_fails and result.uncertified
+            result = replace(
+                measured[-1],
+                cells=dict(rows),
+                uncertified=any(run.uncertified for run in measured),
+                tolerance=tolerance,
             )
-            if uncertified_fails and result.uncertified:
+            # The last carrier a row needed (every row decided by then).
+            order = [carrier.arithmetic for carrier in carriers]
+            used = [
+                order.index(cell.carrier)
+                for cell in rows.values()
+                if cell.carrier in order
+            ]
+            entry["carrier"] = order[max(used)] if used else order[len(runs) - 1]
+            entry["worst"] = _short(result.worst)
+            entry["tolerance"] = tolerance
+            entry["verdict"] = result.verdict
+            entry["passed"] = result.passed
+            if result.verdict == "inconclusive":
+                entry["inconclusive"] = result.reason
+            elif result.verdict == "vacuous":
+                entry["vacuous"] = result.reason
+            deferred = sum(
+                1
+                for cell in result.final.values()
+                if (cell.reason or "").startswith(BELOW_RESOLUTION)
+            )
+            if deferred:
+                # Rows whose miss ``withhold`` deferred: inconclusive, the
+                # operands at the resolution of their helicities.
+                entry["below_resolution"] = deferred
+            if result.uncertified:
                 entry["uncertified"] = True
         fallbacks = [
             {"carrier": carriers[i].arithmetic, **_fallback(run)}
@@ -2181,71 +2638,64 @@ def point_probes(
     floors: Mapping,
     seconds: dict[str, Any] | None = None,
     improve: Callable[[Any, Any, Any], tuple[Any, str | None]] | None = None,
-    uncertified_escalates: bool = False,
+    tolerance: float | None = None,
 ) -> tuple[list[dict[str, Any]], list[Any]]:
     """The finiteness probe and the Ward probe of every leg of ``legs``
     (``probe_legs``) at one lifted point (``probe_point``) of a probe
-    slice's executor, in ``carriers`` in order (``probe_carriers``): a probe
-    whose run fails its verdict or is refused runs again in the next one
-    only. The Ward probes are at c = 1: the amplitude is linear in the
-    substituted vector, so c = i (needed where an interference takes a real
-    part, ``ward.WARD_FACTORS``) has the same norm. ``floors`` are the
+    slice's executor, in ``carriers`` in order (``probe_carriers``), judged
+    with tolerance K (``tolerance``; None: ``checks.tolerance``): a probe
+    that does not pass (a failure, an inconclusive verdict or a refused run)
+    runs again in the next one only. The Ward probes are at c = 1: the
+    amplitude is linear in the substituted vector, so c = i (needed where an
+    interference takes a real part, ``ward.WARD_FACTORS``) has the same
+    norm. ``floors`` are the
     point's physical row floors (``probe_floors``); ``seconds`` gets each
     carrier's pass time. Returns the per-probe record entries (``_decided``)
     and each probe's deciding result (a ``ProbeResult`` or a refusal text),
     finiteness first. ``improve`` (``pyamplicol check``'s rungs only, m-lit
     lit-psimprove (G5); None at generation, whose records are unchanged):
     the point a carrier evaluates and its record's short form, per carrier
-    from the lifted point (each entry's ``"kinematics"``, by carrier).
-    ``uncertified_escalates`` (``pyamplicol check``): a probe whose run served
-    a reduction lane without accuracy evidence (``ProbeResult.uncertified``)
-    also runs again in the next carrier, and is never recorded as passed
-    (its entry marked ``"uncertified"``); the generation-time probes and
-    their records are unchanged."""
+    from the lifted point (each entry's ``"kinematics"``, by carrier)."""
 
     from .ward import gauge_ward
 
     entries: list[dict[str, Any]] = [{"probe": "finiteness"}] + [
         {"probe": "ward", "leg": leg} for leg in legs
     ]
+    tolerance = _default_tolerance() if tolerance is None else tolerance
     outcomes: list[list[Any]] = [[] for _ in entries]
-    pending = list(range(len(entries)))
+    cells: list[dict[Any, Any]] = [{} for _ in entries]
+    waiting = list(range(len(entries)))
     for carrier in carriers:
-        if not pending:
+        if not waiting:
             break
         rung, improved = (
             (point, None) if improve is None else improve(point, scale, carrier)
         )
         wards = [None, *(gauge_ward(leg, (1, 0), rung) for leg in legs)]
         if improved is not None:
-            for i in pending:
+            for i in waiting:
                 entries[i].setdefault("kinematics", {})[carrier.arithmetic] = improved
         clock = time.perf_counter()
         found = probe_results(
             executor,
             rung,
             scale,
-            [wards[i] for i in pending],
+            [wards[i] for i in waiting],
             precision=carrier,
             physical=floors,
+            tolerance=tolerance,
         )
         elapsed = time.perf_counter() - clock
         if seconds is not None:
             seconds[carrier.arithmetic] = elapsed
-        for i, result in zip(pending, found, strict=True):
+        for i, result in zip(waiting, found, strict=True):
             outcomes[i].append(result)
+            ladder(cells[i], result, carrier, tolerance)
             # The probes of one pass share its native batches.
             entries[i]["seconds"] = _seconds(entries[i].get("seconds", 0.0) + elapsed)
-        # A probe that served a lane without accuracy evidence is run again
-        # in the next carrier (``ProbeResult.uncertified``).
-        pending = [
-            i
-            for i in pending
-            if isinstance(outcomes[i][-1], str)
-            or not outcomes[i][-1].passed
-            or (uncertified_escalates and outcomes[i][-1].uncertified)
-        ]
-    return entries, _decided(entries, outcomes, carriers, uncertified_escalates)
+        waiting = [i for i in waiting if pending(cells[i], outcomes[i])]
+    return entries, _decided(entries, outcomes, carriers, cells, tolerance)
 
 
 def generation_probes(
@@ -2257,6 +2707,7 @@ def generation_probes(
     allow_failure: bool = False,
     precision: Any = None,
     memo: Any = None,
+    tolerance: float | None = None,
 ) -> dict[str, Any]:
     """The generation-time probes of a loop-induced slice (m-lit Q12, PLAN
     §2.a.7 items 5-6), run only when the user enables them
@@ -2277,17 +2728,20 @@ def generation_probes(
     (``ProbePointRefused``) is re-run in double-double, and only those (the
     term floors stay binary64, formed once per point, ``probe_floors``).
     ``precision`` given: that carrier alone (a measurement of one carrier).
-    A probe passes within ten times its own estimate (``ESTIMATE_FACTOR``);
-    its verdict is the first passing carrier's, else the last one's. A
-    failure after the fallback raises ``ProbeFailure`` unless
-    ``allow_failure`` (recorded). An exact colour zero has nothing to
-    probe. Massive external vectors take the Goldstone-equivalence probe
-    (``goldstone``, m-lit LIT-EW) on one leg of every species with a
-    Goldstone partner, in a 't Hooft-Feynman gauge request only (the
-    identity needs the Goldstone vertices; a QCD-only request in unitary
-    gauge has its both-gauges equality as a validation check instead),
-    with the same carriers, recorded as ``goldstone``. The probes reduce on
-    ``PROBE_REDUCTION`` (recorded).
+    A probe is judged as ``pyamplicol check`` judges it (``checks.
+    threshold``: R < K S per row and coefficient, K = ``tolerance``, None:
+    ``checks.tolerance``); its verdict is the first passing carrier's, else
+    the last one's. A decisive failure after the fallback raises
+    ``ProbeFailure`` unless ``allow_failure`` (recorded); an inconclusive
+    probe (R or S cannot be computed, or every carrier refused it) is
+    recorded (``inconclusive``, never a pass) and generation continues. An
+    exact colour zero has nothing to probe. Massive external vectors take
+    the Goldstone-equivalence probe (``goldstone``, m-lit LIT-EW) on one leg
+    of every species with a Goldstone partner, in a 't Hooft-Feynman gauge
+    request only (the identity needs the Goldstone vertices; a QCD-only
+    request in unitary gauge has its both-gauges equality as a validation
+    check instead), with the same carriers, recorded as ``goldstone``. The
+    probes reduce on ``PROBE_REDUCTION`` (recorded).
 
     Returns the record the artifact stores (``generation_filters``): per
     probe the carrier that decided, its worst ratio, the fallback's reason
@@ -2306,6 +2760,7 @@ def generation_probes(
         return {"exact_colour_zero": True}
 
     carriers = probe_carriers(precision)
+    tolerance = _default_tolerance() if tolerance is None else float(tolerance)
     start = time.perf_counter()
     seconds: dict[str, Any] = {}
     with running(PROBE_REDUCTION):
@@ -2335,11 +2790,39 @@ def generation_probes(
         )
         seconds["point"] = time.perf_counter() - clock
         clock = time.perf_counter()
-        floors, floors_record = probe_floors(executor, point, scale)
+        try:
+            floors, floors_record = probe_floors(executor, point, scale)
+        except ProbePointRefused as error:
+            # Every carrier refused the physical evaluation that forms the
+            # row floors T: the probes are inconclusive (recorded, a
+            # warning), generation continues.
+            floors, floors_record = None, {"refused": str(error)}
         seconds["floors"] = time.perf_counter() - clock
-        entries, decided = point_probes(
-            executor, point, scale, legs, carriers, floors, seconds
-        )
+        if floors is None:
+            text = f"the physical floors (T) were refused: {floors_record['refused']}"
+            entries = [{"probe": "finiteness"}] + [
+                {"probe": "ward", "leg": leg} for leg in legs
+            ]
+            for entry in entries:
+                entry.update(
+                    carrier=carriers[-1].arithmetic,
+                    passed=False,
+                    verdict="inconclusive",
+                    refused=text,
+                    inconclusive=text,
+                )
+            decided = [text] * len(entries)
+        else:
+            entries, decided = point_probes(
+                executor,
+                point,
+                scale,
+                legs,
+                carriers,
+                floors,
+                seconds,
+                tolerance=tolerance,
+            )
         goldstones = _goldstone_probes(
             target,
             compiled,
@@ -2350,6 +2833,7 @@ def generation_probes(
             carriers,
             floors,
             memo=memo,
+            tolerance=tolerance,
         )
     entries += goldstones["entries"]
     seconds.update(goldstones["seconds"])
@@ -2364,6 +2848,8 @@ def generation_probes(
     record: dict[str, Any] = {
         "status": "run",
         "carriers": [carrier.arithmetic for carrier in carriers],
+        "rule": rule_name(),
+        "tolerance": tolerance,
         "reduction": {
             "requested": PROBE_REDUCTION,
             "effective": PROBE_REDUCTION,
@@ -2378,12 +2864,20 @@ def generation_probes(
         "finiteness": {
             "worst": _short(worst(decided[0])),
             "passed": passed(decided[0]),
+            "verdict": entries[0].get("verdict"),
             "carrier": entries[0]["carrier"],
         },
         "ward": {
             "legs": list(legs),
             "worst": _short(max((worst(r) for r in decided[1:]), default=0.0)),
             "passed": all(passed(r) for r in decided[1:]),
+            "verdict": combined_verdict(
+                [
+                    entry.get("verdict")
+                    for entry in entries[1:]
+                    if entry["probe"] == "ward"
+                ]
+            ),
             "carriers": {
                 str(entry["leg"]): entry["carrier"]
                 for entry in entries
@@ -2402,33 +2896,84 @@ def generation_probes(
             for key, value in seconds.items()
         },
     }
-    failed = [
-        f"{entry['probe']} probe"
-        + (f" (leg {entry['leg']})" if "leg" in entry else "")
-        + (
-            f": {entry['refused']}"
-            if "refused" in entry
-            else f": {entry['worst']} times its estimate"
+
+    def label(entry: dict[str, Any]) -> str:
+        return f"{entry['probe']} probe" + (
+            f" (leg {entry['leg']})" if "leg" in entry else ""
         )
-        + f" in {entry['carrier']}"
+
+    inconclusive = [
+        f"{label(entry)}: inconclusive, {entry['inconclusive']} in {entry['carrier']}"
         for entry in entries
-        if not entry["passed"]
+        if entry.get("verdict") == "inconclusive"
+    ]
+    if inconclusive:
+        record["inconclusive"] = inconclusive
+    vacuous = [
+        f"{label(entry)}: {entry['vacuous']} in {entry['carrier']}"
+        for entry in entries
+        if entry.get("verdict") == "vacuous"
+    ]
+    if vacuous:
+        record["vacuous"] = vacuous
+    failed = [
+        f"{label(entry)}: R / S {entry['worst']} not below K {tolerance:g} in "
+        f"{entry['carrier']}"
+        for entry in entries
+        if entry.get("verdict") == "fail"
     ]
     if failed:
         record["failed"] = failed
         if not allow_failure:
             raise ProbeFailure(
                 f"{slice_.request.process!r}: the loop-induced generation-time "
-                f"probes failed ({'; '.join(failed)}; pass within "
-                f"{ESTIMATE_FACTOR} times the probe's own estimate, binary64 "
-                "first and double-double where binary64 fails or is refused, "
-                "m-lit Q12): a missing family or counterterm (finiteness), R2 "
-                "vertex (Ward) or Goldstone-side vertex or counterterm "
-                "(Goldstone). generation.allow_failed_probes = true stores the "
-                "artifact anyway, with the failure recorded"
+                f"probes failed ({'; '.join(failed)}; a probe passes iff R < K S "
+                "for every row and coefficient, binary64 first and "
+                "double-double where binary64 does not pass, m-lit Q12): a "
+                "missing family or counterterm (finiteness), R2 vertex (Ward) "
+                "or Goldstone-side vertex or counterterm (Goldstone). "
+                "generation.allow_failed_probes = true stores the artifact "
+                "anyway, with the failure recorded"
             )
         record["allowed_failure"] = True
-    return record
+    # Strict JSON for the artifact's manifest (an R / S can be inf or nan).
+    return _json_safe(record)
+
+
+def rule_name() -> str:
+    """The checks' rule name (``checks.RULE``), recorded with K."""
+
+    from .checks import RULE
+
+    return RULE
+
+
+def combined_verdict(verdicts: Sequence[Any]) -> str:
+    """Several probes' verdicts as one: fail, else inconclusive (also for
+    a missing one), else pass, else vacuous; "nothing tested" for none."""
+
+    found = set(verdicts)
+    if not found:
+        return "nothing tested"
+    for verdict in ("fail", "inconclusive"):
+        if verdict in found:
+            return verdict
+    if None in found or not found <= {"pass", "vacuous"}:
+        return "inconclusive"
+    return "pass" if "pass" in found else "vacuous"
+
+
+def _json_safe(value: Any) -> Any:
+    """``value`` with every non-finite float as text ("inf", "-inf",
+    "nan"): the artifact's manifest is strict JSON."""
+
+    if isinstance(value, float) and not math.isfinite(value):
+        return "nan" if math.isnan(value) else ("inf" if value > 0 else "-inf")
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def goldstone_applicability(target: Any) -> str | None:
@@ -2490,11 +3035,13 @@ def goldstone_point(
     carriers: Sequence[Any],
     physical: Mapping,
     executors: dict[Any, Any],
+    tolerance: float | None = None,
 ) -> tuple[list[Any], list[dict[str, Any]], dict[str, Any], dict[str, float]]:
     """The Goldstone-equivalence probe of every side of ``sides``
     (``goldstone_sides``) at one lifted point, with the point's physical row
-    floors, in ``carriers`` in order: a probe whose run fails its verdict or
-    is refused runs again in the next one. ``executors`` caches the native
+    floors, in ``carriers`` in order, judged with tolerance K
+    (``tolerance``; None: ``checks.tolerance``): a probe that does not pass
+    runs again in the next one. ``executors`` caches the native
     executors (the vector's under "vector", each side's under its leg)
     across points. Returns the (leg, result or refusal text) pairs, the
     per-probe record entries, the phases read and each probe's time."""
@@ -2517,6 +3064,8 @@ def goldstone_point(
                 side, forward=False, inputs="native", lanes=probe_lanes(1)
             )
         runs: list[Any] = []
+        rows: dict[Any, Any] = {}
+        judged_at = _default_tolerance() if tolerance is None else tolerance
         for carrier in carriers:
             try:
                 result = goldstone.probe(
@@ -2527,11 +3076,13 @@ def goldstone_point(
                     leg,
                     precision=carrier,
                     physical=physical,
+                    tolerance=judged_at,
                 )
             except ProbePointRefused as error:
                 result = str(error)
             runs.append(result)
-            if not isinstance(result, str) and result.passed:
+            ladder(rows, result, carrier, judged_at)
+            if not pending(rows, runs):
                 break
         probes_seconds[str(leg)] = time.perf_counter() - clock
         entry: dict[str, Any] = {
@@ -2539,7 +3090,7 @@ def goldstone_point(
             "leg": leg,
             "seconds": _seconds(probes_seconds[str(leg)]),
         }
-        (result,) = _decided([entry], [runs], carriers)
+        (result,) = _decided([entry], [runs], carriers, [rows], judged_at)
         entries.append(entry)
         results.append((leg, result))
         if not isinstance(result, str) and result.phase is not None:
@@ -2548,7 +3099,16 @@ def goldstone_point(
 
 
 def _goldstone_probes(
-    target, compiled, request, native, point, scale, carriers, physical, memo=None
+    target,
+    compiled,
+    request,
+    native,
+    point,
+    scale,
+    carriers,
+    physical,
+    memo=None,
+    tolerance=None,
 ) -> dict[str, Any]:
     """The Goldstone-equivalence probes of a probe slice (``goldstone``,
     m-lit LIT-EW): in a 't Hooft-Feynman gauge slice, one per external
@@ -2576,7 +3136,7 @@ def _goldstone_probes(
         target, compiled, request, native, memo=memo
     )
     results, entries, phases, probes_seconds = goldstone_point(
-        target, sides, point, scale, carriers, physical, {}
+        target, sides, point, scale, carriers, physical, {}, tolerance
     )
     seconds = (
         {"goldstone_slices": slices, "goldstone": probes_seconds} if slices else {}
@@ -2603,6 +3163,7 @@ def _goldstone_probes(
             )
         ),
         "passed": all(passed(r) for _, r in results),
+        "verdict": combined_verdict([entry.get("verdict") for entry in entries]),
         "carriers": {str(entry["leg"]): entry["carrier"] for entry in entries},
         **({"phases": phases} if phases else {}),
         **({"skipped": skipped} if skipped else {}),
@@ -2665,19 +3226,78 @@ def _point_scale(point: Sequence[Sequence[str]], initial: int) -> Fraction:
 
 
 def g_norm(vector: Sequence[Any], gram: Sequence[Sequence[Any]], numbers: Any) -> Any:
-    """||x||_G = sqrt(x^dag G x) (G positive semidefinite)."""
+    """||x||_G = sqrt(x^dag G x) (G positive semidefinite), stable against a
+    cancelled contraction: in a redundant colour basis the form can cancel
+    far below its terms (G = [[9, 3], [3, 1]] and x = (1, -2.999999997): the
+    norm is |3 x_1 + x_2| = 3e-9 while the terms are of order 9). Where the
+    carrier's form is not above n^2 u times the sum of its terms'
+    magnitudes (the summation's own rounding bound, n the basis size, u the
+    carrier's unit roundoff; or not a positive finite number), the form is
+    recomputed exactly from the carrier values as rationals and its root
+    taken at the carrier's precision: a cancelled norm is never returned as
+    zero. A form below zero by the metric's own rounding returns the root of
+    its magnitude (its size), never a clipped zero. A value that is not a
+    finite number gives a NaN norm (the row cannot be computed)."""
 
     zero = numbers.zero
     total = zero
+    size = 0.0
     for t, x in enumerate(vector):
         inner = zero
         for u, y in enumerate(vector):
             inner = inner + gram[t][u] * y
+            size += _term_size(x, gram[t][u], y)
         total = total + x.conjugate() * inner
     value = total.real
-    if value <= 0:
-        return numbers.real(0)
-    return value.sqrt() if hasattr(value, "sqrt") else value**0.5
+    resolved = len(vector) ** 2 * numbers.precision.unit_roundoff * size
+    if value == value and value > resolved and size < math.inf:
+        return value.sqrt() if hasattr(value, "sqrt") else value**0.5
+    exact = _exact_form(vector, gram)
+    if exact is None:
+        return numbers.real(math.nan) if numbers.double else Decimal("NaN")
+    magnitude_ = abs(exact)
+    if numbers.double:
+        return math.sqrt(float(magnitude_))
+    with numbers.scope():
+        return (Decimal(magnitude_.numerator) / Decimal(magnitude_.denominator)).sqrt()
+
+
+def _term_size(x: Any, g: Any, y: Any) -> float:
+    """|x| |g| |y| in binary64 (inf where it overflows or cannot be formed)."""
+
+    try:
+        return abs(complex(x)) * abs(complex(g)) * abs(complex(y))
+    except (ArithmeticError, TypeError, ValueError):
+        return math.inf
+
+
+def _exact_pair(value: Any) -> tuple[Fraction, Fraction]:
+    """(Re, Im) of a carrier value as exact rationals (raises for a value
+    that is not a finite number)."""
+
+    if isinstance(value, (complex, float, int)):
+        value = complex(value)
+    return Fraction(value.real), Fraction(value.imag)
+
+
+def _exact_form(
+    vector: Sequence[Any], gram: Sequence[Sequence[Any]]
+) -> Fraction | None:
+    """Re(x^dag G x) exactly from the carrier values (None where one is not a
+    finite number)."""
+
+    try:
+        xs = [_exact_pair(x) for x in vector]
+        total = Fraction(0)
+        for t, (ar, ai) in enumerate(xs):
+            for u, (br, bi) in enumerate(xs):
+                gr, gi = _exact_pair(gram[t][u])
+                # Re(conj(a) g b) = Re((ar - i ai)(gr + i gi)(br + i bi)).
+                pr, pi = ar * gr + ai * gi, ar * gi - ai * gr
+                total += pr * br - pi * bi
+    except (ArithmeticError, TypeError, ValueError):
+        return None
+    return total
 
 
 __all__ = [

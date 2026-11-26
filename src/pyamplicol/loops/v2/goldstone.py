@@ -26,17 +26,21 @@ particle replaced by its Goldstone partner, admitted as an external leg in
 
     r(l, h) = || a_V(l, h) - eta (M_V / E_j) a_G(l, h_j -> 0) ||_G
 
-against E_V + (M_V / E_j) E_G, the two amplitudes' absolute estimates
-(``induced.amplitude_estimates``: re-test and rotation budgets plus the
-floor on the physical amplitude's term scale); it passes within ten times
-that (the user's x10 rule, m-lit Q12). eta is a field convention (a
-Goldstone's phase can be redefined), so the probe reads it from the
-amplitudes: the unit phase of sum <b, a_V>_G with b = (M_V / E_j) a_G over
+against S = max(P, K T) (``checks.judge``): P the larger of the identity's two
+sides, ||a_V|| and (M_V / E_j) ||a_G||, at the same row and coefficient; T the
+two rows' term floors (the vector row's physical floor,
+``induced.ward_floors``, plus M_V / E_j times the Goldstone row's); K T only
+guards a row whose sides are below what the computation resolves (the poles of
+a finite amplitude, h > z a). It passes iff r < K S at every coefficient, K
+the check's tolerance; a row without any term is vacuous; the estimates E_V +
+(M_V / E_j) E_G (``induced.amplitude_estimates``) are reported. eta is a field
+convention (a Goldstone's phase can be redefined), so the probe reads it from
+the amplitudes: the unit phase of sum <b, a_V>_G with b = (M_V / E_j) a_G over
 every row, then requires every row to hold with that one phase and unit
-modulus (a wrong Goldstone vertex, a missing R2 vertex or a wrong
-counterterm breaks a row or the modulus; ``phase`` is recorded). Where the
-Goldstone side vanishes (h > z a: k.A(V) = 0 by the photon's transversality)
-the probe checks that both sides vanish within their estimates.
+modulus (a wrong Goldstone vertex, a missing R2 vertex or a wrong counterterm
+breaks a row or the modulus; ``phase`` is recorded). Where the Goldstone side
+vanishes (h > z a: k.A(V) = 0 by the photon's transversality) the probe checks
+that the vector side vanishes against K times its floor.
 
 Widths: the probe slices are the generation-time probe's (``ew_policy.
 probe_widths``: zero widths outside the complex-mass scheme, which keeps its
@@ -139,30 +143,25 @@ def goldstone_slice(
 
 
 @dataclass(frozen=True)
-class GoldstoneResult:
-    """A Goldstone-equivalence probe of one leg (``probe``): per (loop
-    order, row) of the vector side the ratio of the residue to its estimate,
-    the fitted phase eta (re, im) and the size of the Goldstone side against
-    its estimate (``goldstone_ratio``: how far it is from vanishing; the
-    identity is vacuous where both sides vanish)."""
+class GoldstoneResult(induced._Judged):
+    """A Goldstone-equivalence probe of one leg (``probe``): per required
+    row ((loop order, row), Laurent coefficient) its judgement (``cells``,
+    ``checks.judge``: R = ||A(V)_k - eta (M/E) A(G)_k||_G, P the larger of
+    the two sides with its estimate E_P, T the two rows' term floors); the
+    verdict and the reported figures follow from them (``induced._Judged``);
+    the fitted phase eta (re, im) and the size of the Goldstone side
+    against its estimate (``goldstone_ratio``, reported: how far it is from
+    vanishing)."""
 
     leg: int
-    ratios: Mapping[tuple[Any, Any], float]
+    cells: Mapping[Any, Any]
     phase: tuple[float, float] | None
     goldstone_ratio: float
     scales: Mapping = field(default_factory=lambda: MappingProxyType({}))
     # Whether a run of either side served a reduction lane without accuracy
-    # evidence (``induced.ProbeResult.uncertified``): ``pyamplicol check``
-    # reads the probe as inconclusive.
+    # evidence (``induced.ProbeResult.uncertified``): recorded.
     uncertified: bool = False
-
-    @property
-    def worst(self) -> float:
-        return max(self.ratios.values(), default=0.0)
-
-    @property
-    def passed(self) -> bool:
-        return self.worst <= ESTIMATE_FACTOR
+    tolerance: float = field(default_factory=induced._default_tolerance)
 
 
 def _mass_over_energy(point: Sequence[Sequence[Any]], leg: int, digits: int) -> Decimal:
@@ -223,6 +222,7 @@ def probe(
     precision: Any = None,
     checks: Any = None,
     physical: Mapping | None = None,
+    tolerance: float | None = None,
 ) -> GoldstoneResult:
     """The Goldstone-equivalence probe of leg ``leg`` (module docstring) at
     one point on the native executors of the vector's slice (``vector``, on
@@ -234,13 +234,15 @@ def probe(
     double-double where the backend refuses that run, ``induced.
     probe_floors``); a run the backend refuses raises ``induced.
     ProbePointRefused`` (the generation-time probes re-run the probe in
-    their next carrier, ``induced.generation_probes``)."""
+    their next carrier, ``induced.generation_probes``). ``tolerance``: K
+    (None: ``checks.tolerance``)."""
 
     from .assemble import Precision, _fraction
     from .stability import RECOMMENDED_CHECKS
     from .ward import gauge_ward, rotated_ward
 
     precision = precision or Precision.double_double()
+    tolerance = induced._default_tolerance() if tolerance is None else tolerance
     checks = RECOMMENDED_CHECKS if checks is None else checks
     frame = checks.frame
     if frame is None:
@@ -255,7 +257,10 @@ def probe(
         )
         turned = []
         if moved:
-            _carrier, rotated = induced._probe_runs(
+            # The rotations only feed the reported estimate (E, E_P): a
+            # refused rotated run is dropped, it never vetoes the direct
+            # comparison.
+            _carrier, rotated, failures = induced._probe_batch(
                 executor,
                 [
                     (
@@ -269,7 +274,11 @@ def probe(
                 precision,
                 None,
             )
-            turned = [induced.rotation_errors(evaluation, r) for r in rotated]
+            turned = [
+                induced.rotation_errors(evaluation, r)
+                for position, r in enumerate(rotated)
+                if position not in failures
+            ]
         return carrier, evaluation, turned
 
     carrier, side_v, turned_v = run(vector, [ward])
@@ -329,39 +338,101 @@ def probe(
                 goldstone_ratio = max(
                     goldstone_ratio, residue / estimate if estimate else float("inf")
                 )
-    ratios = {}
+    from .checks import Measure
+
     scaled_factor = float(factor)
-    for key in keys:
-        a = side_v.amplitude_vectors[key]
-        b = sides[key]
-        entries_v = estimates_v.get(key, ())
+
+    def side_size(vector, k):
+        with numbers.scope():
+            return induced._finite(
+                induced.g_norm([vector[t][k] for t in range(size)], gram, numbers)
+            )
+
+    # The required rows: the UNION of the vector side's rows, of its floors'
+    # and of the rows the Goldstone side's rows map to; a row one operand
+    # lacks is incomplete (inconclusive), never dropped.
+    images = {(order, _row_map(row, leg)) for order, row in keys}
+    lone = [key for key in side_g.amplitude_vectors if key not in images]
+    measures: dict[Any, Any] = {}
+    for key in dict.fromkeys([*keys, *floors_v]):
         order, row = key
-        entries_g = estimates_g.get((order, _row_map(row, leg)), ())
-        ratio = 0.0
+        a = side_v.amplitude_vectors.get(key)
+        mapped = (order, _row_map(row, leg))
+        entries_v = estimates_v.get(key, ())
+        entries_g = estimates_g.get(mapped, ())
+        floor_v = floors_v.get(key)
+        floor_g = floors_g.get(mapped, ())
         for k in range(width):
+            present = (
+                a is not None
+                and mapped in side_g.amplitude_vectors
+                and floor_v is not None
+                and len(floor_v) > k
+                and len(entries_v) > k
+                and len(entries_g) > k
+            )
+            label = f"{key} k={k}"
+            if not present:
+                measures[(key, k)] = Measure(label, None, None, None, complete=False)
+                continue
+            b = sides[key]
             with numbers.scope():
-                residue = float(
+                residue = induced._finite(
                     induced.g_norm(
                         [a[t][k] - eta * b[t][k] for t in range(size)], gram, numbers
                     )
                 )
-            if not residue:
-                continue
-            estimate = (
-                entries_v[k][1] if k < len(entries_v) else 0.0
-            ) + scaled_factor * (entries_g[k][1] if k < len(entries_g) else 0.0)
-            ratio = max(ratio, residue / estimate if estimate else float("inf"))
-        ratios[key] = ratio
+            # P: the larger of the identity's two sides, ||A(V)_k|| and
+            # ||eta (M/E) A(G)_k|| (b is the Goldstone side times M/E; eta
+            # has unit modulus), with that side's estimate as E_P; T: the
+            # rows' term floors.
+            size_a, size_b = side_size(a, k), side_size(b, k)
+            error_a = induced._finite(entries_v[k][1])
+            error_b = induced._finite(scaled_factor * entries_g[k][1])
+            larger = None if size_a is None or size_b is None else max(size_a, size_b)
+            size_g = induced._finite(floor_g[k]) if k < len(floor_g) else None
+            size_v = induced._finite(floor_v[k])
+            terms = (
+                None
+                if size_v is None or size_g is None
+                else size_v + scaled_factor * size_g
+            )
+            error = None if None in (error_a, error_b) else error_a + error_b
+            measures[(key, k)] = Measure(
+                label,
+                residue,
+                larger,
+                terms,
+                error,
+                None
+                if larger is None
+                else error_a
+                if size_a is not None and size_a >= (size_b or 0.0)
+                else error_b,
+                # The poles of a loop-induced amplitude vanish on both sides
+                # (finiteness): a known-zero reference, term-relative.
+                zero_reference=k >= 1,
+            )
+    for key in lone:
+        for k in range(width):
+            measures[(key, k)] = Measure(
+                f"{key} k={k} (a Goldstone-side row no vector row maps to)",
+                None,
+                None,
+                None,
+                complete=False,
+            )
     phase = complex(eta)
     return GoldstoneResult(
         leg,
-        ratios,
+        induced.judged_cells(measures, tolerance, carrier),
         (phase.real, phase.imag) if goldstone_ratio > ESTIMATE_FACTOR else None,
         goldstone_ratio,
         MappingProxyType(physical),
         uncertified=any(
             getattr(run, "uncertified_bound", None) for run in (side_v, side_g)
         ),
+        tolerance=tolerance,
     )
 
 

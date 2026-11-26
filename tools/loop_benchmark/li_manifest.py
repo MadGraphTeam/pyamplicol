@@ -37,6 +37,15 @@ generic rotations and the rescaled re-test). Each run writes one record;
 LI_VALIDATION schema of ``scripts/build_summary.py`` (rows keyed by the
 registry keys) plus the validation-only ids.
 
+One K per invocation (``--tolerance`` of ``run`` and ``lit``, default the
+requested relative accuracy): ``run`` writes it into the generation cards
+(the generation-time probes), judges every probe at it, validates a complete
+record against it before reporting it complete (a probe record judged under
+another rule or K is judged again, the value arms kept; an artifact whose
+generation-time probes are stale is generated again) and states it in its
+summary line; ``lit`` judges and publishes at it (``checks`` in
+data/lit.json), a probe judged at another K reading as stale.
+
 Rules (§4.0 with the rulings of the brief, m-lit DECISIONS): L1 binary64 vs
 each designated provider <= 1e-5 relative (lax; digits recorded; a fixture
 point marked ``l1_caution`` whose provider deviates beyond it is left out of
@@ -47,16 +56,23 @@ is judged on its double-double value against the provider instead, the
 binary64 deviation recorded and judged by E); L2 binary64 <= 1e-9 and
 double-double / AP <= 1e-12 against the analytic oracle (targets: a
 deviation below ~1e-5 is recorded and reported, never a failure, R5); L3
-the amplitude-level finiteness probe (``induced.probe`` at every fixture
-point: per (loop order, row) the poles against their estimate on the
-row's term floor, x10), both backends in binary64 and double-double (the lanes' public
-``finiteness`` ratios, formed with checks only, recorded beside it); L4/W1
-the Ward probe epsilon_j -> p_j / E_j at every fixture point on every
-external massless gauge-boson leg, both backends in binary64 and
-double-double, on the run's probe slice (``ward_probes``: zero widths
-outside the complex-mass scheme, Q7), with the generation-time Ward and
-Goldstone probes the artifact records (a row no Ward probe reaches is
-'recorded'); L5/L1-identity an exact Lorentz transform (rotation and boost with
+the amplitude-level finiteness probe at every fixture point (per (loop
+order, row) and pole coefficient R < K P, the rule of ``pyamplicol check``)
+on both backends: the binary64 arm through the per-row carrier ladder
+(binary64, then double-double for the rows binary64 does not pass, its own
+binary64 verdict and ratio recorded beside the ladder's), the double-double
+arm double-double alone (the lanes' public ``finiteness`` ratios, formed
+with checks only, recorded beside it); L4/W1 the Ward probe epsilon_j ->
+p_j / E_j at every fixture point on every external massless gauge-boson
+leg, the same two arms per backend, on the run's probe slice
+(``ward_probes``: zero widths outside the complex-mass scheme, Q7), with
+the generation-time Ward and Goldstone probes the artifact records (a row
+no Ward probe reaches is 'recorded'). An inconclusive L3 / L4 arm is a
+failure of the run unless its record accepts it (``inconclusive
+(accepted)``, never a pass): every open row's amplitude has no physical
+normalisation (P within ten times its estimate in binary64, collapsing with
+the carrier in double-double), or the artifact is an exact fold zero with
+nothing to compare; L5/L1-identity an exact Lorentz transform (rotation and boost with
 terminating-decimal entries) leaves |A|^2 within 10 E of the fixture point
 in binary64 on both backends (TIRust: ``identity-tirust``) and is recorded in
 double-double; LI-27's f^abc part of g g > a g numerically (``fabc``: the
@@ -405,8 +421,9 @@ def card(
 ) -> str:
     """The generation card of a fixture: its model, correction (MadLoop's
     ``[sqrvirt=...]``), order limits (``X=n`` tokens), particle veto (``/
-    x``), fixed parameters the model declares (``known``) and mass scheme
-    (``complex_mass_scheme``)."""
+    x``), fixed parameters the model declares (``known``), mass scheme
+    (``complex_mass_scheme``) and the checks' K in effect (``check.tolerance``:
+    the generation-time probes are judged at the campaign's K)."""
 
     madloop = data["madloop_process"]
     correction = re.search(r"\[\s*sqrvirt\s*=\s*(\w+)\s*\]", madloop).group(1)
@@ -437,6 +454,7 @@ def card(
             "loop_induced_probes": True,
         },
         "generation.validation": {"post_build_validation": False},
+        "check": {"tolerance": _provenance()["tolerance"]},
     }
     if restriction is not None:
         sections["model"]["restriction"] = restriction
@@ -461,12 +479,20 @@ def card(
 
 
 def generate(
-    name: str, work: Path, compiled: Any, data: dict | None = None
+    name: str,
+    work: Path,
+    compiled: Any,
+    data: dict | None = None,
+    probes: bool = False,
 ) -> tuple[Path, dict]:
     """The fixture's loop-induced artifact through the public ``Generator``
     (kept in ``work / name / "artifact"`` and re-used), with its generation
     record: seconds and the artifact's generation-time probe record
-    (``data``: a fixture-shaped record instead of the fixture ``name``)."""
+    (``data``: a fixture-shaped record instead of the fixture ``name``).
+    With ``probes`` (the campaign run, which judges them) an artifact whose
+    generation-time probes were judged under another rule or K
+    (``_probes_current``) is generated again at the current ones, never
+    reused as it is."""
 
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
@@ -475,6 +501,14 @@ def generate(
     root = work / name
     output = root / "artifact"
     seconds = None
+    if (
+        probes
+        and (output / "artifact.json").is_file()
+        and not _probes_current(_artifact_probes(output))
+    ):
+        import shutil
+
+        shutil.rmtree(output)
     if not (output / "artifact.json").is_file():
         root.mkdir(parents=True, exist_ok=True)
         path = root / "card.toml"
@@ -486,18 +520,31 @@ def generate(
             output,
         )
         seconds = time.perf_counter() - start
-    manifest = _load(output / "artifact.json")
-    (filters,) = (
-        record["filters"]
-        for record in manifest["extensions"]["generation"]["concrete_processes"]
-        if record["id"] == "p"
-    )
+    filters = _filters(output)
     return output, {
         "seconds": seconds,
         "peak_gib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20,
         "probes": filters.get("loop_induced_probes"),
         "width_policy": filters.get("conventions", {}).get("width_policy"),
     }
+
+
+def _filters(output: Path) -> dict:
+    """The generation filters record of an artifact's process ``p``."""
+
+    manifest = _load(output / "artifact.json")
+    (filters,) = (
+        record["filters"]
+        for record in manifest["extensions"]["generation"]["concrete_processes"]
+        if record["id"] == "p"
+    )
+    return filters
+
+
+def _artifact_probes(output: Path) -> Any:
+    """An artifact's generation-time probe record (``loop_induced_probes``)."""
+
+    return _filters(output).get("loop_induced_probes")
 
 
 # ------------------------------------------------------------- evaluation
@@ -691,7 +738,7 @@ def evaluate(
 
     data = fixture(name)
     compiled = compile_model(data, work / "model-cache")
-    artifact, generation = generate(name, work, compiled)
+    artifact, generation = generate(name, work, compiled, probes=True)
     parameters = run_parameters(data, compiled)
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
@@ -719,9 +766,14 @@ def evaluate(
         # predates the field: never the staged native's by default).
         for key in RECORD_PROVENANCE:
             record[key] = previous.get(key)
-        for key in ("generation", "revision", "refreshed", "native_digest"):
+        for key in ("revision", "refreshed", "native_digest"):
             if key in previous:
                 record[key] = previous[key]
+        # The previous generation record (its timing) only for the same
+        # artifact probes: an artifact generated again at the current rule
+        # and K (``generate``) carries its own.
+        if (previous.get("generation") or {}).get("probes") == generation["probes"]:
+            record["generation"] = previous["generation"]
         record["arms"] = dict(previous["arms"])
         record["resumed_at"] = _revision()
     plan: list[tuple[str, str, str, bool, list]] = []
@@ -827,6 +879,243 @@ def skip_arms(specs: list[str]) -> dict[str, str]:
     return out
 
 
+# Why an inconclusive probe row is accepted as a campaign outcome: its
+# amplitude has no physical normalisation (``_unnormalised``), or the
+# generator proved it an exact fold zero (nothing to compare).
+NO_NORMALISATION = (
+    "no physical normalisation: the amplitude is at rounding level in every "
+    "carrier (P within ten times its own estimate in binary64, collapsing with "
+    "the carrier's roundoff in double-double)"
+)
+FOLD_ZERO = (
+    "exact zero: the generator proved the amplitude vanishes (an exact colour "
+    "or fold zero), nothing to compare"
+)
+# The verdict of a generation-time Ward-type record without a leg.
+NOTHING = "nothing tested"
+
+
+def _probe_ladder(
+    executor: Any,
+    point: Any,
+    scale: Any,
+    wards: list,
+    parameters: dict,
+    carriers: list,
+) -> list[tuple[Any, list]]:
+    """The probes of ``wards`` (None: the finiteness probe) at one point
+    through the per-row carrier ladder of ``pyamplicol check`` and the
+    generation-time probes (``induced.ladder``): ``carriers`` in order, a
+    probe re-run in the next carrier only while a row is undecided, each row
+    keeping its first decision. Per probe: (its final ``ProbeResult``, or the
+    last refusal text when no carrier measured it; each carrier's outcome,
+    (carrier, result or refusal text))."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.checks import tolerance
+
+    k = tolerance()
+    cells: list[dict] = [{} for _ in wards]
+    outcomes: list[list] = [[] for _ in wards]
+    waiting = list(range(len(wards)))
+    for carrier in carriers:
+        if not waiting:
+            break
+        found = induced.probe_results(
+            executor,
+            point,
+            scale,
+            [wards[i] for i in waiting],
+            parameters=parameters,
+            precision=carrier,
+            tolerance=k,
+        )
+        for i, result in zip(waiting, found, strict=True):
+            outcomes[i].append((carrier, result))
+            induced.ladder(cells[i], result, carrier, k)
+        waiting = [
+            i
+            for i in waiting
+            if induced.pending(cells[i], [r for _c, r in outcomes[i]])
+        ]
+    out = []
+    for ward, rows, runs in zip(wards, cells, outcomes, strict=True):
+        measured = [r for _c, r in runs if not isinstance(r, str)]
+        if not measured:
+            out.append((runs[-1][1], runs))
+            continue
+        out.append(
+            (
+                induced.ProbeResult(
+                    "finiteness" if ward is None else "ward", dict(rows), tolerance=k
+                ),
+                runs,
+            )
+        )
+    return out
+
+
+def _unnormalised(narrow: Any, wide: Any, narrow_u: float, wide_u: float) -> bool:
+    """Whether a row's physical reference is rounding in both carriers: P at
+    its own noise in the narrower one (zero, or within ten times its
+    estimate E_P) and collapsing with the carrier in the wider one (by at
+    least the square root of the two unit roundoffs' ratio, or zero in both),
+    while R < K T would pass there (the wider row is only unresolved)."""
+
+    from pyamplicol.loops.v2.checks import tolerance
+
+    def complete(m: Any) -> bool:
+        return m.complete and all(
+            x is not None and math.isfinite(x) and x >= 0
+            for x in (m.residue, m.physical, m.terms)
+        )
+
+    if not (complete(narrow) and complete(wide)) or not wide.terms:
+        return False
+    p0, e0, p1 = narrow.physical, narrow.physical_error, wide.physical
+    noise = p0 == 0 or (e0 is not None and p0 <= 10 * e0)
+    collapse = (p0 == 0 and p1 == 0) or (
+        p0 > 0 and p1 <= math.sqrt(wide_u / narrow_u) * p0
+    )
+    return noise and collapse and wide.residue < tolerance() * wide.terms
+
+
+def _ladder_row(final: Any, runs: list, narrow: Any = None) -> dict:
+    """One probe's record at one point: the verdict of its rows up the
+    ladder (``final``), the carrier that decided each row, the first
+    carrier's own verdict and largest R over its scale (``pinned``: kept
+    beside the ladder's, a binary64 shortfall stays visible), and, for an
+    inconclusive probe, whether every open row has no physical normalisation
+    (``accepted``, ``_unnormalised``) against the binary64 measure of the
+    same row (``narrow``: the binary64 result at the same point, None where
+    there is none)."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+
+    first = runs[0][1] if runs else None
+    row: dict[str, Any] = {
+        "worst": final.worst,
+        "passed": final.passed,
+        "verdict": final.verdict,
+        "rows": len(final.cells),
+        "decided_in": {},
+    }
+    for cell in final.final.values():
+        if cell.carrier is not None and cell.verdict in ("pass", "fail"):
+            row["decided_in"][cell.carrier] = row["decided_in"].get(cell.carrier, 0) + 1
+    if isinstance(first, str):
+        row["binary64"] = {"refused": compact_detail(first)}
+    elif first is not None and runs[0][0].arithmetic == "double":
+        row["binary64"] = {"worst": first.worst, "verdict": first.verdict}
+    if final.verdict == "inconclusive" and narrow is not None:
+        narrow_u = Precision.double().unit_roundoff
+        open_ = [
+            (key, cell)
+            for key, cell in final.final.items()
+            if cell.verdict == "inconclusive"
+        ]
+        from pyamplicol.loops.v2.induced import BELOW_RESOLUTION
+
+        # Both measures from the carriers' own results at the same key: a row
+        # double-double did not measure (missing or refused) never qualifies,
+        # nor one deferred below numerical resolution.
+        wide_carrier, wide = next(
+            (
+                (carrier, result)
+                for carrier, result in reversed(runs)
+                if carrier.arithmetic == "double-double" and not isinstance(result, str)
+            ),
+            (None, None),
+        )
+        evidence = [
+            (
+                narrow.cells[key].measure,
+                wide.cells[key].measure,
+                wide_carrier.unit_roundoff,
+            )
+            for key, cell in open_
+            if wide is not None
+            and key in narrow.cells
+            and key in wide.cells
+            and not (cell.reason or "").startswith(BELOW_RESOLUTION)
+        ]
+        if (
+            open_
+            and len(evidence) == len(open_)
+            and all(_unnormalised(n, w, narrow_u, u) for n, w, u in evidence)
+        ):
+            row["accepted"] = NO_NORMALISATION
+            row["evidence"] = {
+                "rows": len(evidence),
+                "binary64_P_max": max(n.physical for n, _w, _u in evidence),
+                "binary64_E_P_max": max(
+                    n.physical_error or 0.0 for n, _w, _u in evidence
+                ),
+                "double_double_P_max": max(w.physical for _n, w, _u in evidence),
+            }
+    if final.verdict == "inconclusive" and "accepted" not in row and final.reason:
+        row["reason"] = compact_detail(final.reason)
+    return row
+
+
+def _ward_row(per_leg: dict[str, dict]) -> dict:
+    """A Ward arm's record at one point from its legs' records
+    (``_ladder_row``): per leg the largest R over its scale, the verdict
+    over the legs (``induced.combined_verdict``), the carriers that decided,
+    the binary64 figures per leg, and the acceptance of an inconclusive
+    point only when every inconclusive leg is accepted."""
+
+    from pyamplicol.loops.v2.induced import combined_verdict
+
+    verdict = combined_verdict([r["verdict"] for r in per_leg.values()])
+    row: dict[str, Any] = {
+        "worst": {leg: r["worst"] for leg, r in per_leg.items() if "worst" in r},
+        "passed": all(r["passed"] for r in per_leg.values()),
+        "verdict": verdict,
+        "rows": sum(r["rows"] for r in per_leg.values()),
+        "decided_in": {},
+    }
+    for r in per_leg.values():
+        for carrier, n in r["decided_in"].items():
+            row["decided_in"][carrier] = row["decided_in"].get(carrier, 0) + n
+    refused = [leg for leg, r in per_leg.items() if r.get("refused")]
+    if refused:
+        row["refused_legs"] = refused
+    if all("binary64" in r for r in per_leg.values()):
+        row["binary64"] = {leg: r["binary64"] for leg, r in per_leg.items()}
+    open_ = {leg: r for leg, r in per_leg.items() if r["verdict"] == "inconclusive"}
+    if verdict == "inconclusive" and all("accepted" in r for r in open_.values()):
+        row["accepted"] = NO_NORMALISATION
+        row["evidence"] = {leg: r["evidence"] for leg, r in open_.items()}
+    elif open_:
+        row["reason"] = "; ".join(
+            f"leg {leg}: {r['reason']}" for leg, r in open_.items() if "reason" in r
+        )
+    return row
+
+
+def _arm_ladder(carrier: str, carriers: tuple) -> list:
+    """The carriers of a probe arm: the binary64 arm climbs the per-row
+    ladder (binary64, then double-double for the rows binary64 does not
+    pass, where the run has double-double); the double-double arm is
+    double-double alone."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+
+    if carrier == "double":
+        wide = "double-double" in carriers
+        return [Precision.double(), *([Precision.double_double()] if wide else [])]
+    return [getattr(Precision, carrier)()]
+
+
+def _narrow(pinned: dict, key: Any) -> Any:
+    """The binary64 result of a point's probe (``pinned``), None where the
+    binary64 arm has none (refused, or kept from a resumed record)."""
+
+    found = pinned.get(key)
+    return None if found is None or isinstance(found, str) else found
+
+
 def finiteness_probes(
     runtime: Any,
     data: dict,
@@ -842,8 +1131,6 @@ def finiteness_probes(
     ``skip`` (``l3/<label>``) is recorded as ``{"not_run": reason}``; a
     probe arm of ``previous`` (a resumed record's) is kept."""
 
-    from pyamplicol.loops.v2 import induced
-    from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.reduction import running
 
     # (the loaded runtime's own native executor: the public Runtime has no
@@ -853,28 +1140,44 @@ def finiteness_probes(
     # tests/unit/test_correlator_runtime.py's)
     executor = runtime._backend._executor
     out: dict[str, list] = {}
+    pinned: dict[tuple[str, int], Any] = {}
     for backend, carrier in PROBES:
         if carrier.replace("_", "-") not in carriers:
             continue
         label = f"{backend}/{carrier.replace('_', '-')}"
-        if previous and label in previous:
+        if previous and label in previous and _current(previous[label]):
             out[label] = previous[label]
             continue
         if f"l3/{label}" in (skip or {}):
             out[label] = {"not_run": skip[f"l3/{label}"]}
             continue
         rows = []
-        for point, mu in zip(data["points"], data["mu_r"], strict=True):
+        for index, (point, mu) in enumerate(
+            zip(data["points"], data["mu_r"], strict=True)
+        ):
             try:
                 with running(backend):
-                    result = induced.probe(
+                    ((final, runs),) = _probe_ladder(
                         executor,
                         point,
                         Fraction(mu) ** 2,
-                        parameters=parameters,
-                        precision=getattr(Precision, carrier)(),
+                        [None],
+                        parameters,
+                        _arm_ladder(carrier, carriers),
                     )
-                rows.append({"worst": result.worst, "passed": result.passed})
+                if carrier == "double":
+                    pinned[(backend, index)] = runs[0][1]
+                if isinstance(final, str):
+                    rows.append(
+                        {"error": compact_detail(f"ProbePointRefused: {final}")}
+                    )
+                    continue
+                narrow = (
+                    _narrow(pinned, (backend, index))
+                    if carrier != "double"
+                    else _narrow({0: runs[0][1]}, 0)
+                )
+                rows.append({**_ladder_row(final, runs, narrow), **_provenance()})
             except Exception as error:  # a typed failure of the arm, recorded
                 rows.append(
                     {"error": compact_detail(f"{type(error).__name__}: {error}")}
@@ -913,9 +1216,7 @@ def ward_probes(
     from dataclasses import replace
 
     from pyamplicol.loops.native import load_loop_native
-    from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.artifact import request_from_record
-    from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.ew_policy import probe_widths
     from pyamplicol.loops.v2.plan_export import NativeExecutor
     from pyamplicol.loops.v2.reduction import running
@@ -932,8 +1233,11 @@ def ward_probes(
         for backend, carrier in PROBES
         if carrier.replace("_", "-") in carriers
     ]
-    if all(label in previous.get("arms", {}) for label in labels):
-        return previous
+    kept = {
+        label: arm for label, arm in previous.get("arms", {}).items() if _current(arm)
+    }
+    if all(label in kept for label in labels):
+        return {**previous, "arms": kept}
     start = time.perf_counter()
     target = ward_slice(
         compiled, replace(request, fixed_parameters=fixed), load_loop_native()
@@ -944,12 +1248,13 @@ def ward_probes(
         "zeroed_widths": list(zeroed),
         "slice_seconds": time.perf_counter() - start,
         "native": _native(),
-        "arms": dict(previous.get("arms", {})),
+        "arms": dict(kept),
     }
     if not legs:
         return out
     executor = NativeExecutor(target, forward=False, inputs="native")
     values = {k: v for k, v in parameters.items() if k not in fixed}
+    pinned: dict[tuple[str, int], Any] = {}
     for backend, carrier in PROBES:
         label = f"{backend}/{carrier.replace('_', '-')}"
         if label not in labels or label in out["arms"]:
@@ -958,26 +1263,50 @@ def ward_probes(
             out["arms"][label] = {"not_run": skip[f"ward/{label}"]}
             continue
         rows = []
-        for point, mu in zip(data["points"], data["mu_r"], strict=True):
+        for index, (point, mu) in enumerate(
+            zip(data["points"], data["mu_r"], strict=True)
+        ):
             try:
                 with running(backend):
-                    found = induced.probes(
+                    found = _probe_ladder(
                         executor,
                         point,
                         Fraction(mu) ** 2,
                         [gauge_ward(leg, (1, 0), point) for leg in legs],
-                        parameters=values,
-                        precision=getattr(Precision, carrier)(),
+                        values,
+                        _arm_ladder(carrier, carriers),
                     )
-                rows.append(
-                    {
-                        "worst": {
-                            str(leg): r.worst
-                            for leg, r in zip(legs, found, strict=True)
-                        },
-                        "passed": all(r.passed for r in found),
-                    }
-                )
+                if carrier == "double":
+                    for leg, (_final, runs) in zip(legs, found, strict=True):
+                        pinned[(backend, index, leg)] = runs[0][1]
+                refused = [final for final, _runs in found if isinstance(final, str)]
+                if len(refused) == len(found):
+                    # every leg refused: the point's typed refusal (the arm's
+                    # policy for refused points)
+                    rows.append(
+                        {"error": compact_detail(f"ProbePointRefused: {refused[0]}")}
+                    )
+                    continue
+                # One result per leg: a refused leg is an unaccepted
+                # inconclusive, aggregated with a failing leg first.
+                per_leg = {
+                    str(leg): (
+                        {
+                            "verdict": "inconclusive",
+                            "passed": False,
+                            "rows": 0,
+                            "decided_in": {},
+                            "reason": compact_detail(f"refused: {final}"),
+                            "refused": True,
+                        }
+                        if isinstance(final, str)
+                        else _ladder_row(
+                            final, runs, _narrow(pinned, (backend, index, leg))
+                        )
+                    )
+                    for leg, (final, runs) in zip(legs, found, strict=True)
+                }
+                rows.append({**_ward_row(per_leg), **_provenance()})
             except Exception as error:  # a typed failure of the arm, recorded
                 rows.append(
                     {"error": compact_detail(f"{type(error).__name__}: {error}")}
@@ -1199,9 +1528,13 @@ def _worst(statuses: list[str]) -> str:
         "fail",
         "estimate miss",
         "reference defect",
+        "inconclusive",
+        "stale",
         "partial",
         "waits",
         "not run",
+        ACCEPTED,
+        "vacuous",
         "recorded",
         "pass (lax)",
         "pass",
@@ -1211,6 +1544,152 @@ def _worst(statuses: list[str]) -> str:
             if status.split(":")[0] == s:
                 return status
     return "not run"
+
+
+def _provenance() -> dict[str, Any]:
+    """The rule and K every probe verdict of a record is judged at
+    (``checks.RULE``, ``checks.tolerance``: the campaign's ``--tolerance``,
+    else the requested relative accuracy)."""
+
+    from pyamplicol.loops.v2.checks import RULE, tolerance
+
+    return {"rule": RULE, "tolerance": tolerance()}
+
+
+def _current(rows: Any) -> bool:
+    """Whether a stored probe arm was judged under the current rule and K
+    (an arm recorded as not run is current: it holds no verdict); a stale
+    arm is re-evaluated, never reused."""
+
+    if isinstance(rows, dict):
+        return "not_run" in rows
+    want = _provenance()
+    return all(
+        "error" in row
+        or (
+            row.get("rule") == want["rule"]
+            and row.get("tolerance") == want["tolerance"]
+        )
+        for row in rows
+    )
+
+
+def _probes_current(probes: Any) -> bool:
+    """Whether an artifact's generation-time probe record was judged under
+    the current rule and K (a record holding no verdict, probes off or an
+    exact zero, is current)."""
+
+    if not isinstance(probes, dict):
+        return True
+    if "rule" not in probes and (
+        probes.get("status") == "off"
+        or probes.get("exact_colour_zero")
+        or probes.get("exact_fold_zero")
+    ):
+        return True
+    want = _provenance()
+    return (probes.get("rule"), probes.get("tolerance")) == (
+        want["rule"],
+        want["tolerance"],
+    )
+
+
+def stale_parts(record: dict) -> list[str]:
+    """The probe records of a run record judged under another rule or K than
+    the current ones (``_current``, ``_probes_current``): its L3 and L4 probe
+    arms and its generation-time probes. A complete record with any is
+    judged again (``main``: its value arms kept), never reported complete."""
+
+    stale = [
+        f"l3/{label}"
+        for label, arm in (record.get("l3_probes") or {}).items()
+        if not _current(arm)
+    ]
+    stale += [
+        f"ward/{label}"
+        for label, arm in ((record.get("ward_probes") or {}).get("arms") or {}).items()
+        if not _current(arm)
+    ]
+    if not _probes_current((record.get("generation") or {}).get("probes")):
+        stale.append("generation")
+    return stale
+
+
+def summary(record: dict, entry: dict) -> str:
+    """A run's line: the K and rule its checks were judged at and each
+    check's status (``judge``)."""
+
+    statuses = {
+        c: v.get("status")
+        for c, v in judge(record, entry).items()
+        if isinstance(v, dict) and "status" in v
+    }
+    return json.dumps({**_provenance(), **statuses})
+
+
+# The status of a probe arm whose inconclusive rows are all accepted
+# (``NO_NORMALISATION``, ``FOLD_ZERO``): an inconclusive, never a pass.
+ACCEPTED = "inconclusive (accepted)"
+
+
+def unaccepted(statuses: Any) -> list[str]:
+    """The inconclusive statuses among ``statuses`` that no record evidence
+    accepts (``ACCEPTED``): each fails a campaign run."""
+
+    return [s for s in statuses if s.split(":")[0] == "inconclusive"]
+
+
+def _pinned_summary(rows: list) -> dict[str, Any]:
+    """A binary64 arm's own binary64 figures beside its ladder's verdict
+    (``_ladder_row``'s ``binary64``): the largest R over its scale and the
+    verdicts, and the carriers that decided its rows."""
+
+    worst, verdicts, decided = [], set(), {}
+    for row in rows:
+        pinned = row.get("binary64") or {}
+        for entry in pinned.values() if "verdict" not in pinned else [pinned]:
+            if isinstance(entry, dict) and "worst" in entry:
+                worst.append(entry["worst"])
+                verdicts.add(entry["verdict"])
+        for carrier, n in (row.get("decided_in") or {}).items():
+            decided[carrier] = decided.get(carrier, 0) + n
+    out: dict[str, Any] = {}
+    if worst:
+        out["binary64_worst_ratio"] = max(worst)
+        out["binary64_verdicts"] = sorted(verdicts)
+    if decided:
+        out["decided_in"] = decided
+    return out
+
+
+def _arm_status(rows: list, count: int, label: str) -> str:
+    """An L3 / L4 probe arm's status from its rows' explicit verdicts: a row
+    judged under another rule or K is stale (never a pass); fail, else
+    inconclusive, else partial (rows not served), else pass, else vacuous
+    (nothing to test)."""
+
+    measured = [row for row in rows if "worst" in row]
+    if not measured:
+        return "partial" if label.startswith("tirust") else "not run"
+    if not _current(measured):
+        return "stale: judged under another rule or K"
+    verdicts = {row.get("verdict") for row in measured}
+    if "fail" in verdicts:
+        return "fail"
+    open_ = [row for row in measured if row.get("verdict") not in ("pass", "vacuous")]
+    if (
+        verdicts <= {"pass", "vacuous", "inconclusive"}
+        and len(measured) == count
+        and open_
+        and all(row.get("accepted") for row in open_)
+    ):
+        # Accepted on its record's evidence (``_ladder_row``): never a pass.
+        return f"{ACCEPTED}: {open_[0]['accepted']}"
+    if "inconclusive" in verdicts or not verdicts <= {"pass", "vacuous"}:
+        return "inconclusive"
+    if len(measured) != count:
+        return "partial"
+    return "pass" if "pass" in verdicts else "vacuous"
 
 
 def _served(arm: dict | None) -> list[bool]:
@@ -1524,10 +2003,14 @@ def judge(record: dict, entry: dict) -> dict:
         out["L2"] = {"status": _worst(statuses), "max_relative": l2}
         refs["analytic"] = l2.get("double")
     # L3 finiteness: the amplitude-level probe at every fixture point
-    # (``induced.probe``: per (loop order, row) the poles against their
-    # estimate on the row's term floor, the x10 rule of the generation-time
-    # probe), both backends in binary64 and double-double (``PROBES``); the
-    # lanes' public finiteness ratios are recorded beside it.
+    # (``induced.probe``: per (loop order, row) the poles against the
+    # physical finite amplitude, R < K P), both backends: the binary64 arm
+    # through the per-row ladder (binary64, then double-double for the rows
+    # binary64 does not pass; its own binary64 figures kept), the
+    # double-double arm alone (``PROBES``, ``_arm_ladder``); the lanes'
+    # public finiteness ratios are recorded beside it.
+    proven = (record.get("generation") or {}).get("probes") or {}
+    fold_zero = bool(proven.get("exact_fold_zero") or proven.get("exact_colour_zero"))
     l3: dict[str, Any] = {}
     statuses = []
     for label, probe in (record.get("l3_probes") or {}).items():
@@ -1539,18 +2022,25 @@ def judge(record: dict, entry: dict) -> dict:
             continue
         worst = [x["worst"] for x in probe if "worst" in x]
         served = len(worst)
-        if not worst:
-            status = "partial" if label.startswith("tirust") else "not run"
-        elif max(worst) <= FACTOR:
-            status = "pass" if served == count else "partial"
-        else:
-            status = "fail"
+        if fold_zero:
+            # The artifact is an exact fold zero (the generator's proof):
+            # its finiteness probe has no row to compare.
+            probe = [
+                {**x, "accepted": FOLD_ZERO}
+                if x.get("verdict") == "inconclusive" and x.get("rows") == 0
+                else x
+                for x in probe
+            ]
+        # The probe's own explicit verdict (``checks.judge`` per row) at
+        # the recorded rule and K; ``worst`` is its largest R over its scale.
+        status = _arm_status(probe, count, label)
         l3[label] = {
             "status": status,
             "worst_ratio": max(worst, default=None),
             "served": served,
             "of": count,
             "failed": _counted(x["error"] for x in probe if "error" in x),
+            **_pinned_summary(probe),
         }
         statuses.append(status)
     if stale:
@@ -1626,11 +2116,31 @@ def judge(record: dict, entry: dict) -> dict:
             for k, v in generation.items()
             if k != "finiteness" and (v.get("legs") or not v.get("passed", True))
         ]
-        passed = all(v.get("passed") for v in generation.values())
+        if not _probes_current(probes):
+            # Judged under another rule or K: never reused as a pass.
+            verdict = "stale: judged under another rule or K"
+        else:
+            # A Ward-type record without a leg (no external massless gauge
+            # boson: "nothing tested") holds no verdict.
+            verdicts = {
+                v.get("verdict", "pass" if v.get("passed") else "fail")
+                for k, v in generation.items()
+                if k == "finiteness" or v.get("legs") or v.get("verdict") != NOTHING
+            }
+            verdict = (
+                "fail"
+                if "fail" in verdicts
+                else "inconclusive"
+                if "inconclusive" in verdicts or not verdicts <= {"pass", "vacuous"}
+                else "pass"
+                if "pass" in verdicts
+                else "vacuous"
+            )
+        passed = verdict == "pass"
         if gauge or not passed:
-            statuses.append("pass" if passed else "fail")
+            statuses.append(verdict)
         l4["generation"] = {
-            "status": "pass" if passed else "fail",
+            "status": verdict,
             "probes": generation,
             "carrier": _probe_carriers(probes),
             "widths": probes.get("widths"),
@@ -1668,15 +2178,9 @@ def judge(record: dict, entry: dict) -> dict:
                 l4[label] = {"status": "not run", "reason": arm["not_run"]}
                 statuses.append("partial")
                 continue
-            worst = [max(x["worst"].values()) for x in arm if "worst" in x]
-            if not worst:
-                status = "partial" if label.startswith("tirust") else "not run"
-            elif max(worst) <= FACTOR and all(
-                x.get("passed") for x in arm if "worst" in x
-            ):
-                status = "pass" if len(worst) == count else "partial"
-            else:
-                status = "fail"
+            worst = [max(x["worst"].values(), default=0.0) for x in arm if "worst" in x]
+            status = _arm_status(arm, count, label)
+            pinned = _pinned_summary(arm)
             if label.startswith("tirust") and stale:
                 status = _worst([status, f"waits: {TIR_MP}"])
                 l4["waits_on"] = TIR_MP
@@ -1686,6 +2190,7 @@ def judge(record: dict, entry: dict) -> dict:
                 "served": len(worst),
                 "of": count,
                 "failed": _counted(x["error"] for x in arm if "error" in x),
+                **pinned,
             }
             statuses.append(status)
         l4["legs"] = wards["legs"]
@@ -4452,6 +4957,7 @@ def lit(
         "(read by scripts/build_summary.py build_loop_induced), per §4.1 id under "
         "'ids'; written by tools/loop_benchmark/li_manifest.py lit",
         "rules": _load(CAMPAIGN)["rules"],
+        "checks": _provenance(),
         "source": source,
         "provenance": provenance(records),
         "rows": rows,
@@ -4740,6 +5246,14 @@ def main(argv: list[str] | None = None) -> int:
         help="recompute this backend's arms of complete records of another native "
         "(after lit-tir-mp: tirust), the others kept if NinjaRS binary64 is bitwise",
     )
+    run.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        metavar="K",
+        help="the checks' K (pyamplicol check --tolerance; default: the requested "
+        "relative accuracy); recorded with every probe verdict",
+    )
     run.add_argument("fixtures", nargs="*", help="default: every campaign run")
     ident = sub.add_parser(
         "identity-tirust",
@@ -4754,6 +5268,14 @@ def main(argv: list[str] | None = None) -> int:
     out.add_argument("--records", type=Path, required=True)
     out.add_argument("--output", type=Path, default=LIT)
     out.add_argument("--source", required=True)
+    out.add_argument(
+        "--tolerance",
+        type=float,
+        default=None,
+        metavar="K",
+        help="the checks' K the records are judged at (run --tolerance; default: "
+        "the requested relative accuracy); a probe judged at another K is stale",
+    )
     out.add_argument(
         "--limits", type=Path, default=None, help="the limits command's output"
     )
@@ -4853,43 +5375,51 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "rows":
         print(json.dumps(entries, indent=1))
         return 0
+    from pyamplicol.loops.v2.checks import tolerating
+
     if args.command == "run":
         by_fixture = {e["fixture"]: e for e in entries}
         skip = skip_arms(args.skip_arm)
-        for name in args.fixtures or list(by_fixture):
-            entry = by_fixture[name]
-            path = args.work_dir / name / "record.json"
+        # One K for the whole invocation: the validation of complete
+        # records, the generation cards and artifact reuse, the evaluation
+        # and the run summary.
+        with tolerating(args.tolerance):
+            for name in args.fixtures or list(by_fixture):
+                entry = by_fixture[name]
+                path = args.work_dir / name / "record.json"
 
-            def write(record: dict, path: Path = path) -> None:
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(json.dumps(record, indent=1) + "\n")
+                def write(record: dict, path: Path = path) -> None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps(record, indent=1) + "\n")
 
-            previous = _resumable(path, args.refresh_backend, name, args.work_dir)
-            if previous is not None and previous.get("complete"):
-                print(name, "complete", flush=True)
-                continue
-            own, plain = run_skips(name)
-            record = evaluate(
-                name,
-                args.work_dir,
-                ap=bool(entry["ap"]),
-                digits=args.digits,
-                write=write,
-                previous=previous,
-                skip={**own, **skip},
-                high_checked=not (args.high_plain or plain),
-            )
-            print(
-                name,
-                json.dumps(
-                    {
-                        c: v.get("status")
-                        for c, v in judge(record, entry).items()
-                        if isinstance(v, dict) and "status" in v
-                    }
-                ),
-                flush=True,
-            )
+                previous = _resumable(path, args.refresh_backend, name, args.work_dir)
+                if previous is not None and previous.get("complete"):
+                    stale = stale_parts(previous)
+                    if not stale:
+                        print(name, "complete", summary(previous, entry), flush=True)
+                        continue
+                    # Judged under another rule or K: its probes are judged
+                    # again (the value arms kept), never reported complete.
+                    print(
+                        name,
+                        "judging again at",
+                        json.dumps(_provenance()),
+                        "(stale: " + ", ".join(stale) + ")",
+                        flush=True,
+                    )
+                    previous = {**previous, "complete": False}
+                own, plain = run_skips(name)
+                record = evaluate(
+                    name,
+                    args.work_dir,
+                    ap=bool(entry["ap"]),
+                    digits=args.digits,
+                    write=write,
+                    previous=previous,
+                    skip={**own, **skip},
+                    high_checked=not (args.high_plain or plain),
+                )
+                print(name, summary(record, entry), flush=True)
         return 0
     if args.command == "limits":
         result = {}
@@ -5004,6 +5534,16 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(result, indent=1) + "\n"
         )
         return 0
+    with tolerating(args.tolerance):
+        published = _publish(args, entries)
+    args.output.write_text(json.dumps(published, indent=1, sort_keys=True) + "\n")
+    return 0
+
+
+def _publish(args: argparse.Namespace, entries: list[dict]) -> dict:
+    """data/lit.json from the ``lit`` command's records (``lit``), judged
+    at the K in effect."""
+
     records = {
         path.parent.name: record
         for path in sorted(args.records.glob("*/record.json"))
@@ -5021,25 +5561,17 @@ def main(argv: list[str] | None = None) -> int:
         if args.born_l6
         else None
     )
-    args.output.write_text(
-        json.dumps(
-            lit(
-                records,
-                entries,
-                args.source,
-                limit_results,
-                crossing_result=crossing_result,
-                madloop=madloop,
-                fig7_result=fig7_result,
-                born=born,
-                fabc=_load(args.fabc) if args.fabc else None,
-            ),
-            indent=1,
-            sort_keys=True,
-        )
-        + "\n"
+    return lit(
+        records,
+        entries,
+        args.source,
+        limit_results,
+        crossing_result=crossing_result,
+        madloop=madloop,
+        fig7_result=fig7_result,
+        born=born,
+        fabc=_load(args.fabc) if args.fabc else None,
     )
-    return 0
 
 
 if __name__ == "__main__":

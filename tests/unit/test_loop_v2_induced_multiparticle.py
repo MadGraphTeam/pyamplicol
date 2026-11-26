@@ -233,8 +233,10 @@ def _assert_zero_member(artifact, key, expression, value, info, probes, inputs):
     family either, but the counterterm kets of their Yukawa R2 / UV vertices
     (R2_ccH, UV_Hcc, R2_bbH, UV_Hbb: y_c = y_b = 0 at no_b_mass) carry a
     colour tensor at the root of leg 1 (H H > c c~ has none): not
-    a colour zero (m-lit Q13), evaluated numerically, the probes passed,
-    exactly 0 within its absolute estimate. ``inputs``: the evaluated
+    a colour zero (m-lit Q13), evaluated numerically, exactly 0 within its
+    absolute estimate. Its amplitude and every row floor are exactly zero
+    (zero Yukawa couplings): every finiteness row is vacuous, the probe has
+    nothing to test (recorded with a warning). ``inputs``: the evaluated
     (point, scale, parameters)."""
 
     from pyamplicol.api.virtual_results import VirtualStabilityChecks
@@ -248,7 +250,14 @@ def _assert_zero_member(artifact, key, expression, value, info, probes, inputs):
         assert probes[key] == {"exact_colour_zero": True}
         return
     assert info["exact_colour_zero"] is False, expression
-    assert probes[key]["finiteness"]["passed"], expression
+    # The amplitude and every row floor are exactly zero (zero Yukawa
+    # couplings): every finiteness row is vacuous (no term), nothing to test.
+    record = probes[key]
+    assert record["finiteness"]["passed"], expression
+    finiteness = record["probes"][0]
+    assert finiteness["probe"] == "finiteness" and finiteness["verdict"] == "vacuous"
+    assert finiteness["vacuous"].startswith("nothing to test")
+    assert "inconclusive" not in record and "failed" not in record
     _runtime, checked = _evaluate(
         artifact,
         key,
@@ -281,9 +290,9 @@ def test_an_amplitude_without_a_slot_has_an_empty_term_scale():
 @pytest.mark.loop_physics
 def test_a_counterterm_only_loop_induced_process_generates(tmp_path):
     """c c~ > h h alone (a member of p p > h h): no loop family, the
-    zero-coupling Yukawa counterterm kets only; generated (it failed in the
-    generation-time probes for want of a term scale), served as exactly 0
-    within its absolute estimate. Measured 25 s."""
+    zero-coupling Yukawa counterterm kets only; generated (its finiteness
+    probe has nothing to test: every row vacuous), served as exactly 0 within
+    its absolute estimate. Measured 25 s."""
 
     _unused, *inputs = _point("li_gg_hh")
     artifact = _generate(tmp_path / "cchh", (("cc", "c c~ > h h"),))

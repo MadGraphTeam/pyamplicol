@@ -7,13 +7,17 @@ rules (``li_manifest.judge``). Local-only nightly ids (``loop_nightly``, run
 at the M-LIT close, slice-status DECISIONS 2026-11-07 ~13:34): one test id
 per run, the 6- and 7-leg rows take minutes to hours of generation.
 
-A run passes when no check fails: estimate misses, TIRust's failed points
-(partial, its typed reasons recorded) and TIRust arms of an extension before
-lit-tir-mp (waiting on it) are recorded, not failures (m-lit rulings (5),
-(8)); L6's verdict is the worst of its carriers, so a backend disagreement
-in binary64, double-double or AP fails the run, as does a Ward probe (L4,
-every fixture point and massless gauge leg) beyond ten times its estimate;
-a deviation below ~1e-5 relative is never a failure (precision lax).
+A run passes when no check fails and none is inconclusive: estimate misses,
+TIRust's failed points (partial, its typed reasons recorded) and TIRust arms
+of an extension before lit-tir-mp (waiting on it) are recorded, not
+failures (m-lit rulings (5), (8)); L6's verdict is the worst of its
+carriers, so a backend disagreement in binary64, double-double or AP fails
+the run, as does a probe row (L3 finiteness, L4 Ward at every fixture point
+and massless gauge leg) with R >= K P up the carrier ladder; a deviation
+below ~1e-5 relative is never a failure (precision lax). An inconclusive
+probe is accepted only on its record's evidence: an amplitude with no
+physical normalisation (at rounding level in every carrier) or an exact
+fold zero; it is recorded as inconclusive, never as a pass.
 
 With ``PYAMPLICOL_LI_CAMPAIGN_RECORDS=<dir>`` the records are kept there
 (``li_manifest.py lit --records <dir>`` writes data/lit.json from them).
@@ -30,6 +34,8 @@ import pytest
 
 from tools.loop_benchmark import li_manifest as lm
 
+from .li_campaign_known import GG_Z, GG_Z_REASON, KnownBelowResolution, check_gg_z
+
 pytestmark = [pytest.mark.loop_physics, pytest.mark.loop_nightly]
 
 ENTRIES = {e["fixture"]: e for e in lm.runs()}
@@ -40,7 +46,20 @@ def _work(tmp_path_factory) -> Path:
     return Path(configured) if configured else tmp_path_factory.mktemp("li-campaign")
 
 
-@pytest.mark.parametrize("name", sorted(ENTRIES))
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=pytest.mark.xfail(
+                strict=True, raises=KnownBelowResolution, reason=GG_Z_REASON
+            ),
+        )
+        if name == GG_Z
+        else name
+        for name in sorted(ENTRIES)
+    ],
+)
 def test_campaign_run_passes_its_rules(name, tmp_path_factory, loop_native):
     entry = ENTRIES[name]
     work = _work(tmp_path_factory)
@@ -62,6 +81,16 @@ def test_campaign_run_passes_its_rules(name, tmp_path_factory, loop_native):
     for check in entry["checks"]:
         if check in lm.CHECKS and check != "L9":
             assert check in statuses, (check, statuses)
+    if name == GG_Z and lm.unaccepted(statuses.values()):
+        # The known outcome, exactly, after every other assertion
+        # (``check_gg_z``: otherwise an ordinary failure).
+        from pyamplicol.api.services import check
+
+        report = check(work / name / "artifact", points=1, seed=12345)
+        check_gg_z(statuses, judged, record, report)
+    # An inconclusive check fails the run unless its record accepts it: the
+    # amplitude has no physical normalisation, or is an exact fold zero.
+    assert not lm.unaccepted(statuses.values()), statuses
 
 
 @pytest.mark.parametrize(

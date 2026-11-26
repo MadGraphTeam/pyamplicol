@@ -109,7 +109,9 @@ providers' production timing records the manifest names (below
 has `values_excluded` is timed and shown but no matched provider: never the
 fastest matched one or a limit, the multiplier to it beside the cell); `data/lit.json`
 (the validation figures: written by `python tools/loop_benchmark/li_manifest.py lit
---records <run records> ...` from the validation run records, its rules and the
+--records <run records> [--tolerance K] ...` from the validation run records,
+judged at the checks' K of their runs (`run --tolerance K`; default the
+requested relative accuracy; recorded under `checks`), its rules and the
 checks that are not run or not applicable in
 `tests/fixtures/loop/required/li/lit-val/spec/campaign.json`; there is no
 separate builder script, `build_summary.py` reads it directly). A registry

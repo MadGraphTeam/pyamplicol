@@ -2093,6 +2093,7 @@ def check_loop_requests(
     kinematics_improvement=None,
     kinematics_improvement_binary64=None,
     reduction_target=None,
+    tolerance=None,
 ):
     """``pyamplicol check`` (``loops.v2.checks``): every process the request
     serves, regenerated IN MEMORY through this service's own preparation
@@ -2107,7 +2108,9 @@ def check_loop_requests(
     carriers of ``induced.probe_carriers(precision)`` (None: binary64, then
     double-double where binary64 fails, is refused or is out of scope, then
     the arbitrary-precision rung for a row double-double leaves undecided,
-    at ``arbitrary_digits`` digits, None: derived per row, ``checks.Rung``).
+    at ``arbitrary_digits`` digits, None: ``checks.rung_digits``), every row
+    judged with tolerance K = ``tolerance`` (None: the reduction target in
+    effect, ``checks.tolerance``).
     ``stored`` (an artifact's manifest, ``artifacts.manifest.
     ArtifactManifest``) guards an artifact input: the prepared model must be
     the stored one (its manifest record: name, source kind, content hash,
@@ -2152,8 +2155,10 @@ def check_loop_requests(
         if reduction_target is not None
         else getattr(evaluation, "reduction_target", None)
     )
+    from pyamplicol.loops.v2.checks import tolerating
+
     checked = []
-    with born_dag_scope(), targeting(target):
+    with born_dag_scope(), targeting(target), tolerating(tolerance):
         context = _prepare(
             backend,
             processes,
@@ -2486,9 +2491,11 @@ def _loop_induced_probes(backend, context, process, native, candidates, memo=Non
     With ``generation.loop_induced_probes`` they run
     (``induced.generation_probes``: binary64, double-double where a binary64
     probe fails or is refused) on the generation's validation points of the
-    process (``_loop_induced_candidates``), and a failure refuses the
-    process (``loop-induced-probe``) unless
-    ``generation.allow_failed_probes``. The written plan never depends on
+    process (``_loop_induced_candidates``), judged as ``pyamplicol check``
+    judges them (R < K S, K = ``_probe_tolerance``). A decisive failure
+    refuses the process (``loop-induced-probe``) unless
+    ``generation.allow_failed_probes``; an inconclusive probe is recorded
+    and logged as a warning, and generation continues. The written plan never depends on
     them (it is the generated process's, formed before)."""
 
     if candidates is None:
@@ -2505,14 +2512,38 @@ def _loop_induced_probes(backend, context, process, native, candidates, memo=Non
         return {"status": "off"}
     from pyamplicol.loops.v2.induced import generation_probes
 
-    return generation_probes(
+    run = backend._run_config
+    record = generation_probes(
         process.slice,
         context.resolved.compiled,
         native,
         candidates,
         allow_failure=generation.allow_failed_probes,
         memo=memo,
+        tolerance=_probe_tolerance(run),
     )
+    for line in record.get("inconclusive", ()):
+        _LOGGER.warning(
+            "%s: generation-time %s (recorded as inconclusive, not a pass; "
+            "generation continues)",
+            process.slice.request.process,
+            line,
+        )
+    for line in record.get("vacuous", ()):
+        _LOGGER.warning("%s: generation-time %s", process.slice.request.process, line)
+    return record
+
+
+def _probe_tolerance(run) -> float | None:
+    """K of the generation-time probes: the run's ``check.tolerance``, else
+    its requested relative accuracy (``evaluation.reduction_target``), else
+    None (``loops.v2.checks.tolerance``: the default target)."""
+
+    check = getattr(run, "check", None)
+    found = getattr(check, "tolerance", None)
+    if found is not None:
+        return found
+    return getattr(getattr(run, "evaluation", None), "reduction_target", None)
 
 
 def _validate_v2_artifact(backend, output, context, generated, members):

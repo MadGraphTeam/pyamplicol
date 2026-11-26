@@ -514,11 +514,13 @@ The walkthrough steps, in order:
    corrections and the Ward identity of every external gluon and photon; the
    loop-induced finiteness and Ward probes; the Goldstone-equivalence probe
    where it applies (otherwise its row reads "not applicable" with the
-   reason). A row double-double cannot decide (its residual above the
-   criterion while within ten times its own estimate) is re-run alone in
-   arbitrary precision at the digits derived from the shortfall
-   (`--arbitrary-digits` sets them); one still undecided there reads
-   "undecided" and fails the check (exit 1). The Ward rows of a request with
+   reason). Every row passes iff its residue R < K P, P its physical
+   reference, K `--tolerance` (default: the requested relative accuracy,
+   1e-5; a known-zero reference: R < K T, term-relative); a
+   row binary64 does not pass runs in double-double, and a Born-interfered
+   row double-double does not pass runs alone in arbitrary precision
+   (`--arbitrary-digits` sets the digits), whose verdict is the row's. The
+   Ward rows of a request with
    electroweak corrections and an on-shell zero-width external massive quark
    read "not applicable" (its Ward identity is not guaranteed there; Ward
    rows are not split by squared-order sector). See [the command-line guide](../docs/user/command-line-interface.md#check).

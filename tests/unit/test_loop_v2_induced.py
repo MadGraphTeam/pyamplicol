@@ -738,10 +738,14 @@ def test_native_term_floor_equals_the_python_oracle(li, name):
     ],
 )
 def test_finiteness_probe_passes_on_the_term_floor(li, name, precision):
-    """PLAN §2.a.7 L3 with the DECISIONS ~09:00 (1) scale: per (loop order,
-    row) the poles of the amplitude lie within ten times their estimate on
-    the row's term floor, also where whole families are finite (massive
-    loops) and where single boxes carry 1/eps^2 (g g > a a massless)."""
+    """PLAN §2.a.7 L3 under the threshold rule: per (loop order, row) the
+    poles of the amplitude are below K times the row's physical finite
+    amplitude, also where whole families are finite (massive loops) and
+    where single boxes carry 1/eps^2 (g g > a a massless); a row whose
+    finite amplitude is noise (g g > h's helicity rows that vanish by
+    angular momentum: an exact computed zero, or within ten times its own
+    estimate) is ambiguous at one carrier (a wider one settles it), never a
+    failure."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import Precision
@@ -754,8 +758,18 @@ def test_finiteness_probe_passes_on_the_term_floor(li, name, precision):
         parameters=parameters,
         precision=getattr(Precision, precision)(),
     )
+    from pyamplicol.loops.v2 import checks
+
     assert result.kind == "finiteness" and result.ratios
-    assert result.passed, result.ratios
+    verdicts = {cell.verdict for cell in result.cells.values()}
+    assert verdicts <= {checks.PASS, checks.VACUOUS, checks.AMBIGUOUS}, verdicts
+    assert checks.PASS in verdicts
+    for cell in result.cells.values():
+        if cell.verdict == checks.AMBIGUOUS:
+            # A reference that may be noise: an exact computed zero, or one
+            # within ten times its own estimate.
+            m = cell.measure
+            assert m.physical == 0 or m.physical <= 10 * m.physical_error, cell
 
 
 @pytest.mark.loop_physics
@@ -793,31 +807,34 @@ def test_ward_probe_passes_and_discriminates(li):
     result = induced.probe(
         executor, point, scale, parameters=parameters, precision=precision, ward=control
     )
-    assert result.worst > 1e6
+    # The non-gauge control: R / S far above K.
+    assert result.verdict == "fail" and result.worst > 100 * result.tolerance
 
 
 @pytest.mark.loop_physics
 @pytest.mark.parametrize(
-    ("process", "orders", "name", "legs"),
+    ("process", "orders", "name", "legs", "dd_legs"),
     [
-        ("g g > h g", {"QCD": 3, "QED": 1}, "li_gg_hg", [1]),
-        # A Furry zero: the residues are rounding of the numerators' own
-        # cancellation, which the rotation budget covers.
-        ("g g > h a", {"QCD": 2, "QED": 2}, "li_gg_ha", [1, 4]),
+        ("g g > h g", {"QCD": 3, "QED": 1}, "li_gg_hg", [1], []),
+        # A Furry zero: the physical amplitude vanishes by charge
+        # conjugation, so the Ward rows' floor S is binary64 rounding of the
+        # numerators' own cancellation; binary64 misses R < K S (R / S of
+        # order 1) and double-double decides both Ward probes.
+        ("g g > h a", {"QCD": 2, "QED": 2}, "li_gg_ha", [1, 4], [1, 4]),
     ],
     ids=["gg_hg", "gg_ha"],
 )
 def test_generation_probes_pass_at_zero_widths_on_the_full_kernels(
-    li, process, orders, name, legs
+    li, process, orders, name, legs, dd_legs
 ):
     """m-lit Q12 / Q7, PLAN §2.a.7, DECISIONS 2026-11-08 22:34 (3): the
     generation-time probes at the model's widths (none fixed): on a probe
     slice with the widths fixed to zero on the full tree kernels, at the
     candidate farthest from the tree poles (lifted once to exact momentum
     conservation at the double-double fallback's digits), the finiteness
-    probe and the Ward probe of one leg per gauge-boson species pass within
-    ten times their estimates in binary64, with no double-double fallback,
-    on NinjaRS (recorded)."""
+    probe and the Ward probe of one leg per gauge-boson species pass (R < K
+    S) in binary64, with no double-double fallback except the Ward probes of
+    a Furry zero, on NinjaRS (recorded)."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import LoopSlice, Precision, SliceRequest
@@ -840,10 +857,19 @@ def test_generation_probes_pass_at_zero_widths_on_the_full_kernels(
     assert record["candidate"] == distances.index(max(distances))
     assert record["finiteness"]["passed"] and record["ward"]["passed"]
     assert record["ward"]["legs"] == legs and "failed" not in record
-    assert record["fallbacks"] == 0 and record["floors"] == {"carrier": "double"}
-    assert {entry["carrier"] for entry in record["probes"]} == {"double"}
+    assert record["fallbacks"] == len(dd_legs)
+    assert record["floors"] == {"carrier": "double"}
+    carriers = {
+        entry.get("leg"): entry["carrier"]
+        for entry in record["probes"]
+        if entry["probe"] in ("finiteness", "ward")
+    }
+    assert carriers == {
+        None: "double",
+        **{leg: "double-double" if leg in dd_legs else "double" for leg in legs},
+    }
     assert record["seconds"]["probe_slice"] > 0
-    assert "double-double" not in record["seconds"]
+    assert ("double-double" in record["seconds"]) == bool(dd_legs)
 
 
 @pytest.mark.loop_physics
@@ -872,13 +898,16 @@ def test_a_failed_generation_probe_refuses_unless_allowed(li, monkeypatch):
     )
     assert allowed["allowed_failure"] and allowed["failed"]
     assert allowed["finiteness"]["passed"] and not allowed["ward"]["passed"]
-    assert allowed["finiteness"]["carrier"] == "double"
+    # g g > h's helicity rows that vanish by angular momentum: their exact
+    # computed zero P is settled in double-double (a second fallback).
+    assert allowed["finiteness"]["carrier"] == "double-double"
     assert allowed["ward"]["carriers"] == {"1": "double-double"}
     (ward_entry,) = (e for e in allowed["probes"] if e["probe"] == "ward")
     assert ward_entry["fallback"]["reason"] == "verdict"
     assert ward_entry["fallback"]["carrier"] == "double"
-    assert ward_entry["fallback"]["worst"] > 1e6 and ward_entry["worst"] > 1e6
-    assert allowed["fallbacks"] == 1
+    assert ward_entry["fallback"]["worst"] > 100 * allowed["tolerance"]
+    assert ward_entry["worst"] > 100 * allowed["tolerance"]
+    assert allowed["fallbacks"] == 2
 
 
 @pytest.mark.loop_physics
