@@ -78,7 +78,6 @@ from ..models.recurrence_direct_template import (
     RecurrenceDirectTemplateCatalogV1,
 )
 from ..models.recurrence_template import RecurrenceTemplateCatalog
-from ..models.specialization_guards import SpecializationGuard
 from ..processes.ir import CanonicalProcessIR, ProcessLegIR
 from ..runtime.recurrence_exact._plan import _RecurrenceExactPlan
 from ..runtime.recurrence_exact._plan_v2 import DIRECT_NONE_U32, _parse_exact_sections
@@ -2832,10 +2831,6 @@ class _RecurrenceModelInputs:
     direct_template_catalog: RecurrenceDirectTemplateCatalogV1
     direct_template_catalog_json: bytes
     prepared_kernel_pack_digest: str
-    # The guards of the template's parameter types
-    # (``template_parameter_type_guards``), recorded on every recurrence and
-    # on-the-fly process artifact built from it.
-    template_guards: tuple[SpecializationGuard, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -4279,7 +4274,6 @@ class GenerationBackend:
                 kernel.kernel_id for kernel in model_inputs.bundle.kernel_pack.kernels
             ),
             runtime_metadata=runtime_metadata,
-            specialization_guards=model_inputs.template_guards,
             selector_policy={
                 **(
                     {"color_basis": projection.color_plan.basis}
@@ -5225,11 +5219,6 @@ class GenerationBackend:
                 sort_keys=True,
             ).encode("ascii"),
             prepared_kernel_pack_digest=(catalog.header.prepared_kernel_pack_digest),
-            template_guards=(
-                ()
-                if resolved_model.model is None
-                else _template_parameter_type_guards(resolved_model.model, catalog)
-            ),
         )
 
     def _lower_recurrence_helicity_selector_plan(
@@ -6599,7 +6588,6 @@ class GenerationBackend:
             recurrence_process_executor_pack=process_executor_pack,
             helicity_selector_companion=companion_artifact,
             process_digest=process_digest,
-            specialization_guards=model_inputs.template_guards,
         )
         profile["artifact-record-assembly"] = (
             time.perf_counter() - artifact_record_started
@@ -9022,11 +9010,3 @@ def create_generator_backend(
 
 
 __all__ = ["GenerationBackend", "create_generator_backend"]
-
-
-def _template_parameter_type_guards(
-    model: Model, catalog: RecurrenceTemplateCatalog
-) -> tuple[SpecializationGuard, ...]:
-    from ..models.recurrence_catalog_builder import template_parameter_type_guards
-
-    return template_parameter_type_guards(model, catalog)
