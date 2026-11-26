@@ -290,15 +290,6 @@ def _nightly_cases():
                     )
 
 
-# Leading-colour sectors without any diagram (two quark lines joined only by a
-# W): the recurrence lane refuses them at leading and full colour, the
-# compiled lane at leading colour, a separate open item (DESIGN WP2.9, flows
-# without roots).
-_EMPTY_LC_SECTOR = re.compile(
-    "no exact closure for physical LC sector|LC topology replay materialized sector"
-)
-
-
 def _has_external_gluon(process: str) -> bool:
     return " g " in f" {process} "
 
@@ -317,14 +308,11 @@ def test_the_class_matches_madgraph_in_every_lane_nightly(
 
     reference = _reference(restriction, process, accuracy)
     model = sm_models(restriction)
-    try:
-        runtime = _runtime(
-            model, process, tmp_path / "artifact", lane=lane, accuracy=accuracy
-        )
-    except GenerationError as error:
-        if _EMPTY_LC_SECTOR.search(str(error)):
-            pytest.xfail("an empty leading-colour sector (separate open item)")
-        raise
+    # Two quark lines joined only by a W (u b > d t, u d~ > t b~) have a zero
+    # leading-colour flow, which every lane takes as an exact zero.
+    runtime = _runtime(
+        model, process, tmp_path / "artifact", lane=lane, accuracy=accuracy
+    )
     values = _values(runtime, reference["points"])
     if accuracy == "lc" and _has_external_gluon(process):
         if lane == "eager":

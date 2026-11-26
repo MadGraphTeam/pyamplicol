@@ -557,6 +557,19 @@ def test_a_binding_that_revives_a_zero_flow_is_refused(
     with pytest.raises(EvaluationError, match=refusal):
         runtime.set_model_parameters({"MT": 174.0})
     assert [complex(value).real for value in runtime.evaluate(points)] == at_173
+    # Rollback: a binding that also names a valid parameter applies none of
+    # it; the valid part alone applies, and MT at exactly its generation value
+    # stays admitted.
+    with pytest.raises(EvaluationError, match=refusal):
+        runtime.set_model_parameters({"MZ": 92.0, "MT": 174.0})
+    assert [complex(value).real for value in runtime.evaluate(points)] == at_173
+    runtime.set_model_parameters({"MZ": 92.0})
+    moved = [complex(value).real for value in runtime.evaluate(points)]
+    assert moved != pytest.approx(at_173, rel=1e-9, abs=0.0)
+    runtime.set_model_parameters({"MZ": 91.188, "MT": 173.0})
+    assert [complex(value).real for value in runtime.evaluate(points)] == pytest.approx(
+        at_173, rel=1e-13, abs=0.0
+    )
     with pytest.raises(EvaluationError, match=refusal):
         Runtime.load(artifact, model_parameters={"MT": 174.0})
     if accuracy == "full" and execution_mode == "recurrence":
@@ -590,22 +603,16 @@ def test_a_binding_that_revives_a_zero_flow_is_refused(
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "without simplification the Weyl support probe decides a vertex's "
-        "chiral halves at the card values and drops the W coupling at MT = 173; "
-        "the symbolic support probe (decided for every runtime binding) fixes it"
-    ),
-)
 @pytest.mark.parametrize("accuracy", ["lc", "full"])
 def test_without_simplification_a_zero_coupling_keeps_its_vertex(
     madgraph_source: Path, tmp_path: Path, accuracy: str
 ) -> None:
     """Without restriction simplification nothing is removed at generation
-    and no guard is recorded: the compiled lane must keep the W vertex whose
-    coupling vanishes at MT = 173 only, so the artifact generated at 173 and
-    bound to MT = 174 equals the one generated at 174."""
+    and no guard is recorded: the compiled lane keeps the W vertex whose
+    coupling vanishes at MT = 173 only (the Weyl support probe decides a
+    vertex's chiral halves for every runtime binding, not at the card values),
+    so the artifact generated at 173 has no zero flow and, bound to MT = 174,
+    equals a fresh generation at 174."""
 
     limits = {"QCD": 0, "QED": 2}
     points = _massless_points()
@@ -623,6 +630,8 @@ def test_without_simplification_a_zero_coupling_keeps_its_vertex(
             execution_mode="compiled",
             limits=limits,
         )
+        if accuracy == "lc":
+            assert _zero_flows(runtime, points) == []
         runtime.set_model_parameters({"MT": 174.0})
         values[mt] = [complex(value).real for value in runtime.evaluate(points)]
     assert values[173] == pytest.approx(values[174], rel=1e-12, abs=0.0)
