@@ -611,7 +611,7 @@ def test_without_simplification_a_zero_coupling_keeps_its_vertex(
     and no guard is recorded: the compiled lane keeps the W vertex whose
     coupling vanishes at MT = 173 only (the Weyl support probe decides a
     vertex's chiral halves for every runtime binding, not at the card values),
-    so the artifact generated at 173 has no zero flow and, bound to MT = 174,
+    so the artifact generated at 173 plans no zero flow and, bound to MT = 174,
     equals a fresh generation at 174."""
 
     limits = {"QCD": 0, "QED": 2}
@@ -630,8 +630,15 @@ def test_without_simplification_a_zero_coupling_keeps_its_vertex(
             execution_mode="compiled",
             limits=limits,
         )
-        if accuracy == "lc":
-            assert _zero_flows(runtime, points) == []
+        # The W vertex is kept (its coupling is merely 0 at MT = 173), so no
+        # flow is planned as a zero flow.
+        manifest = json.loads(
+            (tmp_path / f"compiled-{mt}" / "artifact.json").read_text(encoding="utf-8")
+        )
+        assert (
+            "rusticol.compiled.zero-color-flows.v1"
+            not in (manifest["runtime"]["required_runtime_capabilities"])
+        )
         runtime.set_model_parameters({"MT": 174.0})
         values[mt] = [complex(value).real for value in runtime.evaluate(points)]
     assert values[173] == pytest.approx(values[174], rel=1e-12, abs=0.0)
