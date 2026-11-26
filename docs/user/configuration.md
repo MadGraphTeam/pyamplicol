@@ -1073,9 +1073,9 @@ use (its affinity mask and its cgroup CPU quota,
   built once and shared by the workers. A NinjaRS worker keeps only its
   settings and its master provider between calls (its buffers are released
   after every call): during a call it holds about 15 MB on
-  `g g > g g g g`, and up to about 40 MB in a checked call that reaches
+  `g g > g g g g`, and up to about 50 MB in a checked call that reaches
   arbitrary precision (the reduction-direction checks and the lane rescue:
-  on 16 threads such a `g g > h g g` call peaks at about 3.3 GB, 0.6 GB
+  on 16 threads such a `g g > h g g` call peaks at about 3.3 GB, 0.8 GB
   above the previous version's). With TIRust a worker's own engine is small
   (its workspaces of the plans it meets, built when first needed: a few MB;
   the plans themselves are shared); most of a worker's memory is
