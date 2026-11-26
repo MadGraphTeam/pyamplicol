@@ -477,6 +477,19 @@ evaluates the retained exact stage evaluators. Both share amplitudes and unchang
 requests and contract the generation-time colour matrices directly; neither
 uses FFT or physical-helicity reductions for the correlated result.
 
+A colour sector can have amplitudes at some helicities only: two quark lines
+that only a W joins in one of their pairings (`u u~ > d d~` at `QCD=0`,
+`u c~ > d s~ d d~` at every order) have diagrams in that pairing only where
+the W vertex passes the lines' massless-fermion chiralities. Such a
+(helicity, colour sector) amplitude is an exact zero, decided when the
+amplitudes are built: the artifact lists it as a zero group of the
+correlation catalogue (`correlators.json` schema version 2, written only
+when a process has one, which earlier releases refuse to read), and both
+executors contract it as an exact zero. The chirality decision is recorded as
+a specialisation guard: a parameter binding that would revive the dropped
+chirality is refused. A spin correlation on a leg whose own helicity decides
+which colour sectors vanish is refused at generation.
+
 FFT, recurrence, on-the-fly execution, replay-based reductions, nonidentity
 process aliases/permutations, partial helicity/colour generation, and append
 mode are not supported by this correlation path. Existing artifacts without

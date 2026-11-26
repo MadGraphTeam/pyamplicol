@@ -16,6 +16,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Literal, cast
 
+from pyamplicol._internal.versions import CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION
 from pyamplicol.api.errors import GenerationError
 from pyamplicol.api.models import CompiledModel
 from pyamplicol.api.requests import ModelSource, ProcessSet
@@ -422,6 +423,7 @@ class CorrelatedGenerationBackend(GenerationBackend):
         """Build the declared exact matrices once, at the ordinary write boundary."""
 
         processes: dict[str, object] = {}
+        any_zeros = False
         for process_id, metadata in self._correlated_processes.items():
             declarations = self.declarations._resolve_color(
                 process_color_legs(metadata.process)
@@ -443,11 +445,10 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 )
             if not basis_by_helicity:
                 raise GenerationError("correlated amplitudes have no coherent groups")
-            owners = next(iter(basis_by_helicity.values()))
-            if any(basis != owners for basis in basis_by_helicity.values()):
-                raise GenerationError(
-                    "correlated colour basis differs between retained helicities"
-                )
+            owners: set[int] = set().union(*basis_by_helicity.values())
+            zeros = _certified_zero_groups(
+                basis_by_helicity, owners, self.declarations, process_id
+            )
             # Open-line colour plans retain aliases whose amplitudes already
             # belong to canonical owners.  Never contract those aliases twice.
             expansion = self._nc_expansion
@@ -474,7 +475,7 @@ class CorrelatedGenerationBackend(GenerationBackend):
                         grades_by_sector,
                         expansion,
                     )
-            processes[process_id] = {
+            process_record: dict[str, object] = {
                 "declarations": declarations.to_json_dict(),
                 "spin_legs": list(declarations.spin_legs),
                 "matrices": records,
@@ -482,8 +483,15 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 # these compiler descriptors, needed only by this consumer.
                 "coherent_groups": groups,
             }
+            if zeros:
+                process_record["zero_coherent_groups"] = zeros
+                any_zeros = True
+            processes[process_id] = process_record
+        # Schema 2 only adds the certified zero groups; an artifact without
+        # them keeps schema 1, byte for byte, for every released reader.
+        version = CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION if any_zeros else 1
         return {
-            "schema_version": 1,
+            "schema_version": version,
             "complete_source_basis": True,
             "declarations": self.declarations.to_json_dict(),
             "processes": processes,
@@ -492,10 +500,14 @@ class CorrelatedGenerationBackend(GenerationBackend):
     def _write_correlator_payload(
         self, builder: ArtifactBuilder
     ) -> Mapping[str, object]:
-        builder.add_json(
-            CORRELATOR_PAYLOAD_PATH, self.correlator_payload(), role="runtime-physics"
-        )
-        return {"correlators": {"schema_version": 1, "path": CORRELATOR_PAYLOAD_PATH}}
+        payload = self.correlator_payload()
+        builder.add_json(CORRELATOR_PAYLOAD_PATH, payload, role="runtime-physics")
+        return {
+            "correlators": {
+                "schema_version": payload["schema_version"],
+                "path": CORRELATOR_PAYLOAD_PATH,
+            }
+        }
 
     def _write_artifact(self, *args: object, **kwargs: object) -> ArtifactWriteResult:
         # A caller's payload hook (the loop service's skipped members) is
@@ -509,6 +521,52 @@ class CorrelatedGenerationBackend(GenerationBackend):
             return out
 
         return super()._write_artifact(*args, **kwargs, payload_hook=payload)
+
+
+def _certified_zero_groups(
+    basis_by_helicity: Mapping[tuple[int, ...], set[int]],
+    owners: set[int],
+    declarations: CorrelatorConfig,
+    process_id: str,
+) -> list[dict[str, object]]:
+    """The (helicity, colour sector) amplitudes that are exactly zero.
+
+    The complete source basis keeps a coherent group for every retained
+    helicity and colour sector that has diagrams.  A sector reached only
+    through a chiral exchange (a W joining two quark lines) has none at the
+    helicities whose massless fermion chiralities that vertex does not pass:
+    that amplitude is an exact zero, decided when the DAG was built (the
+    chirality selection, covered by the guards recorded for it).  The
+    correlator matrices span every owner sector; readers take a listed group
+    as an exact zero and refuse any other gap.
+
+    A replaced spin leg evaluates one placeholder helicity per spectator
+    configuration, so that leg's helicity must not decide which sectors
+    vanish; otherwise the placeholder would drop a live amplitude.
+    """
+
+    zeros = sorted(
+        (helicities, sector)
+        for helicities, basis in basis_by_helicity.items()
+        for sector in owners - basis
+    )
+    for legs in declarations.spin_correlations:
+        patterns: dict[tuple[int, ...], set[int]] = {}
+        for helicities, basis in basis_by_helicity.items():
+            spectator = tuple(
+                value for leg, value in enumerate(helicities, 1) if leg not in legs
+            )
+            pattern = patterns.setdefault(spectator, set(basis))
+            if pattern != basis:
+                raise GenerationError(
+                    f"spin correlation on legs {list(legs)} of {process_id!r} is "
+                    "not available: the helicity of a replaced leg decides which "
+                    "colour sectors have amplitudes"
+                )
+    return [
+        {"helicities": list(helicities), "color_sector_id": sector}
+        for helicities, sector in zeros
+    ]
 
 
 def _with_reported_degrees(
