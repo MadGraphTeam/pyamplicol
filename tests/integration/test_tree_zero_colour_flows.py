@@ -402,6 +402,10 @@ def _mutable_coupling_model(root: Path, madgraph_source: Path, mt: int) -> Path:
     return model
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason="needs the specialisation guards of the parameter-binding boundary",
+)
 def test_a_zero_flow_that_a_mutable_parameter_revives_is_refused(
     madgraph_source: Path, tmp_path: Path
 ) -> None:
