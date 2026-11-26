@@ -537,22 +537,35 @@ def test_next_to_leading_colour_keeps_the_pure_electroweak_flows(
         _assert_total_matches_madgraph(runtime.evaluate(points), expected)
 
 
-def test_recurrence_lane_refuses_flows_without_roots(
+def test_recurrence_lane_takes_flows_without_roots_as_zero(
     sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    """WP2.9 (open): the recurrence demands an exact closure in every physical
-    colour flow, also in one without roots at the requested orders (the d-s~
-    pairing of u u~ > d d~ s s~ without gluons); it fails closed instead of
-    taking the flow as zero. The eager lane builds it
-    (``test_eager_lane_counts_a_three_line_triple_gauge_vertex_once``)."""
+    """WP2.9: a physical colour flow without roots at the requested orders (the
+    d-s~ pairing of u u~ > d d~ s s~ without gluons) is a zero flow, which the
+    recurrence certifies (structural-zero physical-sector certificate) instead
+    of refusing the request. At leading colour the lane matches MadGraph's
+    pure-electroweak export. At full colour the helicity-selector companion
+    refuses the primary colour reducer, whose per-sector helicity blocks the
+    W pairing of these lines leaves incomplete (a helicity-dependent zero, not
+    a zero flow; ``test_tree_zero_colour_flows``)."""
 
+    expected = _reference(f"{_THREE_LINE_TRIPLE_GAUGE} QCD=0", LC_REFERENCE)
+    runtime = _runtime(
+        sm_model,
+        _THREE_LINE_TRIPLE_GAUGE,
+        tmp_path / "lc",
+        accuracy="lc",
+        limits={"QCD": 0, "QED": 4},
+    )
+    _assert_total_matches_madgraph(runtime.evaluate(expected["points"]), expected)
     with pytest.raises(
-        GenerationError, match="no exact closure for physical LC sector"
+        GenerationError,
+        match="local-color view requires a direct, Walsh, or symmetric-group",
     ):
         _runtime(
             sm_model,
             _THREE_LINE_TRIPLE_GAUGE,
-            tmp_path / "artifact",
+            tmp_path / "full",
             limits={"QCD": 0, "QED": 4},
         )
 

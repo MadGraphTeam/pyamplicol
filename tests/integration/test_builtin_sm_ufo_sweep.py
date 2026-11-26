@@ -56,27 +56,24 @@ def _served(reference: dict[str, list[float] | str | None]) -> dict[str, list[fl
 
 
 _QUARKS = frozenset({"d", "u", "s", "c", "b", "t"})
-_RECURRENCE_REFUSAL = (
-    "no exact closure for physical LC sector|local-color view requires a direct"
-)
+_RECURRENCE_REFUSAL = "local-color view requires a direct"
 
 
 def _recurrence_refuses(entry: str) -> bool:
-    """Four quarks without a gluon exchange: the recurrence lane refuses them.
+    """Four quarks at QCD = 0: the recurrence lane refuses them at full colour.
 
-    Four quarks of four flavours (lines that can only exchange a W) or a
-    request at QCD = 0. The recurrence builder asks for a closure in every
-    quark-antiquark pairing of the colour plan, which the first leave empty,
-    and needs a colour reducer the second lack; it refuses both with a
-    ``GenerationError`` for UFO models too. The other lanes serve them.
+    The W exchange between their lines exists for some helicities only, so
+    the primary colour reducer has incomplete per-sector helicity blocks, which
+    the helicity-selector companion refuses (a ``GenerationError`` for UFO
+    models too). Four quarks of four flavours, whose other quark-antiquark
+    pairing is an identically zero colour flow, build
+    (``test_tree_zero_colour_flows``). The other lanes serve all of them.
     """
 
     process, orders = split_entry(entry)
     quarks = [name.rstrip("~") for name in process.replace(">", " ").split()]
     quarks = [name for name in quarks if name in _QUARKS]
-    return len(quarks) == 4 and (
-        len(set(quarks)) == 4 or (orders is not None and orders.get("QCD") == 0)
-    )
+    return len(quarks) == 4 and orders is not None and orders.get("QCD") == 0
 
 
 def _lane_values(
