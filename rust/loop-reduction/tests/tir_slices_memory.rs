@@ -111,8 +111,9 @@ fn group(
 }
 
 /// One rank-six hexagon (generic massive kinematics) and `tadpoles`
-/// rank-zero tadpole groups of distinct masses.
-fn call(tadpoles: usize) -> Vec<FamilyLanes<f64>> {
+/// rank-zero tadpole groups of distinct masses, the hexagon first or (with
+/// `last`) last.
+fn call(tadpoles: usize, last: bool) -> Vec<FamilyLanes<f64>> {
     let mut rng = Lcg(3);
     let mut shifts = vec![[0f64; 4]];
     for _ in 1..6 {
@@ -125,10 +126,21 @@ fn call(tadpoles: usize) -> Vec<FamilyLanes<f64>> {
         ];
         shifts.push(std::array::from_fn(|mu| last[mu] + p[mu]));
     }
-    let mut groups = vec![group(0, &shifts, &[173. * 173.; 6], 6, &mut rng)];
-    for k in 0..tadpoles {
-        let mass = 100. + k as f64;
-        groups.push(group(1 + k, &[[0.; 4]], &[mass * mass], 0, &mut rng));
+    let hexagon = group(0, &shifts, &[173. * 173.; 6], 6, &mut rng);
+    let mut groups: Vec<FamilyLanes<f64>> = (0..tadpoles)
+        .map(|k| {
+            let mass = 100. + k as f64;
+            group(1 + k, &[[0.; 4]], &[mass * mass], 0, &mut rng)
+        })
+        .collect();
+    if last {
+        groups.push(hexagon);
+    } else {
+        groups.insert(0, hexagon);
+    }
+    for (index, g) in groups.iter_mut().enumerate() {
+        g.family = index;
+        g.keys[0].family = index;
     }
     groups
 }
@@ -151,7 +163,27 @@ fn peak(
     };
     let mut backend = TirReductionBackend::new(options);
     // The plans and the pool's threads before the measurement.
-    pool.install(|| backend.reduce(&groups[..1], Poles::All, check).unwrap());
+    let hexagon: Vec<FamilyLanes<f64>> = groups
+        .iter()
+        .filter(|g| g.propagators == 6)
+        .map(|g| FamilyLanes {
+            family: 0,
+            propagators: g.propagators,
+            rank: g.rank,
+            points: g.points.clone(),
+            keys: vec![LaneKey {
+                family: 0,
+                order: 0,
+                column: 0,
+            }],
+            shifts: g.shifts.clone(),
+            masses: g.masses.clone(),
+            scales: g.scales.clone(),
+            s_matrix: g.s_matrix.clone(),
+            coefficients: g.coefficients.clone(),
+        })
+        .collect();
+    pool.install(|| backend.reduce(&hexagon, Poles::All, check).unwrap());
     let base = IN_USE.load(Ordering::Relaxed);
     PEAK.store(base, Ordering::Relaxed);
     let started = std::time::Instant::now();
@@ -181,15 +213,21 @@ fn many_small_groups_next_to_one_costly_row_need_the_serial_memory() {
         rescale: false,
         ..ReductionCheck::REVERSED
     });
-    for check in [None, rotation] {
+    // The reviewer's form: the hexagon last, the reversed check (TIRust's
+    // rotation copy); and the hexagon first, without and with the rotation.
+    for (last, check) in [
+        (true, Some(ReductionCheck::REVERSED)),
+        (false, None),
+        (false, rotation),
+    ] {
         let mut measured = Vec::new();
         for tadpoles in [1999, 3999] {
-            let groups = call(tadpoles);
+            let groups = call(tadpoles, last);
             let (serial, one) = peak(&groups, 1, check);
             let (parallel, two) = peak(&groups, 2, check);
             assert_eq!(one, two, "{tadpoles} tadpoles: outcomes at two workers");
             eprintln!(
-                "check {}: {} groups: peak heap serial {:.1} MB, two workers {:.1} MB",
+                "hexagon last {last}, check {}: {} groups: peak heap serial {:.1} MB, two workers {:.1} MB",
                 check.is_some(),
                 groups.len(),
                 serial as f64 / 1e6,

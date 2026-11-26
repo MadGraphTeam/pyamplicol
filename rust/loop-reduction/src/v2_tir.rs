@@ -2567,6 +2567,32 @@ mod slicing_tests {
         assert!(slices.len() <= 3 * 8, "{}", slices.len());
     }
 
+    /// A slice's runs hold one entry per group run it touched, and merging
+    /// slices in order rebuilds each group's lanes in row order.
+    #[test]
+    fn runs_hold_touched_groups_and_merge_in_order() {
+        use super::{Outcomes, Runs};
+        let mut first: Runs<f64> = Runs(Vec::new());
+        let mut second: Runs<f64> = Runs(Vec::new());
+        // Group 1's lanes split across the two slices.
+        for (group, lane) in [(0, 0), (0, 1), (1, 0)] {
+            first.put(group, Err(format!("{group}/{lane}")));
+        }
+        for (group, lane) in [(1, 1), (4000, 0)] {
+            second.put(group, Err(format!("{group}/{lane}")));
+        }
+        assert_eq!(first.0.len(), 2);
+        assert_eq!(second.0.len(), 2);
+        let mut all: Vec<Vec<super::LaneOutcome<f64>>> = (0..4001).map(|_| Vec::new()).collect();
+        first.merge_into(&mut all);
+        second.merge_into(&mut all);
+        let names =
+            |g: usize| -> Vec<String> { all[g].iter().map(|o| o.clone().unwrap_err()).collect() };
+        assert_eq!(names(0), ["0/0", "0/1"]);
+        assert_eq!(names(1), ["1/0", "1/1"]);
+        assert_eq!(names(4000), ["4000/0"]);
+    }
+
     #[test]
     fn empty_and_single() {
         assert!(cost_slices(&[], 8).is_empty());
