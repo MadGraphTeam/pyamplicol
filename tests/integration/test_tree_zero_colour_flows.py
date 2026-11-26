@@ -22,8 +22,8 @@ gluons) in ``madgraph-ew-four-quark-lc.json``. They hold:
 - ``c d > u s g`` and ``u d~ > t b~ g``;
 - the single-top and multi-line processes of the design notes.
 
-The default tier checks the six and the zero flow itself; the full list runs in
-the nightly tier.
+The default tier checks two of the six and the zero flow itself; the full list
+runs in the nightly tier.
 
 At full colour, ``u u~ > d d~ s s~`` and ``u d > u d s s~`` at QCD = 0, and
 ``u c~ > d s~ d d~``, reach a different refusal: their helicity-selector
@@ -58,15 +58,9 @@ FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/tree"
 REFERENCE = FIXTURES / "madgraph-ew-four-quark.json"
 LC_REFERENCE = FIXTURES / "madgraph-ew-four-quark-lc.json"
 ALL_ORDERS = {"QCD": 99, "QED": 99}
-# The six processes of the report (two quark lines joined only by a W).
-REPORTED = (
-    "c d > u s",
-    "s u > d c",
-    "u d~ > b~ t",
-    "d u~ > t~ b",
-    "c s~ > b~ t",
-    "s c~ > t~ b",
-)
+# Two of the six processes of the report in the default tier (the light-quark
+# lines and the top line); the nightly tier runs all six with the rest.
+REPORTED = ("c d > u s", "u d~ > b~ t")
 # Explicit coupling orders of the multi-line references; MadGraph's QCD = 0
 # value is the sum of its partials without QCD.
 PURE_ELECTROWEAK = {
@@ -236,7 +230,7 @@ def test_the_zero_flow_is_exactly_zero_in_every_lc_layout(
         totals = runtime.evaluate(entry["points"])
         flows = runtime.physics.color_flow_ids
         assert len(flows) == 2
-        for point, rows in enumerate(resolved):
+        for point, rows in enumerate(resolved.values):
             zero_flows = [
                 flow
                 for flow in range(len(flows))
@@ -269,11 +263,12 @@ def test_full_colour_helicity_selection_skips_the_zero_flow(
     resolved = runtime.evaluate_resolved(entry["points"])
     selected = runtime.evaluate_resolved(entry["points"], helicities=helicities)
     totals = runtime.evaluate(entry["points"])
+    assert selected.helicity_ids == resolved.helicity_ids
     for point in range(len(entry["points"])):
-        rows = [complex(row[0]).real for row in resolved[point]]
-        assert [complex(row[0]).real for row in selected[point]] == pytest.approx(
-            rows, rel=1e-14, abs=0.0
-        )
+        rows = [complex(row[0]).real for row in resolved.values[point]]
+        assert [
+            complex(row[0]).real for row in selected.values[point]
+        ] == pytest.approx(rows, rel=1e-14, abs=0.0)
         assert math.fsum(rows) == pytest.approx(complex(totals[point]).real, rel=1e-14)
         assert complex(totals[point]).real == pytest.approx(
             entry["total"][point], rel=1e-10
