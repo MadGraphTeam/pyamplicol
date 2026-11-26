@@ -64,6 +64,7 @@ from .recurrence_template import (
     SymmetryProofV1,
     TransitionTemplateV1,
 )
+from .specialization_guards import GuardEnvironment, SpecializationGuard
 
 _PREPARED_CATALOG_ABI = "pyamplicol-prepared-kernel-catalog-v1"
 _CURRENT_WORD_REFLECTION_PROOF = "canonical-current-word-reversal-v1"
@@ -759,6 +760,87 @@ def _build_parameters(
             )
         )
     return tuple(records)
+
+
+#: The producer name of the guards of the template's parameter types.
+TEMPLATE_PARAMETER_TYPES = "recurrence-template-parameter-types"
+
+
+def template_parameter_type_guards(
+    model: Any, catalog: RecurrenceTemplateCatalog
+) -> tuple[SpecializationGuard, ...]:
+    """The specialisation guards of ``catalog``'s parameter types.
+
+    The template gives a derived parameter one runtime component when its
+    default is real and it is not zero (``_build_parameters``); the template
+    lanes (recurrence, on-the-fly) then evaluate it as a real number at every
+    binding. That is a specialisation unless the parameter is real for every
+    binding of the model's runtime parameters: a parameter that is not
+    provably real (a coupling with an imaginary part proportional to MT - 173,
+    or the square root of a parameter) records a "real" guard, which refuses a
+    binding that gives it an imaginary part instead of dropping it."""
+
+    held_real = sorted(
+        parameter.name
+        for parameter in catalog.parameters
+        if parameter.parameter_kind == "derived" and parameter.value_type == "real"
+    )
+    definitions_provider = getattr(model, "runtime_derived_parameter_definitions", None)
+    if not held_real or not callable(definitions_provider):
+        return ()
+    definitions = {
+        str(name): str(value) for name, value in definitions_provider().items()
+    }
+    environment = _guard_environment(model, definitions)
+    guards: list[SpecializationGuard] = []
+    for name in held_real:
+        definition = definitions.get(name)
+        if definition is None:
+            raise RecurrenceTemplateError(
+                f"derived parameter {name!r} of the template has no definition"
+            )
+        guard = SpecializationGuard.real(
+            environment,
+            definition,
+            subject=f"derived parameter {name} held real by the recurrence template",
+            producer=TEMPLATE_PARAMETER_TYPES,
+            message=(
+                "the recurrence and on-the-fly lanes evaluate it with one (real) "
+                "component; generate the artifact at the new values"
+            ),
+        )
+        if guard is not None:
+            guards.append(guard)
+    return tuple(guards)
+
+
+def _guard_environment(model: Any, definitions: Mapping[str, str]) -> GuardEnvironment:
+    compiled = getattr(model, "compiled", None)
+    records = getattr(getattr(compiled, "ir", None), "parameters", None)
+    if records is not None:
+        return GuardEnvironment.from_parameter_records(
+            records, extra_definitions=definitions
+        )
+    from symbolica import E
+
+    externals = {
+        str(name): complex(*value)
+        if isinstance(value, tuple | list)
+        else complex(value)
+        for name, value in model.runtime_parameter_defaults().items()
+    }
+    type_provider = getattr(model, "runtime_parameter_type", None)
+    real_externals = frozenset(
+        name
+        for name in externals
+        if callable(type_provider) and str(type_provider(name)).lower() == "real"
+    )
+    return GuardEnvironment(
+        externals,
+        {name: E(value) for name, value in definitions.items()},
+        {"pi": math.pi, "I": 1j},
+        real_externals,
+    )
 
 
 def _canonical_binary64_mapping(values: Mapping[object, object]) -> str:
