@@ -31,7 +31,8 @@ Dependencies use ordinary pinned Git revisions and Cargo's lockfile. No ignored
 reference directory or `upstream` symlink is needed. The standalone workspace
 aligns Symbolica with the application's shared core and uses:
 
-- NinjaRS `e1d94412dd44bb18059471edb0a84310cbaebafd` (main after PR #23:
+- NinjaRS `1f3d9d0ef34a423f9a9843dcdf99962b70236560` (main after PR #24: `e1d94412` with its oneloopmaster pin moved to
+  `cdbc912`, the revision TIRust pins; `e1d94412` = main after PR #23:
   the local cancellation rescue the checked reduction drives, and PR #22,
   on top of `a2546170`, main after PR #20:
   `f7f5e165` + `ninjars_symbolica::reserve`, the history-independent exact
@@ -49,8 +50,19 @@ aligns Symbolica with the application's shared core and uses:
   symbolica-dev/symbolica `community` (main `238dc613`, the author's
   state-omitting evaluator saves, plus his community-only commits; see
   `dependencies/README.md`).
-- TIRust `780410ce` (branch `feature/parallel-engines`, PR #63: optional
-  lane-independent direct workspaces, on main `1c130a81`; `1c130a81` = main `a8dba684` + PR #43, MPFR rounded at the
+- TIRust `c20d0be2` (main after PRs #76, a relation's constant denominator
+  identity held to the inputs' rounding, and #77, exactly dependent triangles
+  kept on their relation at a stability threshold of 0; on `6ba4b531` = PR #70,
+  refusal texts that name the failed
+  estimate, on `100e18b4` = PR #72: a triangle refused by its PV
+  estimate or its fixed-precision floor goes to a higher precision instead of
+  the affine-relation variants; on `8543f604` = PR #63, optional
+  lane-independent direct workspaces, merged with main `177e1f0e`: PRs #44 to
+  #59, #61 and #64, degenerate kinematics decided at the inputs' rounding,
+  P-wave and flat onia, dependent triangles and boxes, rank-0 triangles at
+  degenerate invariants left to MPFR, triangles near a vanishing Källén
+  function gated by their PV error growth with a fixed-precision floor; on
+  main `1c130a81` = main `a8dba684` + PR #43, MPFR rounded at the
   working precision in the direct engine; `a8dba684` = `2b9ba961` + PRs #41 and #42;
   `2b9ba961` = branch `symbolica-community-2`: main
   `a5d4afbf`, PR #35 and the move to Symbolica community, re-pinned; with per-row evaluation instead of the batch
@@ -61,8 +73,9 @@ aligns Symbolica with the application's shared core and uses:
   `pyamplicol-community`: alphal00p/gammaloop `d1904bf2`, the owner's coherent
   dependency revision recorded by NinjaRS, plus Spenso's `conj` in Numerica
   3.1's numeric trait).
-- oneloopmaster `07fc754f656c4744c9464f7c0f47d00b708b37e6` (branch `symbolica-community-2`:
-  `3b6f229f`'s sources, per-evaluator
+- oneloopmaster `cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21` (main: `07fc754f` + #21, a cancellation-free
+  series of the native binary64 / double-double C0 at small external momenta;
+  `07fc754f` = branch `symbolica-community-2`: `3b6f229f`'s sources, per-evaluator
   `PoleSelection`, TIRust's oneloop patches incl. #17/#18, the 0BSD relicence,
   #19's order-independent massless triangle (trif0) with a hand-written
   binary64/double-double kernel, and #20's exact bubble reduction of a C0 at a

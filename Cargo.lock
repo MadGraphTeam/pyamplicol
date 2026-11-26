@@ -1369,7 +1369,7 @@ dependencies = [
 [[package]]
 name = "iregi-masters"
 version = "0.1.0"
-source = "git+https://github.com/huashengshao/TIRust.git?rev=780410ce7fb62e3362ef7311e220ebbcbee7f283#780410ce7fb62e3362ef7311e220ebbcbee7f283"
+source = "git+https://github.com/huashengshao/TIRust.git?rev=c20d0be2c681a07c63c3762b3ebc27641cd54559#c20d0be2c681a07c63c3762b3ebc27641cd54559"
 dependencies = [
  "oneloop",
  "symbolica",
@@ -1378,7 +1378,7 @@ dependencies = [
 [[package]]
 name = "iregi-rust"
 version = "0.1.0"
-source = "git+https://github.com/huashengshao/TIRust.git?rev=780410ce7fb62e3362ef7311e220ebbcbee7f283#780410ce7fb62e3362ef7311e220ebbcbee7f283"
+source = "git+https://github.com/huashengshao/TIRust.git?rev=c20d0be2c681a07c63c3762b3ebc27641cd54559#c20d0be2c681a07c63c3762b3ebc27641cd54559"
 dependencies = [
  "iregi-masters",
  "oneloop",
@@ -1675,7 +1675,7 @@ dependencies = [
 [[package]]
 name = "ninjars"
 version = "0.1.0"
-source = "git+https://github.com/alphal00p/ninjars.git?rev=e1d94412dd44bb18059471edb0a84310cbaebafd#e1d94412dd44bb18059471edb0a84310cbaebafd"
+source = "git+https://github.com/alphal00p/ninjars.git?rev=1f3d9d0ef34a423f9a9843dcdf99962b70236560#1f3d9d0ef34a423f9a9843dcdf99962b70236560"
 dependencies = [
  "feynkit-kinematics",
  "symbolica",
@@ -1685,7 +1685,7 @@ dependencies = [
 [[package]]
 name = "ninjars-graph"
 version = "0.1.0"
-source = "git+https://github.com/alphal00p/ninjars.git?rev=e1d94412dd44bb18059471edb0a84310cbaebafd#e1d94412dd44bb18059471edb0a84310cbaebafd"
+source = "git+https://github.com/alphal00p/ninjars.git?rev=1f3d9d0ef34a423f9a9843dcdf99962b70236560#1f3d9d0ef34a423f9a9843dcdf99962b70236560"
 dependencies = [
  "feynkit-amplitude",
  "feynkit-generator",
@@ -1704,7 +1704,7 @@ dependencies = [
 [[package]]
 name = "ninjars-positional"
 version = "0.1.0"
-source = "git+https://github.com/alphal00p/ninjars.git?rev=e1d94412dd44bb18059471edb0a84310cbaebafd#e1d94412dd44bb18059471edb0a84310cbaebafd"
+source = "git+https://github.com/alphal00p/ninjars.git?rev=1f3d9d0ef34a423f9a9843dcdf99962b70236560#1f3d9d0ef34a423f9a9843dcdf99962b70236560"
 dependencies = [
  "symbolica",
  "thiserror",
@@ -1713,7 +1713,7 @@ dependencies = [
 [[package]]
 name = "ninjars-symbolica"
 version = "0.1.0"
-source = "git+https://github.com/alphal00p/ninjars.git?rev=e1d94412dd44bb18059471edb0a84310cbaebafd#e1d94412dd44bb18059471edb0a84310cbaebafd"
+source = "git+https://github.com/alphal00p/ninjars.git?rev=1f3d9d0ef34a423f9a9843dcdf99962b70236560#1f3d9d0ef34a423f9a9843dcdf99962b70236560"
 dependencies = [
  "ninjars",
  "ninjars-positional",
@@ -1880,7 +1880,7 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 [[package]]
 name = "oneloop"
 version = "0.1.0"
-source = "git+https://github.com/alphal00p/oneloopmaster.git?rev=07fc754f656c4744c9464f7c0f47d00b708b37e6#07fc754f656c4744c9464f7c0f47d00b708b37e6"
+source = "git+https://github.com/alphal00p/oneloopmaster.git?rev=cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21#cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21"
 dependencies = [
  "bincode",
  "symbolica",

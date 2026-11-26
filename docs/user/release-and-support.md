@@ -76,16 +76,19 @@ applies it to that lane (before, the reason reached only an exact engine that
 already existed). For direct Rust users of the reduction crate, the new
 `MasterCache::begin_call` opens a grouped call and returns its handle: inside
 it a failed row is evaluated and counted once, and an ordinary `evaluate` asks
-the provider again for a failed row, as before. A reduction call that fails
-returns the outcome of the serial call (the error or panic of its first failing
-step) at any thread count. For direct Rust users, the refinement callback
-(`GroupRefinementSource`) can be asked for a lane concurrently, speculatively
-and more than once: the outcome equals the serial one when a lane's answer or
-panic is the same whenever it is asked (a callback that panics only once, next
-to a failure in a later bucket, can make a parallel call return the other
-failure); a caller that needs ordered effects can use one thread. The one-core
-cost is unchanged or lower with NinjaRS and up to about 1.5 % higher with
-TIRust from lane independence alone (with the faster assembly, lower overall).
+the provider again for a failed row, as before. On a cache shared by several
+engines, a failure is remembered only by the grouped call open when it is
+recorded: a late failure from an ended call no longer clears or replaces the
+open call's failed rows. A reduction call that fails returns the outcome of the
+serial call (the error or panic of its first failing step) at any thread count.
+For direct Rust users, the refinement callback (`GroupRefinementSource`) can be
+asked for a lane concurrently, speculatively and more than once: the outcome
+equals the serial one when a lane's answer or panic is the same whenever it is
+asked (a callback that panics only once, next to a failure in a later bucket,
+can make a parallel call return the other failure); a caller that needs ordered
+effects can use one thread. The one-core cost is unchanged or lower with
+NinjaRS and up to about 1.5 % higher with TIRust from lane independence alone
+(with the faster assembly, lower overall).
 
 Limits: NinjaRS in double-double and arbitrary precision stays at about
 one-thread speed (parallel over buckets only, on one set of built templates),
@@ -101,8 +104,40 @@ holds TIRust's own per-thread method-choice state (about 120 MB on
 and not growing with the calls; with NinjaRS a checked call that reaches
 arbitrary precision holds up to about 50 MB per extra worker during the call.
 
-Dependencies: TIRust `780410ce` (huashengshao/TIRust#63 on `1c130a81`:
-lane-independent workspaces); the other pins are unchanged.
+**TIRust, NinjaRS and oneloopmaster re-pinned.** TIRust moves to its main
+(`c20d0be2`), which carries the lane-independent workspaces above
+(huashengshao/TIRust#63) and, since `1c130a81`, decides degenerate
+kinematics at the inputs' rounding, leaves rank-0 triangles at degenerate
+invariants to MPFR (#61), gates triangles near a vanishing Källén function
+by their Passarino-Veltman error growth, with a fixed-precision floor that
+refuses them in binary64 and double-double whatever the gate (#64), and
+sends a triangle refused that way to a higher precision instead of its
+affine-relation variants, which could serve it O(1) off as a success (#72).
+It holds a relation's constant denominator identity to the inputs' rounding,
+so a nearly dependent triangle with a small relation constant no longer
+takes the relation (#76), and keeps exactly dependent triangles on their
+relation at a stability threshold of 0 (#77). pyAmpliCol re-reduces a lane
+TIRust refuses in binary64 in double-double, then 500 digits (the lane
+rescue, in the checked and the unchecked mode alike); on the tested
+processes and points, with the lane rescue enabled, no point that was served
+before was observed to fail. TIRust-reduced values move where a lane changes
+route: in the regression suite by at most 3.5e-11 relative, and by 2.6e-9 on
+one `u u~ > e+ e- g g` point whose own binary64 error is 7e-9. On recorded
+stability points no point below 10.5 digits loses more than half a digit,
+and some `d d~ > d d~ z z` and `g g > g g g` points gain a digit. A 16-point
+call with TIRust costs up to about 7 % more on one core where NinjaRS is the
+default reduction (`g g > g g g`, `g g > t t~ g`, `u u~ > e+ e- g g`) and up
+to about 2.7 % elsewhere. oneloopmaster moves to `cdbc912` (#21: a
+cancellation-free series of the native binary64 and double-double C0 at
+small external momenta, the revision TIRust pins), and NinjaRS with it:
+NinjaRS-reduced values (the default for Born-interfered processes) are
+unchanged bit for bit except where that series acts (one `g g > t t~ g`
+point of the regression suite, its resolved entries by at most 9e-14
+relative and its checked stability estimate by 1e-7 of itself).
+
+Dependencies: TIRust `c20d0be2` (main), NinjaRS `1f3d9d0e` (main:
+`e1d94412` with oneloopmaster `cdbc912`), oneloopmaster `cdbc912`; the
+other pins are unchanged.
 
 **Check verdicts: one rule, R < K P, for every check row.** Every verdict of
 `pyamplicol check` and of the generation-time loop-induced probes is one
