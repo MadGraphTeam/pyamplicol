@@ -112,8 +112,9 @@ sends a triangle refused that way to a higher precision instead of its
 affine-relation variants, which could serve it O(1) off as a success (#72).
 pyAmpliCol re-reduces a lane TIRust refuses in binary64 in double-double,
 then 500 digits (the lane rescue, in the checked and the unchecked mode
-alike): no point fails that was served before. TIRust-reduced values move
-where a lane changes route: in the regression suite by at most 3.5e-11
+alike); on the tested processes and points, with the lane rescue enabled, no
+point that was served before was observed to fail. TIRust-reduced values
+move where a lane changes route: in the regression suite by at most 3.5e-11
 relative, and by 2.6e-9 on one `u u~ > e+ e- g g` point whose own binary64
 error is 7e-9. On recorded stability points no point below 10.5 digits loses
 more than half a digit, and some `d d~ > d d~ z z` and `g g > g g g` points
