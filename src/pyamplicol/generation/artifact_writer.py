@@ -2686,7 +2686,11 @@ def _recurrence_helicity_selector_companion_v2_manifest(
     if not supported_primary_view:
         raise ValueError(
             "recurrence helicity-selector primary local-color view requires a "
-            "direct, Walsh, or symmetric-group Fourier reducer"
+            "direct, Walsh, or symmetric-group Fourier reducer; the primary "
+            f"reducer is stored {storage!r} with {component_count} components "
+            f"and {primary_color.get('group_count')!r} groups (a colour sector "
+            "whose helicity block is incomplete, as when a flow vanishes for "
+            "some helicities only, has no local-color view)"
         )
     group_count = _nonnegative_integer(
         primary_color.get("group_count"),
