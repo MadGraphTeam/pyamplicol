@@ -105,6 +105,56 @@ def _builtin_vertex_result_chiralities(
     return (0,)
 
 
+def builtin_zero_coupling_decisions(model: Model, vertex: Vertex) -> frozenset[int]:
+    """The components of ``vertex.coupling`` that are zero and on whose zero
+    the vertex's chirality selection (``_builtin_vertex_result_chiralities``)
+    depends: for some input state the model can produce (a chiral-eligible
+    fermion as a Weyl state of either chirality or as a full current, any
+    other particle as a full state), making the component nonzero changes the
+    selected result chiralities. Only these zeros dropped a current at
+    generation; a zero that no selection reads (a Dirac input keeps every
+    transition as soon as any component is nonzero) dropped nothing."""
+
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    zeros = [index for index, value in enumerate(vertex.coupling) if value == 0.0]
+    if not zeros:
+        return frozenset()
+
+    def states(pdg: int) -> tuple[Any, ...]:
+        chiralities = (
+            (-1, 0, 1)
+            if model.is_fermion(pdg) and model.is_chiral_eligible(pdg)
+            else (0,)
+        )
+        return tuple(
+            SimpleNamespace(
+                particle_id=pdg,
+                pdg=pdg,
+                chirality=chirality,
+                flavour_flow=(pdg,),
+                coupling_orders=(),
+            )
+            for chirality in chiralities
+        )
+
+    decided: set[int] = set()
+    for left in states(vertex.particles[0]):
+        for right in states(vertex.particles[1]):
+            selected = _builtin_vertex_result_chiralities(model, vertex, left, right)
+            for index in zeros:
+                coupling = list(vertex.coupling)
+                coupling[index] = 1.0
+                revived = replace(vertex, coupling=tuple(coupling))
+                if (
+                    _builtin_vertex_result_chiralities(model, revived, left, right)
+                    != selected
+                ):
+                    decided.add(index)
+    return frozenset(decided)
+
+
 def _model_fermion_input_chirality(
     model: Model,
     left_index: Any,

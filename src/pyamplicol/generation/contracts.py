@@ -154,58 +154,59 @@ def runtime_coupling_component_guards(
     model: Model, records: Iterable[Mapping[str, object]]
 ) -> tuple[SpecializationGuard, ...]:
     """The specialisation guards of the coupling components a process exposes
-    as runtime parameters (``runtime_coupling_parameter_names``) that are zero
-    at generation on a vertex with a massless fermion leg.
+    as runtime parameters (``runtime_coupling_parameter_names``) whose zero at
+    generation the model's chirality selection read
+    (``Model.zero_coupling_decisions``: the built-in model drops the Weyl
+    currents of a chirality whose component is zero).
 
-    A massless fermion is a Weyl state, and a vertex lets it through only in
-    the chiralities whose coupling component is nonzero at generation
-    (the built-in model's chiral support; a W's right-handed component is 0):
-    the lines of the process carry no current of the other chirality. A
-    later binding that makes the component nonzero would need those currents
-    and was silently ignored; its guard ("vanishing", on the component
-    itself) refuses it. ``records``: the process's runtime model-parameter
-    records (``name``, ``default``, ``runtime_name`` for the components of a
-    complex parameter)."""
+    Such a component holds at zero: a binding that makes it nonzero would need
+    the currents generation dropped. A component whose zero no selection read
+    (a vertex with a Dirac input keeps both chiralities when any component is
+    nonzero) records nothing and stays a working parameter. ``records``: the
+    process's runtime model-parameter records (``name``, ``default``,
+    ``runtime_name`` for the components of a complex parameter)."""
 
+    decisions = getattr(model, "zero_coupling_decisions", None)
+    if not callable(decisions):
+        return ()
     defaults: dict[str, list[float]] = {}
     for record in records:
         name = str(record.get("runtime_name") or record["name"])
         defaults.setdefault(name, []).append(float(record["default"]))  # type: ignore[arg-type]
+    vertices = {
+        (int(vertex.kind), tuple(int(pdg) for pdg in vertex.particles)): vertex
+        for vertex in getattr(model, "vertices", ())
+    }
     guards: list[SpecializationGuard] = []
     for name in sorted(defaults):
         match = _RUNTIME_COUPLING_NAME.fullmatch(name)
         if match is None or any(value != 0.0 for value in defaults[name]):
             continue
-        particles = [int(pdg) for pdg in match["particles"].split("_")]
-        if not any(_is_massless_fermion(model, pdg) for pdg in particles):
+        key = (
+            int(match["kind"]),
+            tuple(int(pdg) for pdg in match["particles"].split("_")),
+        )
+        vertex = vertices.get(key)
+        if vertex is None or int(match["component"]) not in decisions(vertex):
             continue
         guards.append(
-            SpecializationGuard(
-                kind="vanishing",
+            SpecializationGuard.holding(
+                "vanishing",
+                {name: 0j},
                 subject=(
-                    f"coupling component {name}, zero at generation, decides which "
-                    "chiralities of a massless fermion the vertex passes"
+                    f"coupling component {name}, zero at generation, decided "
+                    "which chiralities of a massless fermion the vertex passes"
                 ),
                 producer=VERTEX_CHIRAL_SUPPORT,
-                parameters=(name,),
-                generation_values={name: (0.0, 0.0)},
-                program=(("p", 0),),
-                expression=name,
                 message=(
                     "the massless fermion lines carry only the chiralities this "
-                    "component allowed at generation; use a model whose vertex has "
-                    "it nonzero"
+                    "component allowed at generation; generate with a model whose "
+                    "vertex has it nonzero"
                 ),
+                expression=name,
             )
         )
     return tuple(guards)
-
-
-def _is_massless_fermion(model: Model, pdg: int) -> bool:
-    try:
-        return bool(model.is_fermion(pdg)) and float(model.mass(pdg)) == 0.0
-    except (KeyError, ValueError):
-        return False
 
 
 __all__ = [

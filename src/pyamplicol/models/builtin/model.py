@@ -27,7 +27,10 @@ from ..base import (
 )
 from ..contracts import U1_SUBTRACTION_AUXILIARY_KIND
 from .definitions import BuiltinSMDefinitionMixin
-from .expressions import _builtin_vertex_result_chiralities
+from .expressions import (
+    _builtin_vertex_result_chiralities,
+    builtin_zero_coupling_decisions,
+)
 from .lowering import BuiltinSMLoweringMixin
 from .process_catalog import PDGS
 
@@ -91,6 +94,12 @@ class BuiltinModel(Model):
 
     def is_chiral_eligible(self, pdg: int) -> bool:
         return self.is_fermion(pdg) and self.mass(pdg) == 0.0
+
+    def zero_coupling_decisions(self, vertex: Vertex) -> frozenset[int]:
+        """The zero coupling components of ``vertex`` its chirality selection
+        reads (``builtin_zero_coupling_decisions``)."""
+
+        return builtin_zero_coupling_decisions(self, vertex)
 
     def _vertex_result_chiralities(
         self,
@@ -192,8 +201,7 @@ class BuiltinModel(Model):
                 "passive"
                 if operation == "concatenate-join" and abs(representations[2]) == 1
                 else "active"
-                if operation
-                in {"concatenate-join", "inherit-left", "inherit-right"}
+                if operation in {"concatenate-join", "inherit-left", "inherit-right"}
                 else "none"
             )
             return RecurrenceLCColorWitnessContract(
@@ -813,10 +821,9 @@ class BuiltinSMModel(BuiltinSMLoweringMixin, BuiltinSMDefinitionMixin, BuiltinMo
         del max_coupling_orders
         # Subclasses may change the interaction inventory and must prove their
         # own certificate rather than inherit the pinned SM's reflection hook.
-        return (
-            type(self) is BuiltinSMModel
-            and self.lc_trace_reflection_equivalence_is_proven(process)
-        )
+        return type(
+            self
+        ) is BuiltinSMModel and self.lc_trace_reflection_equivalence_is_proven(process)
 
     def coupling_order_hierarchies(self) -> dict[str, int]:
         return {"QCD": 1, "QED": 2}

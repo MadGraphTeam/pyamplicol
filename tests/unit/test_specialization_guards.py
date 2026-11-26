@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: 0BSD
-"""Specialisation guards: construction, the binding test and serialisation."""
+"""Specialisation guards: construction, the exact binding rule, the one-loop
+checks, the compiled-model record and the chiral-selection producer."""
 
 from __future__ import annotations
 
 import math
+from fractions import Fraction
 from types import SimpleNamespace
 
 import pytest
@@ -13,12 +15,11 @@ pytest.importorskip("symbolica")
 from symbolica import E
 
 from pyamplicol.models.specialization_guards import (
-    TOLERANCE,
     GuardEnvironment,
     SpecializationGuard,
+    admit_loop_specialization_guards,
     binding_refusal,
-    compile_program,
-    evaluate_program,
+    exact_decimal_binding_refusal,
     guard_file_payload,
     guards_for_process,
     guards_from_file_payload,
@@ -26,161 +27,163 @@ from pyamplicol.models.specialization_guards import (
 
 
 def _environment() -> GuardEnvironment:
-    # MT and aEWM1 mutable; ee a derived parameter; ZERO a constant.
+    # MT, MZ and aEWM1 mutable (declared real); CKM complex; ee derived.
     return GuardEnvironment(
-        externals={"MT": 173.0 + 0j, "aEWM1": 132.507 + 0j, "MZ": 91.188 + 0j},
-        definitions={
-            "ee": E("2*UFO::aEWM1^(-1/2)*UFO::pi^(1/2)"),
-            "coupling": E("(UFO::MT-173)*UFO::ee*UFO::complex(0,1)"),
+        externals={
+            "MT": 173.0 + 0j,
+            "aEWM1": 132.507 + 0j,
+            "MZ": 91.188 + 0j,
+            "CKM": 0.97 + 0.25j,
         },
+        definitions={"ee": E("2*UFO::aEWM1^(-1/2)*UFO::pi^(1/2)")},
         constants={"ZERO": 0j, "pi": math.pi, "I": 1j},
+        real_externals=frozenset({"MT", "aEWM1", "MZ"}),
     )
 
 
-def _vanishing() -> SpecializationGuard:
-    guard = SpecializationGuard.vanishing(
+def _vanishing(expression: str) -> SpecializationGuard | None:
+    return SpecializationGuard.vanishing(
         _environment(),
-        "UFO::coupling",
+        expression,
         subject="coupling GC_X removed by restriction simplification",
         producer="restriction-simplification",
         message="generate the artifact at the new values",
     )
+
+
+def test_a_sixth_power_zero_refuses_any_other_value() -> None:
+    # At MT = 174 the factor (MT - 173)^6 is exactly 1: an ordinary coupling.
+    guard = _vanishing("(UFO::MT-173)^6*UFO::ee*UFO::complex(0,1)")
     assert guard is not None
-    return guard
-
-
-def test_a_binding_dependent_zero_records_its_mutable_parameters() -> None:
-    guard = _vanishing()
-    assert guard.kind == "vanishing"
-    assert guard.parameters == ("MT", "aEWM1")
-    assert guard.generation_values == {"MT": (173.0, 0.0), "aEWM1": (132.507, 0.0)}
-    assert guard.program is not None
-    assert guard.failure({}) is None
-
-
-def test_structural_specialisations_record_nothing() -> None:
-    environment = _environment()
-    for expression in (
-        "UFO::ZERO*UFO::MT",  # a parameter the card fixed to zero
-        "UFO::MT-UFO::MT",  # identically zero
-        "(UFO::MT+1)^2-UFO::MT^2-2*UFO::MT-1",  # zero once expanded
-        "3*UFO::pi",  # no mutable dependence
-    ):
-        assert (
-            SpecializationGuard.vanishing(
-                environment, expression, subject="s", producer="p", message="m"
-            )
-            is None
-        )
-    assert (
-        SpecializationGuard.real(
-            environment, "UFO::pi*UFO::I", subject="s", producer="p", message="m"
-        )
-        is None
-    )
-
-
-def test_a_binding_that_revives_the_zero_is_refused_and_others_are_not() -> None:
-    guard = _vanishing()
+    assert guard.parameters == ("MT",)  # the zero factor's parameters only
+    assert guard.generation_values == {"MT": (173.0, 0.0)}
     refusal = binding_refusal([guard], {"MT": 174.0})
     assert refusal is not None
     assert refusal.startswith(
         "specialisation-guard: binding MT invalidates a vanishing"
     )
+    assert "MT = 174.0 (generated at 173.0)" in refusal
     assert "coupling GC_X removed by restriction simplification" in refusal
-    assert "generate the artifact at the new values" in refusal
-    for binding in ({"MT": 173.0}, {"aEWM1": 128.0}, {"MZ": 90.0}):
-        assert binding_refusal([guard], binding) is None
-    # The current values complete a binding: with MT already moved, an aEWM1
-    # binding fails too.
-    assert binding_refusal([guard], {"aEWM1": 128.0}, {"MT": 174.0}) is not None
-
-
-def test_rounding_is_the_boundary_of_the_vanishing_test() -> None:
-    guard = _vanishing()
-    # |MT - 173| <= TOLERANCE (MT + 173): about 2.5e-12 at MT = 173.
-    ulp = math.nextafter(173.0, math.inf) - 173.0
-    assert binding_refusal([guard], {"MT": 173.0 + 8 * ulp}) is None
-    assert TOLERANCE * 346 < 1e-9
-    assert binding_refusal([guard], {"MT": 173.0 + 1e-9}) is not None
-
-
-def test_the_real_kind_tests_the_imaginary_part_with_the_same_scale() -> None:
-    environment = _environment()
-    # Real at MT = 173 only: (1 + i (MT - 173)) ee.
-    guard = SpecializationGuard.real(
-        environment,
-        "(1+UFO::complex(0,1)*(UFO::MT-173))*UFO::ee",
-        subject="derived parameter GC_R stored with one component",
-        producer="recurrence-template",
-        message="regenerate",
-    )
-    assert guard is not None and guard.kind == "real"
+    # The smallest change is refused; exactly the generation value is not.
+    assert binding_refusal([guard], {"MT": math.nextafter(173.0, 200.0)})
     assert binding_refusal([guard], {"MT": 173.0}) is None
-    assert binding_refusal([guard], {"aEWM1": 100.0}) is None
-    ulp = math.nextafter(173.0, math.inf) - 173.0
-    assert binding_refusal([guard], {"MT": 173.0 + 8 * ulp}) is None
-    refusal = binding_refusal([guard], {"MT": 174.0})
-    assert refusal is not None and "not real" in refusal
+    # The other factor's parameters stay free (the product stays zero).
+    assert binding_refusal([guard], {"aEWM1": 128.0, "MZ": 91.0}) is None
 
 
-def test_a_real_guard_is_structural_where_every_binding_is_real() -> None:
-    environment = GuardEnvironment(
-        externals={"MT": 173.0 + 0j, "aS": 0.118 + 0j, "CKM": 1.0 + 0j},
-        definitions={"G": E("2*UFO::aS^(1/2)*UFO::pi^(1/2)")},
-        constants={"pi": math.pi, "I": 1j},
-        real_externals=frozenset({"MT", "aS"}),
-    )
+def test_a_product_of_several_inputs_holds_its_zero_factor() -> None:
+    guard = _vanishing("(UFO::MT-173)^3*(UFO::MZ-91.188)*UFO::aEWM1*UFO::MZ")
+    assert guard is not None
+    assert len(guard.parameters) == 1
+    held = guard.parameters[0]
+    assert held in {"MT", "MZ"}
+    value = {"MT": 174.0, "MZ": 91.0}[held]
+    assert binding_refusal([guard], {held: value}) is not None
+    assert binding_refusal([guard], {"aEWM1": 1.0}) is None
+
+
+def test_a_zero_without_a_zero_factor_holds_every_input() -> None:
+    # Zero only where both terms cancel: no factor vanishes on its own.
+    guard = _vanishing("(UFO::MT-173)+(UFO::MZ-91.188)")
+    assert guard is not None
+    assert guard.parameters == ("MT", "MZ")
+    # A change that keeps the sum zero is refused too: no cancellation is
+    # accepted numerically.
+    assert binding_refusal([guard], {"MT": 174.0, "MZ": 90.188}) is not None
+
+
+def test_structural_specialisations_record_nothing() -> None:
+    environment = _environment()
+    assert _vanishing("UFO::ZERO*UFO::MT") is None
+    assert _vanishing("UFO::MT-UFO::MT") is None
+    assert _vanishing("UFO::complex(0,1)*UFO::MT-UFO::MT*UFO::complex(0,1)") is None
+    assert _vanishing("3-3") is None
 
     def real(expression: str) -> SpecializationGuard | None:
         return SpecializationGuard.real(
             environment, expression, subject="s", producer="p", message="m"
         )
 
-    # Real for every real MT and aS: nothing to record.
-    assert real("UFO::MT^2*UFO::aS") is None
+    assert real("UFO::MT^2*UFO::aEWM1") is None
     assert real("UFO::complex(0,1)^2*UFO::MT") is None
     # A square root of a real parameter, or a complex-declared external, is
-    # real only on part of the domain: recorded, and refused outside it.
-    root = real("UFO::G")
-    assert root is not None and root.parameters == ("aS",)
-    assert binding_refusal([root], {"aS": 0.12}) is None
-    assert binding_refusal([root], {"aS": -0.12}) is not None
+    # not real for every binding: recorded, holding its inputs.
+    root = real("UFO::ee")
+    assert root is not None and root.parameters == ("aEWM1",)
+    assert binding_refusal([root], {"aEWM1": 132.507}) is None
+    assert binding_refusal([root], {"aEWM1": 130.0}) is not None
     assert real("UFO::CKM*UFO::MT") is not None
 
 
-def test_programs_agree_with_symbolica() -> None:
-    expression = E(
-        "sqrt(x)*cos(y)+exp(x-y)^2/(1+x^2)+log(x)*conj(y)+x^(3/2)-tan(y)/sinh(x)"
-    )
-    resolved = expression.replace(E("x"), E("UFO::x")).replace(E("y"), E("UFO::y"))
-    environment = GuardEnvironment({"x": 0.7 + 0j, "y": 1.3 + 0j}, {}, {})
-    program = compile_program(resolved, ("x", "y"), environment)
-    for x, y in ((0.7, 1.3), (2.5, -0.4), (11.0, 3.0)):
-        value, bound = evaluate_program(program, (complex(x), complex(y)))
-        reference = complex(resolved.evaluate({E("UFO::x"): x, E("UFO::y"): y}))
-        assert abs(value - reference) <= 1e-13 * max(1.0, abs(reference))
-        assert bound >= abs(value) * (1 - 1e-15)
+def test_both_components_of_a_complex_parameter_are_held() -> None:
+    guard = _vanishing("(UFO::CKM-0.97-0.25*UFO::complex(0,1))*UFO::MT")
+    assert guard is not None and guard.parameters == ("CKM",)
+    assert binding_refusal([guard], {"CKM": 0.97 + 0.25j}) is None
+    assert binding_refusal([guard], {"CKM": 0.97 + 0.0j}) is not None
+    assert binding_refusal([guard], {"CKM": 0.97 + 0.26j}) is not None
 
 
-def test_an_unrepresentable_function_holds_the_parameters_at_their_values() -> None:
-    environment = GuardEnvironment({"MT": 173.0 + 0j}, {}, {})
-    guard = SpecializationGuard.vanishing(
-        environment,
-        "UFO::Theta(UFO::MT-174)*UFO::MT",
-        subject="s",
-        producer="p",
-        message="m",
-    )
-    assert guard is not None and guard.program is None
+def test_a_refused_change_and_a_return_to_the_generation_value() -> None:
+    guard = _vanishing("(UFO::MT-173)*UFO::ee")
+    assert binding_refusal([guard], {"MT": 174.0}) is not None
+    # A refused binding applies nothing; binding the generation value later
+    # is accepted.
     assert binding_refusal([guard], {"MT": 173.0}) is None
-    assert binding_refusal([guard], {"MT": 173.5}) is not None
+
+
+def test_the_loop_runtime_compares_exact_decimals() -> None:
+    guard = _vanishing("(UFO::MT-173)*UFO::ee")
+    assert exact_decimal_binding_refusal([guard], {"MT": "173"}) is None
+    assert exact_decimal_binding_refusal([guard], {"MT": "173.000"}) is None
+    assert exact_decimal_binding_refusal([guard], {"MT": Fraction(173)}) is None
+    # Equal in binary64, different as bound: refused.
+    close = "173.00000000000000000001"
+    assert float(close) == 173.0
+    assert exact_decimal_binding_refusal([guard], {"MT": close}) is not None
+    assert exact_decimal_binding_refusal([guard], {"MT": "174"}) is not None
+    # The exact value of a binary64 generation value is accepted.
+    tenth = _vanishing("(UFO::MZ-91.188)*UFO::ee")
+    assert tenth is not None
+    exact = str(Fraction(91.188).numerator / Fraction(91.188).denominator)
+    assert exact_decimal_binding_refusal([tenth], {"MZ": Fraction(91.188)}) is None
+    assert exact_decimal_binding_refusal([tenth], {"MZ": "91.188"}) is not None
+    del exact
+
+
+def test_a_loop_plan_that_fixes_or_scales_a_guarded_parameter_is_refused() -> None:
+    guard = _vanishing("(UFO::MT-173)*UFO::ee")
+    admit_loop_specialization_guards([guard], {"MT": "173"}, "MU_R")
+    admit_loop_specialization_guards([guard], {"aEWM1": "128"}, None)
+    with pytest.raises(ValueError, match="a fixed parameter of the plan"):
+        admit_loop_specialization_guards([guard], {"MT": "174"}, None)
+    with pytest.raises(ValueError, match="renormalisation-scale"):
+        admit_loop_specialization_guards([guard], {}, "MT")
+
+
+def test_the_loop_runtime_refuses_a_binding_a_guard_rejects() -> None:
+    from pyamplicol.loops.v2.artifact import V2VirtualRuntime
+
+    runtime = SimpleNamespace(
+        _externals={"MT", "aEWM1", "MZ"},
+        _scale_parameter=None,
+        _fixed={},
+        _prepared_fixed=frozenset(),
+        _specialization_guards=(_vanishing("(UFO::MT-173)*UFO::ee"),),
+        _parameters={},
+    )
+    checked = V2VirtualRuntime._checked_parameters(runtime, {"aEWM1": "128"})
+    assert checked == {"aEWM1": "128"}
+    assert V2VirtualRuntime._checked_parameters(runtime, {"MT": "173"})
+    with pytest.raises(ValueError, match="specialisation-guard: binding MT"):
+        V2VirtualRuntime._checked_parameters(runtime, {"MT": "174"})
 
 
 def test_guard_records_round_trip_and_select_their_processes() -> None:
-    guard = _vanishing()
+    guard = _vanishing("(UFO::MT-173)*UFO::ee")
+    assert guard is not None
     scoped = guard.for_processes(("p2", "p1"))
     payload = guard_file_payload([guard, scoped])
+    assert "program" not in payload["guards"][0]
     restored = guards_from_file_payload(payload)
     assert restored == (guard, scoped)
     assert scoped.process_ids == ("p1", "p2")
@@ -207,13 +210,16 @@ def test_a_guarded_compiled_model_uses_the_new_schema_and_only_then(
     plain = compiled.to_dict()
     assert plain["schema_version"] == COMPILED_MODEL_SCHEMA_VERSION
     assert "specialization_guards" not in plain
-    guarded = replace(compiled, specialization_guards=(_vanishing(),))
+    # The built-in SM runs no restriction simplification: no record field,
+    # so its compiled model and prepared packs are unchanged.
+    assert "specialization_record" not in plain
+    guarded = replace(
+        compiled, specialization_guards=(_vanishing("(UFO::MT-173)*UFO::ee"),)
+    )
     payload = guarded.to_dict()
     assert payload["schema_version"] == GUARDED_COMPILED_MODEL_SCHEMA_VERSION
     restored = CompiledModel.from_dict(payload, validate_fingerprint=False)
     assert restored.specialization_guards == guarded.specialization_guards
-    # A released reader requires the plain schema exactly; this one refuses a
-    # mismatched pair.
     with pytest.raises(ValueError, match="schema"):
         CompiledModel.from_dict(
             {**payload, "schema_version": COMPILED_MODEL_SCHEMA_VERSION},
@@ -226,42 +232,85 @@ def test_a_guarded_compiled_model_uses_the_new_schema_and_only_then(
         )
 
 
-def test_the_loop_runtime_refuses_a_binding_a_guard_rejects() -> None:
-    from pyamplicol.loops.v2.artifact import V2VirtualRuntime
+def test_generation_refuses_a_simplified_model_without_its_record(tmp_path) -> None:
+    from dataclasses import replace
 
-    runtime = SimpleNamespace(
-        _externals={"MT", "aEWM1", "MZ"},
-        _scale_parameter=None,
-        _fixed={},
-        _prepared_fixed=frozenset(),
-        _specialization_guards=(_vanishing(),),
-        _parameters={},
+    from pyamplicol.models.loading import (
+        CompiledModel,
+        compile_model_source,
+        require_specialization_record,
     )
-    checked = V2VirtualRuntime._checked_parameters(runtime, {"aEWM1": "128"})
-    assert checked == {"aEWM1": "128"}
-    with pytest.raises(ValueError, match="specialisation-guard: binding MT"):
-        V2VirtualRuntime._checked_parameters(runtime, {"MT": "174"})
+
+    builtin = compile_model_source("built-in-sm", cache_dir=tmp_path)
+    assert require_specialization_record(builtin) is builtin
+
+    def as_source(kind: str, simplify: bool, record: bool) -> CompiledModel:
+        source = dict(builtin.source)
+        source["kind"] = kind
+        source["options"] = {**dict(source.get("options", {})), "simplify": simplify}
+        return replace(builtin, source=source, specialization_record=record)
+
+    # A UFO or JSON model simplified without the record (written before it
+    # existed) is refused; with it, or unsimplified, or built in, it is not.
+    for kind in ("ufo", "json"):
+        with pytest.raises(ValueError, match="prepare or compile the model again"):
+            require_specialization_record(as_source(kind, True, False))
+        require_specialization_record(as_source(kind, True, True))
+        require_specialization_record(as_source(kind, False, False))
+    marked = as_source("ufo", True, True).to_dict()
+    assert marked["specialization_record"] == "complete"
+    restored = CompiledModel.from_dict(marked, validate_fingerprint=False)
+    assert restored.specialization_record
+    legacy = {
+        key: value for key, value in marked.items() if key != "specialization_record"
+    }
+    assert not CompiledModel.from_dict(
+        legacy, validate_fingerprint=False
+    ).specialization_record
 
 
-def test_zero_coupling_components_of_massless_lines_are_guarded() -> None:
+def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
     from pyamplicol.generation.contracts import runtime_coupling_component_guards
+    from pyamplicol.models.builtin.model import BuiltinSMModel
 
-    model = SimpleNamespace(
-        is_fermion=lambda pdg: abs(pdg) in {6, 11, 12},
-        mass=lambda pdg: 173.0 if abs(pdg) == 6 else 0.0,
+    model = BuiltinSMModel()
+    vertices = {(v.kind, tuple(v.particles)): v for v in model.vertices}
+    # Massless leptons on both sides of the W: the right-handed zero dropped
+    # the right-handed currents.
+    massive = vertices[(21, (5, -6, -24))]
+    assert massive.coupling[1] == 0.0
+    # A Dirac top keeps both chiralities while any component is nonzero: the
+    # zero right-handed component dropped nothing.
+    assert model.zero_coupling_decisions(massive) == frozenset()
+    leptonic_vertices = [
+        v
+        for (kind, particles), v in vertices.items()
+        if kind in {21, 22}
+        and all(abs(p) in {11, 12, 24} for p in particles)
+        and 0.0 in v.coupling
+    ]
+    assert leptonic_vertices
+    assert all(model.zero_coupling_decisions(v) for v in leptonic_vertices)
+
+    def record(vertex, component: int) -> dict[str, object]:
+        particles = "_".join(str(p) for p in vertex.particles)
+        return {
+            "name": f"coupling.{vertex.kind}.{particles}.component_{component}",
+            "default": float(vertex.coupling[component]),
+        }
+
+    lepton = leptonic_vertices[0]
+    zero = lepton.coupling.index(0.0)
+    guards = runtime_coupling_component_guards(
+        model,
+        [record(lepton, zero), record(lepton, 1 - zero), record(massive, 1)],
     )
-    records = [
-        # A complex component of a W vertex with massless leptons: guarded.
-        {"name": "coupling.10.12_-24_11.component_1.real", "default": 0.0,
-         "runtime_name": "coupling.10.12_-24_11.component_1"},
-        {"name": "coupling.10.12_-24_11.component_1.imag", "default": 0.0,
-         "runtime_name": "coupling.10.12_-24_11.component_1"},
-        # Nonzero, or on a line without a massless fermion: not guarded.
-        {"name": "coupling.10.12_-24_11.component_0", "default": 1.5},
-        {"name": "coupling.10.6_-24_-6.component_1", "default": 0.0},
-        {"name": "MT", "default": 0.0},
-    ]  # fmt: skip
-    (guard,) = runtime_coupling_component_guards(model, records)
-    assert guard.parameters == ("coupling.10.12_-24_11.component_1",)
-    assert binding_refusal([guard], {"coupling.10.12_-24_11.component_1": 0.0}) is None
-    assert binding_refusal([guard], {"coupling.10.12_-24_11.component_1": 1e-300})
+    assert [guard.parameters for guard in guards] == [(record(lepton, zero)["name"],)]
+    (guard,) = guards
+    assert binding_refusal([guard], {guard.parameters[0]: 0.0}) is None
+    assert binding_refusal([guard], {guard.parameters[0]: 1.5}) is not None
+    # A model without a chirality selection records nothing.
+    assert (
+        runtime_coupling_component_guards(SimpleNamespace(), [record(lepton, zero)])
+        == ()
+    )

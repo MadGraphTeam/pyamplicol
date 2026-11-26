@@ -2439,6 +2439,17 @@ class LoopSlice:
             prepared, continuation, fixed, scale_parameter, alpha_s_parameter = (
                 prepare_request_model(compiled, request, memo=memo)
             )
+        # The Born and tree blocks run on ``compiled``, the tree model, with
+        # its restriction simplification: a plan that fixes a parameter one of
+        # its specialisation guards holds at another value, or holds the
+        # per-point renormalisation scale, is refused here.
+        guards = getattr(compiled, "specialization_guards", ())
+        if guards:
+            from pyamplicol.models.specialization_guards import (
+                admit_loop_specialization_guards,
+            )
+
+            admit_loop_specialization_guards(guards, dict(fixed), scale_parameter)
         declaration = request.colour_declaration
         structure = prepared.structure
         data = json.loads(structure.native.to_json())

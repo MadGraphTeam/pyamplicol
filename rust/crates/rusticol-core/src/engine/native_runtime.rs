@@ -5072,9 +5072,7 @@ impl NativeRuntime {
         // What generation specialised must stay valid at the new binding; a
         // refused binding applies nothing.
         if !self.specialization_guards.is_empty() {
-            self.specialization_guards.check_binding(values, |name| {
-                self.runtime.current_model_parameter_value(name).ok()
-            })?;
+            self.specialization_guards.check_binding(values)?;
         }
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         if matches!(self.execution_lane, NativeExecutionLane::OnTheFly(_)) {

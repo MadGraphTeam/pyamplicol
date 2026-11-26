@@ -1471,7 +1471,7 @@ impl V2Runtime {
                         == rusticol_core::RusticolErrorKind::UnsupportedRuntimeCapability => {}
             Err(error) => return Err(error),
         }
-        Ok(Self {
+        let runtime = Self {
             path,
             artifact,
             record,
@@ -1502,7 +1502,9 @@ impl V2Runtime {
             observables: None,
             induced,
             induced_observables: None,
-        })
+        };
+        runtime.admit_specialization_guards()?;
+        Ok(runtime)
     }
 
     /// The companion of the certified-scaleless families, built on its
@@ -1618,18 +1620,46 @@ impl V2Runtime {
             &self.record.fixed_parameters,
             &self.record.preparation_fixed_parameters,
         )?;
-        // What generation specialised must stay valid at the new values
-        // (in binary64, as the tree runtime evaluates the guards).
+        // A parameter generation specialised to its value keeps exactly that
+        // value: the exact rational bound here against the exact value of the
+        // recorded binary64 (no narrowing of the binding to binary64).
         if !self.specialization_guards.is_empty() {
-            let binding = checked
-                .iter()
-                .map(|(name, value)| (name.clone(), (value.to_f64(), 0.0)))
-                .collect::<BTreeMap<_, _>>();
-            self.specialization_guards.check_binding(&binding, |name| {
-                self.parameters.get(name).map(|value| (value.to_f64(), 0.0))
-            })?;
+            let bound = checked.iter().cloned().collect::<BTreeMap<_, _>>();
+            self.specialization_guards
+                .check_with(|name, generation| guard_bound(bound.get(name), (generation.re, generation.im)))?;
         }
         self.parameters.extend(checked);
+        Ok(())
+    }
+
+    /// Admit the artifact's specialisation guards: a guarded parameter must
+    /// not be the per-point renormalisation scale (the guard could not be
+    /// checked at every point), and a parameter fixed at generation must be
+    /// fixed at its guarded value. Bindings are checked by `set_parameters`.
+    fn admit_specialization_guards(&self) -> RusticolResult<()> {
+        let scale = self.scale_parameter().map(str::to_string);
+        for guard in self.specialization_guards.guards() {
+            for (name, generation) in guard.generation_values() {
+                if scale.as_deref() == Some(name) {
+                    return Err(invalid(format!(
+                        "a specialisation guard holds the renormalisation-scale parameter {name:?}, \
+                         which the one-loop runtime sets per point; regenerate the artifact from a \
+                         model compiled without that specialisation"
+                    )));
+                }
+                if let Some(fixed) = self.record.fixed_parameters.get(name) {
+                    let value = parse_rational(fixed).map_err(|e| invalid(e.message()))?;
+                    if guard_bound(Some(&value), (generation.re, generation.im)).0
+                        == rusticol_core::specialization_guards::Bound::Changed
+                    {
+                        return Err(invalid(format!(
+                            "the parameter {name:?} is fixed at {fixed} but a specialisation \
+                             guard holds it at its generation value; regenerate the artifact"
+                        )));
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
@@ -2952,5 +2982,26 @@ mod tests {
         assert!(!missing.exists());
         assert!(is_v2_artifact(&missing).is_err());
         assert!(V2Runtime::open(&missing, None, Some(1)).is_err());
+    }
+}
+
+/// How an exact loop binding treats a guarded parameter: unchanged only when
+/// the rational is exactly the recorded binary64 value (a real parameter: the
+/// imaginary part must be zero).
+fn guard_bound(
+    value: Option<&Rational>,
+    (re, im): (f64, f64),
+) -> (rusticol_core::specialization_guards::Bound, String) {
+    use rusticol_core::specialization_guards::Bound;
+    let Some(value) = value else {
+        return (Bound::Untouched, String::new());
+    };
+    let exact = (im == 0.0 && re.is_finite())
+        .then(|| decimal_parameter(&format!("{re:.1100}"), "generation value").ok())
+        .flatten();
+    if exact.as_ref() == Some(value) {
+        (Bound::Unchanged, String::new())
+    } else {
+        (Bound::Changed, value.to_string())
     }
 }
