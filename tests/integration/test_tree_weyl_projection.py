@@ -35,6 +35,7 @@ A colour-singlet process has the same value at leading and full colour.
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
 from importlib import resources
@@ -334,3 +335,245 @@ def test_the_class_matches_madgraph_in_every_lane_nightly(
         _assert_close(values, _values(eager, reference["points"]))
         return
     _assert_close(values, reference["total"])
+
+
+# The projection is an identity over every parameter binding the runtime
+# admits, not only the generation's values: a chiral half may be dropped only
+# where it vanishes for all of them. A copy of the shipped sm whose tau-line W
+# couplings get a vector term proportional to MT - 173 (zero at the default
+# MT, but MT stays a runtime parameter) keeps the full neutrino current.
+def _mt_dependent_vector_sm(destination: Path) -> Path:
+    shipped = Path(str(resources.files("pyamplicol").joinpath("assets/models/ufo/sm")))
+    shutil.copytree(shipped, destination, ignore=shutil.ignore_patterns("__pycache__"))
+    couplings = destination / "couplings.py"
+    couplings.write_text(
+        couplings.read_text(encoding="utf-8") + "\nGC_MTV = Coupling(name = 'GC_MTV',\n"
+        "                 value = '(MT - 173.)*(ee*complex(0,1))/(sw*cmath.sqrt(2))',\n"
+        "                 order = {'QED':1})\n",
+        encoding="utf-8",
+    )
+    path = destination / "vertices.py"
+    text = path.read_text(encoding="utf-8")
+    edited = 0
+    for particles in (
+        "P.vt__tilde__, P.ta__minus__, P.W__plus__",
+        "P.ta__plus__, P.vt, P.W__minus__",
+    ):
+        pattern = re.compile(
+            r"(particles = \[ "
+            + re.escape(particles)
+            + r" \],\n\s*color = \[ '1' \],\n\s*)lorentz = \[ L\.FFV2 \],"
+            r"(\n\s*)couplings = \{\(0,0\):C\.(GC_\d+)\}"
+        )
+        text, count = pattern.subn(
+            r"\1lorentz = [ L.FFV2, L.FFV1 ],\2couplings = {(0,0):C.\3,(0,1):C.GC_MTV}",
+            text,
+        )
+        edited += count
+    assert edited == 2
+    path.write_text(text, encoding="utf-8")
+    card = (destination / "restrict_default.dat").read_text(encoding="utf-8")
+    assert "    6 1.730000e+02 # MT" in card
+    (destination / "restrict_mt174.dat").write_text(
+        card.replace("    6 1.730000e+02 # MT", "    6 1.740000e+02 # MT"),
+        encoding="utf-8",
+    )
+    return destination
+
+
+@pytest.fixture(scope="module")
+def mt_vector_models(tmp_path_factory: pytest.TempPathFactory):
+    """The MT-dependent model prepared at MT = 173 (the vector term vanishes)
+    and at MT = 174, with simplification off (the restriction keeps the
+    coupling)."""
+
+    root = tmp_path_factory.mktemp("sm-mt-vector")
+    source = _mt_dependent_vector_sm(root / "sm_mt_vector")
+    built = {}
+    for mass, restriction in (
+        ("173", "default"),
+        ("174", source / "restrict_mt174.dat"),
+    ):
+        bundle = root / f"mt{mass}.pyamplicol-model"
+        ModelSource.from_path(source, restriction=restriction, simplify=False).compile(
+            cache_dir=root / "cache",
+            prepared_output=bundle,
+            evaluator=EvaluatorConfig(),
+        )
+        built[mass] = ModelSource.from_path(bundle)
+    return built
+
+
+def _parameter_value(runtime: Runtime, name: str) -> float:
+    (value,) = (
+        parameter.default_real
+        for parameter in runtime.physics.model_parameters
+        if parameter.name == name
+    )
+    return value
+
+
+def _w_mass(runtime: Runtime) -> float:
+    mz = _parameter_value(runtime, "MZ")
+    alpha = 1 / _parameter_value(runtime, "aEWM1")
+    gf = _parameter_value(runtime, "Gf")
+    return math.sqrt(
+        mz**2 / 2 + math.sqrt(mz**4 / 4 - alpha * math.pi * mz**2 / (gf * math.sqrt(2)))
+    )
+
+
+def _tau_pair_to_w_pair_points(runtime: Runtime) -> list:
+    mta, mw = _parameter_value(runtime, "MTA"), _w_mass(runtime)
+    root = 1000.0
+    p = math.sqrt(root**2 / 4 - mta**2)
+    q = math.sqrt(root**2 / 4 - mw**2)
+    points = []
+    for cosine in (0.3, -0.7):
+        sine = math.sqrt(1 - cosine * cosine)
+        v = [q * sine * 0.6, q * sine * 0.8, q * cosine]
+        points.append(
+            [
+                [root / 2, 0.0, 0.0, p],
+                [root / 2, 0.0, 0.0, -p],
+                [root / 2, *v],
+                [root / 2, *(-x for x in v)],
+            ]
+        )
+    return points
+
+
+def _full_index(pdg: int) -> object:
+    """A full (chirality-0) current of ``pdg`` as the model's flow probes take
+    it."""
+
+    from types import SimpleNamespace
+
+    return SimpleNamespace(
+        particle_id=pdg, pdg=pdg, chirality=0, flavour_flow=(pdg,), coupling_orders=()
+    )
+
+
+def test_a_coupling_zero_only_at_the_defaults_keeps_the_full_current(
+    mt_vector_models,
+) -> None:
+    """The tau-line W vertex of the MT-dependent model has both chiral
+    projections over the admitted bindings, so a full tau current into the
+    neutrino stays full at MT = 173, where its vector half vanishes."""
+
+    from pyamplicol.models.external import CompiledUFOModel
+    from pyamplicol.models.loading import load_compiled_model
+
+    model = CompiledUFOModel(load_compiled_model(mt_vector_models["173"].path))
+    (vertex,) = (v for v in model.vertices if v.particles == (15, 24, 16))
+    full = [_full_index(pdg) for pdg in (15, 24)]
+    assert [f.chirality for f in model.allowed_quantum_flows(vertex, *full)] == [0]
+
+
+def test_the_shipped_w_still_projects(sm_models) -> None:
+    """The shipped sm's W (a structural left-handed projector) still
+    projects."""
+
+    from pyamplicol.models.external import CompiledUFOModel
+    from pyamplicol.models.loading import load_compiled_model
+
+    model = CompiledUFOModel(load_compiled_model(sm_models("default").path))
+    (vertex,) = (v for v in model.vertices if v.particles == (15, 24, 16))
+    full = [_full_index(pdg) for pdg in (15, 24)]
+    chiralities = tuple(f.chirality for f in model.allowed_quantum_flows(vertex, *full))
+    assert chiralities in ((-1,), (1,))
+
+
+@pytest.mark.parametrize(
+    ("lane", "accuracy"), [("compiled", "full"), ("recurrence", "lc")]
+)
+def test_a_runtime_parameter_update_equals_a_fresh_generation(
+    mt_vector_models, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    """ta- ta+ > w- w+ (a neutrino t channel through the tau-line W):
+    the artifact prepared at MT = 173 and evaluated at MT = 174 equals the
+    artifact prepared at MT = 174. With the vector half dropped at MT = 173
+    the two differed by 1.5x."""
+
+    process = "ta- ta+ > w- w+"
+    at_173 = _runtime(
+        mt_vector_models["173"], process, tmp_path / "a173", lane=lane,
+        accuracy=accuracy,
+    )  # fmt: skip
+    at_174 = _runtime(
+        mt_vector_models["174"], process, tmp_path / "a174", lane=lane,
+        accuracy=accuracy,
+    )  # fmt: skip
+    points = _tau_pair_to_w_pair_points(at_174)
+    before = _values(at_173, points)
+    at_173.set_model_parameters({"MT": 174.0})
+    updated = _values(at_173, points)
+    fresh = _values(at_174, points)
+    _assert_close(updated, fresh)
+    assert all(abs(u - b) > 1e-3 * abs(b) for u, b in zip(updated, before, strict=True))
+
+
+def test_a_line_through_a_coupling_zero_only_at_the_defaults_is_refused(
+    mt_vector_models, tmp_path: Path
+) -> None:
+    """vt vt~ > ta+ ta- closes the full neutrino current on the Weyl
+    neutrino: refused, as for any vertex with both chiral projections."""
+
+    with pytest.raises(GenerationError, match=r"dirac-weyl-closure:.*both chiral"):
+        _runtime(mt_vector_models["173"], "vt vt~ > ta+ ta-", tmp_path / "a")
+
+
+# A template with paired rows (a projection and its full-state counterpart)
+# carries the execution ABI, which readers that ignore the markers refuse
+# (they compare the ABI with the plain one); a template without them keeps
+# the plain ABI, and a model loaded with such a pack keeps the full results
+# the pack was built for.
+_PLAIN_TEMPLATE_ABI = "pyamplicol-recurrence-template-v1"
+
+
+def test_paired_rows_carry_an_abi_the_plain_reader_refuses(sm_models) -> None:
+    from pyamplicol.models.prepared import load_prepared_model_bundle
+    from pyamplicol.models.recurrence_template import (
+        RECURRENCE_TEMPLATE_EXECUTION_ABI,
+        RecurrenceTemplateCatalog,
+        RecurrenceTemplateError,
+    )
+
+    pack = load_prepared_model_bundle(sm_models("default").path).kernel_pack
+    template = dict(pack.recurrence_template)
+    header = dict(template["header"])
+    assert header["abi"] == RECURRENCE_TEMPLATE_EXECUTION_ABI != _PLAIN_TEMPLATE_ABI
+    assert pack.provenance["recurrence_template_abi"] == header["abi"]
+    # Relabelled with the plain ABI the catalog is refused: no reader takes
+    # marked rows as plain ones.
+    template["header"] = {**header, "abi": _PLAIN_TEMPLATE_ABI}
+    with pytest.raises(RecurrenceTemplateError, match="does not match its transitions"):
+        RecurrenceTemplateCatalog.from_dict(template)
+
+
+def test_a_pack_without_paired_rows_keeps_the_full_results(sm_models) -> None:
+    """A model whose prepared pack has the plain ABI (prepared before the
+    projection) keeps the full result of full inputs, which that pack has
+    kernels for; without a pack, or with the execution ABI, it projects."""
+
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    from pyamplicol.models.external import CompiledUFOModel
+    from pyamplicol.models.loading import load_compiled_model
+
+    compiled = load_compiled_model(sm_models("default").path)
+    old_pack = SimpleNamespace(
+        kernel_pack=SimpleNamespace(
+            recurrence_template={"header": {"abi": _PLAIN_TEMPLATE_ABI}}
+        )
+    )
+    full = [_full_index(pdg) for pdg in (15, 24)]
+    for bundle, expected in (
+        (old_pack, ((0,),)),
+        (None, ((-1,), (1,))),
+        (compiled.prepared_bundle, ((-1,), (1,))),
+    ):
+        model = CompiledUFOModel(replace(compiled, _prepared_bundle=bundle))
+        (vertex,) = (v for v in model.vertices if v.particles == (15, 24, 16))
+        flows = model.allowed_quantum_flows(vertex, *full)
+        assert tuple(flow.chirality for flow in flows) in expected
