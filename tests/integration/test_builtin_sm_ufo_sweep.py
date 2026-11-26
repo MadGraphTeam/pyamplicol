@@ -10,9 +10,10 @@ quark lines at explicit coupling orders. The committed reference
 (``tests/fixtures/tree/builtin-sm-ufo-sm.json``, MG5 sm with its no_masses
 restriction, the built-in masses, widths and couplings) gives the UFO value
 at two points, null where the UFO sm has no tree amplitude, or the typed
-refusal the UFO sm raises for a process it cannot serve (``refusal``;
-``"refused: dirac-weyl-closure"``: a massive top on a line with a massless
-b, an engine-wide limitation of the tree lanes). Each lane of the built-in
+refusal the UFO sm raises for a process it cannot serve (``refusal``; the
+four processes with a massive top on a line with a massless b, refused with
+``dirac-weyl-closure`` before the W projected such lines, now have values;
+the reference has no refusal at present). Each lane of the built-in
 SM must reproduce every value to 1e-10 relative and refuse every other entry
 as the UFO sm does. The nightly variant runs each of the 901 relabelling
 representatives of the 2 -> 2 processes in every lane against the live UFO

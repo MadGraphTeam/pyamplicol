@@ -550,7 +550,7 @@ def _reachable_flows(
             sorted(
                 {
                     int(flow.chirality)
-                    for flow in model.allowed_quantum_flows(vertex, left, right)
+                    for flow in model.recurrence_quantum_flows(vertex, left, right)
                 }
             )
         )

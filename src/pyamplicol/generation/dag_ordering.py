@@ -70,13 +70,15 @@ def _direct_contraction_ir(
 
     A fermion current whose line passed a massive fermion, an internal
     propagator or a massive external state, is a Dirac (chirality-0) current,
-    while a massless external fermion is a Weyl (chirality +-1) state. Where
-    a chiral vertex joins massive and massless fermions on one line (b -> t
-    or t -> b through a W with a massless b, nu_tau -> tau), the line's
-    current can reach a massless sink as a Dirac current. Models install no
-    Dirac-Weyl contraction, so a tree closure would silently drop its
-    diagrams (b b~ > w+ w- without the t channel, t t~ > b b~ without the W
-    exchange); a tree DAG fails closed instead
+    while a massless external fermion is a Weyl (chirality +-1) state. A
+    vertex with a single chiral projector (every W vertex, Z to neutrinos)
+    that takes such a line to a massless fermion makes it a Weyl state again
+    (the model's quantum flows, ``CompiledUFOModel._result_chiralities``), so
+    the line closes on its massless sink as any Weyl line. A vertex with both
+    chiral projections (left- and right-handed couplings) between a massive
+    and a massless fermion keeps the Dirac current, which can then reach a
+    massless sink. Models install no Dirac-Weyl contraction, so a tree
+    closure would silently drop its diagrams; a tree DAG fails closed instead
     (``DiracWeylClosureUnsupported``).
 
     A loop Born DAG (``loop_born``, ``GenericDAGCompiler`` with
@@ -113,11 +115,12 @@ def _direct_contraction_ir(
             f"particles {left.particle_id} and {right.particle_id}, external "
             f"labels {left.external_labels} and {right.external_labels}; a "
             "fermion line that joins massive and massless fermions through a "
-            "chiral vertex (a massive internal or external fermion on a line "
-            "with a massless sink) has no Dirac-Weyl closure contraction. Keep "
-            "the light fermion massive in the tree model (the default "
-            "restriction with its mass fixed to zero) or use the loop engine, "
-            "whose Born closes at a vertex"
+            "vertex with both chiral projections (left- and right-handed "
+            "couplings; a single chiral projector makes the line a Weyl state "
+            "again) has no Dirac-Weyl closure contraction. Keep the light "
+            "fermion massive in the tree model (the default restriction with "
+            "its mass fixed to zero) or use the loop engine, whose Born closes "
+            "at a vertex"
         )
     return contraction
 

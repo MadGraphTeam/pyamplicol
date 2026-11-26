@@ -1886,6 +1886,14 @@ class V2VirtualRuntime:
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
         self._scale_parameter = record["scale_parameter"]
+        if self._specialization_guards:
+            from pyamplicol.models.specialization_guards import (
+                admit_loop_specialization_guards,
+            )
+
+            admit_loop_specialization_guards(
+                self._specialization_guards, self._fixed, self._scale_parameter
+            )
         # The mass-shell guard's mass evaluator (``_bound_leg_masses``): the
         # model's parameter records and each leg's mass parameter (the
         # representative's legs); the rest of the compiled model is read
@@ -3569,13 +3577,14 @@ class V2VirtualRuntime:
             self._prepared_fixed,
         )
         if self._specialization_guards:
-            from pyamplicol.models.specialization_guards import binding_refusal
+            from pyamplicol.models.specialization_guards import (
+                exact_decimal_binding_refusal,
+            )
 
-            current = getattr(self, "_parameters", {})
-            refusal = binding_refusal(
-                self._specialization_guards,
-                {name: complex(float(value)) for name, value in checked.items()},
-                {name: complex(float(value)) for name, value in current.items()},
+            # Exact: the decimal value as bound against the exact value of
+            # the recorded binary64 (no narrowing of the binding).
+            refusal = exact_decimal_binding_refusal(
+                self._specialization_guards, checked
             )
             if refusal is not None:
                 raise ValueError(refusal)

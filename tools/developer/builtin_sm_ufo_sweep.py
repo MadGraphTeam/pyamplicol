@@ -15,8 +15,7 @@ The reference is the UFO ``sm`` of MG5_aMC 3.7.0 with its ``no_masses``
 restriction (massless b and tau, as built in), compiled lane, binary64, at
 two RAMBO points per process (``on_shell_points``); ``None`` marks a process
 without a tree amplitude, ``"refused: <key>"`` one the UFO sm refuses with a
-typed engine refusal (``refusal``; ``dirac-weyl-closure``: a massive top on a
-line with a massless b). Writing the committed reference::
+typed engine refusal (``refusal``). Writing the committed reference::
 
     python tools/developer/builtin_sm_ufo_sweep.py reference \\
         --madgraph "$WORKSPACE/reference/sources/MG5_aMC_v3_7_0" \\

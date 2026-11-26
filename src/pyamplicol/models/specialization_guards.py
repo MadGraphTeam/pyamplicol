@@ -1,66 +1,68 @@
 # SPDX-License-Identifier: 0BSD
-"""Specialisation guards: conditions on runtime parameters under which what
-generation dropped or simplified stays valid.
+"""Specialisation guards: what generation specialised to the values of
+runtime parameters, and the parameters it binds.
 
 Generation specialises a model to the values its parameters have when it
 runs. Restriction simplification removes a coupling whose value is zero at
-the restriction card; a derived parameter that is real at its default may be
-stored with one runtime component; a colour flow without diagrams is a zero
-amplitude. Each is exact for every binding of the runtime (mutable)
-parameters only when it holds identically. When it holds only at the
-generation-time values, the producer records a guard: the condition, the
-mutable parameters it depends on and a message. Every runtime binding
-(``Runtime.set_model_parameters`` and the paths built on it, the exported
-SDKs, the one-loop runtime's parameter check) evaluates the guards of its
-artifact and refuses, applying nothing, a binding under which one fails.
-Structural specialisations (no mutable dependence, or an identically
-vanishing expression) record nothing.
+the restriction card; a vertex passes a massless fermion only in the
+chiralities whose coupling component is nonzero. Each is exact for every
+binding of the runtime (mutable) parameters only when it holds identically.
+
+The rule. A specialisation that is proven for every binding at generation
+records nothing (no mutable dependence; a ``vanishing`` expression that
+expands to zero; a ``real`` expression provably real with every external
+declared real taken as a real symbol). Any other is recorded as a guard
+that holds *only while every parameter it depends on keeps its generation
+value*: the binary64 value (both components for a complex parameter) the
+artifact recorded, compared exactly with the value as bound (after a text,
+a parameter card or a JSON number has been read as binary64). Carriers that
+evaluate exactly (the one-loop runtime's decimals, the tree lanes' extended
+precision) read a parameter as the shortest decimal that rounds to its
+binary64 (``exact_generation_value``: 91.188, not the binary64 nearest it,
+as a card and the loop plan's defaults give it); a vanishing specialisation
+must be exactly zero there, or the producer refuses it
+(``InexactSpecialization``). No numerical
+test accepts a changed value, whatever the tolerance: a guarded artifact
+refuses any change of such a parameter, even one under which the condition
+would in fact still hold, and the remedy is to generate again at the new
+value. A vanishing expression with a factor that is exactly zero at the
+generation values depends only on that factor's parameters (the factor
+with the fewest).
 
 A guard is
 
 ``kind``
-    ``"vanishing"``: the expression is zero; ``"real"``: it is real.
+    ``"vanishing"`` (the expression was zero) or ``"real"`` (it was real).
 ``subject``, ``producer``, ``message``
     What was specialised, who specialised it and what to do instead.
 ``parameters``
-    The mutable (external) parameters the condition depends on, sorted.
+    The mutable (external) parameters it holds, sorted.
 ``generation_values``
-    Their values at generation, for a parameter the runtime does not expose
-    (it cannot change there).
-``program``
-    The condition's expression, written in ``parameters`` alone, as a
-    post-order program over complex binary64 (``evaluate_program``). ``None``
-    when the expression uses a function the program cannot represent: the
-    guard then holds only while every parameter keeps its generation value.
+    Their binary64 values at generation (real, imaginary).
 ``expression``
-    The same expression as Symbolica text, for people.
+    The specialised expression as Symbolica text, for people.
 
-The test, at a binding: the program gives the value ``E`` and a magnitude
-bound ``S`` (the sum of the moduli of the terms, products of the bounds of
-the factors, the modulus of a function's value), the scale of the rounding
-error of evaluating ``E`` in binary64. ``"vanishing"`` holds iff
-``|E| <= TOLERANCE * S``, ``"real"`` iff ``|Im E| <= TOLERANCE * S``, with
-``TOLERANCE = 64 * 2**-53``: a value zero up to rounding holds, any other
-fails. A guard holds at its generation values by construction (the producer
-checks it).
+Every runtime binding (``Runtime.set_model_parameters`` and the paths built
+on it, the exported SDKs, the one-loop runtime) refuses, applying nothing, a
+binding that gives a guarded parameter another value.
 
 Where guards live: ``CompiledModel.specialization_guards`` (the model's own,
 for every process; compiled-model schema ``GUARDED_COMPILED_MODEL_SCHEMA_
 VERSION`` when there is one) and the process artifacts'
 ``specialization_guards`` (a generation-time producer's, for that process).
 An artifact with at least one guard stores them all in ``GUARD_FILE_PATH``
-(payload role ``GUARD_PAYLOAD_ROLE``) and requires the runtime capability
-``GUARD_RUNTIME_CAPABILITY``: a reader that does not evaluate guards refuses
-the artifact instead of ignoring them.
+under the payload role ``GUARD_PAYLOAD_ROLE``, which released readers refuse.
 """
 
 from __future__ import annotations
 
-import cmath
+import contextlib
 import math
 import threading
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
+from decimal import Decimal
+from fractions import Fraction
 from typing import Any
 
 #: Where an artifact stores its guards, and the payload's role and kind.
@@ -68,45 +70,27 @@ GUARD_FILE_PATH = "model/specialization-guards.json"
 GUARD_PAYLOAD_ROLE = "specialization-guards"
 GUARD_FILE_KIND = "pyamplicol-specialization-guards"
 GUARD_FILE_SCHEMA_VERSION = 1
-#: Required by an artifact that records a guard (released readers refuse it).
-GUARD_RUNTIME_CAPABILITY = "rusticol.specialization-guards.v1"
-#: A value whose modulus (``"vanishing"``) or imaginary part (``"real"``) is
-#: at most this many times its magnitude bound is zero up to rounding.
-TOLERANCE = 64.0 * 2.0**-53
 KINDS = ("vanishing", "real")
 #: The refusal prefix of a binding that a guard rejects.
 REFUSAL_PREFIX = "specialisation-guard"
-
-#: Functions a program can evaluate (complex binary64, principal branches).
-_UNARY_FUNCTIONS = {
-    "sqrt": cmath.sqrt,
-    "exp": cmath.exp,
-    "log": cmath.log,
-    "sin": cmath.sin,
-    "cos": cmath.cos,
-    "tan": cmath.tan,
-    "asin": cmath.asin,
-    "acos": cmath.acos,
-    "atan": cmath.atan,
-    "sinh": cmath.sinh,
-    "cosh": cmath.cosh,
-    "tanh": cmath.tanh,
-    "conj": lambda value: value.conjugate(),
-    "abs": lambda value: complex(abs(value), 0.0),
-}
-#: UFO spellings of the same functions.
-_FUNCTION_ALIASES = {
-    "complexconjugate": "conj",
-    "cmath.sqrt": "sqrt",
-}
 #: Symbolica's own constants are spelled "\U0001d70b" (pi) and "\U0001d452" (e).
 _PI_SYMBOL = "\U0001d70b"
 _E_SYMBOL = "\U0001d452"
 _CONSTANTS = {"I": 1j, "pi": math.pi, _PI_SYMBOL: math.pi, _E_SYMBOL: math.e}
 
 
-class UnrepresentableExpression(ValueError):
-    """An expression a guard program cannot represent."""
+class InexactSpecialization(ValueError):
+    """A vanishing expression that is zero at the generation values only in
+    binary64 arithmetic, not exactly at their decimals: exact carriers would
+    evaluate a term the specialisation dropped."""
+
+
+def exact_generation_value(component: float) -> Fraction:
+    """The exact value of a recorded binary64 generation value for an exact
+    carrier: the shortest decimal that rounds to it (``repr``), as a card,
+    the loop plan's defaults and the tree lanes' extended precision read it."""
+
+    return Fraction(Decimal(repr(float(component))))
 
 
 @dataclass(frozen=True)
@@ -116,7 +100,6 @@ class SpecializationGuard:
     producer: str
     parameters: tuple[str, ...]
     generation_values: Mapping[str, tuple[float, float]]
-    program: tuple[tuple[object, ...], ...] | None
     expression: str
     message: str
     process_ids: tuple[str, ...] | None = field(default=None)
@@ -124,6 +107,8 @@ class SpecializationGuard:
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
             raise ValueError(f"unknown specialisation-guard kind {self.kind!r}")
+        if not self.parameters:
+            raise ValueError("a specialisation guard holds at least one parameter")
         if tuple(sorted(set(self.parameters))) != tuple(self.parameters):
             raise ValueError(
                 "specialisation-guard parameters must be sorted and unique"
@@ -132,6 +117,11 @@ class SpecializationGuard:
             raise ValueError(
                 "specialisation-guard generation values must name its parameters"
             )
+        for name, value in self.generation_values.items():
+            if not all(math.isfinite(component) for component in value):
+                raise ValueError(
+                    f"specialisation-guard generation value of {name!r} is not finite"
+                )
 
     # -- construction -----------------------------------------------------------
 
@@ -145,8 +135,8 @@ class SpecializationGuard:
         producer: str,
         message: str,
     ) -> SpecializationGuard | None:
-        """The guard that ``expression`` stays zero, or ``None`` when it is zero
-        for every binding (structural: nothing to record)."""
+        """The guard of ``expression`` (zero at generation), or ``None`` when it
+        vanishes for every binding (structural: nothing to record)."""
 
         return cls._build(
             "vanishing",
@@ -167,9 +157,9 @@ class SpecializationGuard:
         producer: str,
         message: str,
     ) -> SpecializationGuard | None:
-        """The guard that ``expression`` stays real, or ``None`` when it is real
-        for every binding (no mutable dependence, or provably real in the
-        environment's real parameters: ``is_real_for_every_binding``)."""
+        """The guard of ``expression`` (real at generation), or ``None`` when it
+        is real for every binding (no mutable dependence, or provably real in
+        the environment's real parameters: ``is_real_for_every_binding``)."""
 
         return cls._build(
             "real",
@@ -177,6 +167,33 @@ class SpecializationGuard:
             expression,
             subject=subject,
             producer=producer,
+            message=message,
+        )
+
+    @classmethod
+    def holding(
+        cls,
+        kind: str,
+        generation_values: Mapping[str, complex],
+        *,
+        subject: str,
+        producer: str,
+        message: str,
+        expression: str = "",
+    ) -> SpecializationGuard:
+        """A guard that holds the named parameters at the given generation
+        values (a producer that knows the parameters directly)."""
+
+        return cls(
+            kind=kind,
+            subject=subject,
+            producer=producer,
+            parameters=tuple(sorted(generation_values)),
+            generation_values={
+                name: (float(complex(value).real), float(complex(value).imag))
+                for name, value in generation_values.items()
+            },
+            expression=expression,
             message=message,
         )
 
@@ -195,35 +212,33 @@ class SpecializationGuard:
         parameters = environment.mutable_dependencies(resolved)
         if not parameters:
             return None
-        if kind == "vanishing" and _is_identically_zero(resolved):
+        if kind == "vanishing":
+            if _is_identically_zero(resolved):
+                return None
+            parameters = _vanishing_factor_dependencies(environment, resolved)
+            if not parameters:
+                return None
+            if not _exactly_zero_at_generation(
+                environment, resolved, environment.mutable_dependencies(resolved)
+            ):
+                raise InexactSpecialization(
+                    f"{subject}: the expression is zero at the generation values "
+                    "only in binary64 arithmetic, not exactly at their decimals; "
+                    "compile the model with simplify=False"
+                )
+        elif environment.is_real_for_every_binding(resolved):
             return None
-        if kind == "real" and environment.is_real_for_every_binding(resolved):
-            return None
-        try:
-            program: tuple[tuple[object, ...], ...] | None = compile_program(
-                resolved, parameters, environment
-            )
-        except UnrepresentableExpression:
-            program = None
-        generation_values = {
-            name: environment.generation_value(name) for name in parameters
-        }
-        guard = cls(
+        return cls(
             kind=kind,
             subject=subject,
             producer=producer,
             parameters=parameters,
-            generation_values=generation_values,
-            program=program,
+            generation_values={
+                name: environment.generation_value(name) for name in parameters
+            },
             expression=resolved.to_canonical_string(),
             message=message,
         )
-        if program is not None and guard.failure({}) is not None:
-            # The program disagrees with the producer's own evaluation at the
-            # generation values (a different rounding): hold the parameters
-            # at those values instead.
-            guard = replace(guard, program=None)
-        return guard
 
     def for_processes(self, process_ids: Iterable[str]) -> SpecializationGuard:
         return SpecializationGuard(
@@ -232,7 +247,6 @@ class SpecializationGuard:
             producer=self.producer,
             parameters=self.parameters,
             generation_values=self.generation_values,
-            program=self.program,
             expression=self.expression,
             message=self.message,
             process_ids=tuple(sorted(set(process_ids))),
@@ -242,36 +256,26 @@ class SpecializationGuard:
 
     def failure(self, values: Mapping[str, complex]) -> str | None:
         """Why the guard fails at ``values`` (a parameter absent from it keeps
-        its generation value), or ``None`` when it holds."""
+        its generation value), or ``None`` when every parameter it holds has
+        exactly its generation value."""
 
-        bound = [
-            complex(values[name])
-            if name in values
-            else complex(*self.generation_values[name])
-            for name in self.parameters
-        ]
-        if self.program is None:
-            changed = [
-                name
-                for name, value in zip(self.parameters, bound, strict=True)
-                if value != complex(*self.generation_values[name])
-            ]
-            if not changed:
-                return None
-            return (
-                f"{', '.join(changed)} changed and the condition is not evaluable "
-                "outside its generation values"
-            )
-        value, magnitude = evaluate_program(self.program, bound)
-        if not (math.isfinite(value.real) and math.isfinite(value.imag)):
-            return f"the condition evaluates to {value}"
-        if self.kind == "vanishing":
-            if abs(value) <= TOLERANCE * magnitude:
-                return None
-            return f"the dropped value is {_format_complex(value)}, not zero"
-        if abs(value.imag) <= TOLERANCE * magnitude:
+        changed = []
+        for name in self.parameters:
+            if name not in values:
+                continue
+            value = complex(values[name])
+            generation = self.generation_values[name]
+            if (value.real, value.imag) != (generation[0], generation[1]):
+                changed.append(
+                    f"{name} = {_format_complex(value)} (generated at "
+                    f"{_format_complex(complex(*generation))})"
+                )
+        if not changed:
             return None
-        return f"the value is {_format_complex(value)}, not real"
+        return (
+            ", ".join(changed)
+            + "; the artifact holds this parameter at its generation value"
+        )
 
     # -- serialisation -------------------------------------------------------------
 
@@ -285,9 +289,6 @@ class SpecializationGuard:
                 name: [float(value[0]), float(value[1])]
                 for name, value in sorted(self.generation_values.items())
             },
-            "program": None
-            if self.program is None
-            else [list(instruction) for instruction in self.program],
             "expression": self.expression,
             "message": self.message,
         }
@@ -297,7 +298,6 @@ class SpecializationGuard:
 
     @staticmethod
     def from_dict(payload: Mapping[str, object]) -> SpecializationGuard:
-        program = payload.get("program")
         values = payload.get("generation_values")
         if not isinstance(values, Mapping):
             raise ValueError("specialisation-guard generation_values must be an object")
@@ -311,9 +311,6 @@ class SpecializationGuard:
                 str(name): (float(value[0]), float(value[1]))
                 for name, value in values.items()
             },
-            program=None
-            if program is None
-            else tuple(tuple(instruction) for instruction in _sequence(program)),
             expression=str(payload["expression"]),
             message=str(payload["message"]),
             process_ids=None
@@ -359,23 +356,112 @@ def binding_refusal(
     binding: Mapping[str, complex],
     current: Mapping[str, complex] | None = None,
 ) -> str | None:
-    """The refusal message of ``binding`` (new values over ``current``; a
-    parameter in neither keeps its generation value), or ``None`` when every
-    guard holds. Only guards that depend on a bound parameter are evaluated."""
+    """The refusal message of ``binding`` (the new values by name), or ``None``
+    when it gives every guarded parameter its generation value. ``current`` is
+    accepted for the callers' convenience and not needed: a refused binding
+    applies nothing, so a guarded parameter's current value is its generation
+    value."""
 
-    values = dict(current or {})
-    values.update(binding)
+    del current
     failures = []
     for guard in guards:
         touched = sorted(set(guard.parameters) & set(binding))
         if not touched:
             continue
-        failure = guard.failure(values)
+        failure = guard.failure(binding)
         if failure is not None:
             failures.append(describe_failure(guard, touched, failure))
     if not failures:
         return None
     return "; ".join(failures)
+
+
+def exact_decimal_binding_refusal(
+    guards: Iterable[SpecializationGuard], binding: Mapping[str, object]
+) -> str | None:
+    """``binding_refusal`` for an exact binding (decimal text or numbers read
+    exactly, as the one-loop runtime binds them): a guarded parameter is
+    unchanged only when its value equals the exact value of the recorded
+    binary64 and the recorded imaginary part is zero."""
+
+    failures = []
+    for guard in guards:
+        changed = []
+        for name in guard.parameters:
+            if name not in binding:
+                continue
+            real, imaginary = guard.generation_values[name]
+            value = _exact_value(binding[name])
+            if (
+                imaginary != 0.0
+                or value is None
+                or value != exact_generation_value(real)
+            ):
+                changed.append(
+                    f"{name} = {binding[name]} (generated at "
+                    f"{_format_complex(complex(real, imaginary))})"
+                )
+        if changed:
+            failures.append(
+                describe_failure(
+                    guard,
+                    [entry.split(" ", 1)[0] for entry in changed],
+                    ", ".join(changed)
+                    + "; the artifact holds this parameter at its generation value",
+                )
+            )
+    return "; ".join(failures) if failures else None
+
+
+def _exact_value(value: object) -> Fraction | None:
+    """``value`` as an exact rational: a float as its shortest decimal, an
+    int, ``Fraction`` or ``Decimal`` exactly, text as a decimal or a
+    fraction."""
+
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, float):
+        # A float binding is read as its shortest decimal, as the runtime
+        # reads it.
+        return exact_generation_value(value) if math.isfinite(value) else None
+    if isinstance(value, int | Fraction | Decimal):
+        try:
+            return Fraction(value)
+        except (ArithmeticError, ValueError):
+            return None
+    text = str(value).strip().replace("_", "")
+    try:
+        return Fraction(Decimal(text))
+    except (ArithmeticError, ValueError):
+        pass
+    try:
+        return Fraction(text)
+    except (ArithmeticError, ValueError, ZeroDivisionError):
+        return None
+
+
+def admit_loop_specialization_guards(
+    guards: Iterable[SpecializationGuard],
+    fixed: Mapping[str, object],
+    scale_parameter: str | None,
+) -> None:
+    """Refuse a one-loop plan whose guards it cannot honour: a guarded
+    parameter that is the renormalisation scale (set per point), or one fixed
+    at generation to a value other than its guarded one."""
+
+    for guard in guards:
+        for name in guard.parameters:
+            if scale_parameter is not None and name == scale_parameter:
+                raise ValueError(
+                    f"{REFUSAL_PREFIX}: {guard.subject} holds the renormalisation-"
+                    f"scale parameter {name!r}, which the one-loop runtime sets "
+                    "per point; regenerate from a model compiled without that "
+                    "specialisation"
+                )
+            if name in fixed:
+                refusal = exact_decimal_binding_refusal([guard], {name: fixed[name]})
+                if refusal is not None:
+                    raise ValueError(f"{refusal} (a fixed parameter of the plan)")
 
 
 def describe_failure(
@@ -386,6 +472,120 @@ def describe_failure(
         f"{guard.kind} specialisation made at generation ({guard.subject}, "
         f"recorded by {guard.producer}): {failure}; {guard.message}"
     )
+
+
+def _vanishing_factor_dependencies(
+    environment: GuardEnvironment, resolved: Any
+) -> tuple[str, ...]:
+    """The parameters a vanishing ``resolved`` depends on through its zero: the
+    mutable dependencies of the factor (of its top-level product or of its
+    factorisation) that is exactly zero at the generation values, the one with
+    the fewest; all its mutable dependencies when no factor is provably zero
+    there. A factor ``f`` with ``f(generation) = 0`` exactly keeps the product
+    zero while its own parameters keep their generation values."""
+
+    candidates = [resolved]
+    # Factorisation is an optional refinement: an expression Symbolica cannot
+    # factor keeps its top-level product.
+    with contextlib.suppress(Exception):
+        candidates.append(_with_imaginary_unit(resolved).factor())
+    best = environment.mutable_dependencies(resolved)
+    for candidate in candidates:
+        for factor in _product_factors(candidate):
+            dependencies = environment.mutable_dependencies(factor)
+            if not dependencies or len(dependencies) >= len(best):
+                continue
+            if _exactly_zero_at_generation(environment, factor, dependencies):
+                best = dependencies
+    return best
+
+
+def _product_factors(expression: Any) -> list[Any]:
+    """The factors of a top-level product (a positive integer power counts as
+    its base), or the expression itself."""
+
+    from symbolica import AtomType
+
+    factors = (
+        list(expression) if expression.get_type() == AtomType.Mul else [expression]
+    )
+    out = []
+    for factor in factors:
+        if factor.get_type() == AtomType.Pow:
+            base, exponent = list(factor)
+            if exponent.get_type() == AtomType.Num:
+                try:
+                    power = Fraction(str(exponent.to_canonical_string()))
+                except (ValueError, ZeroDivisionError):
+                    power = Fraction(0)
+                if power > 0 and power.denominator == 1:
+                    out.append(base)
+                    continue
+        out.append(factor)
+    return out
+
+
+def _exactly_zero_at_generation(
+    environment: GuardEnvironment, factor: Any, dependencies: Sequence[str]
+) -> bool:
+    """Whether ``factor`` is exactly zero (in exact rational arithmetic) with
+    its parameters at their binary64 generation values."""
+
+    from symbolica import E, Expression
+
+    substituted = _rational_literals(_with_imaginary_unit(factor))
+    for symbol in factor.get_all_symbols(False):
+        name = _short_name(symbol.get_name())
+        if name not in dependencies:
+            continue
+        real, imaginary = environment.generation_value(name)
+        value = E(_exact_text(real))
+        if imaginary != 0.0:
+            value = value + E(_exact_text(imaginary)) * Expression.I
+        substituted = substituted.replace(symbol, value)
+    try:
+        expanded = substituted.expand()
+        return bool(expanded.is_constant()) and expanded.to_canonical_string() == "0"
+    except (TypeError, ValueError):
+        return False
+
+
+def _rational_literals(expression: Any) -> Any:
+    """``expression`` with every binary64 literal (a UFO ``91.188``) read as
+    its shortest decimal, as exact carriers read numbers."""
+
+    from symbolica import AtomType, E
+
+    found: dict[str, Any] = {}
+
+    def collect(atom: Any) -> None:
+        kind = atom.get_type()
+        if kind == AtomType.Num:
+            text = atom.to_canonical_string()
+            if ("." in text or "e" in text) and text not in found:
+                try:
+                    value = float(text)
+                except ValueError:
+                    return
+                if math.isfinite(value):
+                    found[text] = (atom, value)
+            return
+        if kind in (AtomType.Add, AtomType.Mul, AtomType.Pow, AtomType.Fn):
+            for child in atom:
+                collect(child)
+
+    collect(expression)
+    for atom, value in found.values():
+        exact = exact_generation_value(value)
+        expression = expression.replace(
+            atom, E(f"({exact.numerator}/{exact.denominator})")
+        )
+    return expression
+
+
+def _exact_text(value: float) -> str:
+    exact = exact_generation_value(value)
+    return f"({exact.numerator}/{exact.denominator})"
 
 
 # -- the parameter environment ---------------------------------------------------
@@ -546,183 +746,6 @@ class GuardEnvironment:
         )
 
 
-# -- programs ---------------------------------------------------------------------
-#
-# A program is a post-order list of instructions over a stack of
-# (value, magnitude) pairs:
-#   ["c", re, im]    push a constant
-#   ["p", k]         push parameter k of the guard's ``parameters``
-#   ["add", n]       pop n, push their sum (magnitude: sum of magnitudes)
-#   ["mul", n]       pop n, push their product (magnitude: product)
-#   ["pow"]          pop exponent, base; push base**exponent (an integer
-#                    exponent n >= 0: magnitude**n; otherwise |value|)
-#   ["fn", name]     pop one, push name(value) (magnitude |value|; conj and
-#                    abs keep the argument's magnitude)
-
-
-def compile_program(
-    resolved: Any,
-    parameters: Sequence[str],
-    environment: GuardEnvironment | None = None,
-) -> tuple[tuple[object, ...], ...]:
-    index = {name: position for position, name in enumerate(parameters)}
-    program: list[tuple[object, ...]] = []
-    _emit(resolved, index, program, environment)
-    return tuple(program)
-
-
-def _emit(
-    expression: Any,
-    index: Mapping[str, int],
-    program: list[tuple[object, ...]],
-    environment: GuardEnvironment | None,
-) -> None:
-    from symbolica import AtomType
-
-    kind = expression.get_type()
-    if kind == AtomType.Num:
-        value = complex(expression.evaluate({}))
-        program.append(("c", float(value.real), float(value.imag)))
-        return
-    if kind == AtomType.Var:
-        name = _short_name(expression.get_name())
-        if name in index:
-            program.append(("p", index[name]))
-            return
-        if name in _CONSTANTS:
-            value = _CONSTANTS[name]
-            program.append(("c", float(value.real), float(value.imag)))
-            return
-        raise UnrepresentableExpression(f"unresolved symbol {name!r}")
-    children = list(expression)
-    if kind == AtomType.Add or kind == AtomType.Mul:
-        for child in children:
-            _emit(child, index, program, environment)
-        program.append(("add" if kind == AtomType.Add else "mul", len(children)))
-        return
-    if kind == AtomType.Pow:
-        base, exponent = children
-        if (
-            base.get_type() == AtomType.Var
-            and _short_name(base.get_name()) == _E_SYMBOL
-        ):
-            _emit(exponent, index, program, environment)
-            program.append(("fn", "exp"))
-            return
-        _emit(base, index, program, environment)
-        _emit(exponent, index, program, environment)
-        program.append(("pow",))
-        return
-    if kind == AtomType.Fn:
-        name = _short_name(expression.get_name())
-        name = _FUNCTION_ALIASES.get(name, name)
-        if name == "complex" and len(children) == 2:
-            _emit(children[0], index, program, environment)
-            _emit(children[1], index, program, environment)
-            program.append(("c", 0.0, 1.0))
-            program.append(("mul", 2))
-            program.append(("add", 2))
-            return
-        if name in _UNARY_FUNCTIONS and len(children) == 1:
-            _emit(children[0], index, program, environment)
-            program.append(("fn", name))
-            return
-        raise UnrepresentableExpression(f"function {name!r} is not representable")
-    raise UnrepresentableExpression(f"atom {kind!r} is not representable")
-
-
-def evaluate_program(
-    program: Sequence[Sequence[object]], parameters: Sequence[complex]
-) -> tuple[complex, float]:
-    """The value and magnitude bound of ``program`` at ``parameters``."""
-
-    stack: list[tuple[complex, float]] = []
-    for instruction in program:
-        op = instruction[0]
-        if op == "c":
-            value = complex(float(instruction[1]), float(instruction[2]))
-            stack.append((value, abs(value)))
-        elif op == "p":
-            value = complex(parameters[int(instruction[1])])
-            stack.append((value, abs(value)))
-        elif op == "add" or op == "mul":
-            count = int(instruction[1])
-            if count < 1 or count > len(stack):
-                raise ValueError("invalid specialisation-guard program")
-            operands = stack[-count:]
-            del stack[-count:]
-            if op == "add":
-                total = complex(0.0, 0.0)
-                magnitude = 0.0
-                for value, bound in operands:
-                    total += value
-                    magnitude += bound
-            else:
-                total = complex(1.0, 0.0)
-                magnitude = 1.0
-                for value, bound in operands:
-                    total *= value
-                    magnitude *= bound
-            stack.append((total, magnitude))
-        elif op == "pow":
-            if len(stack) < 2:
-                raise ValueError("invalid specialisation-guard program")
-            exponent, _ = stack.pop()
-            base, base_bound = stack.pop()
-            integral = exponent.imag == 0.0 and exponent.real == math.floor(
-                exponent.real
-            )
-            if integral and abs(exponent.real) <= 64:
-                power = int(exponent.real)
-                value = _integer_power(base, power)
-                bound = base_bound**power if power >= 0 else abs(value)
-            else:
-                value = _complex_power(base, exponent)
-                bound = abs(value)
-            stack.append((value, bound))
-        elif op == "fn":
-            if not stack:
-                raise ValueError("invalid specialisation-guard program")
-            argument, bound = stack.pop()
-            name = str(instruction[1])
-            function = _UNARY_FUNCTIONS.get(name)
-            if function is None:
-                raise ValueError(f"unknown specialisation-guard function {name!r}")
-            value = complex(function(argument))
-            stack.append((value, bound if name in ("conj", "abs") else abs(value)))
-        else:
-            raise ValueError(f"unknown specialisation-guard instruction {op!r}")
-    if len(stack) != 1:
-        raise ValueError("invalid specialisation-guard program")
-    return stack[0]
-
-
-def _integer_power(base: complex, power: int) -> complex:
-    if power < 0:
-        return (
-            1.0 / _integer_power(base, -power) if base != 0 else complex(math.inf, 0.0)
-        )
-    result = complex(1.0, 0.0)
-    factor = base
-    while power:
-        if power & 1:
-            result *= factor
-        factor *= factor
-        power >>= 1
-    return result
-
-
-def _complex_power(base: complex, exponent: complex) -> complex:
-    if base == 0:
-        return complex(0.0, 0.0) if exponent.real > 0 else complex(math.inf, 0.0)
-    if exponent == 0.5:
-        return cmath.sqrt(base)
-    return cmath.exp(exponent * cmath.log(base))
-
-
-# -- helpers ----------------------------------------------------------------------
-
-
 def _short_name(name: str) -> str:
     return str(name).rsplit("::", 1)[-1]
 
@@ -825,15 +848,17 @@ def load_ufo_model_with_guards(
 
     from ufo_model_loader import model as ufo_model
 
-    original = ufo_model.Model.remove_zero_couplings
     captured: list[SpecializationGuard] = []
-
-    def remove_zero_couplings(self: Any) -> Any:
-        removed = original(self)
-        captured.extend(_removed_coupling_guards(self, removed[0]))
-        return removed
-
+    # The original method is read and restored under the lock, so overlapping
+    # loads in one process can never leave a wrapper installed.
     with _CAPTURE_LOCK:
+        original = ufo_model.Model.remove_zero_couplings
+
+        def remove_zero_couplings(self: Any) -> Any:
+            removed = original(self)
+            captured.extend(_removed_coupling_guards(self, removed[0]))
+            return removed
+
         ufo_model.Model.remove_zero_couplings = remove_zero_couplings
         try:
             model, card = load_model(*args, **kwargs)

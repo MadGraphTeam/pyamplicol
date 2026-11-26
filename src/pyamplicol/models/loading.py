@@ -49,6 +49,12 @@ COMPILED_MODEL_KIND = "pyamplicol-compiled-model"
 #: readers accept only ``COMPILED_MODEL_SCHEMA_VERSION`` and so refuse it,
 #: instead of generating from it while ignoring its guards.
 GUARDED_COMPILED_MODEL_SCHEMA_VERSION = COMPILED_MODEL_SCHEMA_VERSION + 1
+#: Written by a compile that recorded the guards of restriction
+#: simplification (``CompiledModel.specialization_record``); readers released
+#: before ignore the field.
+SPECIALIZATION_RECORD = "complete"
+#: The source kinds restriction simplification runs on.
+_SIMPLIFIED_SOURCE_KINDS = frozenset(("ufo", "json"))
 MODEL_COMPILER_VERSION = 17
 BUILTIN_SM_ALIASES = frozenset(("builtin_sm", "built-in-sm"))
 DEFAULT_MODEL_RESTRICTION = "default"
@@ -267,6 +273,12 @@ class CompiledModel:
     #: The model's specialisation guards (``specialization_guards``): every
     #: artifact generated from it evaluates them at each runtime binding.
     specialization_guards: tuple[SpecializationGuard, ...] = ()
+    #: Whether the compile that wrote this model recorded the guards of its
+    #: restriction simplification (``SPECIALIZATION_RECORD``): a model of an
+    #: external source simplified without that record (written before the
+    #: guards existed) may hide a specialisation (``require_specialization_
+    #: record``).
+    specialization_record: bool = False
     _serialized_path: Path | None = field(default=None, compare=False, repr=False)
     _prepared_bundle: PreparedModelBundle | None = field(
         default=None,
@@ -324,6 +336,8 @@ class CompiledModel:
             payload["specialization_guards"] = [
                 guard.to_dict() for guard in self.specialization_guards
             ]
+        if self.specialization_record:
+            payload["specialization_record"] = SPECIALIZATION_RECORD
         return payload
 
     def write(self, path: Path) -> Path:
@@ -360,6 +374,9 @@ class CompiledModel:
                 raise ValueError("guarded compiled model has no specialisation guards")
         elif schema_version != COMPILED_MODEL_SCHEMA_VERSION or raw_guards is not None:
             raise ValueError("compiled model schema mismatch; regenerate the model")
+        record = payload.get("specialization_record")
+        if record is not None and record != SPECIALIZATION_RECORD:
+            raise ValueError("compiled model has an unknown specialisation record")
         if int(payload.get("model_compiler_version", -1)) != MODEL_COMPILER_VERSION:
             raise ValueError("compiled model compiler mismatch; regenerate the model")
         producer = _mapping(payload.get("producer"), "producer")
@@ -400,9 +417,10 @@ class CompiledModel:
             conversion_seconds=0.0,
             raw_loop_model=raw_loop_model,
             specialization_guards=tuple(
-                SpecializationGuard.from_dict(_mapping(record, "specialisation guard"))
-                for record in raw_guards or ()
+                SpecializationGuard.from_dict(_mapping(item, "specialisation guard"))
+                for item in raw_guards or ()
             ),
+            specialization_record=record == SPECIALIZATION_RECORD,
             _serialized_path=(
                 None if serialized_path is None else Path(serialized_path).resolve()
             ),
@@ -533,15 +551,18 @@ def _compile_model_source(
                 validate_fingerprint=False,
             )
             compiled = replace(compiled, _prepared_bundle=bundle)
+            require_specialization_record(compiled)
             _raise_for_unsupported(compiled, require_supported=require_supported)
             return compiled
         if detected_payload is None:
             raise RuntimeError(
                 "compiled model detection did not retain its JSON payload"
             )
-        return CompiledModel.from_dict(
-            detected_payload,
-            serialized_path=Path(resolved),
+        return require_specialization_record(
+            CompiledModel.from_dict(
+                detected_payload,
+                serialized_path=Path(resolved),
+            )
         )
     source_digest, fingerprint, cache_path = _compilation_cache_identity(
         source_kind,
@@ -551,8 +572,10 @@ def _compile_model_source(
     )
     if use_cache and cache_path.is_file():
         compiled = load_compiled_model(cache_path)
-        _raise_for_unsupported(compiled, require_supported=require_supported)
-        return compiled
+        if _specialization_record_is_trusted(compiled):
+            _raise_for_unsupported(compiled, require_supported=require_supported)
+            return compiled
+        # A cache entry without the record is compiled again (and replaced).
 
     started = time.perf_counter()
     phase_timings: dict[str, float] = {}
@@ -683,6 +706,8 @@ def _compile_model_source(
         conversion_seconds=conversion_seconds,
         raw_loop_model=raw_loop_model,
         specialization_guards=specialization_guards,
+        specialization_record=source_kind in _SIMPLIFIED_SOURCE_KINDS
+        and options.simplify,
     )
     if use_cache:
         compiled.write(cache_path)
@@ -746,6 +771,7 @@ def _load_cached_model_source(
                 validate_fingerprint=False,
             )
             compiled = replace(compiled, _prepared_bundle=bundle)
+            require_specialization_record(compiled)
             _raise_for_unsupported(compiled, require_supported=require_supported)
             return compiled
         if detected_payload is None:
@@ -756,6 +782,7 @@ def _load_cached_model_source(
             detected_payload,
             serialized_path=Path(resolved),
         )
+        require_specialization_record(compiled)
         _raise_for_unsupported(compiled, require_supported=require_supported)
         return compiled
 
@@ -768,8 +795,50 @@ def _load_cached_model_source(
     if not cache_path.is_file():
         return None
     compiled = load_compiled_model(cache_path)
+    if not _specialization_record_is_trusted(compiled):
+        return None
     _raise_for_unsupported(compiled, require_supported=require_supported)
     return compiled
+
+
+def _specialization_record_is_trusted(compiled: CompiledModel) -> bool:
+    """Whether generation may start from ``compiled``: its compile recorded
+    the guards of restriction simplification, or no restriction
+    simplification of an external source can have run (the built-in SM, the
+    packaged SM-HEFT source, whose every card the release audits, and
+    ``simplify=False``)."""
+
+    if compiled.specialization_record:
+        return True
+    source = _mapping(compiled.source, "compiled model source")
+    options = _mapping(source.get("options", {}), "source options")
+    return (
+        str(source.get("kind")) not in _SIMPLIFIED_SOURCE_KINDS
+        or options.get("simplify", True) is False
+    )
+
+
+def require_specialization_record(compiled: CompiledModel) -> CompiledModel:
+    """``compiled`` when generation may start from it; otherwise refuse.
+
+    A compiled or prepared model of a UFO or JSON source simplified by a
+    pyAmpliCol that did not record restriction simplification's guards may
+    have removed a coupling that is zero only at its card's parameter values,
+    without the record that refuses a binding which revives it. A new artifact
+    generated from it would accept that binding and return the specialised
+    value, so it is refused; artifacts generated before still load and
+    evaluate as documented."""
+
+    if _specialization_record_is_trusted(compiled):
+        return compiled
+    raise ValueError(
+        f"compiled model {compiled.name!r} was written by a pyAmpliCol that did "
+        "not record what restriction simplification specialises (a coupling "
+        "removed because it is zero only at the card's parameter values), so a "
+        "new artifact could not refuse the bindings that invalidate it; prepare "
+        "or compile the model again from its source with this version (or "
+        "compile it with simplify=False)"
+    )
 
 
 def declared_model_gauges(compiled: CompiledModel) -> tuple[int, ...] | None:

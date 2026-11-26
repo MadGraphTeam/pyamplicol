@@ -26,7 +26,10 @@ use super::template::{
     RuntimeHelicityEmbeddingRow, RuntimeHelicityProjectionRow, RuntimeHelicityVariantRow,
     SourceRow, SymmetryProofRow, TransitionRow,
 };
-use super::{CheckedTableRange, ExactComplexRational, RECURRENCE_TEMPLATE_ABI, SemanticDigest};
+use super::{
+    CheckedTableRange, ExactComplexRational, RECURRENCE_TEMPLATE_ABI,
+    RECURRENCE_TEMPLATE_EXECUTION_ABI, SemanticDigest,
+};
 use crate::{RusticolError, RusticolResult};
 
 const ROOT_SECTIONS: [(&str, &str, &str); 13] = [
@@ -593,7 +596,7 @@ fn project_authenticated_recurrence_template_catalog_json_v1(
 }
 
 fn validate_header(header: &CatalogHeaderJson) -> RusticolResult<()> {
-    if header.abi != RECURRENCE_TEMPLATE_ABI {
+    if header.abi != RECURRENCE_TEMPLATE_ABI && header.abi != RECURRENCE_TEMPLATE_EXECUTION_ABI {
         return Err(invalid(format!(
             "unsupported recurrence-template ABI {:?}",
             header.abi

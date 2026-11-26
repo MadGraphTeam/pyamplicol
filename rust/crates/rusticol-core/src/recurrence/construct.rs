@@ -30,7 +30,7 @@ use super::template::{
     ClosureRow, ColorContractionRow, CurrentOrientation, EvaluatorCallableKind,
     EvaluatorContractKind, LCColorTransitionWitnessRow, OutputFactorSource,
     OwnedRecurrenceTemplateInput, ParticleStatistics, QuantumFlowRow, RuntimeHelicityContractRow,
-    RuntimeHelicityVariantRow, SourceRow, TransitionRow,
+    RuntimeHelicityVariantRow, SourceRow, TransitionExecution, TransitionRow,
 };
 use super::{
     AuthenticatedRecurrenceBuilderInput, CanonicalMomentumLinearForm, CheckedTableRange,
@@ -1870,9 +1870,34 @@ struct PreparedTransitionCatalog {
 }
 
 impl PreparedTransitionCatalog {
+    #[cfg(test)]
     fn new(
         template: &OwnedRecurrenceTemplateInput,
         catalog: &TemplateCatalog<'_>,
+    ) -> RusticolResult<Self> {
+        Self::with_executions(template, catalog, |_| true)
+    }
+
+    /// The transitions `strategy` runs (`TransitionExecution`): the Weyl
+    /// projections of full inputs where currents carry Weyl states, their
+    /// full-state counterparts in the all-flow union.
+    fn for_strategy(
+        template: &OwnedRecurrenceTemplateInput,
+        catalog: &TemplateCatalog<'_>,
+        strategy: RecurrenceStrategy,
+    ) -> RusticolResult<Self> {
+        Self::with_executions(template, catalog, |execution| match strategy {
+            RecurrenceStrategy::AllFlowUnion => execution.runs_with_full_states(),
+            RecurrenceStrategy::TopologyReplay | RecurrenceStrategy::ContractedColorUnion => {
+                execution.runs_with_weyl_states()
+            }
+        })
+    }
+
+    fn with_executions(
+        template: &OwnedRecurrenceTemplateInput,
+        catalog: &TemplateCatalog<'_>,
+        runs: impl Fn(TransitionExecution) -> bool,
     ) -> RusticolResult<Self> {
         let mut rows_by_state_pair = BTreeMap::<(u32, u32), Vec<PreparedTransition>>::new();
         let mut transition_locations = Vec::new();
@@ -1884,6 +1909,13 @@ impl PreparedTransitionCatalog {
         let mut decoded_transition_count = 0usize;
         let mut decoded_witness_count = 0usize;
         for row in template.transitions.iter().copied() {
+            let execution = TransitionExecution::of_output_projection(catalog.string(
+                row.output_projection_string_id,
+                "transition output projection",
+            )?);
+            if !runs(execution) {
+                continue;
+            }
             let prepared = PreparedTransition::new(row, template, catalog)?;
             decoded_transition_count += 1;
             decoded_witness_count += prepared.witnesses.len();
@@ -1925,7 +1957,11 @@ impl PreparedTransitionCatalog {
         };
         debug_assert_eq!(
             result.decoded_transition_count(),
-            template.transitions.len()
+            result
+                .rows_by_state_pair
+                .values()
+                .map(Vec::len)
+                .sum::<usize>()
         );
         debug_assert_eq!(
             result.decoded_witness_count(),
@@ -4391,12 +4427,15 @@ impl StructuralFeasibilityIndex {
 /// Fail-closed guard for the Dirac-Weyl closure class (m-qcd MQ-5F; HANDOFF
 /// §9.1). A fermion current whose line passed a massive fermion is a Dirac
 /// (chirality-0) current, while a massless external fermion is a Weyl
-/// (chirality +-1) source. Where a chiral vertex takes a line between massive
-/// and massless fermions (a massless b and the top through a W), the
-/// complement of a Weyl closure anchor can be a Dirac current of a particle
-/// pair that closes in other chirality states. Templates carry no Dirac-Weyl
-/// closure, so that complement would close on nothing and its diagrams (the
-/// top t channel of b b~ > w+ w-) would be dropped without an error: the
+/// (chirality +-1) source. A vertex with a single chiral projector (every W
+/// vertex) that takes such a line to a massless fermion has a Weyl result in
+/// the template (the model's quantum flows), so the line is Weyl again at its
+/// massless end. Where a vertex with both chiral projections (left- and
+/// right-handed couplings) takes a line between massive and massless
+/// fermions, the complement of a Weyl closure anchor can be a Dirac current
+/// of a particle pair that closes in other chirality states. Templates carry
+/// no Dirac-Weyl closure, so that complement would close on nothing and its
+/// diagrams would be dropped without an error: the
 /// recurrence (here, in its structural-demand pass, at each LC sector's
 /// closure anchor, for a complement reached within the request's
 /// coupling-order limits, `StructuralOrderReachability`) and the on-the-fly
@@ -4526,12 +4565,13 @@ impl DiracWeylClosureGuard {
             "dirac-weyl-closure: {context} would close a Dirac (chirality-0) \
              current of particle {} on a Weyl (chirality {}) current of \
              particle {}; a fermion line that joins massive and massless \
-             fermions through a chiral vertex (a massive internal or external \
-             fermion on a line with a massless sink) has no Dirac-Weyl closure \
-             contraction in the tree recurrence, which would drop that line's \
-             diagrams. Keep the light fermion massive in the tree model (the \
-             default restriction with its mass fixed to zero) or use the loop \
-             engine, whose Born closes at a vertex",
+             fermions through a vertex with both chiral projections (left- and \
+             right-handed couplings; a single chiral projector makes the line a \
+             Weyl state again) has no Dirac-Weyl closure contraction in the \
+             tree recurrence, which would drop that line's diagrams. Keep the \
+             light fermion massive in the tree model (the default restriction \
+             with its mass fixed to zero) or use the loop engine, whose Born \
+             closes at a vertex",
             dirac.particle_id, weyl.chirality, weyl.particle_id,
         )))
     }
@@ -5175,7 +5215,8 @@ fn build_recurrence_program_impl(
         0,
     ))?;
     let transition_catalog_started = telemetry_timer(collect_telemetry);
-    let prepared_transitions = PreparedTransitionCatalog::new(template_input, &template_catalog)?;
+    let prepared_transitions =
+        PreparedTransitionCatalog::for_strategy(template_input, &template_catalog, strategy)?;
     let prepared_closures = PreparedClosureCatalog::new(template_input, &template_catalog)?;
     let prepared_closure_sectors = PreparedClosureSectorCatalog::new(
         strategy,

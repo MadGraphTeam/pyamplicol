@@ -107,6 +107,14 @@ class ExternalModelKernelMixin:
             symbols.weyl_probe(self.name, kind, "right", "component", index)
             for index in range(self.current_dimension(right_pdg, right_chirality))
         )
+        # A Weyl decision drops a chiral half of the kernel's result (a result
+        # chirality, or the projection of full inputs, ``_result_chiralities``),
+        # so it must vanish for every parameter binding the artifact admits at
+        # run time, not only at the current values: the model's parameters stay
+        # symbols (every parameter a compiled model keeps is mutable at run
+        # time; a restriction removes the ones it fixes) and each derived
+        # coupling is its definition in them. A half that vanishes only at the
+        # current values counts as nonzero.
         components = self._projected_kernel_components(
             kernel,
             left,
@@ -114,6 +122,7 @@ class ExternalModelKernelMixin:
             left_chirality=left_chirality,
             right_chirality=right_chirality,
             result_chirality=result_chirality,
+            runtime_parameter_values=self._symbolic_kernel_parameter_values(kernel),
             left_momentum=tuple(
                 symbols.weyl_probe(
                     self.name,
@@ -135,9 +144,30 @@ class ExternalModelKernelMixin:
                 for index in range(4)
             ),
         )
+        components = tuple(
+            component.expand() if isinstance(component, _sym.Expression) else component
+            for component in components
+        )
         supported = any(not _is_zero(component) for component in components)
         self._weyl_projection_support[key] = supported
         return supported
+
+    def _symbolic_kernel_parameter_values(
+        self, kernel: CompiledOrientedKernel
+    ) -> dict[str, Any]:
+        """A kernel's runtime parameters as functions of the model's free
+        parameters: a derived coupling or internal parameter is its definition,
+        a model parameter its own symbol."""
+
+        values: dict[str, Any] = {}
+        for name in kernel.runtime_parameters:
+            definition = self._runtime_derived_definitions.get(name)
+            values[name] = (
+                self._model_symbols.symbol(name)
+                if definition is None
+                else _sym.E(definition)
+            )
+        return values
 
     def _projected_kernel_components(
         self,

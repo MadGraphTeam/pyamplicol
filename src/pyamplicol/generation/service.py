@@ -2570,10 +2570,18 @@ def _eager_lowering_kernel_ids(
     return frozenset(references)
 
 
-def _builtin_sm_model() -> Model:
-    from ..models import BuiltinSMModel
+def _builtin_sm_model(compiled: object | None = None) -> Model:
+    """The built-in SM; with a prepared pack that predates the Weyl projection
+    of full inputs, without that projection (the pack has no kernels for it;
+    ``models.external._prepared_pack_projects_full_inputs``)."""
 
-    return BuiltinSMModel()
+    from ..models import BuiltinSMModel
+    from ..models.external import _prepared_pack_projects_full_inputs
+
+    model = BuiltinSMModel()
+    if compiled is not None and getattr(compiled, "prepared_bundle", None) is not None:
+        model._project_full_inputs = _prepared_pack_projects_full_inputs(compiled)
+    return model
 
 
 def _nested_config_value(values: Mapping[str, object], path: str) -> object:
@@ -7810,7 +7818,7 @@ class GenerationBackend:
             is_builtin = self._is_builtin_compiled_model(compiled)
             return _ResolvedModel(
                 self._source_for_compiled_model(compiled),
-                _builtin_sm_model() if is_builtin else None,
+                _builtin_sm_model(compiled) if is_builtin else None,
                 compiled,
                 use_compiled_process_catalog=not is_builtin,
             )
@@ -7828,11 +7836,17 @@ class GenerationBackend:
             raise ModelError("external model source has no path")
 
         from .._internal.sm_heft import load_cached_sm_heft_source
-        from ..models.loading import load_cached_model_source, load_compiled_model
+        from ..models.loading import (
+            load_cached_model_source,
+            load_compiled_model,
+            require_specialization_record,
+        )
 
         try:
             if source.kind in {"compiled", "prepared"}:
-                compiled = load_compiled_model(source.path)
+                compiled = require_specialization_record(
+                    load_compiled_model(source.path)
+                )
             else:
                 run = self._run_config
                 use_cache = True if run is None else run.model.cache
@@ -7879,7 +7893,7 @@ class GenerationBackend:
         is_builtin = self._is_builtin_compiled_model(compiled)
         return _ResolvedModel(
             source,
-            _builtin_sm_model() if is_builtin else None,
+            _builtin_sm_model(compiled) if is_builtin else None,
             compiled,
             use_compiled_process_catalog=not is_builtin,
         )
@@ -7924,7 +7938,7 @@ class GenerationBackend:
             if self._is_builtin_compiled_model(compiled):
                 return _ResolvedModel(
                     self._source_for_compiled_model(compiled),
-                    _builtin_sm_model(),
+                    _builtin_sm_model(compiled),
                     compiled,
                     use_compiled_process_catalog=False,
                 )
@@ -7950,11 +7964,17 @@ class GenerationBackend:
             raise ModelError("external model source has no path")
         from .._internal.sm_heft import compile_sm_heft_source
         from ..models.external import CompiledUFOModel
-        from ..models.loading import compile_model_source, load_compiled_model
+        from ..models.loading import (
+            compile_model_source,
+            load_compiled_model,
+            require_specialization_record,
+        )
 
         try:
             if source.kind in {"compiled", "prepared"}:
-                compiled = load_compiled_model(source.path)
+                compiled = require_specialization_record(
+                    load_compiled_model(source.path)
+                )
             else:
                 run = self._run_config
                 use_cache = True if run is None else run.model.cache
@@ -7985,7 +8005,7 @@ class GenerationBackend:
         if self._is_builtin_compiled_model(compiled):
             return _ResolvedModel(
                 source,
-                _builtin_sm_model(),
+                _builtin_sm_model(compiled),
                 compiled,
                 use_compiled_process_catalog=False,
             )

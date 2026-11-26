@@ -13,6 +13,7 @@ its state; one generated at 174 evaluates the coupling.
 
 from __future__ import annotations
 
+import json
 import math
 import re
 import shutil
@@ -50,13 +51,13 @@ LANES = (
 )
 
 
-def _mt_dependent_vector_sm(destination: Path) -> Path:
+def _mt_dependent_vector_sm(destination: Path, factor: str = "(MT - 173.)") -> Path:
     shipped = Path(str(resources.files("pyamplicol").joinpath("assets/models/ufo/sm")))
     shutil.copytree(shipped, destination, ignore=shutil.ignore_patterns("__pycache__"))
     couplings = destination / "couplings.py"
     couplings.write_text(
         couplings.read_text(encoding="utf-8") + "\nGC_MTV = Coupling(name = 'GC_MTV',\n"
-        "                 value = '(MT - 173.)*(ee*complex(0,1))/(sw*cmath.sqrt(2))',\n"
+        f"                 value = '{factor}*(ee*complex(0,1))/(sw*cmath.sqrt(2))',\n"
         "                 order = {'QED':1})\n",
         encoding="utf-8",
     )
@@ -89,14 +90,8 @@ def _mt_dependent_vector_sm(destination: Path) -> Path:
     return destination
 
 
-@pytest.fixture(scope="module")
-def simplified_models(tmp_path_factory: pytest.TempPathFactory):
-    """The model prepared with restriction simplification at MT = 173 (the
-    vector coupling is removed) and at MT = 174 (it is kept)."""
-
-    root = tmp_path_factory.mktemp("sm-mt-vector-simplified")
-    source = _mt_dependent_vector_sm(root / "sm_mt_vector")
-    built = {}
+def _prepared_at_173_and_174(root: Path, source: Path) -> dict[object, object]:
+    built: dict[object, object] = {}
     for mass, restriction in (
         (173, "default"),
         (174, source / "restrict_mt174.dat"),
@@ -110,6 +105,26 @@ def simplified_models(tmp_path_factory: pytest.TempPathFactory):
         built[mass] = ModelSource.from_path(bundle)
     built["source"] = source
     return built
+
+
+@pytest.fixture(scope="module")
+def simplified_models(tmp_path_factory: pytest.TempPathFactory):
+    """The model prepared with restriction simplification at MT = 173 (the
+    vector coupling is removed) and at MT = 174 (it is kept)."""
+
+    root = tmp_path_factory.mktemp("sm-mt-vector-simplified")
+    return _prepared_at_173_and_174(root, _mt_dependent_vector_sm(root / "sm_mt"))
+
+
+@pytest.fixture(scope="module")
+def sixth_power_models(tmp_path_factory: pytest.TempPathFactory):
+    """The same with the factor (MT - 173)^6: exactly 1 at MT = 174, an
+    ordinary W-strength coupling that a rounding allowance on the expression
+    (64 u x 347^6 > 12) accepted."""
+
+    root = tmp_path_factory.mktemp("sm-mt-sixth-power")
+    source = _mt_dependent_vector_sm(root / "sm_mt6", factor="(MT - 173.)**6")
+    return _prepared_at_173_and_174(root, source)
 
 
 def _generate(
@@ -215,40 +230,191 @@ def test_an_unguarded_model_writes_no_guard_payload(tmp_path: Path) -> None:
     assert all(record.role != GUARD_PAYLOAD_ROLE for record in manifest.payloads)
 
 
-# The built-in SM exposes a vertex's coupling components as runtime
-# parameters in the eager and compiled lanes. A W's right-handed component is
-# zero, and the massless leptons' lines carry only the left-handed currents it
-# lets through: a binding that makes it nonzero was accepted and ignored.
-_MASSLESS_W_POINT = [
-    [500.0, 0.0, 0.0, 500.0],
-    [500.0, 0.0, 0.0, -500.0],
-    [500.0, 300.0, 0.0, 400.0],
-    [500.0, -300.0, 0.0, -400.0],
-]
+@pytest.mark.parametrize(("lane", "accuracy"), LANES)
+def test_a_sixth_power_zero_refuses_the_update_in_every_lane(
+    sixth_power_models, tmp_path: Path, lane: str, accuracy: str
+) -> None:
+    runtime = _generate(sixth_power_models[173], tmp_path / "173", lane, accuracy)
+    points = _points(runtime)
+    before = _values(runtime, points)
+    with pytest.raises(Exception, match="specialisation-guard: binding MT"):
+        runtime.set_model_parameters({"MT": 174.0})
+    assert _values(runtime, points) == before
+    runtime.set_model_parameters({"MT": 173.0})
+    fresh = _values(
+        _generate(sixth_power_models[174], tmp_path / "174", lane, accuracy), points
+    )
+    # Fresh at 174 differs by orders of magnitude (482.7 against 0.133).
+    assert all(f > 10 * b for f, b in zip(fresh, before, strict=True))
+
+
+def _legacy(compiled) -> object:
+    """``compiled`` as a pyAmpliCol without guards wrote it: no record of
+    restriction simplification, no guards, the plain schema."""
+
+    from dataclasses import replace
+
+    return replace(compiled, specialization_guards=(), specialization_record=False)
+
+
+def test_generation_refuses_a_legacy_simplified_compiled_model(
+    simplified_models, tmp_path: Path
+) -> None:
+    from pyamplicol.models.loading import compile_model_source
+
+    compiled = compile_model_source(
+        simplified_models["source"], simplify=True, cache_dir=tmp_path / "cache"
+    )
+    assert compiled.specialization_record and compiled.specialization_guards
+    legacy = _legacy(compiled)
+    payload = legacy.to_dict()
+    assert "specialization_record" not in payload
+    assert "specialization_guards" not in payload
+    path = tmp_path / "legacy.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(Exception, match="prepare or compile the model again"):
+        _generate(ModelSource.from_path(path), tmp_path / "a", "recurrence", "lc")
+
+
+def test_generation_refuses_a_legacy_simplified_prepared_model(
+    simplified_models, tmp_path: Path
+) -> None:
+    from pyamplicol.models.loading import compile_model_source
+    from pyamplicol.models.prepared_compile import prepare_model_bundle
+
+    compiled = compile_model_source(
+        simplified_models["source"], simplify=True, cache_dir=tmp_path / "cache"
+    )
+    bundle = tmp_path / "legacy.pyamplicol-model"
+    prepare_model_bundle(_legacy(compiled), bundle, evaluator=EvaluatorConfig())
+    for lane, accuracy in (("recurrence", "lc"), ("eager", "full")):
+        with pytest.raises(Exception, match="prepare or compile the model again"):
+            _generate(ModelSource.from_path(bundle), tmp_path / lane, lane, accuracy)
+
+
+# The built-in SM exposes each vertex coupling component as a runtime
+# parameter in the eager and compiled lanes. Where the chirality selection
+# dropped the Weyl currents of a chirality because its component is zero (a W
+# between massless leptons), that component holds at zero; where it dropped
+# nothing (the W's t-b vertex: the Dirac top keeps both chiralities), the
+# component is a working parameter.
+_TWO_TO_TWO = {
+    "e- ve~ > mu- vm~": (0.0, 0.0, 0.0, 0.0),
+    "t b~ > u d~": (173.0, 0.0, 0.0, 0.0),
+}
+
+
+def _builtin_point(process: str) -> list[list[list[float]]]:
+    m1, m2, m3, m4 = _TWO_TO_TWO[process]
+    cm = 1000.0
+
+    def pair(a_mass: float, b_mass: float, rotate: bool) -> list[list[float]]:
+        a = (cm * cm + a_mass * a_mass - b_mass * b_mass) / (2 * cm)
+        p = math.sqrt(a * a - a_mass * a_mass)
+        c, s = (0.6, 0.8) if rotate else (1.0, 0.0)
+        return [[a, p * s, 0.0, p * c], [cm - a, -p * s, 0.0, -p * c]]
+
+    return [pair(m1, m2, False) + pair(m3, m4, True)]
+
+
+def _builtin_with(component: tuple[int, tuple[int, ...], int, float] | None):
+    """A context that generates the built-in SM with one vertex coupling
+    component changed at generation (a fresh generation at that value)."""
+
+    from contextlib import contextmanager
+    from dataclasses import replace
+
+    from pyamplicol.models.builtin.model import BuiltinSMModel
+
+    @contextmanager
+    def patched():
+        if component is None:
+            yield
+            return
+        kind, particles, index, value = component
+        original = BuiltinSMModel._build_vertices
+
+        def build(self):
+            out = []
+            for vertex in original(self):
+                if (vertex.kind, tuple(vertex.particles)) == (kind, particles):
+                    coupling = list(vertex.coupling)
+                    coupling[index] = value
+                    vertex = replace(vertex, coupling=tuple(coupling))
+                out.append(vertex)
+            return out
+
+        BuiltinSMModel._build_vertices = build
+        try:
+            yield
+        finally:
+            BuiltinSMModel._build_vertices = original
+
+    return patched()
+
+
+@pytest.mark.parametrize("lane", ["eager", "compiled"])
+def test_a_working_right_handed_top_coupling_stays_a_parameter(
+    tmp_path: Path, lane: str
+) -> None:
+    process, name = "t b~ > u d~", "coupling.21.5_-6_-24.component_1"
+    runtime = _generate(
+        ModelSource.built_in_sm(), tmp_path / "a", lane, "full", process
+    )
+    point = _builtin_point(process)
+    before = _values(runtime, point)
+    runtime.set_model_parameters({name: 1.5})
+    rebound = _values(runtime, point)
+    assert rebound != before
+    # The fresh generation runs the compiled lane (the eager lane reads the
+    # packaged prepared pack, which has no kernel for the changed coupling).
+    with _builtin_with((21, (5, -6, -24), 1, 1.5)):
+        fresh = _values(
+            _generate(
+                ModelSource.built_in_sm(),
+                tmp_path / "fresh",
+                "compiled",
+                "full",
+                process,
+            ),
+            point,
+        )
+    for value, reference in zip(rebound, fresh, strict=True):
+        assert abs(value - reference) <= 1e-12 * abs(reference)
+    # The process's u-d W vertex (two massless quarks) is guarded; the t-b
+    # component is not.
+    guards = json.loads((tmp_path / "a" / GUARD_FILE_PATH).read_text(encoding="utf-8"))[
+        "guards"
+    ]
+    held = {name for guard in guards for name in guard["parameters"]}
+    assert name not in held
+    assert len(held) == 1
 
 
 @pytest.mark.parametrize("lane", ["eager", "compiled"])
 def test_a_zero_chiral_coupling_of_a_massless_line_is_held_zero(
     tmp_path: Path, lane: str
 ) -> None:
+    process = "e- ve~ > mu- vm~"
     runtime = _generate(
-        ModelSource.built_in_sm(), tmp_path / "a", lane, "full", "e- ve~ > mu- vm~"
+        ModelSource.built_in_sm(), tmp_path / "a", lane, "full", process
     )
-    names = [
-        parameter.name
+    names = {
+        parameter.name: parameter.default_real
         for parameter in runtime.physics.model_parameters
         if parameter.name.startswith("coupling.")
-    ]
-    right = [name for name in names if name.endswith(".component_1")]
-    left = [name for name in names if name.endswith(".component_0")]
-    assert right and left
-    before = _values(runtime, [_MASSLESS_W_POINT])
+    }
+    zero = [name for name, value in names.items() if value == 0.0]
+    free = [name for name, value in names.items() if value != 0.0]
+    assert zero and free
+    point = _builtin_point(process)
+    before = _values(runtime, point)
     with pytest.raises(
         Exception, match="specialisation-guard: binding coupling"
     ) as error:
-        runtime.set_model_parameters({right[0]: 1.5})
+        runtime.set_model_parameters({zero[0]: 1.5})
     assert "vertex-chiral-support" in str(error.value)
-    assert _values(runtime, [_MASSLESS_W_POINT]) == before
-    # The nonzero (left-handed) components stay free.
-    runtime.set_model_parameters({name: 0.75 for name in left})
-    assert _values(runtime, [_MASSLESS_W_POINT]) != before
+    assert _values(runtime, point) == before
+    runtime.set_model_parameters({zero[0]: 0.0})
+    runtime.set_model_parameters({name: 0.75 for name in free})
+    assert _values(runtime, point) != before
