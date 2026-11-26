@@ -215,7 +215,7 @@ class ExternalModelCatalogMixin:
         left_chirality = int(getattr(left_index, "chirality", 0))
         right_chirality = int(getattr(right_index, "chirality", 0))
         result_chiralities = self._result_chiralities(
-            result_particle, left_chirality, right_chirality
+            vertex.kind, result_particle, left_chirality, right_chirality
         )
         return tuple(
             QuantumFlow(
@@ -241,14 +241,32 @@ class ExternalModelCatalogMixin:
         )
 
     def _result_chiralities(
-        self, result_particle: int, left_chirality: int, right_chirality: int
+        self,
+        kind: int,
+        result_particle: int,
+        left_chirality: int,
+        right_chirality: int,
     ) -> tuple[int, ...]:
-        """The result chiralities ``allowed_quantum_flows`` tries."""
+        """The result chiralities ``allowed_quantum_flows`` tries.
+
+        A massless (Weyl) result of full (Dirac) inputs is the Weyl state of
+        the one chirality the vertex projects onto, when the projected kernel
+        of the other chirality vanishes identically (a single chiral
+        projector: a W vertex, Z to neutrinos): the Dirac result has exactly
+        that Weyl state's two components and zeros elsewhere, so the line is
+        Weyl again at its massless end. With both projections nonzero (mixed
+        left- and right-handed couplings) the result stays the full state.
+        """
 
         if not self.is_chiral_eligible(result_particle):
             return (0,)
         if left_chirality == 0 and right_chirality == 0:
-            return (0,)
+            projected = tuple(
+                chirality
+                for chirality in (-1, 1)
+                if self._weyl_projection_is_nonzero(kind, 0, 0, chirality)
+            )
+            return projected if len(projected) == 1 else (0,)
         return (-1, 1)
 
     def weyl_projection_support(self) -> dict[tuple[int, int, int, int], bool]:
@@ -268,8 +286,14 @@ class ExternalModelCatalogMixin:
             left, right, result = vertex.particles
             for left_chirality in chiralities(left):
                 for right_chirality in chiralities(right):
+                    if left_chirality == right_chirality == 0 and (
+                        self.is_chiral_eligible(result)
+                    ):
+                        for projection in (-1, 1):
+                            key = (int(vertex.kind), 0, 0, projection)
+                            support[key] = self._weyl_projection_is_nonzero(*key)
                     for result_chirality in self._result_chiralities(
-                        result, left_chirality, right_chirality
+                        vertex.kind, result, left_chirality, right_chirality
                     ):
                         key = (
                             int(vertex.kind),
