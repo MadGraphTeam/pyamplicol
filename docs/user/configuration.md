@@ -132,6 +132,38 @@ restriction = "default"
 UFO modules are Python code and execute during loading. See
 [Models and Processes](models-and-processes.md) before using an external model.
 
+### What restriction simplification specialises
+
+`simplify = true` (the default for UFO and JSON sources) turns every external
+parameter that is zero on the restriction card into the constant `ZERO` and
+removes every coupling whose value is zero at the card's values, with the
+vertices left without a coupling. The compile records what it removed.
+
+- **Safe:** evaluating at the card's values, and at any runtime binding that
+  leaves every removed coupling zero. A coupling that vanishes identically
+  once the remaining parameters are written in the external ones is gone for
+  every binding.
+- **Refused at a binding:** a removed coupling that is zero only at the card's
+  value of a runtime parameter (for example a factor `MT - 173` at `MT = 173`).
+  The artifact refuses any binding that changes that parameter, including a
+  `[loop.preparation] fixed_parameters` value.
+- **Refused at admission:** a transform that changes parameter values without
+  a binding. The complex-mass scheme sets `CMSParam = 1`, ties the Yukawa
+  inputs to the masses and turns masses with a width into complex pole masses.
+  Every removed coupling is evaluated again with those substitutions. If one
+  is non-zero there, or zero there only at the values of runtime parameters,
+  generation and `--dry-run` refuse the request with `cms-revived-coupling`,
+  naming the couplings. The refusal covers the whole model, also processes
+  that never meet those couplings.
+- **Remedy:** `simplify = false` for that model, or a restriction card under
+  which the couplings vanish in that scheme too. On the shipped models only
+  `loop_sm`'s `test` card is refused (it zeroes the Yukawa inputs while the b
+  and t masses are not zero). No shipped default card is affected.
+- **Older compiled and prepared models:** a model compiled or prepared from a
+  simplified UFO or JSON source by a pyAmpliCol that did not record every
+  removed coupling is refused for new generation. Compile or prepare it again
+  from its source. Artifacts already generated still load and evaluate.
+
 ## Model caches and the one-loop preparation cache
 
 `[model] cache = true` (the default; `--no-model-cache` turns it off) reuses
@@ -2029,9 +2061,12 @@ scheme refuses, with listed keys: an external
 particle with a width (`cms-external-width`: external states are stable), a
 width-carrying particle whose mass is not an external parameter
 (`cms-internal-mass`, e.g. loop_sm's W), a fixed Yukawa input
-(`cms-yukawa-input`), a value of `mass_scheme` other than `"real-on-shell"` and
-`"complex-mass"` (`mass-scheme`), and a complex fixed parameter in either
-scheme (`complex-fixed-parameter`). Stored artifacts take the complex pole
+(`cms-yukawa-input`), a coupling that restriction simplification removed and
+the transform revives (`cms-revived-coupling`, see
+[What restriction simplification specialises](#what-restriction-simplification-specialises)), a value
+of `mass_scheme` other than `"real-on-shell"` and `"complex-mass"`
+(`mass-scheme`), and a complex fixed parameter in either scheme
+(`complex-fixed-parameter`). Stored artifacts take the complex pole
 masses in their native point inputs (the loop propagators read M^2 - i M W; the
 binary64 fast-engine threshold reads |re| + |im| of it), so they keep native
 point inputs and relocate as any other artifact. A width changed at run time
