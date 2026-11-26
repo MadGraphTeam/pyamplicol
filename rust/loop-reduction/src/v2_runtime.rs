@@ -1240,6 +1240,10 @@ pub struct V2Runtime {
     /// The caller's model parameter values (exact; validated by
     /// [`checked_parameters`]).
     parameters: BTreeMap<String, Rational>,
+    /// The artifact's specialisation guards of this process
+    /// (`rusticol_core::specialization_guards`), evaluated at every
+    /// [`V2Runtime::set_parameters`].
+    specialization_guards: rusticol_core::specialization_guards::SpecializationGuards,
     /// Per declared Born order its squared Born order in the tree program
     /// (none: zero), per declared sector its record sector.
     born_index: Vec<Option<usize>>,
@@ -1297,6 +1301,11 @@ impl V2Runtime {
             &verified, process, threads,
         )?;
         let externals = model_externals(&verified)?;
+        let specialization_guards =
+            rusticol_core::specialization_guards::SpecializationGuards::load(
+                &verified,
+                &verified.select_process(process)?.process.id,
+            )?;
         let native = read_loop_v2_native_inputs(&verified, &artifact)?.ok_or_else(|| {
             invalid("the process has no native point inputs; regenerate the artifact")
         })?;
@@ -1482,6 +1491,7 @@ impl V2Runtime {
             threads,
             externals,
             parameters: BTreeMap::new(),
+            specialization_guards,
             born_index,
             sector_index,
             process_inputs: Arc::new(LoopV2NativeTrees {
@@ -1608,6 +1618,17 @@ impl V2Runtime {
             &self.record.fixed_parameters,
             &self.record.preparation_fixed_parameters,
         )?;
+        // What generation specialised must stay valid at the new values
+        // (in binary64, as the tree runtime evaluates the guards).
+        if !self.specialization_guards.is_empty() {
+            let binding = checked
+                .iter()
+                .map(|(name, value)| (name.clone(), (value.to_f64(), 0.0)))
+                .collect::<BTreeMap<_, _>>();
+            self.specialization_guards.check_binding(&binding, |name| {
+                self.parameters.get(name).map(|value| (value.to_f64(), 0.0))
+            })?;
+        }
         self.parameters.extend(checked);
         Ok(())
     }

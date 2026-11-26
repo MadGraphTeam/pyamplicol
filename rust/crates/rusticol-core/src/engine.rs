@@ -4568,6 +4568,9 @@ pub struct NativeRuntime {
     selector_simd_lane_width: usize,
     // Cold, opt-in metadata and vector defaults; ordinary evaluation never reads it.
     correlated: Option<correlated::CorrelatedRuntime>,
+    /// The artifact's specialisation guards of this process, evaluated at
+    /// every binding (`set_model_parameters`); empty for most artifacts.
+    specialization_guards: crate::specialization_guards::SpecializationGuards,
 }
 
 enum NativeExecutionLane {

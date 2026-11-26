@@ -47,6 +47,7 @@ pub mod scalar_primitives;
 pub mod source_bindings;
 #[cfg(feature = "symbolica-runtime")]
 pub mod source_scalar;
+pub mod specialization_guards;
 #[cfg(feature = "symbolica-runtime")]
 pub mod symbol_order;
 

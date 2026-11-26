@@ -1705,6 +1705,7 @@ impl NativeRuntime {
         mut runtime: ExecutionRuntime,
         execution_lane: NativeExecutionLane,
         model_parameters_path: Option<&Path>,
+        specialization_guards: crate::specialization_guards::SpecializationGuards,
     ) -> Result<Self, RusticolError> {
         let process = selection.public_expression.clone();
         let process_key = selection.requested_id.clone();
@@ -1830,6 +1831,7 @@ impl NativeRuntime {
             point_selector_scratch: PointSelectorExecutionScratch::default(),
             selector_simd_lane_width,
             correlated: None,
+            specialization_guards,
         };
         if let Some(path) = model_parameters_path {
             loaded.set_model_parameters_json(path)?;
@@ -1874,6 +1876,10 @@ impl NativeRuntime {
             .join("processes")
             .join(&selection.process.id);
         let representative_key = ready_execution.key.clone();
+        let specialization_guards = crate::specialization_guards::SpecializationGuards::load(
+            &artifact,
+            &selection.process.id,
+        )?;
         let loaded = load_recurrence_ready_runtime(
             &mut artifact,
             &evaluator_root,
@@ -1890,6 +1896,7 @@ impl NativeRuntime {
             loaded.common,
             NativeExecutionLane::Recurrence(Box::new(loaded.lane)),
             model_parameters_path,
+            specialization_guards,
         )
     }
 
@@ -1943,6 +1950,10 @@ impl NativeRuntime {
             )?;
         }
         let (manifest, evaluator_root) = load_verified_evaluator(&artifact, &selection)?;
+        let specialization_guards = crate::specialization_guards::SpecializationGuards::load(
+            &artifact,
+            &selection.process.id,
+        )?;
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         if let LoadedExecutionManifest::OnTheFly(on_the_fly) = &manifest {
             let public_remap = selection.remaps_public_process();
@@ -2025,6 +2036,7 @@ impl NativeRuntime {
                 point_selector_scratch: PointSelectorExecutionScratch::default(),
                 selector_simd_lane_width: 1,
                 correlated: None,
+                specialization_guards,
             };
             if let Some(path) = model_parameters_path {
                 runtime.set_model_parameters_json(path)?;
@@ -2121,6 +2133,7 @@ impl NativeRuntime {
             runtime,
             execution_lane,
             model_parameters_path,
+            specialization_guards,
         )
     }
 
@@ -5056,6 +5069,13 @@ impl NativeRuntime {
         &mut self,
         values: &BTreeMap<String, (f64, f64)>,
     ) -> Result<(), RusticolError> {
+        // What generation specialised must stay valid at the new binding; a
+        // refused binding applies nothing.
+        if !self.specialization_guards.is_empty() {
+            self.specialization_guards.check_binding(values, |name| {
+                self.runtime.current_model_parameter_value(name).ok()
+            })?;
+        }
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         if matches!(self.execution_lane, NativeExecutionLane::OnTheFly(_)) {
             return self
