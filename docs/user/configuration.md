@@ -1036,14 +1036,15 @@ use (its affinity mask and its cgroup CPU quota,
 
 - Results do not depend on the count: every value, every lane diagnostic,
   every rescue and uncertified record, the statuses and the counts of the
-  executor report (rescued, refined and refused lanes; master requests, and
-  master evaluations unless one fails) are bitwise the same at 1, 2, 8 or
-  every core, checked and unchecked, in every carrier, at every batch size,
-  for both reductions. Work is cut from the call's own work in a fixed order
-  (never from the count) and merged in that order, never in completion
-  order. With one thread the serial code runs unchanged (no slicing, no
-  shared tables, no locks). Only the report's seconds change: they are wall
-  times (TIRust's own optional profile seconds are summed over the workers).
+  executor report (rescued, refined and refused lanes; master requests and
+  evaluations, a failed master counted once per call) are bitwise the same at
+  1, 2, 8 or every core, checked and unchecked, in every carrier, at every
+  batch size, for both reductions. Work is cut from the call's own work in a
+  fixed order (never from the count) and merged in that order, never in
+  completion order. With one thread the serial code runs unchanged (no
+  slicing, no shared tables, no locks). Only the report's seconds change: they
+  are wall times (TIRust's own optional profile seconds are summed over the
+  workers).
 - What runs on the threads, in one call: the tree stage (the interaction
   programs over the accumulators of each step at every point, the closures,
   the interferences over points), the dressing of the families of a bucket
@@ -1061,14 +1062,13 @@ use (its affinity mask and its cgroup CPU quota,
   plan's base variant whatever was reduced before it), the plans shared by
   the workers. The
   slices are about four per worker, the most expensive first. One 16-point
-  call on 8 cores (binary64, unchecked) runs about 4 (NinjaRS) and 5.5
-  (TIRust) times faster than on one for `g g > g g g g`, about 4 for
-  `g g > h g g` and `g g > z z` with NinjaRS, 2.3 for `g g > t t~ g` and
-  1.6 for `u u~ > e+ e- g g`.
-- A call too small to gain from the pool (a few milliseconds) runs on one
-  thread: the first calls of each batch size are timed on the pool and on one
-  thread alternately, and the faster is kept for that batch size; the values
-  do not depend on the choice.
+  call on 8 cores (binary64, unchecked) runs about 5.5 times faster than on
+  one for `g g > g g g g` with either reduction, 3.5 for `g g > h g g` with
+  NinjaRS (2.3 with TIRust), 3.3 for `g g > z z` and `g g > g g g`, 2.2 for
+  `g g > t t~ g` and `u u~ > e+ e- g g`.
+- Very small calls (a few milliseconds, such as one point of a 2 → 2 or
+  2 → 3 process) do not gain from threads and can be up to about a third
+  slower on several threads than on one: use `threads = 1` for them.
 - Memory: pyAmpliCol's built templates, compiled evaluators and tables are
   built once and shared by the workers. A NinjaRS worker keeps only its
   settings and its master provider between calls (its buffers are released
@@ -1090,13 +1090,16 @@ use (its affinity mask and its cgroup CPU quota,
   Size `threads` to the memory available where many runtimes share a
   process.
 - What does not scale: NinjaRS in double-double and arbitrary precision
-  (above), the Python part of the result's assembly (labelling and
-  summing every lane under the interpreter lock; on small processes up to a
-  third of a call at 8 threads), the tree programs past a few threads (bound
-  by the memory reads of the per-point states), the dressing of small
-  processes (few families per bucket chunk) and, with TIRust, a row refused by
-  its gates, whose method choice is one serial computation (a call with few
-  rows, e.g. one point of a large process, scales less).
+  (above), tree programs with exact evaluators (double-double, arbitrary
+  precision, binary64 without the compiled kernels: one built evaluator, never
+  copied per worker, so those steps run on one thread), the Python part of the
+  result's assembly (labelling and summing every lane under the interpreter
+  lock; on small processes up to a third of a call at 8 threads), the tree
+  programs past a few threads (bound by the memory reads of the per-point
+  states), the dressing of small processes (few families per bucket chunk)
+  and, with TIRust, a row refused by its gates, whose method choice is one
+  serial computation (a call with few rows, e.g. one point of a large process,
+  scales less).
 - Each runtime keeps its own count: two runtimes with different counts in one
   process each use theirs.
 - The bound covers the work of one call at a time (a runtime's calls are
