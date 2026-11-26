@@ -201,10 +201,10 @@
 //!
 //! **Threads.** A call on a thread of a rayon pool (the executor's own,
 //! installed around its work) with more than one thread cuts its kinematic
-//! rows into contiguous slices ([`lane_slices`]: about
-//! [`lane_slices::SLICES_PER_WORKER`] per worker, the rows of a family group
-//! together where the size allows) and reduces them on the pool, the most
-//! expensive first (the plans' term counts), each task on an engine of its
+//! rows into contiguous slices of about equal TIRust cost (the plans' term
+//! counts; about [`lane_slices::SLICES_PER_WORKER`] per worker, a costly row
+//! a slice of its own, the cheap rows around it sharing a few) and reduces
+//! them on the pool, the most expensive first, each task on an engine of its
 //! own: the backend's, or workspaces of the backend's plans kept for the
 //! next calls ([`lane_slices::EnginePool`]).
 //! Every pass of a row (direct, rotation copy, check frame, method choice,
@@ -216,7 +216,10 @@
 //! (T6: no dependence on the rows it is batched with, the calls before it,
 //! the workspace or the thread), so every value,
 //! reason, measure and count is that of the one-thread call: outcomes and
-//! measures are concatenated in slice order (row order), counts summed;
+//! measures are concatenated in slice order (row order), counts summed. A
+//! slice keeps only what it touched (its rows' moments, the runs of lanes of
+//! the groups its rows belong to, their measures): the memory of a call is
+//! linear in its lanes and groups at every number of workers;
 //! the stages' seconds are their wall time. The capability query of every
 //! plan of the call is asked first, in (propagators, rank) order, so a
 //! refusal is the one the serial passes meet first; any other TIRust error
@@ -1806,25 +1809,16 @@ impl TirReductionBackend {
             costs.insert((n, rank), bin.plan.instruction_counts().1 + 1);
             plans.insert((n, rank), (bin.plan.clone(), bin.position.clone()));
         }
-        // The rows of one family group together where the slice size
-        // allows (one TIRust call per bin of a slice); the most expensive
-        // slices first. A row's cost varies by a large factor between plans
-        // (a bubble and a rank-6 hexagon), so the size is the number of rows
-        // of the typical cost (the cost-weighted mean, Σc²/Σc: where the
-        // work is) that make one `SLICES_PER_WORKER * workers`-th of the
-        // call's cost.
-        let (total, squares) = rows.iter().fold((0usize, 0usize), |(sum, squares), row| {
-            let c = costs[&key(row)];
-            (sum + c, squares + c * c)
-        });
-        let typical = (squares / total.max(1)).max(1);
-        let cap = total.div_ceil(lane_slices::SLICES_PER_WORKER * workers * typical);
-        let affinity: Vec<usize> = rows.iter().map(|row| row.group).collect();
-        let size = lane_slices::slice_size(rows.len(), workers, cap);
-        let slices = lane_slices::cut(&affinity, size);
-        let cost = |slice: &std::ops::Range<usize>| -> usize {
-            rows[slice.clone()].iter().map(|row| costs[&key(row)]).sum()
-        };
+        // Contiguous slices of about equal TIRust cost, the most expensive
+        // first. A row's cost varies by a large factor between plans (a
+        // tadpole and a rank-6 hexagon): a slice closes once it holds one
+        // `SLICES_PER_WORKER * workers`-th of the call's cost, so a costly
+        // row is a slice of its own and the cheap rows around it share a few
+        // slices (never one slice per cheap row).
+        let row_costs: Vec<usize> = rows.iter().map(|row| costs[&key(row)]).collect();
+        let slices = cost_slices(&row_costs, lane_slices::SLICES_PER_WORKER * workers);
+        let cost =
+            |slice: &std::ops::Range<usize>| -> usize { row_costs[slice.clone()].iter().sum() };
         let mut schedule: Vec<usize> = (0..slices.len()).collect();
         schedule.sort_by_key(|&s| std::cmp::Reverse(cost(&slices[s])));
         let options = self.options;
@@ -1857,13 +1851,13 @@ impl TirReductionBackend {
         let moments = started.elapsed().as_secs_f64();
         let passes = passes?;
         let started = Instant::now();
-        let contracted: Vec<(Contracted<T>, Counters)> = passes
+        let contracted: Vec<(Contracted<Runs<T>>, Counters)> = passes
             .into_par_iter()
             .zip(slices.par_iter())
             .map(|((passes, mut counters), range)| {
                 let mut out = Contracted {
-                    direct: groups.iter().map(|_| Vec::new()).collect(),
-                    check: check.map(|_| groups.iter().map(|_| Vec::new()).collect()),
+                    direct: Runs(Vec::new()),
+                    check: check.map(|_| Runs(Vec::new())),
                     measures: Vec::new(),
                 };
                 contract_rows(
@@ -1890,13 +1884,9 @@ impl TirReductionBackend {
                 .collect()
         });
         for (out, mut counters) in contracted {
-            for (all, part) in direct.iter_mut().zip(out.direct) {
-                all.extend(part);
-            }
+            out.direct.merge_into(&mut direct);
             if let (Some(checked), Some(part)) = (&mut checked, out.check) {
-                for (all, part) in checked.iter_mut().zip(part) {
-                    all.extend(part);
-                }
+                part.merge_into(checked);
             }
             self.measures.extend(out.measures);
             // The stages' seconds are their wall time on the calling thread.
@@ -1907,6 +1897,35 @@ impl TirReductionBackend {
         self.counters.contraction += contraction;
         Ok((direct, checked))
     }
+}
+
+/// Contiguous slices of positions `0..costs.len()` of about equal total
+/// cost, about `pieces` of them: a slice closes as soon as its cost reaches
+/// `ceil(total / pieces)`, so there are at most `pieces` slices of cheap
+/// positions plus one per costly position (a position costing the share or
+/// more is a slice of its own or closes the one it ends). Every position is
+/// in exactly one slice, in order.
+fn cost_slices(costs: &[usize], pieces: usize) -> Vec<std::ops::Range<usize>> {
+    let total: usize = costs.iter().sum();
+    let share = total.div_ceil(pieces.max(1)).max(1);
+    let mut slices = Vec::with_capacity(pieces.min(costs.len()));
+    let (mut start, mut sum) = (0, 0);
+    for (position, &cost) in costs.iter().enumerate() {
+        // A costly position after cheap ones starts a slice of its own.
+        if sum > 0 && cost >= share {
+            slices.push(start..position);
+            (start, sum) = (position, 0);
+        }
+        sum += cost;
+        if sum >= share {
+            slices.push(start..position + 1);
+            (start, sum) = (position + 1, 0);
+        }
+    }
+    if start < costs.len() {
+        slices.push(start..costs.len());
+    }
+    slices
 }
 
 /// The kinematic rows of group `index` (`g`) and their moment ranks
@@ -1964,12 +1983,48 @@ struct Passes<T> {
     own: Vec<FrameRow<T>>,
 }
 
-/// A slice's lane outcomes per group (direct, check) and refused lanes'
-/// measures, in row order.
-struct Contracted<T> {
-    direct: Vec<Vec<LaneOutcome<T>>>,
-    check: Option<Vec<Vec<LaneOutcome<T>>>>,
+/// Lane outcomes (direct, check) and refused lanes' measures, in row
+/// order: per group of the call on the serial path
+/// (`Vec<Vec<LaneOutcome<T>>>`), per run of rows of one group that a slice
+/// touched in a parallel call ([`Runs`]).
+struct Contracted<D> {
+    direct: D,
+    check: Option<D>,
     measures: Vec<MeasuredLane>,
+}
+
+/// Where a lane's outcome goes: its group's list.
+trait Outcomes<T> {
+    fn put(&mut self, group: usize, outcome: LaneOutcome<T>);
+}
+
+impl<T> Outcomes<T> for Vec<Vec<LaneOutcome<T>>> {
+    fn put(&mut self, group: usize, outcome: LaneOutcome<T>) {
+        self[group].push(outcome);
+    }
+}
+
+/// A slice's outcomes: the runs of consecutive lanes of one group it
+/// touched, in row order (memory proportional to the slice, not to the
+/// call's groups); merged into the call's groups in slice order.
+struct Runs<T>(Vec<(usize, Vec<LaneOutcome<T>>)>);
+
+impl<T> Outcomes<T> for Runs<T> {
+    fn put(&mut self, group: usize, outcome: LaneOutcome<T>) {
+        match self.0.last_mut() {
+            Some((last, outcomes)) if *last == group => outcomes.push(outcome),
+            _ => self.0.push((group, vec![outcome])),
+        }
+    }
+}
+
+impl<T> Runs<T> {
+    /// Append the runs to their groups in `all`.
+    fn merge_into(self, all: &mut [Vec<LaneOutcome<T>>]) {
+        for (group, outcomes) in self.0 {
+            all[group].extend(outcomes);
+        }
+    }
 }
 
 impl Worker<'_> {
@@ -2044,14 +2099,14 @@ where
 /// The lanes of `rows` contracted with their moments `passes` into `out`
 /// (module docs; the acceptance comparison of the method-choice lanes), in
 /// row order.
-fn contract_rows<T: TirCarrier>(
+fn contract_rows<T: TirCarrier, D: Outcomes<T>>(
     options: &TirOptions,
     counters: &mut Counters,
     groups: &[FamilyLanes<T>],
     rows: &[Row],
     passes: Passes<T>,
     (prototype, poles, check_frame): (&T, Poles, Option<ReductionFrame>),
-    out: &mut Contracted<T>,
+    out: &mut Contracted<D>,
 ) where
     Complex<T>: EvaluationDomain,
 {
@@ -2234,7 +2289,7 @@ fn contract_rows<T: TirCarrier>(
                     measure,
                 });
             }
-            out.direct[row.group].push(verified);
+            out.direct.put(row.group, verified);
             if let Some(check_out) = &mut out.check {
                 let again = again.expect("every row is checked");
                 if let (Err(_), Some(checked)) = (&again, &checked)
@@ -2247,7 +2302,7 @@ fn contract_rows<T: TirCarrier>(
                         measure,
                     });
                 }
-                check_out[row.group].push(again);
+                check_out.put(row.group, again);
             }
         }
     }
@@ -2459,4 +2514,63 @@ fn scale_of<T: Carrier>(magnitudes: &[[f64; SLOTS]], c: &[Complex<T>]) -> f64 {
 /// basis (the fixed layout permutation, lit-spike-tir T3).
 pub fn layout_positions(rank: usize) -> RusticolResult<Vec<usize>> {
     Ok(Bin::new(1, rank)?.position)
+}
+
+#[cfg(test)]
+mod slicing_tests {
+    use super::cost_slices;
+
+    /// Every position in exactly one slice, in order.
+    fn covers(slices: &[std::ops::Range<usize>], len: usize) {
+        let mut next = 0;
+        for slice in slices {
+            assert_eq!(slice.start, next);
+            assert!(slice.end > slice.start);
+            next = slice.end;
+        }
+        assert_eq!(next, len);
+    }
+
+    #[test]
+    fn equal_costs_make_about_the_requested_slices() {
+        let slices = cost_slices(&[3; 1000], 8);
+        covers(&slices, 1000);
+        assert_eq!(slices.len(), 8);
+    }
+
+    /// One costly position among thousands of cheap ones (the reviewer's
+    /// hexagon next to tadpoles) is a slice of its own; the cheap ones share
+    /// a few slices, never one each.
+    #[test]
+    fn a_costly_position_is_alone_and_the_cheap_ones_share() {
+        for at in [0, 1, 2000, 3999] {
+            let mut costs = vec![1; 4000];
+            costs[at] = 1_000_000;
+            let slices = cost_slices(&costs, 8);
+            covers(&slices, 4000);
+            assert!(slices.contains(&(at..at + 1)), "{at}: {slices:?}");
+            assert!(slices.len() <= 3, "{at}: {slices:?}");
+        }
+        // Many costly positions (each a share or more): at most three slices
+        // per requested one.
+        let costs: Vec<usize> = (0..4000)
+            .map(|k| if k % 97 == 0 { 1_000_000 } else { 1 })
+            .collect();
+        let slices = cost_slices(&costs, 8);
+        covers(&slices, 4000);
+        assert!(slices.len() <= 3 * 42, "{}", slices.len());
+        let costs: Vec<usize> = (0..4000)
+            .map(|k| if k % 97 == 0 { 50_000 } else { 1 })
+            .collect();
+        let slices = cost_slices(&costs, 8);
+        covers(&slices, 4000);
+        assert!(slices.len() <= 3 * 8, "{}", slices.len());
+    }
+
+    #[test]
+    fn empty_and_single() {
+        assert!(cost_slices(&[], 8).is_empty());
+        assert_eq!(cost_slices(&[5], 8), vec![0..1]);
+        assert_eq!(cost_slices(&[0, 0, 0], 2), vec![0..3]);
+    }
 }
