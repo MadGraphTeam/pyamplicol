@@ -94,6 +94,21 @@ def _fraction_text(value: Any) -> str:
     return f"{value.numerator}/{value.denominator}"
 
 
+def _distinct_labels(exported: Any) -> bool:
+    """Whether every native lane (family, order, column) has its own label
+    (``NativeExecutor.reduce``'s ``label``): distinct family, loop-order and
+    column labels; formed once per exported plan."""
+
+    found = exported.__dict__.get("_distinct_labels")
+    if found is None:
+        found = all(
+            len(set(labels)) == len(labels)
+            for labels in (exported.families, exported.orders, exported.columns)
+        )
+        exported.__dict__["_distinct_labels"] = found
+    return found
+
+
 def _double_pairs(values: Iterable[Sequence[Any]]) -> list[complex]:
     """A native lane's [re, im] pairs as binary64 complex numbers."""
 
@@ -3368,6 +3383,16 @@ class NativeExecutor:
             )
         failed: dict[int, list[str]] = {}
         scope = _Numbers(precision)
+        # binary64 in the "all" and "none" modes: the lanes are formed on
+        # first read and the bare sums are the executor's own lane sums
+        # (``_PointEvaluation.set_native_lanes``), when every lane has its
+        # own label (distinct family, order and column labels).
+        pending = (
+            twin is None
+            and not splits(mode)
+            and output.get("lane_sums") is not None
+            and _distinct_labels(exported)
+        )
         for index, (evaluation, lanes, checks, failures) in enumerate(
             zip(
                 evaluations,
@@ -3476,9 +3501,28 @@ class NativeExecutor:
                         exported.trees.born_orders,
                         lambda x, numbers=numbers: numbers.real(Decimal(str(x))),
                     )
-                evaluation.set_lanes(
-                    read(lanes), read(checks), scaleless, scaleless_check
-                )
+                if pending and numbers.double:
+                    evaluation.set_native_lanes(
+                        lanes,
+                        checks,
+                        label,
+                        {
+                            exported.columns[column]: [
+                                complex(re, im) for re, im in sums
+                            ]
+                            for column, _count, sums in output["lane_sums"][index]
+                        },
+                        exported,
+                    )
+                else:
+                    evaluation.set_lanes(
+                        read(lanes), read(checks), scaleless, scaleless_check
+                    )
+        if exported.amplitude is not None:
+            # binary64 loop-induced points: |A|^2 in one native call.
+            induced.native_squares(
+                [e for i, e in enumerate(evaluations) if i not in failed], exported
+            )
         return failed
 
     def _wants_catani(self, evaluation: Any) -> bool:

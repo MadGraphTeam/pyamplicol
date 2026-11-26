@@ -798,6 +798,14 @@ def cross_check(reference: Any, budgets: dict) -> dict[str, str]:
     return {}
 
 
+def _deviations(reference: Any) -> Any:
+    """``reference.family_deviations``, without forming pending ones
+    (``_PointEvaluation.deviations_copy``)."""
+
+    copy = getattr(reference, "deviations_copy", None)
+    return reference.family_deviations if copy is None else copy()
+
+
 def native_estimate(
     reference: Any, rotated: Sequence[Any], checks: StabilityChecks, roundoff: float
 ) -> StabilityEstimate | None:
@@ -829,21 +837,30 @@ def native_estimate(
         LOCAL_COMPONENTS if all(name in components for name in LOCAL_COMPONENTS) else ()
     )
     keys: dict[Any, int] = {}
+    # Per native lane key its (number, sector position): one label per lane
+    # and call (``_PointEvaluation.native_lane_rows``).
+    seen: dict[Any, tuple[int, int]] = {}
 
-    def lanes(families: Mapping[Any, Any]) -> list:
+    def lanes(evaluation: Any, name: str) -> list:
+        # Per lane (its number, its sector's, its coefficients' (re, im)),
+        # from the executor's pairs while the lanes are pending
+        # (``_PointEvaluation.native_lane_rows``).
+        rows = getattr(evaluation, "native_lane_rows", None)
+        if rows is not None:
+            return rows(name, keys, index, seen)
         return [
             (
                 keys.setdefault(lane, len(keys)),
                 index[lane[2]],
                 [(x.real, x.imag) for x in laurent.coefficients],
             )
-            for lane, laurent in families.items()
+            for lane, laurent in getattr(evaluation, name).items()
         ]
 
     def point(evaluation: Any) -> tuple:
         found = evaluation.result.components
         return (
-            lanes(evaluation.families),
+            lanes(evaluation, "families"),
             [
                 [
                     [float(x) for x in found[name][sector].coefficients]
@@ -857,7 +874,7 @@ def native_estimate(
     retest = (
         None
         if checks.reduction is None
-        else (checks.reduction, lanes(reference.retest_families))
+        else (checks.reduction, lanes(reference, "retest_families"))
     )
     cross = reason = None
     if checks.cross_backend:
@@ -893,7 +910,7 @@ def native_estimate(
         values,
         budget(scale),
         roundoff,
-        reference.family_deviations,
+        _deviations(reference),
         dict(not_run),
     )
 
@@ -1004,7 +1021,7 @@ def _native_induced_estimate(
         values,
         budget(scale),
         roundoff,
-        reference.family_deviations,
+        _deviations(reference),
         dict(not_run),
     )
 

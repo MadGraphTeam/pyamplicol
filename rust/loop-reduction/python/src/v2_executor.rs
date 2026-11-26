@@ -441,7 +441,7 @@ impl Trees {
             .map_err(|_| error("a poisoned tree runtime"))?;
         let slot: &mut Option<Box<dyn Any + Send>> = &mut guard;
         let program = &*self.program;
-        let bound = executor.install(|| -> PyResult<_> {
+        let bound = executor.install_for(scales.len(), || -> PyResult<_> {
             Ok(Self::bind(program, slot, &values, scales, zero)?.1)
         })?;
         Ok(Filling {
@@ -505,7 +505,7 @@ impl Trees {
             .map(|all| if whole { all } else { &all[range.clone()] });
         let momenta = &batch.momenta;
         let constants = &filling.bound.constants;
-        let mut out = executor.install(|| -> PyResult<_> {
+        let mut out = executor.install_for(momenta.len(), || -> PyResult<_> {
             let chunk = fill.unwrap_or_else(|| {
                 program.fill_points::<T>(momenta.len(), loop_sources.is_some(), TREE_FILL_BUDGET)
             });
@@ -669,6 +669,11 @@ struct Evaluation {
     dipoles: Option<Vec<Values>>,
     families: Vec<Lanes>,
     check: Option<Vec<Lanes>>,
+    /// Per point and numerator column that has lanes, `(column, lanes,
+    /// sums)`: the column's lane integrals summed per Laurent coefficient in
+    /// lane order (`families`' order, from zero), the sums the Python
+    /// assembly forms from `families` (`lane_sums`).
+    lane_sums: Vec<Vec<(usize, usize, Values)>>,
     bare: Vec<Vec<Values>>,
     budget: Vec<Option<Vec<Reals>>>,
     /// Amplitude-mode plans (loop-induced): per point and (loop order,
@@ -741,6 +746,36 @@ fn real_values<T: Exchanged + Real>(values: &[T], zero: &T, bits: u32) -> Values
     )
 }
 
+/// Per numerator column that has lanes, `(column, lanes, sums)`: the
+/// column's lane integrals summed per Laurent coefficient in the lanes'
+/// order, each sum starting from zero, so that the sums are exactly those of
+/// adding the exported lanes one after another (`Evaluation::lane_sums`);
+/// columns in ascending order. A lane whose coefficient count differs from
+/// its column's first lane adds its common coefficients only.
+fn lane_sums<T: Exchanged + Real>(
+    lanes: &[(rusticol_core::loop_execution::v2::LaneKey, Vec<Complex<T>>)],
+    bits: u32,
+) -> Vec<(usize, usize, Values)> {
+    let mut columns: BTreeMap<usize, (usize, Vec<Complex<T>>)> = BTreeMap::new();
+    for (key, value) in lanes {
+        let (count, sums) = columns.entry(key.column).or_insert_with(|| {
+            let sums = value
+                .iter()
+                .map(|z| Complex::new(z.re.zero(), z.re.zero()))
+                .collect();
+            (0, sums)
+        });
+        *count += 1;
+        for (s, z) in sums.iter_mut().zip(value) {
+            *s += z;
+        }
+    }
+    columns
+        .into_iter()
+        .map(|(column, (count, sums))| (column, count, T::export(&sums, bits)))
+        .collect()
+}
+
 fn export_evaluation<T: Exchanged + Real>(
     results: Vec<PointResult<T>>,
     report: Report,
@@ -803,6 +838,10 @@ fn export_evaluation<T: Exchanged + Real>(
         columns,
         dipoles: None,
         families: results.iter().map(|r| lanes(&r.families)).collect(),
+        lane_sums: results
+            .iter()
+            .map(|r| lane_sums(&r.families, bits))
+            .collect(),
         check: checked.then(|| {
             results
                 .iter()
@@ -1170,12 +1209,14 @@ where
                 "selection masks need the executor's tree program (native inputs)",
             ));
         }
-        let (results, report) = py
-            .detach(|| executor.evaluate(&batch, &zero, backend, options))
-            .map_err(error)?;
-        return Ok(export_evaluation(
-            results, report, bits, None, None, None, None,
-        ));
+        return py.detach(|| {
+            let (results, report) = executor
+                .evaluate(&batch, &zero, backend, options)
+                .map_err(error)?;
+            Ok(export_evaluation(
+                results, report, bits, None, None, None, None,
+            ))
+        });
     }
     let trees = trees.ok_or_else(|| error("the executor has no tree program"))?;
     // The counterterm pole outputs are formed unless finite-only (the
@@ -1263,15 +1304,18 @@ where
             born: Vec::new(),
         };
         let started = std::time::Instant::now();
-        let native = trees.fill_part(
-            executor,
-            &filling,
-            range,
-            &mut sub,
-            poles,
-            bounds.fill_points,
-            &zero,
-        )?;
+        let fill_points = bounds.fill_points;
+        let native = py.detach(|| {
+            trees.fill_part(
+                executor,
+                &filling,
+                range,
+                &mut sub,
+                poles,
+                fill_points,
+                &zero,
+            )
+        })?;
         tree_seconds += started.elapsed().as_secs_f64();
         for (stage, seconds) in &native.seconds {
             match tree_parts.iter_mut().find(|(name, _)| name == stage) {
@@ -1361,15 +1405,17 @@ where
             kept.restrict(result);
         }
     }
-    let mut evaluation = export_evaluation(
-        results,
-        report,
-        bits,
-        born,
-        loop_born,
-        counterterms,
-        columns,
-    );
+    let mut evaluation = py.detach(|| {
+        export_evaluation(
+            results,
+            report,
+            bits,
+            born,
+            loop_born,
+            counterterms,
+            columns,
+        )
+    });
     evaluation.dipoles = correlations;
     evaluation.counterterm_kets = kets;
     evaluation.amplitude_rows = kept.map(|kept| kept.rows);
@@ -2891,6 +2937,199 @@ fn square_amplitudes(
     .map_err(error)
 }
 
+/// The counterterm kets of [`induced_squares`]: the loop orders of the
+/// amplitude vectors (the executor's slots first), the ket components per
+/// row and, per kept component in layout order, `(component, basis element,
+/// Laurent index, loop order, 3^(N_c power))`.
+type KetLayout = (usize, usize, Vec<(usize, usize, usize, usize, f64)>);
+
+/// |A|^2 of every binary64 point of a loop-induced batch from the
+/// executor's own outputs (`V2Executor.evaluate`'s `amplitudes` and
+/// `counterterm_kets`), in one call: per point `(slots, kets, average)`.
+/// Per (loop order, row) the amplitude vector is `0 + a_bare`, plus the
+/// counterterm ket `sum_j value_j * 3^nc_j` where the point has kets, each
+/// product `(re p - im 0, re 0 + im p)` and every sum in the order and with
+/// the zeros of the Python assembly (`loops.v2.induced`: `read_native`,
+/// `native_kets`, `add_amplitudes`), then squared on the colour metric by
+/// [`square_amplitudes`]'s routine over the squared loop orders `square`
+/// (each the vector order it reads, or None: zero). Bitwise the Python
+/// assembly's squares.
+#[pyfunction]
+#[pyo3(signature = (points, rows, basis, width, slots, kets, square, metric, sectors))]
+#[allow(clippy::too_many_arguments)]
+fn induced_squares(
+    py: Python<'_>,
+    points: Vec<(Vec<Vec<[f64; 2]>>, Option<Vec<[f64; 2]>>, f64)>,
+    rows: usize,
+    basis: usize,
+    width: usize,
+    slots: usize,
+    kets: KetLayout,
+    square: Vec<Option<usize>>,
+    metric: Vec<[f64; 2]>,
+    sectors: Vec<Vec<(usize, usize)>>,
+) -> PyResult<Vec<Vec<Vec<f64>>>> {
+    let _unlock = pyamplicol::unlock();
+    let (orders, components, entries) = kets;
+    let metric: Vec<Complex<f64>> = metric
+        .iter()
+        .map(|[re, im]| Complex::new(*re, *im))
+        .collect();
+    py.detach(|| {
+        let zero = Complex::new(0.0, 0.0);
+        points
+            .iter()
+            .map(|(cells, values, average)| {
+                if cells.len() != slots * rows * basis {
+                    return Err(error(
+                        "amplitude slots per (loop order, row, basis element)",
+                    ));
+                }
+                // Per (loop order, row): the vector `0 + a_bare` (the executor's
+                // slots), then plus its counterterm ket.
+                let mut total: Vec<Option<Vec<Vec<Complex<f64>>>>> = vec![None; orders * rows];
+                for o in 0..slots {
+                    for r in 0..rows {
+                        let base = (o * rows + r) * basis;
+                        total[o * rows + r] = Some(
+                            cells[base..base + basis]
+                                .iter()
+                                .map(|cell| {
+                                    let n = if width == 1 { 1 } else { width.min(cell.len()) };
+                                    cell[..n]
+                                        .iter()
+                                        .map(|[re, im]| zero + Complex::new(*re, *im))
+                                        .collect()
+                                })
+                                .collect(),
+                        );
+                    }
+                }
+                if let Some(values) = values {
+                    if values.len() != rows * components {
+                        return Err(error("counterterm kets per (row, ket component)"));
+                    }
+                    let mut ket: Vec<Option<Vec<Vec<Complex<f64>>>>> = vec![None; orders * rows];
+                    for r in 0..rows {
+                        for &(j, t, k, o, power) in &entries {
+                            let [re, im] = values[r * components + j];
+                            let vector = ket[o * rows + r]
+                                .get_or_insert_with(|| vec![vec![zero; width]; basis]);
+                            let product =
+                                Complex::new(re * power - im * 0.0, re * 0.0 + im * power);
+                            vector[t][k] += product;
+                        }
+                    }
+                    for (slot, vector) in ket.into_iter().enumerate() {
+                        let Some(vector) = vector else { continue };
+                        let out = total[slot].get_or_insert_with(|| vec![vec![zero; width]; basis]);
+                        for (entries, cell) in out.iter_mut().zip(&vector) {
+                            let n = if width == 1 {
+                                1
+                            } else {
+                                entries.len().min(cell.len())
+                            };
+                            entries.truncate(n);
+                            for (a, b) in entries.iter_mut().zip(cell) {
+                                *a += *b;
+                            }
+                        }
+                    }
+                }
+                let mut amplitudes = Vec::with_capacity(square.len() * rows * basis);
+                for &order in &square {
+                    for r in 0..rows {
+                        match order.and_then(|o| total[o * rows + r].as_ref()) {
+                            Some(vector) => amplitudes.extend(
+                                vector[..basis]
+                                    .iter()
+                                    .map(|cell| cell[..width.min(cell.len())].to_vec()),
+                            ),
+                            None => amplitudes.extend((0..basis).map(|_| vec![zero; width])),
+                        }
+                    }
+                }
+                rusticol_core::loop_v2::interference::square_amplitudes(
+                    &amplitudes,
+                    square.len(),
+                    rows,
+                    basis,
+                    width,
+                    &metric,
+                    &sectors,
+                    average,
+                )
+                .map_err(error)
+            })
+            .collect()
+    })
+}
+
+/// The squares of one point's binary64 amplitude vectors on several
+/// (rows, metric) forms in one call (`loops.v2.induced_observables`'s
+/// resolved outputs): `amplitudes` per (squared loop order, row, basis
+/// element) over every row of the point, and per job the rows it reads
+/// (ascending indices) and its metric; each job is [`square_amplitudes`] of
+/// the same vectors restricted to its rows, bitwise.
+#[pyfunction]
+#[pyo3(signature = (amplitudes, orders, rows, basis, width, metrics, jobs, sectors, average))]
+#[allow(clippy::too_many_arguments)]
+fn square_row_forms(
+    py: Python<'_>,
+    amplitudes: Vec<Vec<[f64; 2]>>,
+    orders: usize,
+    rows: usize,
+    basis: usize,
+    width: usize,
+    metrics: Vec<Vec<[f64; 2]>>,
+    jobs: Vec<(Vec<usize>, usize)>,
+    sectors: Vec<Vec<(usize, usize)>>,
+    average: f64,
+) -> PyResult<Vec<Vec<Vec<f64>>>> {
+    let _unlock = pyamplicol::unlock();
+    let complex = |values: &[[f64; 2]]| {
+        values
+            .iter()
+            .map(|[re, im]| Complex::new(*re, *im))
+            .collect::<Vec<_>>()
+    };
+    if amplitudes.len() != orders * rows * basis {
+        return Err(error("amplitudes per (loop order, row, basis element)"));
+    }
+    let amplitudes: Vec<Vec<Complex<f64>>> = amplitudes.iter().map(|cell| complex(cell)).collect();
+    let metrics: Vec<Vec<Complex<f64>>> = metrics.iter().map(|m| complex(m)).collect();
+    py.detach(|| {
+        jobs.iter()
+            .map(|(kept, metric)| {
+                let metric = metrics
+                    .get(*metric)
+                    .ok_or_else(|| error("a job's metric outside the metrics"))?;
+                let mut restricted = Vec::with_capacity(orders * kept.len() * basis);
+                for o in 0..orders {
+                    for &r in kept {
+                        if r >= rows {
+                            return Err(error("a job's row outside the rows"));
+                        }
+                        let base = (o * rows + r) * basis;
+                        restricted.extend(amplitudes[base..base + basis].iter().cloned());
+                    }
+                }
+                rusticol_core::loop_v2::interference::square_amplitudes(
+                    &restricted,
+                    orders,
+                    kept.len(),
+                    basis,
+                    width,
+                    metric,
+                    &sectors,
+                    &average,
+                )
+                .map_err(error)
+            })
+            .collect()
+    })
+}
+
 /// The stored records of a Born-interfered process's resolved set
 /// (`native_observables.StoredObservables`) as the formation reads them.
 fn resolved_records<'a>(
@@ -3089,6 +3328,8 @@ pub(super) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(selection_template, module)?)?;
     module.add_function(wrap_pyfunction!(resolved_subset, module)?)?;
     module.add_function(wrap_pyfunction!(square_amplitudes, module)?)?;
+    module.add_function(wrap_pyfunction!(induced_squares, module)?)?;
+    module.add_function(wrap_pyfunction!(square_row_forms, module)?)?;
     module.add_function(wrap_pyfunction!(compile_v2_plane, module)?)?;
     module.add(
         "PlaneMismatchError",
