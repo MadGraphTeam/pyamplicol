@@ -447,14 +447,16 @@ LOOP_ADMISSION_REFUSALS = (
         "cms-revived-coupling",
         "under the complex-mass scheme, a model whose restriction "
         "simplification (simplify = true) removed a coupling that is zero at "
-        "the restriction card's real-scheme values but not after the transform "
-        "(CMSParam = 1, the Yukawa inputs tied to the masses, complex pole "
-        "masses), or that is zero there only at the values of runtime "
-        "parameters",
+        "the restriction card's real-scheme values and that is not proven "
+        "exactly zero, for every binding, after the transform (CMSParam = 1, "
+        "the Yukawa inputs tied to the masses, complex pole masses): nonzero "
+        "there, zero only at the values of runtime parameters, or zero in "
+        "binary64 without an exact proof",
         "the simplified model no longer holds the coupling's vertex, so the "
         "scheme would compute without it; the removed couplings are recorded "
-        "at compile and evaluated again under the transform "
-        "(model_cms.tree_model_payload)",
+        "at compile and decided again exactly under the transform "
+        "(model_cms.tree_model_payload, "
+        "specialization_guards.provably_zero_after_transform)",
         "compile the model with simplify = false, or a restriction card under "
         "which the couplings vanish in the complex-mass scheme too",
         "none (a guard of the transform)",

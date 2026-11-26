@@ -943,11 +943,10 @@ def removed_coupling_records_from_payload(
 
 @dataclass(frozen=True)
 class RevivedCoupling:
-    """A removed coupling a transform does not leave zero: ``value`` in the
-    transform's own arithmetic, ``revived`` when that value is nonzero, else
-    zero only at the transformed values of the parameters ``parameters`` it
-    depends on (a binding of them would revive it, and no guard of the
-    transformed model holds them)."""
+    """A removed coupling a transform is not proven to leave zero
+    (``revived_removed_couplings``): ``value`` in the transform's own binary64
+    arithmetic (for the message only); ``parameters``, the external
+    parameters it reads after the transform."""
 
     name: str
     value: complex
@@ -955,51 +954,194 @@ class RevivedCoupling:
 
     @property
     def revived(self) -> bool:
+        """Nonzero even in binary64 (otherwise only not proven zero)."""
+
         return self.value != 0
 
     def describe(self) -> str:
         if self.revived:
             return f"{self.name} = {_format_complex(self.value)}"
+        if self.parameters:
+            return (
+                f"{self.name} (zero in binary64 here, but not identically in "
+                f"{', '.join(self.parameters)}: a binding would revive it)"
+            )
         return (
-            f"{self.name} (zero here only at the values of "
-            f"{', '.join(self.parameters)})"
+            f"{self.name} (zero in binary64 here, but not proven exactly zero: "
+            "an exact carrier would evaluate it)"
         )
+
+
+#: The literal readings of an exact carrier: a binary64 literal as its
+#: shortest decimal (the one-loop runtime, extended precision) and as the
+#: exact value of the binary64 (the native tree runtime promotes it).
+_LITERAL_READINGS = ("decimal", "binary64")
 
 
 def revived_removed_couplings(
     model: Any, removed: Iterable[Any]
 ) -> tuple[RevivedCoupling, ...]:
-    """The couplings of ``removed`` that a parameter transform revives.
+    """The couplings of ``removed`` that a parameter transform is not proven
+    to leave zero.
 
     ``model`` is the ``ufo_model_loader`` model of a compiled model's tree
     payload after the transform (its parameters redefined and its values
     evaluated again); ``removed`` are the couplings restriction
     simplification removed (``removed_coupling_record``), as loader
-    ``Coupling`` objects that went through the same transform and evaluation
-    as the kept couplings (their ``value`` set by it). A removed coupling is
-    left zero by the transform only when its value there is exactly zero and
-    it either reads no external (mutable) parameter or vanishes identically
-    once the transformed internal parameters are written in the externals;
-    any other is returned, in ``removed``'s order."""
+    ``Coupling`` objects that went through the same transform as the kept
+    couplings (their ``value`` set by its evaluation, for the message).
+
+    The decision is exact, never numerical: a removed coupling stays removed
+    only if it is provably zero for every binding, in every exact reading
+    (``provably_zero_after_transform``). Its expression is written in the
+    external (mutable) parameters, which stay symbols, through the
+    transformed internal definitions (CMSParam = 1, a Yukawa input = its
+    mass, a complex pole mass ``sqrt(M^2 - i M W)``), every internal constant
+    and binary64 literal read both as its shortest decimal and as the exact
+    binary64, and the result must expand to exactly 0. What the expansion
+    cannot reduce is not proven, and refused: a square root of a non-square
+    (``sqrt(10000000000000001) - 100000000``, zero in binary64 only), a
+    branch identity Symbolica does not take (``sqrt(x^2) = x``), a model
+    function call it cannot evaluate exactly (``complexconjugate``, ``re``),
+    an unresolved name. A term zero at the transformed values but not identically
+    (a binding would revive it) is refused too: the transformed model holds
+    no guard for it. Returned in ``removed``'s order."""
 
     environment: GuardEnvironment | None = None
     found = []
     for coupling in removed:
         value = complex(coupling.value if coupling.value is not None else math.nan)
-        if value != 0:
-            found.append(RevivedCoupling(str(coupling.name), value))
-            continue
         if environment is None:
             environment = GuardEnvironment.from_ufo_model(model)
+            # A model variable that is not an exact integer (pi) stays a
+            # symbol: no binary64 value of a transcendental constant may
+            # cancel a literal.
+            for symbol, number in model.get_model_variables().items():
+                number = complex(number)
+                if not (number.real.is_integer() and number.imag.is_integer()):
+                    environment.constants.pop(_short_name(symbol.get_name()), None)
         try:
-            resolved = environment.resolve(coupling.expression)
-            parameters = environment.mutable_dependencies(resolved)
-            structural = not parameters or _is_identically_zero(resolved)
-        except (TypeError, ValueError):
-            parameters, structural = ("(unresolved)",), False
-        if not structural:
+            parameters = environment.mutable_dependencies(
+                environment.resolve(coupling.expression)
+            )
+            proven = provably_zero_after_transform(environment, coupling.expression)
+        except (TypeError, ValueError, ArithmeticError):
+            parameters, proven = ("(unresolved)",), False
+        if not proven:
             found.append(RevivedCoupling(str(coupling.name), value, parameters))
     return tuple(found)
+
+
+def provably_zero_after_transform(
+    environment: GuardEnvironment, expression: Any
+) -> bool:
+    """Whether ``expression`` is exactly zero for every value of the external
+    parameters of ``environment`` (which stay symbols), under every reading
+    of its numbers (``_LITERAL_READINGS``).
+
+    Each reading resolves ``expression`` exactly (``_exact_resolution``): no
+    binary64 arithmetic ever runs, so no cancellation in binary64 can make a
+    term look zero; the result must then expand to exactly 0. Symbolica's
+    expansion is sound here (it does not take ``sqrt(x^2)`` for ``x``), and
+    incomplete: what it cannot reduce is not proven."""
+
+    for reading in _LITERAL_READINGS:
+        resolved = _exact_resolution(environment, expression, reading, {}, ())
+        if resolved.expand().to_canonical_string() != "0":
+            return False
+    return True
+
+
+def _exact_resolution(
+    environment: GuardEnvironment,
+    expression: Any,
+    reading: str,
+    memo: dict[str, Any],
+    visiting: tuple[str, ...],
+) -> Any:
+    """``expression`` with every non-external parameter replaced, to any
+    depth, by its definition or its value, every number read exactly
+    (``_exact_numbers``, ``_exact_complex``) before anything is combined."""
+
+    expression = _exact_numbers(
+        _with_imaginary_unit(_as_expression(expression)), reading
+    )
+    replacements = []
+    for symbol in expression.get_all_symbols(False):
+        name = _short_name(symbol.get_name())
+        if name in environment.externals:
+            continue
+        if name in environment.constants:
+            replacements.append(
+                (symbol, _exact_complex(environment.constants[name], reading))
+            )
+        elif name in environment.definitions:
+            if name in visiting:
+                raise ValueError(f"parameter {name!r} is defined in terms of itself")
+            resolved = memo.get(name)
+            if resolved is None:
+                resolved = memo[name] = _exact_resolution(
+                    environment,
+                    environment.definitions[name],
+                    reading,
+                    memo,
+                    (*visiting, name),
+                )
+            replacements.append((symbol, resolved))
+    for source, replacement in replacements:
+        expression = expression.replace(source, replacement)
+    return expression
+
+
+def _exact_complex(value: complex, reading: str) -> Any:
+    """A binary64 complex number as an exact Symbolica number, its parts
+    read as the shortest decimal (``"decimal"``) or the exact binary64."""
+
+    from symbolica import E, Expression
+
+    def part(component: float) -> Any:
+        if not math.isfinite(component):
+            raise ValueError("a non-finite number is not exact")
+        exact = (
+            exact_generation_value(component)
+            if reading == "decimal"
+            else Fraction(component)
+        )
+        return E(f"({exact.numerator}/{exact.denominator})")
+
+    value = complex(value)
+    if value.imag == 0.0:
+        return part(value.real)
+    return part(value.real) + part(value.imag) * Expression.I
+
+
+def _exact_numbers(expression: Any, reading: str) -> Any:
+    """``expression`` with every floating-point number (a binary64 literal
+    the source parse kept as a float, real or imaginary) replaced by its
+    exact value in ``reading``, read from its value, not from its printed
+    digits (Symbolica prints 15)."""
+
+    from symbolica import AtomType
+
+    found: dict[str, Any] = {}
+
+    def collect(atom: Any) -> None:
+        kind = atom.get_type()
+        if kind == AtomType.Num:
+            text = atom.to_canonical_string()
+            if ("." in text or "e" in text) and text not in found:
+                found[text] = atom
+            return
+        if kind in (AtomType.Add, AtomType.Mul, AtomType.Pow, AtomType.Fn):
+            for child in atom:
+                collect(child)
+
+    collect(expression)
+    for atom in found.values():
+        expression = expression.replace(
+            atom, _exact_complex(complex(atom.evaluate({})), reading)
+        )
+    return expression
 
 
 def _removed_coupling_guards(

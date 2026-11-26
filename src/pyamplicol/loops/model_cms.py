@@ -749,10 +749,11 @@ def tree_model_payload(
 
     ``removed_couplings`` are the couplings the model's restriction
     simplification removed (``CompiledModel.removed_couplings``): zero at the
-    card's real-scheme values, they go through the same steps and evaluation
-    as the kept couplings, and one the scheme does not leave zero
-    (``specialization_guards.revived_removed_couplings``: CMSParam = 1 or a
-    Yukawa input tied to its mass revives it) is refused
+    card's real-scheme values, they go through the same steps as the kept
+    couplings, and one the scheme is not proven to leave exactly zero for
+    every binding (``specialization_guards.revived_removed_couplings``: an
+    exact decision, the binary64 value serves the message only; CMSParam = 1
+    or a Yukawa input tied to its mass revives it) is refused
     (``cms-revived-coupling``): the restricted payload no longer holds its
     vertex, so the scheme would compute without it."""
 
@@ -927,8 +928,8 @@ def _revived_refusal(scheme: ComplexMassScheme, revived: Any):
     return ComplexMassSchemeUnsupported(
         "cms-revived-coupling",
         "the model's restriction simplification removed couplings that are zero "
-        "at the restriction card's real-scheme values but not under the "
-        "complex-mass scheme ("
+        "at the restriction card's real-scheme values and are not proven exactly "
+        "zero, for every binding, under the complex-mass scheme ("
         + "; ".join(changed)
         + "): "
         + ", ".join(coupling.describe() for coupling in revived)
