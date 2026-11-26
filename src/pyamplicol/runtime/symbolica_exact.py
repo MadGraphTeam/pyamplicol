@@ -212,6 +212,32 @@ def _sqrt(value: Decimal, context: str) -> Decimal:
     return value.sqrt()
 
 
+def _light_cone_sum(pp: Decimal, signed_pz: Decimal, pt2: Decimal) -> Decimal:
+    """``|p| + pz`` of a three-momentum with ``|p|² = pt2 + pz²``, without
+    the cancellation near the -z axis: for ``pz < 0`` the identity
+    ``|p| + pz = pt2 / (|p| - pz)`` (``|p|`` is a rounded square root, so
+    the direct sum keeps only the digits of ``|p|`` beyond ``|pz|``)."""
+
+    if signed_pz >= 0:
+        return pp + signed_pz
+    return pt2 / (pp - signed_pz)
+
+
+def _massless_light_cone(
+    energy: Decimal, px: Decimal, py: Decimal, pz: Decimal
+) -> Decimal:
+    """``E + pz`` of a massless momentum, without the cancellation near the
+    -z axis (``E`` and ``pz`` of opposite signs): there the on-shell identity
+    ``E + pz = pT² / (E - pz)``. The direct sum depends on the point's
+    residual ``p²`` (zero only to the carrier's precision, also after the
+    kinematics improvement) amplified by ``E² / pT²``, which a beam whose
+    transverse momentum is a rounding residue makes arbitrarily large."""
+
+    if energy * pz >= 0:
+        return energy + pz
+    return (px * px + py * py) / (energy - pz)
+
+
 def _fortran_sign(value: Decimal, sign_source: Decimal) -> Decimal:
     return abs(value) if sign_source >= 0 else -abs(value)
 
@@ -3464,7 +3490,7 @@ def _quark_weyl(
         sq = (
             _ZERO
             if px == 0 and py == 0 and pz < 0
-            else _sqrt(energy + pz, "Weyl source")
+            else _sqrt(_massless_light_cone(energy, px, py, pz), "Weyl source")
         )
         chi1 = (sq, _ZERO)
         chi2 = (
@@ -3480,7 +3506,7 @@ def _quark_weyl(
     sq = (
         _ZERO
         if px == 0 and py == 0 and pz > 0
-        else -_sqrt(-(energy + pz), "Weyl source")
+        else -_sqrt(-_massless_light_cone(energy, px, py, pz), "Weyl source")
     )
     chi1 = (sq, _ZERO)
     chi2 = (
@@ -3503,7 +3529,7 @@ def _antiquark_weyl(
         sq = (
             _ZERO
             if px == 0 and py == 0 and pz < 0
-            else -_sqrt(energy + pz, "Weyl source")
+            else -_sqrt(_massless_light_cone(energy, px, py, pz), "Weyl source")
         )
         chi1 = (sq, _ZERO)
         chi2 = (
@@ -3519,7 +3545,7 @@ def _antiquark_weyl(
     sq = (
         _ZERO
         if px == 0 and py == 0 and pz > 0
-        else _sqrt(-(energy + pz), "Weyl source")
+        else _sqrt(-_massless_light_cone(energy, px, py, pz), "Weyl source")
     )
     chi1 = (sq, _ZERO)
     chi2 = (
@@ -3606,7 +3632,10 @@ def _massive_dirac(
     im = (3 - nh) // 2 - 1
     sfomeg = (sf1 * omega[ip], sf2 * omega[im])
     signed_px, signed_py, signed_pz = (px, py, pz) if energy > 0 else (-px, -py, -pz)
-    pp3 = max(pp + signed_pz, _ZERO)
+    # Near the -z axis |p| + pz cancels; a beam with a transverse momentum
+    # of a rounding residue (the kinematics improvement's projection of a
+    # massive initial state) otherwise got a spinor off by percents.
+    pp3 = max(_light_cone_sum(pp, signed_pz, px * px + py * py), _ZERO)
     chi1 = _ONE if pp == 0 else _sqrt(pp3 / (_TWO * pp), "massive fermion source")
     if pp == 0:
         # At rest the helicity axis is +z, the general branch's limit along

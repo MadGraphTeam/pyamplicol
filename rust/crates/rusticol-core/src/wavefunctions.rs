@@ -69,6 +69,40 @@ where
     }
 }
 
+/// `|p| + pz` of a three-momentum with `|p|² = pt2 + pz²` (`pp` = `|p|`,
+/// rounded), without the cancellation near the -z axis: for `pz < 0` the
+/// identity `|p| + pz = pt2 / (|p| - pz)` (the exact runtime's
+/// `_light_cone_sum`).
+#[cfg(feature = "symbolica-runtime")]
+pub(super) fn light_cone_sum_generic<T>(pp: &T, signed_pz: &T, pt2: T) -> T
+where
+    T: Real + RealLike + PartialOrd + Clone,
+{
+    if *signed_pz >= T::new_zero() {
+        pp.clone() + signed_pz.clone()
+    } else {
+        pt2 / (pp.clone() - signed_pz.clone())
+    }
+}
+
+/// `E + pz` of a massless momentum without the cancellation near the -z
+/// axis (`E` and `pz` of opposite signs): there the on-shell identity
+/// `E + pz = pT² / (E - pz)`. The direct sum depends on the point's residual
+/// `p²` (zero only to the carrier's precision, also after the kinematics
+/// improvement) amplified by `E² / pT²` (the exact runtime's
+/// `_massless_light_cone`).
+#[cfg(feature = "symbolica-runtime")]
+pub(super) fn massless_light_cone_generic<T>(energy: &T, px: &T, py: &T, pz: &T) -> T
+where
+    T: Real + RealLike + PartialOrd + Clone,
+{
+    if energy.clone() * pz.clone() >= T::new_zero() {
+        energy.clone() + pz.clone()
+    } else {
+        (px.clone() * px.clone() + py.clone() * py.clone()) / (energy.clone() - pz.clone())
+    }
+}
+
 #[cfg(feature = "symbolica-runtime")]
 pub(super) fn fortran_sign_generic<T>(value: &T, sign_source: &T) -> T
 where
@@ -271,7 +305,11 @@ where
         let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz < T::new_zero() {
             T::new_zero()
         } else {
-            t_max(&(energy.clone() + pz.clone()), &T::new_zero()).sqrt()
+            t_max(
+                &massless_light_cone_generic(&energy, &px, &py, &pz),
+                &T::new_zero(),
+            )
+            .sqrt()
         };
         let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
         let chi2 = if is_zero(&sqp0p3) {
@@ -293,7 +331,11 @@ where
     let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz > T::new_zero() {
         T::new_zero()
     } else {
-        -t_max(&(-(energy.clone() + pz.clone())), &T::new_zero()).sqrt()
+        -t_max(
+            &(-massless_light_cone_generic(&energy, &px, &py, &pz)),
+            &T::new_zero(),
+        )
+        .sqrt()
     };
     let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
     let chi2 = if is_zero(&sqp0p3) {
@@ -327,7 +369,11 @@ where
         let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz < T::new_zero() {
             T::new_zero()
         } else {
-            -t_max(&(energy.clone() + pz.clone()), &T::new_zero()).sqrt()
+            -t_max(
+                &massless_light_cone_generic(&energy, &px, &py, &pz),
+                &T::new_zero(),
+            )
+            .sqrt()
         };
         let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
         let chi2 = if is_zero(&sqp0p3) {
@@ -349,7 +395,11 @@ where
     let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz > T::new_zero() {
         T::new_zero()
     } else {
-        t_max(&(-(energy.clone() + pz.clone())), &T::new_zero()).sqrt()
+        t_max(
+            &(-massless_light_cone_generic(&energy, &px, &py, &pz)),
+            &T::new_zero(),
+        )
+        .sqrt()
     };
     let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
     let chi2 = if is_zero(&sqp0p3) {
@@ -424,7 +474,12 @@ where
     } else {
         (-px, -py, -pz)
     };
-    let pp3 = t_max(&(pp.clone() + signed_pz), &zero);
+    // Near the -z axis |p| + pz cancels against the rounded |p|: a beam
+    // whose transverse momentum is a rounding residue (the kinematics
+    // improvement's projection of a massive initial state) got a wrong
+    // spinor; pT² / (|p| - pz) is the same value without the cancellation.
+    let pt2 = signed_px.clone() * signed_px.clone() + signed_py.clone() * signed_py.clone();
+    let pp3 = t_max(&light_cone_sum_generic(&pp, &signed_pz, pt2), &zero);
     let two = integer(2);
     let chi1 = if is_zero(&pp) {
         c_generic(energy.one(), zero.clone())
@@ -861,7 +916,11 @@ where
         let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz < T::new_zero() {
             T::new_zero()
         } else {
-            t_max(&(energy.clone() + pz.clone()), &T::new_zero()).sqrt()
+            t_max(
+                &massless_light_cone_generic(&energy, &px, &py, &pz),
+                &T::new_zero(),
+            )
+            .sqrt()
         };
         let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
         let chi2 = if is_zero(&sqp0p3) {
@@ -886,7 +945,11 @@ where
     let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz > T::new_zero() {
         T::new_zero()
     } else {
-        -t_max(&(-(energy.clone() + pz.clone())), &T::new_zero()).sqrt()
+        -t_max(
+            &(-massless_light_cone_generic(&energy, &px, &py, &pz)),
+            &T::new_zero(),
+        )
+        .sqrt()
     };
     let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
     let chi2 = if is_zero(&sqp0p3) {
@@ -972,7 +1035,11 @@ where
         let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz < T::new_zero() {
             T::new_zero()
         } else {
-            -t_max(&(energy.clone() + pz.clone()), &T::new_zero()).sqrt()
+            -t_max(
+                &massless_light_cone_generic(&energy, &px, &py, &pz),
+                &T::new_zero(),
+            )
+            .sqrt()
         };
         let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
         let chi2 = if is_zero(&sqp0p3) {
@@ -997,7 +1064,11 @@ where
     let sqp0p3 = if is_zero(&px) && is_zero(&py) && pz > T::new_zero() {
         T::new_zero()
     } else {
-        t_max(&(-(energy.clone() + pz.clone())), &T::new_zero()).sqrt()
+        t_max(
+            &(-massless_light_cone_generic(&energy, &px, &py, &pz)),
+            &T::new_zero(),
+        )
+        .sqrt()
     };
     let chi1 = c_generic(sqp0p3.clone(), T::new_zero());
     let chi2 = if is_zero(&sqp0p3) {
@@ -1136,6 +1207,81 @@ mod tests {
                     contraction_re.hypot(contraction_im) < 1.0e-12,
                     "({contraction_re}, {contraction_im})"
                 );
+            }
+        }
+    }
+
+    /// Near the -z axis the light-cone component (|p| + pz of a massive,
+    /// E + pz of a massless fermion) is tiny: a beam whose transverse
+    /// momentum is a rounding residue (the kinematics improvement's
+    /// projection of a massive initial state moves every leg). Formed as a
+    /// sum it kept only the digits of the rounded |p| (massive) or the
+    /// point's residual p² amplified by E²/pT² (massless); in double-double
+    /// the spinors' norm 2|E| was then off by 1e-4 and 1e-12. Both
+    /// orientations of the axis and both energy signs (crossed legs).
+    #[cfg(feature = "symbolica-runtime")]
+    #[test]
+    fn spinors_near_the_minus_z_axis_keep_their_norm_in_double_float() {
+        use super::{
+            ext_antiquark_dirac_generic, ext_dirac_massive_generic, ext_quark_dirac_generic,
+        };
+        use symbolica::domains::float::{DoubleFloat, Real, RealLike};
+
+        let dd = DoubleFloat::from;
+        let norm = |wave: &[Complex<DoubleFloat>]| {
+            wave.iter().fold(dd(0.0), |sum, z| {
+                sum + z.re.clone() * z.re.clone() + z.im.clone() * z.im.clone()
+            })
+        };
+        let relative = |value: DoubleFloat, reference: DoubleFloat| {
+            ((value - reference.clone()) / reference).to_f64().abs()
+        };
+        for (mass, pt) in [(173.0, 6.9e-12), (0.0, 4.85e-8)] {
+            let (px, py, pz) = (dd(0.6 * pt), dd(0.8 * pt), dd(485.0));
+            let energy = (px.clone() * px.clone()
+                + py.clone() * py.clone()
+                + pz.clone() * pz.clone()
+                + dd(mass) * dd(mass))
+            .sqrt();
+            for axis in [-1.0, 1.0] {
+                for energy_sign in [-1.0, 1.0] {
+                    let sign = dd(energy_sign);
+                    let momentum = [
+                        sign.clone() * energy.clone(),
+                        sign.clone() * px.clone(),
+                        sign.clone() * py.clone(),
+                        sign * dd(axis) * pz.clone(),
+                    ];
+                    for helicity in [-1, 1] {
+                        let waves = if mass == 0.0 {
+                            vec![
+                                ext_quark_dirac_generic(&momentum, helicity).to_vec(),
+                                ext_antiquark_dirac_generic(&momentum, helicity).to_vec(),
+                            ]
+                        } else {
+                            [false, true]
+                                .map(|antiparticle| {
+                                    ext_dirac_massive_generic(
+                                        &momentum,
+                                        helicity,
+                                        dd(mass),
+                                        antiparticle,
+                                    )
+                                    .unwrap()
+                                    .to_vec()
+                                })
+                                .to_vec()
+                        };
+                        for wave in waves {
+                            let error = relative(norm(&wave), dd(2.0) * energy.clone());
+                            assert!(
+                                error < 1.0e-28,
+                                "mass {mass} axis {axis} energy sign {energy_sign} \
+                                 helicity {helicity}: norm off by {error:e}"
+                            );
+                        }
+                    }
+                }
             }
         }
     }
