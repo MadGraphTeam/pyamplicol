@@ -1638,6 +1638,14 @@ impl V2Runtime {
     /// fixed at its guarded value. Bindings are checked by `set_parameters`.
     fn admit_specialization_guards(&self) -> RusticolResult<()> {
         let scale = self.scale_parameter().map(str::to_string);
+        let defaults = self
+            .process
+            .trees
+            .parameter_names()
+            .iter()
+            .zip(self.process.trees.parameter_defaults())
+            .map(|(name, value)| (name.to_string(), value.clone()))
+            .collect::<BTreeMap<_, _>>();
         for guard in self.specialization_guards.guards() {
             for (name, generation) in guard.generation_values() {
                 if scale.as_deref() == Some(name) {
@@ -1645,6 +1653,16 @@ impl V2Runtime {
                         "a specialisation guard holds the renormalisation-scale parameter {name:?}, \
                          which the one-loop runtime sets per point; regenerate the artifact from a \
                          model compiled without that specialisation"
+                    )));
+                }
+                if let Some(default) = defaults.get(name)
+                    && !self.record.fixed_parameters.contains_key(name)
+                    && guard_bound(Some(default), (generation.re, generation.im)).0
+                        == rusticol_core::specialization_guards::Bound::Changed
+                {
+                    return Err(invalid(format!(
+                        "the plan's default of {name:?} ({default}) is not the value a \
+                         specialisation guard holds; regenerate the artifact"
                     )));
                 }
                 if let Some(fixed) = self.record.fixed_parameters.get(name) {
@@ -2986,8 +3004,10 @@ mod tests {
 }
 
 /// How an exact loop binding treats a guarded parameter: unchanged only when
-/// the rational is exactly the recorded binary64 value (a real parameter: the
-/// imaginary part must be zero).
+/// the rational is exactly the recorded generation value as exact carriers
+/// read it, the shortest decimal that rounds to the recorded binary64 (`{:?}`;
+/// 91.188, as the plan's defaults give it); a real parameter's imaginary part
+/// must be zero.
 fn guard_bound(
     value: Option<&Rational>,
     (re, im): (f64, f64),
@@ -2997,7 +3017,7 @@ fn guard_bound(
         return (Bound::Untouched, String::new());
     };
     let exact = (im == 0.0 && re.is_finite())
-        .then(|| decimal_parameter(&format!("{re:.1100}"), "generation value").ok())
+        .then(|| decimal_parameter(&format!("{re:?}"), "generation value").ok())
         .flatten();
     if exact.as_ref() == Some(value) {
         (Bound::Unchanged, String::new())

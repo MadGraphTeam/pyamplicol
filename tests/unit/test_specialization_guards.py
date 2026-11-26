@@ -5,6 +5,7 @@ checks, the compiled-model record and the chiral-selection producer."""
 from __future__ import annotations
 
 import math
+from decimal import Decimal
 from fractions import Fraction
 from types import SimpleNamespace
 
@@ -141,13 +142,30 @@ def test_the_loop_runtime_compares_exact_decimals() -> None:
     assert float(close) == 173.0
     assert exact_decimal_binding_refusal([guard], {"MT": close}) is not None
     assert exact_decimal_binding_refusal([guard], {"MT": "174"}) is not None
-    # The exact value of a binary64 generation value is accepted.
+    # The generation value as exact carriers read it is the shortest decimal
+    # of the binary64 (91.188, as a card gives it), not the binary64 itself.
+    from pyamplicol.models.specialization_guards import exact_generation_value
+
+    assert exact_generation_value(91.188) == Fraction(22797, 250)
     tenth = _vanishing("(UFO::MZ-91.188)*UFO::ee")
-    assert tenth is not None
-    exact = str(Fraction(91.188).numerator / Fraction(91.188).denominator)
-    assert exact_decimal_binding_refusal([tenth], {"MZ": Fraction(91.188)}) is None
-    assert exact_decimal_binding_refusal([tenth], {"MZ": "91.188"}) is not None
-    del exact
+    assert tenth is not None and tenth.parameters == ("MZ",)
+    assert exact_decimal_binding_refusal([tenth], {"MZ": "91.188"}) is None
+    assert exact_decimal_binding_refusal([tenth], {"MZ": 91.188}) is None
+    assert exact_decimal_binding_refusal([tenth], {"MZ": Fraction(91.188)}) is not None
+
+
+def test_a_zero_only_in_binary64_is_refused_at_generation() -> None:
+    from pyamplicol.models.specialization_guards import InexactSpecialization
+
+    # A term the producer found zero in binary64 (91.188 - 22797/250 - 1e-30
+    # rounds to zero) that is not exactly zero at the decimal 91.188 exact
+    # carriers evaluate.
+    with pytest.raises(InexactSpecialization, match="simplify=False"):
+        _vanishing("(UFO::MZ-22797/250-1/10^30)*UFO::ee")
+    # A binary64 literal is read as its shortest decimal, as a card value is.
+    literal = str(Decimal.from_float(91.188))
+    guard = _vanishing(f"(UFO::MZ-{literal})*UFO::ee")
+    assert guard is not None and guard.parameters == ("MZ",)
 
 
 def test_a_loop_plan_that_fixes_or_scales_a_guarded_parameter_is_refused() -> None:
