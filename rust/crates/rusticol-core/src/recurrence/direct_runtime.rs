@@ -259,9 +259,13 @@ impl DirectAmplitudeOrderSplit {
                 .closure_components()
                 .get(range.clone())
                 .ok_or_else(|| invalid("order-split closure range is out of bounds"))?;
-            let first = *components
-                .first()
-                .ok_or_else(|| invalid("order-split destination has no closure rows"))?;
+            // A zero colour flow's destination owns no closure rows: its exact
+            // zero amplitude is the whole of one order component (component 0;
+            // every other component of it is zero as well).
+            let Some(&first) = components.first() else {
+                destination_orders.push(DirectDestinationOrders::Single(0));
+                continue;
+            };
             if components.iter().all(|&component| component == first) {
                 destination_orders.push(DirectDestinationOrders::Single(first));
                 continue;

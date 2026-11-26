@@ -5,7 +5,7 @@
 //! Semantic current IDs are deliberately distinct from physical arena
 //! component ranges. The latter may be reused after interval coloring.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
 
@@ -1654,6 +1654,34 @@ fn validate_parts(parts: &DirectRecurrencePlanParts) -> RusticolResult<()> {
         }
     }
 
+    // A destination without closure rows is a certified zero colour flow
+    // (`RecurrenceAmplitudeDestination::zero_flow`): the only destination of
+    // its sector, and in a topology-replay plan a replay representative.
+    let mut destination_counts = BTreeMap::<u32, usize>::new();
+    for destination in &parts.amplitude_destinations {
+        *destination_counts
+            .entry(destination.target_sector_id)
+            .or_default() += 1;
+    }
+    let replay_representatives = parts
+        .replay_targets
+        .iter()
+        .map(|target| target.representative_id)
+        .collect::<BTreeSet<_>>();
+    for (index, destination) in parts.amplitude_destinations.iter().enumerate() {
+        if destination.closure_row_count == 0
+            && (destination_counts.get(&destination.target_sector_id) != Some(&1)
+                || (parts.strategy == RecurrenceStrategy::TopologyReplay
+                    && !replay_representatives.is_empty()
+                    && !replay_representatives.contains(&destination.target_sector_id)))
+        {
+            return Err(invalid(format!(
+                "zero colour-flow amplitude destination {index} is not the sole \
+                 destination of a replay-owned sector {}",
+                destination.target_sector_id
+            )));
+        }
+    }
     for (index, destination) in parts.amplitude_destinations.iter().enumerate() {
         if !crate::narrow::is_index(destination.id, index) {
             return Err(invalid(format!(

@@ -142,3 +142,24 @@ fn direct_codec_authenticates_three_line_traversal_payloads() {
             .contains("three-line traversal proof digest mismatch")
     );
 }
+
+#[test]
+fn direct_codec_header_flag_marks_zero_colour_flow_destinations() {
+    // A plan without zero colour-flow destinations keeps zero header flags
+    // (bytes 12..16, after the magic and the version), as before.
+    let bytes = encode_recurrence_direct_plan_v2(&valid_plan()).unwrap();
+    assert_eq!(&bytes[12..16], &0_u32.to_le_bytes());
+    // The flag must agree with the destinations, and no other flag exists.
+    for (flags, message) in [
+        (
+            HEADER_FLAG_ZERO_FLOW_DESTINATIONS,
+            "zero colour-flow header flags disagree",
+        ),
+        (2, "unsupported nonzero header flags"),
+    ] {
+        let mut flagged = bytes.clone();
+        flagged[12..16].copy_from_slice(&flags.to_le_bytes());
+        let error = decode_recurrence_direct_plan_v2(&flagged).unwrap_err();
+        assert!(error.to_string().contains(message), "{error}");
+    }
+}
