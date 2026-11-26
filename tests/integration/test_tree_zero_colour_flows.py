@@ -7,8 +7,16 @@ quark-antiquark pairing only. The colour flow of the other pairing is
 identically zero. The tree lanes take such an open-line colour flow as zero:
 - the recurrence certifies it (the structural-zero physical-sector certificate
   of topology-replay, all-flow and contracted plans) and keeps one destination
-  without closure terms for it where a public flow or replay target needs one;
-- the compiled lane's LC replay skips its rootless sector.
+  without closure terms for it, which every public evaluation path (totals,
+  resolved values, colour-flow and helicity selection, per point and in mixed
+  batches, order partials, the full-colour helicity-selector companion)
+  returns as an exact zero;
+- the certificate holds for every permitted parameter binding only: a model
+  whose vertex support depends on the values of mutable parameters (a coupling
+  the restriction removed, or a projection the support probe dropped, at the
+  card values) is refused (``models.binding_support``);
+- the compiled lane keeps refusing a rootless LC sector, as before, and the
+  eager and on-the-fly lanes take it as zero, as before.
 
 The references are MadGraph 3.7.0 standalone, UFO ``sm`` with its default
 restriction and t-channel widths kept, from
@@ -191,22 +199,22 @@ def test_reported_processes_match_madgraph(
     _check(sm_model, tmp_path, process, accuracy)
 
 
-@pytest.mark.parametrize(
-    ("process", "execution_mode"),
-    [
-        ("c d > u s", "compiled"),
-        ("u d~ > b~ t", "compiled"),
-        ("c d > u s", "on-the-fly"),
-    ],
-)
-def test_other_lanes_take_the_zero_flow_at_leading_colour(
-    sm_model: ModelSource, tmp_path: Path, process: str, execution_mode: str
+def test_on_the_fly_lane_takes_the_zero_flow_and_the_compiled_lane_refuses_it(
+    sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    """The compiled lane refused its rootless LC sector ("LC topology replay
-    materialized sector N has no amplitude root"); the on-the-fly lane built
-    it already."""
+    """The on-the-fly lane built these processes already. The compiled lane's
+    LC replay keeps refusing a rootless sector (its colour-flow selector map
+    has no route for one)."""
 
-    _check(sm_model, tmp_path, process, "lc", execution_mode)
+    _check(sm_model, tmp_path, "c d > u s", "lc", "on-the-fly")
+    with pytest.raises(GenerationError, match="has no amplitude root"):
+        _runtime(
+            sm_model,
+            "c d > u s",
+            tmp_path / "compiled",
+            accuracy="lc",
+            execution_mode="compiled",
+        )
 
 
 def test_the_zero_flow_is_exactly_zero_in_every_lc_layout(
@@ -249,30 +257,200 @@ def test_the_zero_flow_is_exactly_zero_in_every_lc_layout(
             )
 
 
-def test_full_colour_helicity_selection_skips_the_zero_flow(
-    sm_model: ModelSource, tmp_path: Path
+@pytest.mark.parametrize("process", ["c d > u s", "u d~ > b~ t", "c d > u s g"])
+def test_full_colour_singleton_helicity_selection_matches_the_resolved_rows(
+    sm_model: ModelSource, tmp_path: Path, process: str
 ) -> None:
-    """Full colour keeps a helicity-selector companion. Its zero flow has a
-    destination without closure terms and no local colour group of the
-    primary plan; selected helicities reproduce the resolved rows and their
-    sum the total."""
+    """Full colour keeps a helicity-selector companion, used by a selection of
+    some helicities only. Its zero flow keeps a destination without closure
+    terms and has no local colour group of the primary plan. One helicity at
+    a time (globally and per point) reproduces the primary plan's resolved
+    row, and the rows sum to the total."""
 
-    entry = _references(REFERENCE)["u d~ > b~ t"]
-    runtime = _runtime(sm_model, "u d~ > b~ t", tmp_path / "artifact", accuracy="full")
-    helicities = list(runtime.physics.helicity_ids)
-    resolved = runtime.evaluate_resolved(entry["points"])
-    selected = runtime.evaluate_resolved(entry["points"], helicities=helicities)
-    totals = runtime.evaluate(entry["points"])
-    assert selected.helicity_ids == resolved.helicity_ids
-    for point in range(len(entry["points"])):
-        rows = [complex(row[0]).real for row in resolved.values[point]]
-        assert [
-            complex(row[0]).real for row in selected.values[point]
-        ] == pytest.approx(rows, rel=1e-14, abs=0.0)
-        assert math.fsum(rows) == pytest.approx(complex(totals[point]).real, rel=1e-14)
-        assert complex(totals[point]).real == pytest.approx(
-            entry["total"][point], rel=1e-10
+    entry = _references(REFERENCE)[process]
+    runtime = _runtime(sm_model, process, tmp_path / "artifact", accuracy="full")
+    points = entry["points"]
+    resolved = runtime.evaluate_resolved(points)
+    totals = [complex(value).real for value in runtime.evaluate(points)]
+    helicities = list(resolved.helicity_ids)
+    for index, helicity in enumerate(helicities):
+        rows = [complex(resolved.values[point][index][0]).real for point in range(2)]
+        single = runtime.evaluate(points, helicities=[helicity])
+        assert [complex(value).real for value in single] == pytest.approx(
+            rows, rel=1e-13, abs=0.0
         )
+    by_point = runtime.evaluate(points, helicity_by_point=helicities[:2])
+    assert [complex(value).real for value in by_point] == pytest.approx(
+        [complex(resolved.values[point][point][0]).real for point in range(2)],
+        rel=1e-13,
+        abs=0.0,
+    )
+    for point in range(2):
+        rows = [complex(row[0]).real for row in resolved.values[point]]
+        assert math.fsum(rows) == pytest.approx(totals[point], rel=1e-13)
+        assert totals[point] == pytest.approx(entry["total"][point], rel=1e-10)
+
+
+@pytest.mark.parametrize("layout", ["topology-replay", "all-flow-union"])
+@pytest.mark.parametrize("precision", [16, 32])
+def test_selecting_the_zero_flow_returns_an_exact_zero(
+    sm_model: ModelSource, tmp_path: Path, layout: str, precision: int
+) -> None:
+    """Selecting the zero colour flow, alone, per point and next to the live
+    flow in one batch, returns exactly zero in binary64 and at 32 digits; the
+    live flow returns the total."""
+
+    entry = _references(LC_REFERENCE)["c d > u s"]
+    runtime = _runtime(
+        sm_model,
+        "c d > u s",
+        tmp_path / "artifact",
+        accuracy="lc",
+        lc_flow_layout=layout,
+    )
+    points = entry["points"]
+    resolved = runtime.evaluate_resolved(points)
+    flows = list(resolved.color_ids)
+    zero = next(
+        index
+        for index in range(len(flows))
+        if all(complex(row[index]) == 0.0 for rows in resolved.values for row in rows)
+    )
+    live = 1 - zero
+    zero_values = runtime.evaluate(
+        points, color_flows=[flows[zero]], precision=precision
+    )
+    assert all(complex(value) == 0.0 for value in zero_values)
+    zero_resolved = runtime.evaluate_resolved(
+        points, color_flows=[flows[zero]], precision=precision
+    )
+    assert all(
+        complex(v) == 0.0 for rows in zero_resolved.values for row in rows for v in row
+    )
+    live_values = runtime.evaluate(
+        points, color_flows=[flows[live]], precision=precision
+    )
+    assert [complex(value).real for value in live_values] == pytest.approx(
+        entry["total"], rel=1e-10
+    )
+    mixed = runtime.evaluate(
+        points, color_flow_by_point=[flows[zero], flows[live]], precision=precision
+    )
+    assert complex(mixed[0]) == 0.0
+    assert complex(mixed[1]).real == pytest.approx(entry["total"][1], rel=1e-10)
+
+
+@pytest.mark.parametrize("layout", ["topology-replay", "all-flow-union"])
+def test_order_partials_of_a_zero_flow_process_in_binary64(
+    sm_model: ModelSource, tmp_path: Path, layout: str
+) -> None:
+    """u c~ > d s~ d d~ at LC, all orders: two of its six flows are zero colour
+    flows. The binary64 squared coupling-order partials equal the 32-digit
+    ones and MadGraph's (binary64 refused with "order-split destination has
+    no closure rows" before)."""
+
+    entry = _references(LC_REFERENCE)["u c~ > d s~ d d~"]
+    runtime = _runtime(
+        sm_model,
+        "u c~ > d s~ d d~",
+        tmp_path / "artifact",
+        accuracy="lc",
+        lc_flow_layout=layout,
+    )
+    binary64 = runtime.evaluate_orders(entry["points"])
+    exact = runtime.evaluate_orders(entry["points"], precision=32)
+    expected_orders = tuple(
+        tuple(sorted((name, power) for name, power in order.items() if power))
+        for order in entry["squared_orders"]
+    )
+    assert binary64.orders == exact.orders == tuple(sorted(expected_orders))
+    for point, partials in enumerate(entry["partials"]):
+        scale = math.fsum(abs(value) for value in partials)
+        for order, expected in zip(expected_orders, partials, strict=True):
+            value = complex(binary64.for_order(order)[point]).real
+            assert abs(value - float(exact.for_order(order)[point])) <= 1e-13 * scale
+            assert abs(value - expected) <= 1e-12 * scale, (point, order)
+
+
+def _mutable_coupling_model(root: Path, madgraph_source: Path, mt: int) -> Path:
+    """The UFO sm with both udW couplings multiplied by (MT - 173) and MT set
+    to ``mt`` on the default restriction card."""
+
+    import re
+    import shutil
+
+    model = root / f"sm-mt{mt}"
+    shutil.copytree(
+        madgraph_source / "models/sm",
+        model,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pkl"),
+    )
+    couplings = model / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    for name in ("41", "100"):
+        text, count = re.subn(
+            rf"(GC_{name} = Coupling\(name = 'GC_{name}',\s+value = ')([^']+)",
+            r"\g<1>(MT-173)*(\g<2>)",
+            text,
+        )
+        assert count == 1
+    couplings.write_text(text, encoding="utf-8")
+    card = model / "restrict_default.dat"
+    text = card.read_text(encoding="utf-8")
+    assert "1.730000e+02 # MT " in text
+    card.write_text(text.replace("1.730000e+02 # MT ", f"{mt}.0 # MT "))
+    return model
+
+
+def test_a_zero_flow_that_a_mutable_parameter_revives_is_refused(
+    madgraph_source: Path, tmp_path: Path
+) -> None:
+    """A W coupling proportional to MT - 173 vanishes at MT = 173 and is
+    removed by the restriction (and dropped by the support probe without
+    simplification), so the W pairing of u d > u d at QCD = 0 has no diagram
+    there; MT stays mutable. Certifying that flow as zero gave
+    0.0985435252 at MT = 174 against 0.1996120998 from the artifact
+    generated at 174. The recurrence now refuses it at LC and full colour,
+    and the compiled lane refuses it at LC (as every rootless LC sector); the
+    artifact generated at 174 is unaffected."""
+
+    limits = {"QCD": 0, "QED": 2}
+    at_173 = _mutable_coupling_model(tmp_path, madgraph_source, 173)
+    at_174 = _mutable_coupling_model(tmp_path, madgraph_source, 174)
+    prepared = {}
+    for name, source in (("173", at_173), ("174", at_174)):
+        bundle = tmp_path / f"sm-{name}.pyamplicol-model"
+        ModelSource.from_path(source, restriction="default").compile(
+            cache_dir=tmp_path / "cache",
+            prepared_output=bundle,
+            evaluator=EvaluatorConfig(),
+        )
+        prepared[name] = ModelSource.from_path(bundle)
+    refusal = "cannot be certified zero for every permitted parameter binding"
+    for accuracy in ("lc", "full"):
+        with pytest.raises(GenerationError, match=refusal):
+            _runtime(
+                prepared["173"],
+                "u d > u d",
+                tmp_path / f"recurrence-{accuracy}",
+                accuracy=accuracy,
+                limits=limits,
+            )
+    for simplify in (True, False):
+        # The compiled lane refuses every rootless LC sector.
+        with pytest.raises(GenerationError, match="has no amplitude root"):
+            _runtime(
+                ModelSource.from_path(at_173, restriction="default", simplify=simplify),
+                "u d > u d",
+                tmp_path / f"compiled-{simplify}",
+                accuracy="lc",
+                execution_mode="compiled",
+                limits=limits,
+            )
+    runtime = _runtime(
+        prepared["174"], "u d > u d", tmp_path / "at-174", accuracy="lc", limits=limits
+    )
+    assert len(runtime.physics.color_flow_ids) == 2
 
 
 @pytest.mark.loop_nightly
