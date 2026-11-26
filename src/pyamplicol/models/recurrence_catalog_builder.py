@@ -674,8 +674,24 @@ def _build_parameters(
     derived_defaults = (
         dict(derived_defaults_provider()) if callable(derived_defaults_provider) else {}
     )
+    # A derived parameter's runtime components follow from its value type,
+    # read off its default; a default that is exactly zero says nothing about
+    # the parameter at other runtime bindings (an imaginary coupling
+    # proportional to MT - 173 vanishes at MT = 173), so such a parameter is
+    # complex unless the model proves it real.
+    zero_defaults = tuple(
+        str(name) for name, value in derived_defaults.items() if complex(value) == 0
+    )
+    domains_provider = getattr(model, "runtime_derived_parameter_domains_for", None)
+    domains = (
+        dict(domains_provider(zero_defaults))
+        if zero_defaults and callable(domains_provider)
+        else {}
+    )
     for name, value in derived_defaults.items():
         add_default(name, value, kind="derived")
+        if str(name) in zero_defaults and domains.get(str(name)) != "real":
+            value_types[str(name)] = "complex"
 
     missing = sorted(required_names - defaults.keys() - definitions.keys())
     if missing:
