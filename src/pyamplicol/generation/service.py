@@ -1891,25 +1891,6 @@ def _invoke_rust_recurrence_lowering_v2(
     )
 
 
-def _refuse_binding_dependent_zero_flows(
-    model: Model, process_name: str, plan: str
-) -> None:
-    """Refuse a zero colour flow that a parameter the artifact declares mutable
-    could revive (``models.binding_support``): the flow is empty only for the
-    generation-time values of the model's couplings."""
-
-    from ..models.binding_support import zero_flow_certification_blockers
-
-    reason = zero_flow_certification_blockers(model)
-    if reason is not None:
-        raise GenerationError(
-            f"recurrence {plan} plan of process {process_name!r} has a colour flow "
-            "without diagrams that cannot be certified zero for every permitted "
-            f"parameter binding: {reason}; generate with those parameters fixed "
-            "by the restriction, or keep the couplings in the model"
-        )
-
-
 def _validate_rust_recurrence_lowering_result(
     value: object,
     *,
@@ -6230,18 +6211,6 @@ class GenerationBackend:
                 profile["helicity-selector-physical-lowering"] = (
                     time.perf_counter() - companion_lowering_started
                 )
-                companion_zero_flows = companion_artifact.inspection_summary.get(
-                    "structural_zero_physical_sector_certificate"
-                )
-                zero_flow_count = (
-                    companion_zero_flows.get("certified_structural_zero_sector_count")
-                    if isinstance(companion_zero_flows, Mapping)
-                    else None
-                )
-                if zero_flow_count:
-                    _refuse_binding_dependent_zero_flows(
-                        model, process_name, "full-colour helicity selector"
-                    )
                 selector_task.update(
                     selector_task.total or selector_task.completed,
                     message="persisted helicity-selector plan ready",
@@ -6309,8 +6278,6 @@ class GenerationBackend:
                     "shared recurrence structural-zero certificate lies outside "
                     "the concrete process binding"
                 ) from exc
-            if layout != "contracted-color-union":
-                _refuse_binding_dependent_zero_flows(model, process_name, layout)
         profile["process-binding-and-validation-points"] = (
             time.perf_counter() - process_binding_started
         )

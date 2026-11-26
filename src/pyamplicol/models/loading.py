@@ -534,7 +534,6 @@ def _compile_model_source(
     phase_started = time.perf_counter()
     raw_loop_model = None
     raw_loop_import_error = None
-    binding_dependent_couplings: tuple[str, ...] = ()
     if source_kind == "built-in-sm":
         from .builtin.adapters import build_model_payload
 
@@ -557,31 +556,9 @@ def _compile_model_source(
                 _mapping(worker_payload["raw_loop_model"], "raw_loop_model")
             )
         raw_loop_import_error = worker_payload.get("raw_loop_import_error")
-        binding_dependent_couplings = tuple(
-            str(name)
-            for name in _sequence_or_empty(
-                worker_payload.get("binding_dependent_zero_couplings")
-            )
-        )
     phase_timings["model_loading"] = time.perf_counter() - phase_started
     phase_started = time.perf_counter()
     issues, capabilities = preflight_model(model_payload)
-    if binding_dependent_couplings:
-        from .binding_support import BINDING_DEPENDENT_ZERO_COUPLING
-
-        # A coupling the restriction removed while a mutable parameter could
-        # revive it: changing that parameter at run time does not restore it,
-        # and no colour flow of this model is certified as zero.
-        issues = (
-            *issues,
-            ModelCompatibilityIssue(
-                "warning",
-                BINDING_DEPENDENT_ZERO_COUPLING,
-                "restriction simplification removed couplings that vanish only "
-                "at the restriction card's values of mutable parameters",
-                ", ".join(binding_dependent_couplings),
-            ),
-        )
     phase_timings["preflight"] = time.perf_counter() - phase_started
     phase_started = time.perf_counter()
     from .compiler import compile_builtin_model_ir, compile_ufo_model_ir
@@ -1025,11 +1002,8 @@ def _load_external_model(
         try:
             # The model's own compile-time warnings (an invalid escape in a
             # TeX name) are returned as data, never printed.
-            from .binding_support import load_ufo_model
-
             with ufo_source_warnings(source):
-                model, parameter_card, binding_dependent = load_ufo_model(
-                    load_model,
+                model, parameter_card = load_model(
                     str(source),
                     restriction,
                     options.simplify,
@@ -1084,9 +1058,6 @@ def _load_external_model(
             result["raw_loop_model"] = raw_loop_model.to_dict()
         if raw_loop_import_error is not None:
             result["raw_loop_import_error"] = raw_loop_import_error
-        if binding_dependent:
-            # Written only when there is one, so other models are unchanged.
-            result["binding_dependent_zero_couplings"] = list(binding_dependent)
         return result
 
 
@@ -1317,10 +1288,6 @@ def _compilation_cache_identity(
         fingerprint,
         active_cache / f"{cache_key}.pyAmplicol-model.json",
     )
-
-
-def _sequence_or_empty(value: object) -> tuple[object, ...]:
-    return tuple(value) if isinstance(value, list | tuple) else ()
 
 
 def _model_compiler_digest() -> str:
