@@ -2943,6 +2943,10 @@ fn square_amplitudes(
 /// Laurent index, loop order, 3^(N_c power))`.
 type KetLayout = (usize, usize, Vec<(usize, usize, usize, usize, f64)>);
 
+/// One loop-induced point of [`induced_squares`]: `(slots, kets, average)`:
+/// its slot values, its counterterm kets (or None) and its average.
+type InducedPoint = (Vec<Vec<[f64; 2]>>, Option<Vec<[f64; 2]>>, f64);
+
 /// |A|^2 of every binary64 point of a loop-induced batch from the
 /// executor's own outputs (`V2Executor.evaluate`'s `amplitudes` and
 /// `counterterm_kets`), in one call: per point `(slots, kets, average)`.
@@ -2959,7 +2963,7 @@ type KetLayout = (usize, usize, Vec<(usize, usize, usize, usize, f64)>);
 #[allow(clippy::too_many_arguments)]
 fn induced_squares(
     py: Python<'_>,
-    points: Vec<(Vec<Vec<[f64; 2]>>, Option<Vec<[f64; 2]>>, f64)>,
+    points: Vec<InducedPoint>,
     rows: usize,
     basis: usize,
     width: usize,
