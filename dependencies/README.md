@@ -26,14 +26,16 @@ moved `conj` into its numeric trait, which GammaLoop's Spenso implements:
 FeynKit and Spenso come from the fork ValentinHirschi/gammaloop
 `pyamplicol-community` `ea3faaae` (alphal00p/gammaloop `d1904bf2` plus that
 one change), the revision NinjaRS pins. NinjaRS
-(`e1d94412`, main after PR #23, the local cancellation rescue, and PR #22, on top
+(`1f3d9d0e`, main after PR #24 = `e1d94412` with its oneloopmaster pin moved to `cdbc912`;
+`e1d94412` = main after PR #23, the local cancellation rescue, and PR #22, on top
 of `a2546170`, main after PR #20: `f7f5e165` with PR #16's box-Gram bound
 and PR #19's records of why a lane is refused, + `ninjars_symbolica::reserve`,
 the history-independent exact evaluators; main `3116e5e6` = `ac66cf6c` + PR #16,
 `ac66cf6c` = branch `symbolica-community-2`: main `b51b7465`'s crate sources, the
 per-row evaluation without the batch evaluator; pinned on this Symbolica, the gammaloop fork and
-oneloopmaster `07fc754f`) pins the same revision, as does oneloopmaster
-(`07fc754f`, branch `symbolica-community-2`: `3b6f229f`'s sources) in its
+oneloopmaster `cdbc912`) pins the same revision, as does oneloopmaster
+(`cdbc912`, main: `07fc754f` = branch `symbolica-community-2`, `3b6f229f`'s
+sources, + #21, the native C0's series at small external momenta) in its
 own standalone `[patch]`, which only applies when it is the root workspace.
 `cargo tree -i symbolica` lists one source, as do `numerica`, `graphica`,
 `oneloop` and `spenso`. SymJIT stays 2.28.3. These pins are recorded by Cargo.
@@ -43,9 +45,18 @@ publishable until this revision is in a Symbolica release.
 
 TIRust ([huashengshao/TIRust](https://github.com/huashengshao/TIRust), crates
 `iregi-rust` and `iregi-masters`, pinned to a commit after its one history
-rewrite, currently `780410ce` (branch `feature/parallel-engines`,
-PR #63: optional lane-independent direct workspaces, which every pyAmpliCol
-workspace uses, on main `1c130a81`; `1c130a81` = main `a8dba684` = `2b9ba961`,
+rewrite, currently `6ba4b531` (main after PR #70, refusal texts that name
+the failed estimate, on `100e18b4` = PR #72: a triangle refused by its
+PV estimate or its fixed-precision floor fails as unstable, i.e. goes to a
+higher precision, instead of reaching the affine-relation variants; on
+`8543f604` = PR #63, optional lane-independent direct workspaces, which every
+pyAmpliCol workspace uses, merged with main `177e1f0e`: PRs #44 to #59, #61
+and #64, among them degenerate kinematics decided at the inputs' rounding,
+rank-0 triangles at degenerate invariants left to MPFR and triangles near a
+vanishing Källén function gated by their PV error growth, with a
+fixed-precision floor whose refused lanes pyAmpliCol's lane rescue
+re-reduces in a wider carrier; and the oneloopmaster `cdbc912` re-pin; on
+main `1c130a81` = main `a8dba684` = `2b9ba961`,
 the move to Symbolica community `d0424f9e` with per-row evaluation instead of the
 batch evaluator, + PRs #41 and #42; + PR #43, MPFR rounded at the working
 precision in the direct engine) is one more git source, linked by the cargo feature `tir`, a

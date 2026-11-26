@@ -25,23 +25,26 @@ tir = ["dep:iregi-rust", "dep:iregi-masters", "rusticol-core/tirust-capability"]
 feynkit-kinematics = { git = "https://github.com/ValentinHirschi/gammaloop.git", rev = "ea3faaae063b1400570c15cf7e055f48312e9329", default-features = false, features = ["native"] }
 pyamplicol = { path = "../crates/pyamplicol" }
 rusticol-core = { path = "../crates/rusticol-core", features = ["symbolica-runtime", "python-generation-bridge", "loop-v2"] }
-# NinjaRS e1d94412 (alphal00p/ninjars main after PR #23: the local cancellation
-# rescue, i.e. a lane whose reduction loses its digits to cancellation is
-# re-reduced in a higher precision, driven by a target relative accuracy; on
-# top of a2546170 = PRs #16 (box-Gram bound), #19 (refusal records), #20
-# (ninjars_symbolica::reserve) and #22 (reserve() list order);
-# pins on Symbolica community d0424f9e, the gammaloop fork above and
-# oneloopmaster 07fc754f). Every NinjaRS pin names this revision
+# NinjaRS 1f3d9d0e = main after PR #24: e1d94412 with its oneloopmaster pin
+# moved to cdbc912 (the revision TIRust pins). e1d94412 = alphal00p/ninjars main after PR #23:
+# the local cancellation rescue, i.e. a lane whose reduction loses its digits
+# to cancellation is re-reduced in a higher precision, driven by a target
+# relative accuracy; on top of a2546170 = PRs #16 (box-Gram bound), #19
+# (refusal records), #20 (ninjars_symbolica::reserve) and #22 (reserve() list
+# order); pins on Symbolica community d0424f9e, the gammaloop fork above and
+# oneloopmaster cdbc912. Every NinjaRS pin names this revision
 # (tests/unit/test_ninjars_single_source.py).
-ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "e1d94412dd44bb18059471edb0a84310cbaebafd" }
-ninjars-graph = { git = "https://github.com/alphal00p/ninjars.git", rev = "e1d94412dd44bb18059471edb0a84310cbaebafd" }
-ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "e1d94412dd44bb18059471edb0a84310cbaebafd", features = ["native-masters"] }
+ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560" }
+ninjars-graph = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560" }
+ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "1f3d9d0ef34a423f9a9843dcdf99962b70236560", features = ["native-masters"] }
 # One oneloop feature set in every root build (M-LIT PLAN §2.c.2 item 3, the Q28
 # rule): NinjaRS's native masters need generated-evaluators, TIRust rust-codegen;
 # rust-codegen only adds modules (rust_codegen, native::batch). oneloopmaster
-# 07fc754f (branch symbolica-community-2): 3b6f229f's sources pinned on
-# Symbolica community d0424f9e, the revision NinjaRS and TIRust pin.
-oneloop = { git = "https://github.com/alphal00p/oneloopmaster.git", rev = "07fc754f656c4744c9464f7c0f47d00b708b37e6", default-features = false, features = ["generated-evaluators", "rust-codegen"] }
+# cdbc912 (main: 07fc754f, 3b6f229f's sources pinned on Symbolica community
+# d0424f9e, + oneloopmaster #21, the native binary64 / double-double C0's
+# cancellation-free series at small external momenta), the revision NinjaRS
+# and TIRust pin.
+oneloop = { git = "https://github.com/alphal00p/oneloopmaster.git", rev = "cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21", default-features = false, features = ["generated-evaluators", "rust-codegen"] }
 symbolica = { version = "=3.0.2", default-features = false, features = ["integer-gmp", "float-mpfr"] }
 # The parallel reduction of a call's lanes on the executor's pool (`lane_slices`).
 rayon.workspace = true
@@ -49,14 +52,22 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The runtime-options TOML reader (`runtime_options`); the lock's toml (symjit's).
 toml = "1.1"
-# TIRust feature/parallel-engines 780410ce (pull request #63: optional
-# lane-independent direct workspaces, `DirectWorkspace::set_lane_independent`,
-# and stored-entry counts of the tensor store) on main 1c130a81 (after its one
-# history rewrite; 1c130a81 = main a8dba684 (2b9ba961, the Symbolica community
-# d0424f9e / oneloopmaster 07fc754f re-pin, + PRs #41 and #42) + PR #43 (MPFR
-# rounded at the working precision in the direct engine's kernels, issue #40));
+# A commit of TIRust's main line (after its one history rewrite): 6ba4b531 =
+# main after PR #70 (refusal texts that name the failed estimate; the gates
+# documented as heuristics), on 100e18b4 = PR #72 (a triangle refused by its
+# PV estimate or its fixed-precision floor where the Gram gate passes fails as
+# Unstable, i.e. is sent to a higher precision, instead of reaching the
+# affine-relation variants), on 8543f604 = PR #63 (optional lane-independent direct
+# workspaces, `DirectWorkspace::set_lane_independent`, and stored-entry counts
+# of the tensor store) merged with main 177e1f0e (PRs #44 to #59, #61 and #64
+# since 1c130a81: degenerate kinematics decided at the inputs' rounding,
+# P-wave and flat onia, dependent triangles and boxes, the oneloopmaster
+# cdbc912 re-pin, rank-0 triangles at degenerate invariants left to MPFR,
+# triangles near a vanishing Kallen function gated by their PV error growth
+# with a fixed-precision floor); 1c130a81 = main a8dba684 + PR #43 (MPFR
+# rounded at the working precision in the direct engine's kernels);
 # its oneloop revision and feature set are this manifest's,
 # its Symbolica requirement ("3.0") resolves to the root [patch.crates-io]
 # revision. Its own manifests' gammaloop crates are not in this graph.
-iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "780410ce7fb62e3362ef7311e220ebbcbee7f283", optional = true }
-iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "780410ce7fb62e3362ef7311e220ebbcbee7f283", optional = true }
+iregi-rust = { git = "https://github.com/huashengshao/TIRust.git", rev = "6ba4b5315e245f1006f113fdf2e6315549608228", optional = true }
+iregi-masters = { git = "https://github.com/huashengshao/TIRust.git", rev = "6ba4b5315e245f1006f113fdf2e6315549608228", optional = true }
