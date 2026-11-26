@@ -1,0 +1,1393 @@
+// SPDX-License-Identifier: 0BSD
+
+//! The parallel NinjaRS reduction (`lane_slices`): every value, status,
+//! rescued and uncertified lane and every count of a reduction call is the
+//! same bit for bit on pools of 1, 2, 4, 8 and 16 threads as the serial
+//! reduction's, in binary64 (fast engine, checked and unchecked, with and
+//! without the check's frame and the lanes' points), double-double and
+//! arbitrary precision, over several calls of one reducer.
+use rusticol_loop_reduction::runtime::{
+    Batch, Data, FamilyGroup, GroupRefinementSource, LaneViews, Poles, ReduceOptions,
+    ReductionFrame, V2Output, V2Reducer, tensor_monomials,
+};
+
+const TOP: f64 = 90000.0;
+
+struct Family {
+    legs: Vec<Vec<usize>>,
+    masses: Vec<f64>,
+    rank: usize,
+}
+
+fn families() -> Vec<Family> {
+    vec![
+        Family {
+            legs: vec![vec![0], vec![1], vec![2], vec![3]],
+            masses: vec![0., 0., TOP, 0.],
+            rank: 3,
+        },
+        Family {
+            legs: vec![vec![0], vec![1], vec![2], vec![3]],
+            masses: vec![0., 0., 0., 0.],
+            rank: 4,
+        },
+        Family {
+            legs: vec![vec![2], vec![0, 1, 3]],
+            masses: vec![TOP, 0.],
+            rank: 2,
+        },
+        Family {
+            legs: vec![vec![0, 1], vec![2], vec![3]],
+            masses: vec![0., TOP, 0.],
+            rank: 2,
+        },
+        Family {
+            legs: vec![vec![0, 1], vec![2, 3]],
+            masses: vec![TOP, TOP],
+            rank: 2,
+        },
+    ]
+}
+
+/// A triangle with a light squared mass: its binary64 lanes reach the fast
+/// engine's absolute threshold and are routed to the exact engine.
+fn light() -> Family {
+    Family {
+        legs: vec![vec![0, 1], vec![2], vec![3]],
+        masses: vec![1e-12, TOP, 0.],
+        rank: 2,
+    }
+}
+
+/// Massless incoming and massive outgoing momenta of a 2 -> 2 point at
+/// scattering angles (`theta`, `phi`).
+fn momenta(theta: f64, phi: f64) -> [[f64; 4]; 4] {
+    let (x, y, z) = (
+        400. * theta.sin() * phi.cos(),
+        400. * theta.sin() * phi.sin(),
+        400. * theta.cos(),
+    );
+    [
+        [500., 0., 0., 500.],
+        [500., 0., 0., -500.],
+        [500., x, y, z],
+        [500., -x, -y, -z],
+    ]
+}
+
+struct Lanes {
+    n: usize,
+    shifts: Batch,
+    masses: Batch,
+    scales: Batch,
+    matrix: Batch,
+    coefficients: Batch,
+    points: Vec<usize>,
+}
+
+fn decimal(values: &[f64]) -> Vec<[String; 2]> {
+    values
+        .iter()
+        .map(|x| [format!("{x:e}"), "0".into()])
+        .collect()
+}
+
+/// A family's lanes: `columns` lanes per point, point-major (as the
+/// executor lays them out).
+fn lanes(
+    family: &Family,
+    points: &[[[f64; 4]; 4]],
+    columns: usize,
+    arithmetic: &str,
+    digits: Option<u32>,
+) -> Lanes {
+    let n = family.legs.len();
+    let width = tensor_monomials(family.rank).len();
+    let (mut shifts, mut matrix, mut coefficients, mut owner) = (vec![], vec![], vec![], vec![]);
+    for (point, p) in points.iter().enumerate() {
+        let mut v = [0.0_f64; 4];
+        let mut vectors = vec![];
+        for legs in &family.legs {
+            for &leg in legs {
+                let sign = if leg < 2 { 1. } else { -1. };
+                for mu in 0..4 {
+                    v[mu] += sign * p[leg][mu];
+                }
+            }
+            vectors.push(v);
+        }
+        vectors.rotate_right(1);
+        vectors[0] = [0.; 4];
+        for column in 0..columns {
+            owner.push(point);
+            for vector in &vectors {
+                shifts.extend_from_slice(vector);
+            }
+            for a in &vectors {
+                for b in &vectors {
+                    let d: Vec<_> = (0..4).map(|mu| a[mu] - b[mu]).collect();
+                    matrix.push(d[0] * d[0] - d[1] * d[1] - d[2] * d[2] - d[3] * d[3]);
+                }
+            }
+            for k in 0..width {
+                let x = (k * 7 + 3 * point + 11 * column + 1) as f64;
+                coefficients.push([(x * 0.37).sin() * 10., (x * 0.11).cos()]);
+            }
+        }
+    }
+    let rows = owner.len();
+    let ids: Vec<u64> = (0..rows as u64).collect();
+    let batch = |values: Vec<[String; 2]>, columns| {
+        Batch::from_decimal(values, rows, columns, arithmetic, digits, Some(ids.clone())).unwrap()
+    };
+    let complex: Vec<[String; 2]> = coefficients
+        .iter()
+        .map(|[re, im]: &[f64; 2]| [format!("{re:e}"), format!("{im:e}")])
+        .collect();
+    Lanes {
+        n,
+        shifts: batch(decimal(&shifts), 4 * n),
+        masses: batch(decimal(&family.masses.repeat(rows)), n),
+        scales: batch(decimal(&vec![8.0e5; rows]), 1),
+        matrix: batch(decimal(&matrix), n * n),
+        coefficients: batch(complex, width),
+        points: owner,
+    }
+}
+
+fn group(lanes: &Lanes) -> FamilyGroup<'_> {
+    FamilyGroup {
+        propagators: lanes.n,
+        shifts: &lanes.shifts,
+        masses_squared: &lanes.masses,
+        scales_squared: &lanes.scales,
+        s_matrix: &lanes.matrix,
+        coefficients: &lanes.coefficients,
+    }
+}
+
+/// `rows` rank-zero tadpoles `∫ 1 / (q² - m²)` at `μ² = 16`, lane `row`
+/// labelled with point `label(row)`. With a complex `m²` the binary64
+/// masters fail every lane (`MasterFailed`), a refused row in a call that
+/// returns.
+fn tadpoles(
+    rows: usize,
+    [re, im]: [f64; 2],
+    arithmetic: &str,
+    digits: Option<u32>,
+    label: impl Fn(usize) -> usize,
+) -> Lanes {
+    let ids: Vec<u64> = (0..rows as u64).collect();
+    let batch = |values: Vec<[String; 2]>, columns| {
+        Batch::from_decimal(values, rows, columns, arithmetic, digits, Some(ids.clone())).unwrap()
+    };
+    let complex = |z: [f64; 2], count: usize| -> Vec<[String; 2]> {
+        (0..count)
+            .map(|_| [format!("{:e}", z[0]), format!("{:e}", z[1])])
+            .collect()
+    };
+    Lanes {
+        n: 1,
+        shifts: batch(complex([0., 0.], 4 * rows), 4),
+        masses: batch(complex([re, im], rows), 1),
+        scales: batch(complex([16., 0.], rows), 1),
+        matrix: batch(complex([0., 0.], rows), 1),
+        coefficients: batch(complex([1., 0.], rows), tensor_monomials(0).len()),
+        points: (0..rows).map(label).collect(),
+    }
+}
+
+fn all_lanes(points: usize, columns: usize, arithmetic: &str, digits: Option<u32>) -> Vec<Lanes> {
+    let kinematics: Vec<_> = (0..points)
+        .map(|k| momenta(0.3 + 2.5 * k as f64 / points as f64, 0.7 * k as f64))
+        .collect();
+    families()
+        .into_iter()
+        .chain(std::iter::once(light()))
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|family| lanes(family, &kinematics, columns, arithmetic, digits))
+        // Lanes whose masters fail (refused rows beside the served ones), on
+        // the same points.
+        .chain(std::iter::once(tadpoles(
+            points * columns,
+            [4., 1.],
+            arithmetic,
+            digits,
+            |row| row / columns,
+        )))
+        .collect()
+}
+
+/// Everything a call returns, as exact text (decimals of every value).
+fn fingerprint(output: &V2Output, reducer: &mut V2Reducer) -> String {
+    let mut text = String::new();
+    for (frame, batches) in std::iter::once(&output.direct)
+        .chain(output.check.as_ref())
+        .enumerate()
+    {
+        for (g, batch) in batches.iter().enumerate() {
+            text += &format!(
+                "frame {frame} group {g} ids {:?} values {:?} statuses {:?}\n",
+                batch.successful_values().ids(),
+                batch.successful_values().to_decimal(),
+                batch.statuses()
+            );
+        }
+    }
+    text += &format!(
+        "rescued {:?}\nuncertified {:?}\nbounds {:?}\n",
+        output.rescued, output.uncertified, output.uncertified_bounds
+    );
+    if let Some(statistics) = reducer.take_master_statistics() {
+        text += &format!(
+            "masters requests {:?} evaluated {:?} hits {:?}\n",
+            statistics.requests, statistics.evaluated, statistics.hits
+        );
+    }
+    text += &format!(
+        "exact lanes {} rescued lanes {}\n",
+        reducer.take_exact_lanes(),
+        reducer.take_rescued_lanes()
+    );
+    text
+}
+
+/// Three calls of one reducer (a new chunk of points before the first and
+/// the third).
+fn calls(
+    reducer: &mut V2Reducer,
+    all: &[Lanes],
+    options: ReduceOptions,
+    with_points: bool,
+) -> Vec<String> {
+    let groups: Vec<_> = all.iter().map(group).collect();
+    let points: Vec<&[usize]> = all.iter().map(|l| l.points.as_slice()).collect();
+    let mut out = Vec::new();
+    for call in 0..3 {
+        // A new chunk of points (`begin`) before the first and the third
+        // call; the second reuses the first's masters.
+        if call != 1 {
+            reducer.clear_masters();
+        }
+        let output = reducer
+            .reduce_at(
+                &groups,
+                with_points.then_some(points.as_slice()),
+                None,
+                options,
+            )
+            .unwrap();
+        out.push(fingerprint(&output, reducer));
+    }
+    out
+}
+
+fn reducer(arithmetic: &str, digits: Option<u32>, engine: &str, unchecked: bool) -> V2Reducer {
+    let mut reducer = V2Reducer::new(arithmetic, digits, engine, true).unwrap();
+    reducer.set_unchecked(unchecked);
+    reducer
+}
+
+fn check_invariance(
+    arithmetic: &str,
+    digits: Option<u32>,
+    engine: &str,
+    points: usize,
+    columns: usize,
+    threads: &[usize],
+) {
+    // The generic engines build Symbolica expressions: the library key on
+    // this thread (the pool's workers unlock theirs, as the executor's do).
+    let _unlock = pyamplicol::unlock();
+    let all = all_lanes(points, columns, arithmetic, digits);
+    for unchecked in [false, true] {
+        for check in [None, Some(ReductionFrame::REVERSED)] {
+            let options = ReduceOptions {
+                poles: Poles::Split,
+                check,
+                ..ReduceOptions::default()
+            };
+            // The serial reduction: called outside any pool.
+            let serial = calls(
+                &mut reducer(arithmetic, digits, engine, unchecked),
+                &all,
+                options,
+                false,
+            );
+            for &t in threads {
+                let pool = rayon::ThreadPoolBuilder::new()
+                    .num_threads(t)
+                    .start_handler(|_| pyamplicol::unlock_thread())
+                    .build()
+                    .unwrap();
+                for with_points in [false, true] {
+                    // One reducer across settings changes, as the executor
+                    // keeps its backend.
+                    let mut parallel = reducer(arithmetic, digits, engine, !unchecked);
+                    pool.install(|| {
+                        let _ = calls(&mut parallel, &all, options, with_points);
+                        parallel.set_unchecked(unchecked);
+                        let got = calls(&mut parallel, &all, options, with_points);
+                        for (call, (a, b)) in serial.iter().zip(&got).enumerate() {
+                            assert!(
+                                a == b,
+                                "{arithmetic} {engine} unchecked {unchecked} check {check:?} \
+                                 {t} threads points {with_points} call {call}:\n{a}\nvs\n{b}"
+                            );
+                        }
+                    });
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn binary64_fast_reductions_do_not_depend_on_the_threads() {
+    check_invariance("double", None, "fast", 24, 7, &[1, 2, 4, 8, 16]);
+}
+
+#[test]
+fn double_double_reductions_do_not_depend_on_the_threads() {
+    check_invariance("double-double", None, "generic", 3, 2, &[1, 2, 4]);
+}
+
+#[test]
+fn arbitrary_precision_reductions_do_not_depend_on_the_threads() {
+    check_invariance("arbitrary", Some(40), "generic", 2, 1, &[1, 3]);
+}
+
+/// The executor's path (typed slices, `reduce_views`) reduces as the batch
+/// path (`reduce_at`), bit for bit, serially and on a pool.
+#[test]
+fn lane_views_reduce_as_batches() {
+    let _unlock = pyamplicol::unlock();
+    let all = all_lanes(6, 3, "double", None);
+    let groups: Vec<_> = all.iter().map(group).collect();
+    fn slice(b: &Batch) -> &[rusticol_loop_reduction::Complex<f64>] {
+        match b.data() {
+            Data::Double(values) => values.as_slice(),
+            _ => panic!("binary64 lanes"),
+        }
+    }
+    let views: Vec<LaneViews<'_, f64>> = all
+        .iter()
+        .map(|l| LaneViews {
+            propagators: l.n,
+            rows: l.points.len(),
+            shifts: slice(&l.shifts),
+            masses_squared: slice(&l.masses),
+            scales_squared: slice(&l.scales),
+            s_matrix: slice(&l.matrix),
+            coefficients: slice(&l.coefficients),
+        })
+        .collect();
+    let options = ReduceOptions {
+        poles: Poles::Split,
+        check: Some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let pool = rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .start_handler(|_| pyamplicol::unlock_thread())
+        .build()
+        .unwrap();
+    let reduce = |with_views: bool| {
+        let mut reducer = reducer("double", None, "fast", false);
+        let output = if with_views {
+            reducer.reduce_views(&views, None, None, options)
+        } else {
+            reducer.reduce_at(&groups, None, None, options)
+        };
+        fingerprint(&output.unwrap(), &mut reducer)
+    };
+    let serial = reduce(false);
+    assert_eq!(serial, reduce(true));
+    pool.install(|| {
+        assert_eq!(serial, reduce(false));
+        assert_eq!(serial, reduce(true));
+    });
+}
+
+/// Invariant 5: a parallel reduction builds no template of its own on its
+/// workers (the generic engines lend the reducer's templates per bucket;
+/// the fast engine's routed lanes share the reducer's exact engine): the
+/// templates kept after a call are the serial reduction's, at any count.
+#[test]
+fn parallel_reductions_build_no_template_per_worker() {
+    let _unlock = pyamplicol::unlock();
+    for (arithmetic, engine, points) in [("double", "fast", 6), ("double-double", "generic", 2)] {
+        let all = all_lanes(points, 2, arithmetic, None);
+        let groups: Vec<_> = all.iter().map(group).collect();
+        let options = ReduceOptions {
+            poles: Poles::All,
+            check: Some(ReductionFrame::REVERSED),
+            ..ReduceOptions::default()
+        };
+        let mut serial = reducer(arithmetic, None, engine, false);
+        let want = fingerprint(
+            &serial.reduce_at(&groups, None, None, options).unwrap(),
+            &mut serial,
+        );
+        let templates = serial.built_templates();
+        assert!(templates > 0, "{arithmetic}: the call builds templates");
+        for threads in [2, 8] {
+            let pool = rayon::ThreadPoolBuilder::new()
+                .num_threads(threads)
+                .start_handler(|_| pyamplicol::unlock_thread())
+                .build()
+                .unwrap();
+            let mut parallel = reducer(arithmetic, None, engine, false);
+            pool.install(|| {
+                for _ in 0..2 {
+                    let got = fingerprint(
+                        &parallel.reduce_at(&groups, None, None, options).unwrap(),
+                        &mut parallel,
+                    );
+                    parallel.clear_masters();
+                    assert_eq!(got, want, "{arithmetic} {threads} threads");
+                }
+            });
+            assert_eq!(
+                parallel.built_templates(),
+                templates,
+                "{arithmetic} {threads} threads"
+            );
+        }
+    }
+}
+
+/// One call's fingerprint at `threads` workers (`None`: outside any pool,
+/// the serial reduction).
+fn one_call(all: &[Lanes], threads: Option<usize>, options: ReduceOptions) -> String {
+    let groups: Vec<_> = all.iter().map(group).collect();
+    let points: Vec<&[usize]> = all.iter().map(|l| l.points.as_slice()).collect();
+    let run = || {
+        let mut reducer = reducer("double", None, "fast", false);
+        let output = reducer
+            .reduce_at(&groups, Some(points.as_slice()), None, options)
+            .unwrap();
+        fingerprint(&output, &mut reducer)
+    };
+    match threads {
+        None => run(),
+        Some(threads) => rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .start_handler(|_| pyamplicol::unlock_thread())
+            .build()
+            .unwrap()
+            .install(run),
+    }
+}
+
+/// Review finding 1: point labels are any `usize`; a parallel reduction
+/// orders a bucket's lanes by comparison, never by the label's value (32
+/// valid tadpoles labelled `usize::MAX` panicked at two workers before).
+#[test]
+fn point_labels_of_any_value_reduce_as_the_serial_reduction() {
+    let _unlock = pyamplicol::unlock();
+    let options = ReduceOptions::default();
+    for label in [
+        (|_| usize::MAX) as fn(usize) -> usize,
+        |row| usize::MAX - row,
+        |row| if row % 2 == 0 { usize::MAX } else { row << 40 },
+    ] {
+        let all = vec![tadpoles(32, [4., 0.], "double", None, label)];
+        let serial = one_call(&all, None, options);
+        assert!(
+            !serial.contains("MasterFailed"),
+            "valid tadpoles:\n{serial}"
+        );
+        for threads in [1, 2, 8] {
+            assert_eq!(
+                one_call(&all, Some(threads), options),
+                serial,
+                "{threads} workers"
+            );
+        }
+    }
+}
+
+/// Review finding 2: 32 tadpoles with `m² = 4 + i` fail their masters in a
+/// call that returns; the statuses and every master count are the serial
+/// reduction's at any worker count, and the failed row counts once (as main
+/// counts it in one engine call).
+#[test]
+fn failed_master_rows_count_once_per_call_at_any_worker_count() {
+    let _unlock = pyamplicol::unlock();
+    let options = ReduceOptions::default();
+    let all = vec![tadpoles(32, [4., 1.], "double", None, |_| 0)];
+    let serial = one_call(&all, None, options);
+    assert_eq!(serial.matches("MasterFailed").count(), 32, "{serial}");
+    assert!(
+        serial.contains("masters requests [32, 0, 0, 0, 0, 0] evaluated [1, 0, 0, 0, 0, 0] hits [31, 0, 0, 0, 0, 0]"),
+        "{serial}"
+    );
+    for threads in [1, 2, 8] {
+        assert_eq!(
+            one_call(&all, Some(threads), options),
+            serial,
+            "{threads} workers"
+        );
+    }
+    // Several points and the check's frame: still once per key and call.
+    let all = vec![tadpoles(64, [4., 1.], "double", None, |row| row / 8)];
+    let options = ReduceOptions {
+        check: Some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let serial = one_call(&all, None, options);
+    for threads in [2, 8, 16] {
+        assert_eq!(
+            one_call(&all, Some(threads), options),
+            serial,
+            "{threads} workers"
+        );
+    }
+}
+
+/// A pool of `threads` workers, unlocked as the executor's.
+fn pool(threads: usize) -> rayon::ThreadPool {
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(threads)
+        .start_handler(|_| pyamplicol::unlock_thread())
+        .build()
+        .unwrap()
+}
+
+/// `rows` tadpoles as `tadpoles`, the shift of lane `bad_shift` and the
+/// scale of lane `bad_scale` made complex (each an invalid input of the fast
+/// engine), each lane its own point.
+fn invalid_tadpoles(rows: usize, bad_shift: Option<usize>, bad_scale: Option<usize>) -> Lanes {
+    let ids: Vec<u64> = (0..rows as u64).collect();
+    let batch = |values: Vec<[String; 2]>, columns| {
+        Batch::from_decimal(values, rows, columns, "double", None, Some(ids.clone())).unwrap()
+    };
+    let z = |re: f64, im: f64| [format!("{re:e}"), format!("{im:e}")];
+    let shifts = (0..4 * rows)
+        .map(|k| {
+            if Some(k / 4) == bad_shift && k % 4 == 0 {
+                z(0., 1.)
+            } else {
+                z(0., 0.)
+            }
+        })
+        .collect();
+    let scales = (0..rows)
+        .map(|row| {
+            if Some(row) == bad_scale {
+                z(16., 1.)
+            } else {
+                z(16., 0.)
+            }
+        })
+        .collect();
+    Lanes {
+        n: 1,
+        shifts: batch(shifts, 4),
+        masses: batch((0..rows).map(|_| z(4., 0.)).collect(), 1),
+        scales: batch(scales, 1),
+        matrix: batch((0..rows).map(|_| z(0., 0.)).collect(), 1),
+        coefficients: batch((0..rows).map(|_| z(1., 0.)).collect(), 1),
+        points: (0..rows).collect(),
+    }
+}
+
+/// The error text of a call at `threads` workers (`None`: serial).
+fn error_of(reducer: &mut V2Reducer, all: &[Lanes], threads: Option<usize>) -> String {
+    let groups: Vec<_> = all.iter().map(group).collect();
+    let points: Vec<&[usize]> = all.iter().map(|l| l.points.as_slice()).collect();
+    let mut call = || {
+        reducer
+            .reduce_at(
+                &groups,
+                Some(points.as_slice()),
+                None,
+                ReduceOptions::default(),
+            )
+            .err()
+            .map(|e| e.to_string())
+            .expect("an invalid input")
+    };
+    match threads {
+        None => call(),
+        Some(threads) => pool(threads).install(call),
+    }
+}
+
+/// Review finding 4 (a rejected batch): after a call that fails on an
+/// invalid input, the next successful call's counters are the serial
+/// reduction's at every worker count (the reviewer's sequence: masters
+/// cleared, then two equal tadpoles, 2 requests and 1 evaluation).
+#[test]
+fn a_rejected_call_leaves_nothing_in_the_next_report() {
+    let _unlock = pyamplicol::unlock();
+    let good = [tadpoles(2, [4., 0.], "double", None, |row| row)];
+    let groups: Vec<_> = good.iter().map(group).collect();
+    let points: Vec<&[usize]> = good.iter().map(|l| l.points.as_slice()).collect();
+    for threads in [None, Some(1), Some(2), Some(8)] {
+        let mut reducer = reducer("double", None, "fast", false);
+        // Many valid lanes and one invalid one: slices without it run first
+        // in parallel.
+        let bad = vec![invalid_tadpoles(64, Some(37), None)];
+        let _ = error_of(&mut reducer, &bad, threads);
+        reducer.clear_masters();
+        let mut call = || {
+            let output = reducer
+                .reduce_at(
+                    &groups,
+                    Some(points.as_slice()),
+                    None,
+                    ReduceOptions::default(),
+                )
+                .unwrap();
+            fingerprint(&output, &mut reducer)
+        };
+        let report = match threads {
+            None => call(),
+            Some(threads) => pool(threads).install(call),
+        };
+        assert!(
+            report.contains("masters requests [2, 0, 0, 0, 0, 0] evaluated [1, 0, 0, 0, 0, 0]"),
+            "{threads:?} workers:\n{report}"
+        );
+    }
+}
+
+/// Review finding 4 (several invalid inputs): the error is the serial
+/// reduction's, the first in serial order, at every worker count.
+#[test]
+fn several_invalid_inputs_report_the_serial_error() {
+    let _unlock = pyamplicol::unlock();
+    for (shift, scale) in [(Some(40), Some(3)), (Some(3), Some(40)), (None, Some(50))] {
+        let bad = vec![invalid_tadpoles(64, shift, scale)];
+        let serial = error_of(&mut reducer("double", None, "fast", false), &bad, None);
+        for threads in [1, 2, 8] {
+            let got = error_of(
+                &mut reducer("double", None, "fast", false),
+                &bad,
+                Some(threads),
+            );
+            assert_eq!(
+                got, serial,
+                "{threads} workers, invalid {shift:?} {scale:?}"
+            );
+        }
+    }
+}
+
+/// Review finding 4 (a warm topology switch): one reducer called serially,
+/// then on pools of 2 and 8 workers and serially again, without clearing
+/// its masters, reports what a reducer that stayed serial reports, call by
+/// call (values, statuses, every counter).
+#[test]
+fn a_warm_reducer_switching_worker_counts_reports_as_the_serial_one() {
+    let _unlock = pyamplicol::unlock();
+    let all = all_lanes(6, 2, "double", None);
+    let groups: Vec<_> = all.iter().map(group).collect();
+    let points: Vec<&[usize]> = all.iter().map(|l| l.points.as_slice()).collect();
+    let options = ReduceOptions {
+        check: Some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let call = |reducer: &mut V2Reducer| {
+        let output = reducer
+            .reduce_at(&groups, Some(points.as_slice()), None, options)
+            .unwrap();
+        fingerprint(&output, reducer)
+    };
+    let mut serial = reducer("double", None, "fast", false);
+    let want: Vec<String> = (0..5).map(|_| call(&mut serial)).collect();
+    let mut switching = reducer("double", None, "fast", false);
+    let got = [
+        call(&mut switching),
+        pool(2).install(|| call(&mut switching)),
+        pool(8).install(|| call(&mut switching)),
+        call(&mut switching),
+        pool(2).install(|| call(&mut switching)),
+    ];
+    for (k, (a, b)) in want.iter().zip(&got).enumerate() {
+        assert_eq!(a, b, "call {k}");
+    }
+}
+
+/// A refinement source that panics (a caller's callback failing).
+struct Panicking;
+impl GroupRefinementSource for Panicking {
+    fn lane(
+        &self,
+        _: usize,
+        _: usize,
+        _: &mut [[f64; 4]],
+        _: &mut [f64],
+        _: &mut [rusticol_loop_reduction::C64],
+    ) -> bool {
+        panic!("a refinement callback panics");
+    }
+}
+
+fn typed(values: &[f64], columns: usize) -> Batch {
+    Batch::typed(
+        values
+            .iter()
+            .map(|&v| rusticol_loop_reduction::Complex::new(v, 0.))
+            .collect(),
+        (0..(values.len() / columns) as u64).collect(),
+        columns,
+        53,
+    )
+    .unwrap()
+}
+
+/// Review finding 1 (the routed exact engine): a panic in a refinement
+/// callback during a two-worker call leaves the reducer as the
+/// uninterrupted one: after `set_target(1e-28)` a light tadpole (routed to
+/// the exact engine) is refused `Unstable` as on a reducer that was never
+/// interrupted (the reviewer's sequence).
+#[test]
+fn a_panic_in_a_parallel_call_leaves_the_reducer_as_the_uninterrupted_one() {
+    let _unlock = pyamplicol::unlock();
+    let tadpole = [
+        typed(&[0., 0., 0., 0.], 4),
+        typed(&[1e-12], 1),
+        typed(&[1.], 1),
+        typed(&[0.], 1),
+        typed(&[1.], 1),
+    ];
+    let n = 2f64.powi(60);
+    let bubble = [
+        typed(
+            &[
+                0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0.,
+            ],
+            8,
+        ),
+        typed(&[4., 4., 4., 4.], 2),
+        typed(&[1., 1.], 1),
+        typed(&[0., 1., 1., 0., 0., 1., 1., 0.], 4),
+        typed(&[n, 2. * n, 0., 0., 0., n, 2. * n, 0., 0., 0.], 5),
+    ];
+    fn family(b: &[Batch; 5], n: usize) -> Vec<FamilyGroup<'_>> {
+        vec![FamilyGroup {
+            propagators: n,
+            shifts: &b[0],
+            masses_squared: &b[1],
+            scales_squared: &b[2],
+            s_matrix: &b[3],
+            coefficients: &b[4],
+        }]
+    }
+    let mut reports = Vec::new();
+    for interrupt in [false, true] {
+        let mut reducer = V2Reducer::new("double", None, "fast", true).unwrap();
+        let warm = reducer
+            .reduce(&family(&tadpole, 1), ReduceOptions::default())
+            .unwrap();
+        let mut report = format!("warm {:?}\n", warm.direct[0].statuses());
+        if interrupt {
+            let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                pool(2).install(|| {
+                    reducer.reduce_refined(
+                        &family(&bubble, 2),
+                        Some(&Panicking),
+                        ReduceOptions::default(),
+                    )
+                })
+            }));
+            assert!(caught.is_err(), "the callback panics");
+        }
+        reducer.set_target(1e-28);
+        let after = reducer
+            .reduce(&family(&tadpole, 1), ReduceOptions::default())
+            .unwrap();
+        report += &format!("after {:?}\n", after.direct[0].statuses());
+        report += &fingerprint(&after, &mut reducer);
+        reports.push(report);
+    }
+    assert!(reports[0].contains("Unstable"), "control:\n{}", reports[0]);
+    assert_eq!(reports[1], reports[0]);
+}
+
+type C64 = rusticol_loop_reduction::Complex<f64>;
+
+fn c(re: f64) -> C64 {
+    C64::new(re, 0.)
+}
+
+/// The reason under which the reducer returns a refused lane consistent
+/// with zero ([`V2Reducer::set_vanishing`]).
+const VANISHING: &str = "a vanishing lane of the last carrier (test)";
+
+/// A call rejected on an invalid input: a light tadpole (routed to the
+/// exact engine) next to one whose shift is complex (refused by the fast
+/// engine); the error text.
+fn rejected_call(reducer: &mut V2Reducer) -> String {
+    let (z, o) = (c(0.), c(1.));
+    let mut shifts = [z; 8];
+    shifts[4].im = 1.;
+    let masses = [c(1e-12), c(4.)];
+    let views = LaneViews {
+        propagators: 1,
+        rows: 2,
+        shifts: &shifts,
+        masses_squared: &masses,
+        scales_squared: &[o; 2],
+        s_matrix: &[z; 2],
+        coefficients: &[o; 2],
+    };
+    reducer
+        .reduce_views(&[views], None, None, ReduceOptions::default())
+        .err()
+        .map(|e| e.to_string())
+        .expect("an invalid input")
+}
+
+/// A call that unwinds: a light tadpole (routed to the exact engine, first
+/// in serial order) and a bubble whose cancellation rescue asks a
+/// refinement callback that panics.
+fn unwinding_call(reducer: &mut V2Reducer) {
+    let tadpole = [
+        typed(&[0., 0., 0., 0.], 4),
+        typed(&[1e-12], 1),
+        typed(&[1.], 1),
+        typed(&[0.], 1),
+        typed(&[1.], 1),
+    ];
+    let n = 2f64.powi(60);
+    let bubble = [
+        typed(
+            &[
+                0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0.,
+            ],
+            8,
+        ),
+        typed(&[4., 4., 4., 4.], 2),
+        typed(&[1., 1.], 1),
+        typed(&[0., 1., 1., 0., 0., 1., 1., 0.], 4),
+        typed(&[n, 2. * n, 0., 0., 0., n, 2. * n, 0., 0., 0.], 5),
+    ];
+    fn group(b: &[Batch; 5], n: usize) -> FamilyGroup<'_> {
+        FamilyGroup {
+            propagators: n,
+            shifts: &b[0],
+            masses_squared: &b[1],
+            scales_squared: &b[2],
+            s_matrix: &b[3],
+            coefficients: &b[4],
+        }
+    }
+    let groups = [group(&tadpole, 1), group(&bubble, 2)];
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        reducer.reduce_refined(&groups, Some(&Panicking), ReduceOptions::default())
+    }));
+    assert!(caught.is_err(), "the callback panics");
+}
+
+/// Checked, the vanishing reason set, then the equal-mass bubble with
+/// numerator `shift² + 2 shift q0` at three (mass, shift), two targets and
+/// three imaginary parts of its constant term, reduced serially: every
+/// value, status, rescued and uncertified lane and counter, the masters
+/// cleared first.
+fn bubble_report(reducer: &mut V2Reducer) -> String {
+    reducer.set_unchecked(false);
+    reducer.set_vanishing(Some(VANISHING));
+    reducer.clear_masters();
+    let _ = reducer.take_master_statistics();
+    let _ = (reducer.take_exact_lanes(), reducer.take_rescued_lanes());
+    let z = c(0.);
+    let mut report = String::new();
+    for (mass, shift) in [(1e-12, 1.0), (4.0, 1e-5), (1e-12, 1e-5)] {
+        for target in [1e-8, 1e-25] {
+            reducer.set_target(target);
+            let shifts = [z, z, z, z, c(shift), z, z, z];
+            let masses = [c(mass); 2];
+            let matrix = [z, c(shift * shift), c(shift * shift), z];
+            for imag in [0., 1e-30, 1e-300] {
+                let coefficients = [C64::new(shift * shift, imag), c(2. * shift), z, z, z];
+                let views = LaneViews {
+                    propagators: 2,
+                    rows: 1,
+                    shifts: &shifts,
+                    masses_squared: &masses,
+                    scales_squared: &[c(1.)],
+                    s_matrix: &matrix,
+                    coefficients: &coefficients,
+                };
+                let output = reducer
+                    .reduce_views(&[views], None, None, ReduceOptions::default())
+                    .unwrap();
+                report += &format!(
+                    "{mass:e} {shift:e} {target:e} {imag:e}:\n{}",
+                    fingerprint(&output, reducer)
+                );
+            }
+        }
+    }
+    report
+}
+
+/// A rejected call's worker count does not change the reducer it leaves: a
+/// fresh unchecked reducer rejects the same call at 1 and 2 workers, keeps
+/// no template either way, and the following checked serial reductions with
+/// a vanishing reason give the same statuses, values and uncertified lanes,
+/// the reason applied by the exact engine built after the rejection.
+#[test]
+fn a_rejected_call_leaves_the_same_reducer_at_any_worker_count() {
+    let _unlock = pyamplicol::unlock();
+    let mut reports = Vec::new();
+    for threads in [1, 2] {
+        let mut reducer = V2Reducer::new("double", None, "fast", true).unwrap();
+        reducer.set_unchecked(true);
+        let error = pool(threads).install(|| rejected_call(&mut reducer));
+        let templates = reducer.built_templates();
+        reports.push(format!(
+            "{error}\ntemplates {templates}\n{}",
+            bubble_report(&mut reducer)
+        ));
+    }
+    assert!(reports[0].contains("templates 0\n"), "{}", reports[0]);
+    assert!(reports[0].contains(VANISHING), "{}", reports[0]);
+    assert_eq!(reports[1], reports[0]);
+}
+
+/// Every setting of the fast reducer holds on its exact engine whatever the
+/// order of the setter, the engine's first use, a rejected call and a
+/// caught unwind (at 1 and 2 workers): each history gives the reports of a
+/// reducer whose exact engine existed before the setters, and a rejected or
+/// unwound call keeps exactly the templates the reducer had before it.
+#[test]
+fn fast_reducer_settings_hold_whatever_the_order_of_first_use_errors_and_unwinds() {
+    let _unlock = pyamplicol::unlock();
+    let light = |reducer: &mut V2Reducer| {
+        let tadpole = [
+            typed(&[0., 0., 0., 0.], 4),
+            typed(&[1e-12], 1),
+            typed(&[1.], 1),
+            typed(&[0.], 1),
+            typed(&[1.], 1),
+        ];
+        let groups = [FamilyGroup {
+            propagators: 1,
+            shifts: &tadpole[0],
+            masses_squared: &tadpole[1],
+            scales_squared: &tadpole[2],
+            s_matrix: &tadpole[3],
+            coefficients: &tadpole[4],
+        }];
+        reducer.reduce(&groups, ReduceOptions::default()).unwrap();
+    };
+    let fresh = || V2Reducer::new("double", None, "fast", true).unwrap();
+    let mut warm = fresh();
+    light(&mut warm);
+    assert_eq!(warm.built_templates(), 1);
+    let want = bubble_report(&mut warm);
+    assert!(want.contains(VANISHING), "{want}");
+    for (history, expected_templates) in [
+        ("fresh", 0),
+        ("a fast call", 0),
+        ("rejected", 0),
+        ("unwound", 0),
+        ("warm, rejected", 1),
+        ("warm, unwound", 1),
+    ] {
+        for threads in [1, 2] {
+            let mut reducer = fresh();
+            if history.starts_with("warm") {
+                light(&mut reducer);
+            }
+            pool(threads).install(|| {
+                if history == "a fast call" {
+                    let tadpoles = [tadpoles(4, [4., 0.], "double", None, |row| row)];
+                    let groups: Vec<_> = tadpoles.iter().map(group).collect();
+                    reducer.reduce(&groups, ReduceOptions::default()).unwrap();
+                } else if history.ends_with("rejected") {
+                    rejected_call(&mut reducer);
+                } else if history.ends_with("unwound") {
+                    unwinding_call(&mut reducer);
+                }
+            });
+            assert_eq!(
+                reducer.built_templates(),
+                expected_templates,
+                "{history}, {threads} workers"
+            );
+            assert_eq!(
+                bubble_report(&mut reducer),
+                want,
+                "{history}, {threads} workers"
+            );
+        }
+    }
+}
+
+/// Batches of complex values (row-major).
+fn complex(values: &[(f64, f64)], columns: usize) -> Batch {
+    Batch::typed(
+        values.iter().map(|&(re, im)| C64::new(re, im)).collect(),
+        (0..(values.len() / columns) as u64).collect(),
+        columns,
+        53,
+    )
+    .unwrap()
+}
+
+/// `rows` rank-0 tadpoles at `μ² = 16`, every third of squared mass `1e-12`
+/// (routed to the exact engine), the others 4; the shift of lane
+/// `bad_shift` and the scale of lane `bad_scale` complex (invalid inputs
+/// of the fast engine).
+fn mixed_tadpoles(rows: usize, bad_shift: Option<usize>, bad_scale: Option<usize>) -> [Batch; 5] {
+    let shifts: Vec<(f64, f64)> = (0..rows)
+        .flat_map(|r| {
+            let time = if Some(r) == bad_shift { 1. } else { 0. };
+            [(0., time), (0., 0.), (0., 0.), (0., 0.)]
+        })
+        .collect();
+    let masses: Vec<(f64, f64)> = (0..rows)
+        .map(|r| if r % 3 == 0 { (1e-12, 0.) } else { (4., 0.) })
+        .collect();
+    let scales: Vec<(f64, f64)> = (0..rows)
+        .map(|r| (16., if Some(r) == bad_scale { 1. } else { 0. }))
+        .collect();
+    [
+        complex(&shifts, 4),
+        complex(&masses, 1),
+        complex(&scales, 1),
+        complex(&vec![(0., 0.); rows], 1),
+        complex(&vec![(1., 0.); rows], 1),
+    ]
+}
+
+/// Two bubbles whose numerator `2^60 (1 + 2 q0)` the fast engine's
+/// cancellation rescue flags (the refinement callback is asked), the second
+/// one's shift complex if `bad`.
+fn rescued_bubbles(bad: bool) -> [Batch; 5] {
+    let n = 2f64.powi(60);
+    let r = |x: f64| (x, 0.);
+    let z = r(0.);
+    let last = if bad { (1., 1.) } else { r(1.) };
+    [
+        complex(&[z, z, z, z, r(1.), z, z, z, z, z, z, z, last, z, z, z], 8),
+        complex(&[r(4.); 4], 2),
+        complex(&[r(1.); 2], 1),
+        complex(&[z, r(1.), r(1.), z, z, r(1.), r(1.), z], 4),
+        complex(&[r(n), r(2. * n), z, z, z, r(n), r(2. * n), z, z, z], 5),
+    ]
+}
+
+/// A refinement callback: one that panics at every lane, one that panics
+/// at the first lane asked and then serves exact kinematics, one that
+/// refuses every lane, one that serves exact kinematics.
+#[derive(Clone, Copy, Debug)]
+enum Callback {
+    Panics,
+    PanicsOnce,
+    Refuses,
+    Serves,
+}
+
+struct Refinement {
+    callback: Callback,
+    once: std::sync::atomic::AtomicBool,
+}
+
+impl GroupRefinementSource for Refinement {
+    fn lane(
+        &self,
+        _: usize,
+        _: usize,
+        _: &mut [[f64; 4]],
+        _: &mut [f64],
+        _: &mut [rusticol_loop_reduction::C64],
+    ) -> bool {
+        match self.callback {
+            Callback::Panics => panic!("a refinement callback panics"),
+            Callback::PanicsOnce if self.once.swap(false, std::sync::atomic::Ordering::SeqCst) => {
+                panic!("a refinement callback panics once")
+            }
+            Callback::Refuses => false,
+            Callback::PanicsOnce | Callback::Serves => true,
+        }
+    }
+}
+
+/// One failing (or not) call of the mix table: its groups in order, the
+/// refinement callback, the target, the check's frame and split poles,
+/// point labels.
+struct Mix {
+    name: &'static str,
+    groups: Vec<([Batch; 5], usize)>,
+    callback: Option<Callback>,
+    target: Option<f64>,
+    check: bool,
+    labels: bool,
+}
+
+fn mix(name: &'static str, groups: Vec<([Batch; 5], usize)>, callback: Option<Callback>) -> Mix {
+    Mix {
+        name,
+        groups,
+        callback,
+        target: Some(1e-25),
+        check: false,
+        labels: false,
+    }
+}
+
+/// The outcome of `mix` on a fresh fast reducer at `threads` workers
+/// (`None`: serial), with the state the call leaves: the error, the panic's
+/// message or the full output, then the templates, cached masters and
+/// counters left, then a valid call's full report on the same reducer.
+fn mix_report(mix: &Mix, threads: Option<usize>) -> String {
+    let mut reducer = V2Reducer::new("double", None, "fast", true).unwrap();
+    if let Some(target) = mix.target {
+        reducer.set_target(target);
+    }
+    let groups: Vec<FamilyGroup<'_>> = mix
+        .groups
+        .iter()
+        .map(|(b, n)| FamilyGroup {
+            propagators: *n,
+            shifts: &b[0],
+            masses_squared: &b[1],
+            scales_squared: &b[2],
+            s_matrix: &b[3],
+            coefficients: &b[4],
+        })
+        .collect();
+    let mut next = 0;
+    let points: Vec<Vec<usize>> = mix
+        .groups
+        .iter()
+        .map(|(b, _)| {
+            (0..b[0].rows())
+                .map(|_| {
+                    next += 1;
+                    usize::MAX - next
+                })
+                .collect()
+        })
+        .collect();
+    let views: Vec<&[usize]> = points.iter().map(Vec::as_slice).collect();
+    let refinement = mix.callback.map(|callback| Refinement {
+        callback,
+        once: std::sync::atomic::AtomicBool::new(true),
+    });
+    let source = refinement.as_ref().map(|r| r as &dyn GroupRefinementSource);
+    let options = ReduceOptions {
+        poles: if mix.check { Poles::Split } else { Poles::All },
+        check: mix.check.then_some(ReductionFrame::REVERSED),
+        ..ReduceOptions::default()
+    };
+    let labels = mix.labels.then_some(views.as_slice());
+    let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut call = || reducer.reduce_at(&groups, labels, source, options);
+        match threads {
+            None => call(),
+            Some(threads) => pool(threads).install(call),
+        }
+    }));
+    let mut report = match caught {
+        Ok(Ok(output)) => format!("success\n{}", fingerprint(&output, &mut reducer)),
+        Ok(Err(error)) => format!("error {error}\n"),
+        Err(panic) => format!(
+            "panic {}\n",
+            panic
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| panic.downcast_ref::<String>().cloned())
+                .unwrap_or_default()
+        ),
+    };
+    report += &format!(
+        "left: templates {} cached masters {} statistics {:?} exact lanes {} rescued lanes {}\n",
+        reducer.built_templates(),
+        reducer.cached_masters(),
+        reducer
+            .take_master_statistics()
+            .map(|s| (s.requests, s.evaluated, s.hits)),
+        reducer.take_exact_lanes(),
+        reducer.take_rescued_lanes()
+    );
+    let valid = mixed_tadpoles(6, None, None);
+    let next = [FamilyGroup {
+        propagators: 1,
+        shifts: &valid[0],
+        masses_squared: &valid[1],
+        scales_squared: &valid[2],
+        s_matrix: &valid[3],
+        coefficients: &valid[4],
+    }];
+    let output = reducer.reduce(&next, ReduceOptions::default()).unwrap();
+    report + "next:\n" + fingerprint(&output, &mut reducer).as_str()
+}
+
+/// A failing call fails as the serial reduction does, for every mix of
+/// failures: an invalid input, a refinement callback that panics (always or
+/// once) or refuses, in any slice and any phase (the fast lanes, the routed
+/// exact lanes, the cancellation rescue, the check's frame), in one bucket
+/// or several, one group or many: the same error or the same panic, and the
+/// same state left, at 1, 2 and 8 workers. The first row is the minimal
+/// case: 48 tadpoles, lane 31's shift complex, a callback that panics at
+/// target 1e-25 (the serial reduction validates lane 31 before it asks the
+/// callback). A callback whose answer depends on the lanes asked before
+/// (one that panics once) is serial only as the call's single failure: next
+/// to a failure of a later bucket, which lane meets its panic depends on
+/// the schedule.
+#[test]
+fn a_failing_call_gives_the_serial_outcome_for_every_mix_of_failures() {
+    let _unlock = pyamplicol::unlock();
+    let t = |rows, shift, scale| (mixed_tadpoles(rows, shift, scale), 1);
+    let b = |bad| (rescued_bubbles(bad), 2);
+    let per_lane = |rows: usize, bad: usize| -> Vec<([Batch; 5], usize)> {
+        (0..rows)
+            .map(|r| {
+                let batches = mixed_tadpoles(1, (r == bad).then_some(0), None);
+                // Every lane its own group, every third light.
+                let light = r % 3 == 0;
+                let mut batches = batches;
+                batches[1] = complex(&[(if light { 1e-12 } else { 4. }, 0.)], 1);
+                (batches, 1)
+            })
+            .collect()
+    };
+    let mut mixes = vec![
+        mix(
+            "minimal",
+            vec![t(48, Some(31), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "minimal, once",
+            vec![t(48, Some(31), None)],
+            Some(Callback::PanicsOnce),
+        ),
+        mix(
+            "minimal, refuses",
+            vec![t(48, Some(31), None)],
+            Some(Callback::Refuses),
+        ),
+        mix(
+            "bad first lane",
+            vec![t(48, Some(0), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad last lane",
+            vec![t(48, Some(47), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad routed lane",
+            vec![t(48, Some(30), None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "scale then shift",
+            vec![t(48, Some(40), Some(3))],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "shift then scale",
+            vec![t(48, Some(3), Some(40))],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "valid, panics",
+            vec![t(48, None, None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "valid, panics once",
+            vec![t(48, None, None)],
+            Some(Callback::PanicsOnce),
+        ),
+        mix(
+            "valid, refuses",
+            vec![t(48, None, None)],
+            Some(Callback::Refuses),
+        ),
+        mix(
+            "valid, serves",
+            vec![t(48, None, None)],
+            Some(Callback::Serves),
+        ),
+        mix("no callback", vec![t(48, Some(31), None)], None),
+        // A later bucket's invalid input after an earlier bucket's panic,
+        // and the reverse.
+        mix(
+            "panic, then a bad bucket",
+            vec![t(48, None, None), b(true)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "bad bucket, then a panic",
+            vec![t(48, Some(31), None), b(false)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "rescue panics, tadpoles fine",
+            vec![b(false), t(48, None, None)],
+            Some(Callback::Panics),
+        ),
+        mix(
+            "one group per lane",
+            per_lane(48, 31),
+            Some(Callback::Panics),
+        ),
+        mix(
+            "one group per lane, valid",
+            per_lane(48, usize::MAX),
+            Some(Callback::Panics),
+        ),
+    ];
+    // Every row again with the check's frame and split poles; the rows of
+    // several slices per bucket also with point labels (slices cut by
+    // point).
+    let variants: Vec<Mix> = mixes
+        .iter()
+        .flat_map(|base| {
+            let labelled = base.groups.len() < 3;
+            [(true, false), (false, true)]
+                .into_iter()
+                .filter(move |&(_, labels)| !labels || labelled)
+                .map(|(check, labels)| Mix {
+                    name: base.name,
+                    groups: base.groups.clone(),
+                    callback: base.callback,
+                    target: base.target,
+                    check,
+                    labels,
+                })
+        })
+        .collect();
+    mixes.extend(variants);
+    mixes.push(Mix {
+        target: None,
+        ..mix(
+            "default target",
+            vec![t(48, Some(31), None), b(false)],
+            Some(Callback::Panics),
+        )
+    });
+    let mut differences = Vec::new();
+    for mix in &mixes {
+        let serial = mix_report(mix, None);
+        if mix.name == "minimal" && !mix.check && !mix.labels {
+            assert!(
+                serial.starts_with("error fast engine requires real shifts\n"),
+                "{serial}"
+            );
+        }
+        for threads in [1, 2, 8] {
+            let got = mix_report(mix, Some(threads));
+            if got != serial {
+                differences.push(format!(
+                    "{} (check {}, labels {}), {threads} workers:\n--- serial\n{serial}--- got\n{got}",
+                    mix.name, mix.check, mix.labels
+                ));
+            }
+        }
+    }
+    assert!(differences.is_empty(), "{}", differences.join("\n"));
+}

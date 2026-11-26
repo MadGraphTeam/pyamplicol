@@ -26,7 +26,7 @@ pub use coefficients::{CoefficientEvaluator, exact_state};
 pub use exact::decimal_rational;
 #[cfg(feature = "tir")]
 pub(crate) use master_cache::canonicalise as canonical_master_row;
-pub use master_cache::{MasterCache, MasterStatistics};
+pub use master_cache::{GroupedCall, MasterCache, MasterStatistics};
 pub use ninjars::fast::tensor_layout::monomials as tensor_monomials;
 pub use reduction::{
     DecimalMomentum, PolynomialPlan, RawLane, ReductionBatch, light_mass_needs_invariants,
@@ -36,10 +36,10 @@ pub use v2_execution::{
     backend_carriers, ninjars_refusal, plan_histogram, rank_refusal, rescue_carriers,
 };
 pub use v2_reduce::{
-    FamilyGroup, GroupRefinementSource, NATIVE_ONSHELL_THRESHOLD, PoleSelection, Poles,
-    ReduceOptions, ReductionFrame, V2Output, V2Reducer, fast_engine_threshold, fast_options,
-    fast_options_at, reaches_fast_threshold, shift_coefficients, tensor_rank, tracked_refusal,
-    tracked_rule, true_rank,
+    FamilyGroup, GroupRefinementSource, LaneViews, NATIVE_ONSHELL_THRESHOLD, PoleSelection, Poles,
+    ReduceOptions, ReductionFrame, V2Output, V2Reducer, ViewCarrier, fast_engine_threshold,
+    fast_options, fast_options_at, reaches_fast_threshold, shift_coefficients, tensor_rank,
+    tracked_refusal, tracked_rule, true_rank,
 };
 pub use v2_seeds::V2SeedFourier;
 /// The warm entry of a reduction backend (`V2Executor.warm`).

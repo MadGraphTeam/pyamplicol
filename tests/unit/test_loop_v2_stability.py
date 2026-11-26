@@ -284,7 +284,11 @@ class _Injected:
             )
             key, values = lanes[index]
             lanes[index] = (key, [[x * (1 + self.delta) for x in v] for v in values])
-            output = dict(output, families=[lanes, *output["families"][1:]])
+            # The executor's lane sums are those of the lanes it returned:
+            # without them the assembly sums the perturbed lanes itself.
+            output = dict(
+                output, families=[lanes, *output["families"][1:]], lane_sums=None
+            )
         return output
 
     def __getattr__(self, name):

@@ -101,10 +101,12 @@ from .assemble import (
     LAURENT,
     LOCAL_COMPONENTS,
     Laurent,
+    LazyLanes,
     LoopSlice,
     PointResult,
     Precision,
     SliceRequest,
+    _Formed,
     _fraction,
     _interfere,
     _max,
@@ -1675,9 +1677,13 @@ class ColumnPlan:
         local = [result.components[name] for name in LOCAL_COMPONENTS]
         average = reference.average
         wide = reference.numbers.wide
+        # The output's own lanes (its numerator columns), in each mapping's
+        # order: ``_budget`` skips every other lane.
+        mine = self._lanes_of(key)
+        own = dict(_lanes_in(reference, "families", mine))
         scale = self._budget(
             key,
-            {lane: value.coefficients for lane, value in reference.families.items()},
+            {lane: value.coefficients for lane, value in own.items()},
             width,
             local,
             average,
@@ -1694,19 +1700,20 @@ class ColumnPlan:
                 runs.append((CROSS, cross[0]))
         for name, (evaluation, results) in runs:
             other = results[key]
+            theirs = dict(_lanes_in(evaluation, "families", mine))
             lanes = {
                 lane: tuple(
                     a - b
                     for a, b in zip(
-                        evaluation.families.get(lane, zero).coefficients,
-                        reference.families.get(lane, zero).coefficients,
+                        theirs.get(lane, zero).coefficients,
+                        own.get(lane, zero).coefficients,
                         strict=True,
                     )
                 )
                 # Insertion order, not a set: the budget sums its lanes in
                 # this order, and a set's follows the string hashes
                 # (PYTHONHASHSEED moved E in the last ulp).
-                for lane in dict.fromkeys([*reference.families, *evaluation.families])
+                for lane in dict.fromkeys([*own, *theirs])
             }
             changes = [
                 differences(result.components[name], other.components[name])
@@ -1717,7 +1724,6 @@ class ColumnPlan:
         if reduction is not None:
             if reference.retest_families is None:
                 raise ValueError(f"the {reduction} check did not run")
-            mine = self._lanes_of(key)
             deviations = {
                 lane: tuple(
                     abs(a - b)
@@ -1727,8 +1733,7 @@ class ColumnPlan:
                         strict=True,
                     )
                 )
-                for lane, value in reference.families.items()
-                if lane[2] in mine
+                for lane, value in own.items()
             }
             budgets[reduction] = self._budget(key, deviations, width, (), average, wide)
         magnitudes = {
@@ -1774,15 +1779,32 @@ class _Assembly:
             if key[0] == column.key:
                 index[direct] = (key[1], "direct")
                 index.setdefault(swapped, (key[1], "swapped"))
-        for (family, loop, k), value in evaluation.families.items():
-            if k not in index:
-                continue
-            terms = omega.setdefault(k, [numbers.zero] * width)
-            for i, coefficient in enumerate(value.coefficients):
-                terms[i] = terms[i] + coefficient
-            sector, part = index[k]
-            if part == "direct":
-                families[family, loop, sector] = value
+        sums = evaluation.__dict__.get("native_column_sums")
+        if sums is not None:
+            # The executor's sums of each column's lanes in lane order
+            # (``StoredColumns._evaluations``): the sums below; the output's
+            # lanes are formed on first read.
+            omega = {k: list(sums[k]) for k in index if k in sums}
+
+            def own(evaluation=evaluation, index=index) -> dict:
+                return {
+                    (family, loop, index[k][0]): value
+                    for (family, loop, k), value in _lanes_in(
+                        evaluation, "families", index
+                    )
+                    if index[k][1] == "direct"
+                }
+
+            families = LazyLanes(_Formed(own))
+        else:
+            # Only this column's lanes, in the evaluation's lane order.
+            for (family, loop, k), value in _lanes_in(evaluation, "families", index):
+                terms = omega.setdefault(k, [numbers.zero] * width)
+                for i, coefficient in enumerate(value.coefficients):
+                    terms[i] = terms[i] + coefficient
+                sector, part = index[k]
+                if part == "direct":
+                    families[family, loop, sector] = value
         real = not column.directed
         zero = numbers.zero
         # "uv" and "ir": the combined Laurent and the UV part of every lane
@@ -1791,9 +1813,9 @@ class _Assembly:
         combined: dict[int, list[Any]] = {}
         ultraviolet: dict[int, list[Any]] = {}
         if split is not None:
-            for (_family, _loop, k), value in split.items():
-                if k not in index:
-                    continue
+            for (_family, _loop, k), value in _lanes_in(
+                evaluation, "split_lanes", index
+            ):
                 whole = combined.setdefault(k, [zero] * 3)
                 uv = ultraviolet.setdefault(k, [zero] * 3)
                 for i in range(3):
@@ -2006,6 +2028,38 @@ class _Assembly:
                             )
         inverse = 1 / numbers.real(average)
         return dict(born), {key: value * inverse for key, value in local.items()}
+
+
+def _column_runs(owner: Any, name: str) -> dict[int, list[tuple[int, Any, Any]]]:
+    """``owner.<name>``'s lanes (a mapping keyed (family, loop, column))
+    grouped by numerator column: per column its (position, lane, value)
+    triples in the mapping's order. Built once per mapping (kept on
+    ``owner`` while its attribute holds the same mapping), so that every
+    output reads only its own columns' lanes instead of every lane."""
+
+    mapping = getattr(owner, name)
+    cache = owner.__dict__.setdefault("_column_runs", {})
+    found = cache.get(name)
+    if found is not None and found[0] is mapping:
+        return found[1]
+    runs: dict[int, list[tuple[int, Any, Any]]] = {}
+    for position, (lane, value) in enumerate(mapping.items()):
+        runs.setdefault(lane[2], []).append((position, lane, value))
+    cache[name] = (mapping, runs)
+    return runs
+
+
+def _lanes_in(owner: Any, name: str, columns: Iterable[int]) -> list[tuple[Any, Any]]:
+    """The (lane, value) pairs of ``owner.<name>`` whose numerator column is
+    one of ``columns``, in the mapping's own order: the same lanes, in the
+    same order, as a pass over every lane that skips the other columns."""
+
+    runs = _column_runs(owner, name)
+    parts = [runs[column] for column in columns if column in runs]
+    if len(parts) == 1:
+        return [(lane, value) for _position, lane, value in parts[0]]
+    merged = sorted((item for part in parts for item in part), key=lambda item: item[0])
+    return [(lane, value) for _position, lane, value in merged]
 
 
 def _add(values: Iterable[Any], zero: Any) -> Any:

@@ -548,6 +548,7 @@ def ward_check(
     parameters: Any = None,
     checks: bool | None = None,
     precision: Any = None,
+    judge: bool = True,
 ) -> dict[str, Any]:
     """The Ward check of one point in one batch of ``executor`` (a
     ``plan_export.NativeExecutor`` of a ``ward_slice``, either input path):
@@ -560,7 +561,9 @@ def ward_check(
     runs ``WARD_CHECKS``, which the binary64 criterion reads. Returns
     ``physical`` (the ``PointResult``), ``results`` (one per row), ``rows``
     (``ward_row`` plus ``leg`` and ``factor``) and ``passed`` (every row;
-    None if a row has no criterion)."""
+    None if a row has no criterion). ``judge`` False: ``rows`` hold ``leg``
+    and ``factor`` alone and ``passed`` is None (``pyamplicol check`` judges
+    the results itself, ``checks._ward_measures``)."""
 
     from .assemble import Precision
 
@@ -587,9 +590,8 @@ def ward_check(
     physical, results = results[0], results[1:]
     rows = []
     for (leg, factor), result in zip(labels, results, strict=True):
-        rows.append(
-            {**ward_row(physical, result, carrier), "leg": leg, "factor": factor}
-        )
+        judged = ward_row(physical, result, carrier) if judge else {"passed": None}
+        rows.append({**judged, "leg": leg, "factor": factor})
     verdicts = [row["passed"] for row in rows]
     return {
         "physical": physical,

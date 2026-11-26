@@ -640,12 +640,17 @@ model = "loop_sm"
 # Default null.
 sqrt_s = 1000.0
 # check.arbitrary_digits: Optional digit count of the auto ladder's
-# arbitrary-precision rung, which re-runs only a row double-double leaves
-# undecided (its residual above the criterion while within ten times its own
-# estimate); null derives it per row from the double-double shortfall (the
-# carrier's digits plus the decimal digits by which ten times the estimate
-# exceeds the row's bound). Needs precision = "auto". Default null.
+# arbitrary-precision rung, which re-runs only a Born-interfered row
+# double-double does not pass (a double-double refusal included); null takes
+# twice double-double's digits (64). Needs precision = "auto". Default null.
 arbitrary_digits = 50
+# check.tolerance: Optional K of every check row, of `pyamplicol check` and of
+# the generation-time loop-induced probes: a row passes iff its residue R < K P,
+# P its physical reference (R < K T, T its term scale, for a known-zero
+# reference). A positive finite number, of the order of the requested number
+# of stable digits; null takes the requested relative accuracy
+# (evaluation.reduction_target, default 1e-5). Default null.
+tolerance = 1e-05
 
 [output]
 # output.format: typed API/config provenance default. The CLI uses --json.

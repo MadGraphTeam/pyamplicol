@@ -368,18 +368,34 @@ zero (the complex-mass scheme keeps its complex masses):
 - **Goldstone**, for an external massive vector of a 't Hooft-Feynman gauge
   request: the identity k.A(V) = eta M_V A(G) must hold.
 
-Each passes within ten times the probe's own estimate. Every probe runs in
-binary64 first. A probe whose binary64 run fails that test, or whose point
-the reduction backend refuses in binary64, runs again in double-double on the
-same point, and the double-double run decides it. A failure refuses the
-process (`loop-induced-probe`); `[generation] allow_failed_probes = true`
-(CLI `--allow-failed-probes`) stores it anyway, with the failure recorded.
-`allow_failed_probes` does nothing while the probes are off.
+Each is judged as `pyamplicol check` judges it, row by row and Laurent
+coefficient by coefficient: a row passes iff its residue R < K P, P its
+physical reference (the norm of its physical finite amplitude; for
+Goldstone the larger side of the identity), K `check.tolerance`, by default
+the requested relative accuracy (`evaluation.reduction_target`, default
+1e-5); a known-zero reference (the poles on both sides of the Goldstone
+identity) passes iff R < K T, T its term scale, labelled term-relative; a
+reference that may be noise is settled by double-double at the same point;
+a tolerance, not a certificate ([command-line guide](command-line-interface.md#check)).
+A row with no term at all is vacuous (skipped); a probe every row of which
+is vacuous has nothing to test (the amplitude vanishes identically): it is
+recorded with a warning and does not refuse the process. Every probe runs in binary64 first. A probe binary64 does not
+pass, or whose point the reduction backend refuses in binary64, runs again in
+double-double on the same point, and the double-double run decides it. A
+failure (R >= K S) refuses the process (`loop-induced-probe`);
+`[generation] allow_failed_probes = true` (CLI `--allow-failed-probes`)
+stores it anyway, with the failure recorded. A probe whose R or S cannot be
+computed (a non-finite value, or a point every carrier refuses), or whose
+only misses are helicity rows below numerical resolution (rule 6 of the
+[command-line guide](command-line-interface.md#check); their count is
+recorded as `below_resolution`), is recorded as inconclusive, never a pass,
+and logged as a warning; generation continues. `allow_failed_probes` does nothing while the probes are off.
 
 The outcome is recorded in the artifact's generation filters
-(`loop_induced_probes`): per probe the carrier that decided it, its ratio to
-its estimate, the reason for a double-double rerun and the time, plus the
-time of each stage. The probes reduce on NinjaRS (recorded). A `goldstone`
+(`loop_induced_probes`): K (`tolerance`), per probe the carrier that decided
+it, its verdict and largest R / S (`worst`), the reason for a double-double
+rerun and the time, plus the time of each stage and the inconclusive probes
+(`inconclusive`). The probes reduce on NinjaRS (recorded). A `goldstone`
 entry reads `status = "not-run"`, with the refusals, when no Goldstone side
 of the request could be generated. With the probes off the record reads
 `{"status": "off"}`: not run, never a pass. An exact colour zero records
@@ -428,9 +444,10 @@ artifact = "artifacts/loop_gg_zgg"   # omit to check the card's own request
 points = 3          # seeded phase-space points per process
 seed = 12345        # default: generation.validation.seed
 precision = "auto"  # binary64, then double-double where it fails; or one carrier
+# tolerance = 1e-5  # K of the rule R < K P; default: evaluation.reduction_target
 # model = "my_ufo"  # default: model.source (an artifact: the source it records)
 # sqrt_s = 2000.0   # a scattering's energy; default: the validation convention
-# arbitrary_digits = 50  # the auto ladder's arbitrary-precision rung; default: derived
+# arbitrary_digits = 50  # the auto ladder's arbitrary-precision rung; default: 64
 ```
 
 Generation also drops the helicity rows of a loop-induced process that are
@@ -1017,8 +1034,72 @@ use (its affinity mask and its cgroup CPU quota,
   `rusticol_virtual_options_json` and `Runtime.inspect()["runtime_options"]`.
   0 and negative counts stay refused.
 
-- Values do not depend on the count: they are bitwise the same at 1, 2, 8 or
-  every core.
+- Results do not depend on the count: every value, every lane diagnostic,
+  every rescue and uncertified record, the statuses and the counts of the
+  executor report (rescued, refined and refused lanes; master requests and
+  evaluations, a failed master counted once per call) are bitwise the same at
+  1, 2, 8 or every core, checked and unchecked, in every carrier, at every
+  batch size, for both reductions. Work is cut from the call's own work in a
+  fixed order (never from the count) and merged in that order, never in
+  completion order. With one thread the serial code runs unchanged (no
+  slicing, no shared tables, no locks). Only the report's seconds change: they
+  are wall times (TIRust's own optional profile seconds are summed over the
+  workers).
+- What runs on the threads, in one call: the tree stage (the interaction
+  programs over the accumulators of each step at every point, the closures,
+  the interferences over points), the dressing of the families of a bucket
+  chunk, the scatter of the numerators into reduction lanes (over
+  numerators), and the reduction in both backends, in the reduction-direction
+  check frames, NinjaRS's cancellation rescue and the lane rescue. NinjaRS in
+  binary64: over slices of each (propagators, rank) bucket's lanes, each worker
+  with a fast engine of its own and one master table shared by the call;
+  NinjaRS in double-double and arbitrary precision (and their lane rescue):
+  over buckets only, each bucket on the reducer's own built templates (none is
+  built per worker), so these carriers run at about one-thread speed.
+  TIRust, in every carrier: over slices of kinematic rows, each row's whole
+  pipeline (gates, method choice, last resort, acceptance frame) in its
+  slice, every TIRust workspace lane-independent (a lane starts from the
+  plan's base variant whatever was reduced before it), the plans shared by
+  the workers. The
+  slices are about four per worker, the most expensive first. One 16-point
+  call on 8 cores (binary64, unchecked) runs about 5.5 times faster than on
+  one for `g g > g g g g` with either reduction, 3.5 for `g g > h g g` with
+  NinjaRS (2.3 with TIRust), 3.3 for `g g > z z` and `g g > g g g`, 2.2 for
+  `g g > t t~ g` and `u u~ > e+ e- g g`.
+- Very small calls (a few milliseconds, such as one point of a 2 → 2 or
+  2 → 3 process) do not gain from threads and can be up to about a third
+  slower on several threads than on one: use `threads = 1` for them.
+- Memory: pyAmpliCol's built templates, compiled evaluators and tables are
+  built once and shared by the workers. A NinjaRS worker keeps only its
+  settings and its master provider between calls (its buffers are released
+  after every call): during a call it holds about 15 MB on
+  `g g > g g g g`, and up to about 50 MB in a checked call that reaches
+  arbitrary precision (the reduction-direction checks and the lane rescue:
+  on 16 threads such a `g g > h g g` call peaks at about 3.3 GB, 0.8 GB
+  above the previous version's). With TIRust a worker's own engine is small
+  (its workspaces of the plans it meets, built when first needed: a few MB;
+  the plans themselves are shared); most of a worker's memory is
+  TIRust's own per-thread working state of its method choice (the
+  small-Gram expansions of the pentagons and hexagons its gates refuse),
+  built once per thread and per plan, not growing with the number of calls,
+  and released with the runtime. Measured per worker beyond the first on a
+  16-point call: about 120 MB for `g g > g g g g` in binary64 (about
+  200 MB after its checked, double-double and arbitrary-precision calls as
+  well), about 75 MB for `u u~ > e+ e- g g`, about 20 MB for
+  `g g > t t~ g`, and almost nothing for `g g > h g g` and `g g > z z`.
+  Size `threads` to the memory available where many runtimes share a
+  process.
+- What does not scale: NinjaRS in double-double and arbitrary precision
+  (above), tree programs with exact evaluators (double-double, arbitrary
+  precision, binary64 without the compiled kernels: one built evaluator, never
+  copied per worker, so those steps run on one thread), the Python part of the
+  result's assembly (labelling and summing every lane under the interpreter
+  lock; on small processes up to a third of a call at 8 threads), the tree
+  programs past a few threads (bound by the memory reads of the per-point
+  states), the dressing of small processes (few families per bucket chunk)
+  and, with TIRust, a row refused by its gates, whose method choice is one
+  serial computation (a call with few rows, e.g. one point of a large process,
+  scales less).
 - Each runtime keeps its own count: two runtimes with different counts in one
   process each use theirs.
 - The bound covers the work of one call at a time (a runtime's calls are
