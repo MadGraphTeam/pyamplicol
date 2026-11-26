@@ -193,15 +193,16 @@ does not scale).
 Compatibility: results do not depend on the thread count, bit for bit (every
 value, diagnostic, rescue and uncertified record, checked and unchecked, every
 carrier and batch size, both reductions), and one thread gives the values it
-gave before this change, bit for bit; the one-core cost is unchanged or lower
-with NinjaRS and up to about 1.5 % higher with TIRust (lane independence,
-below).
-TIRust's workspaces are now
+gave before this change, bit for bit, with one exception: where a TIRust
+result depended on the lanes reduced before it in the same workspace, the
+value is now the one the lane has on its own. TIRust's workspaces are now
 lane-independent: a lane starts from the plan's base variant instead of the
 variant the lane before it selected, which made a nearly degenerate row's
 last bits (and, in the last-resort pass, its value) depend on the rows reduced
-before it in the same workspace; no value of the shipped and profiled
-processes changes. Limits: the Python assembly of the result runs under the
+before it (for example a checked double-double rank-1 box after a dependent
+box); no value of the shipped and profiled processes changes. The one-core
+cost is unchanged or lower with NinjaRS and up to about 1.5 % higher with
+TIRust from lane independence alone (with the faster assembly, lower overall). Limits: the Python assembly of the result runs under the
 interpreter lock, the tree programs are bound by memory reads past a few
 threads, the dressing of a small process has few families to share out, and
 a TIRust row refused by its gates has its method choice as one serial
