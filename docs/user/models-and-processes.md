@@ -572,6 +572,12 @@ than creating a zero or broken artifact. In the primary SM example,
 This is distinct from an unsupported model feature: model preflight rejects
 unsupported theory structures with an actionable diagnostic.
 
+At a finite width of a coloured particle the tree amplitude is not gauge
+invariant. pyAmpliCol uses the conserved-current form of the triple-gluon
+vertex, so its value can differ at second order in the width from a code that
+uses the complete vertex, and can depend on the order of the legs at that
+order; at zero width they agree to rounding.
+
 ## Current generic UFO support
 
 The generic path covers the proven subset used by shipped tests and examples,
