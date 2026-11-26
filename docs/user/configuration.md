@@ -1040,29 +1040,40 @@ use (its affinity mask and its cgroup CPU quota,
   master evaluations unless one fails) are bitwise the same at 1, 2, 8 or
   every core, checked and unchecked, in every carrier, at every batch size,
   for both reductions. Work is cut from the call's own work in a fixed order
-  (never from the count) and merged in that order, never in completion order. With one thread the serial
-  code runs unchanged (no slicing, no shared tables, no locks). Only the
-  report's seconds change: they are wall times (TIRust's own optional profile
-  seconds are summed over the workers).
+  (never from the count) and merged in that order, never in completion
+  order. With one thread the serial code runs unchanged (no slicing, no
+  shared tables, no locks). Only the report's seconds change: they are wall
+  times (TIRust's own optional profile seconds are summed over the workers).
 - What runs on the threads, in one call: the tree stage (the interaction
   programs over the accumulators of each step at every point, the closures,
   the interferences over points), the dressing of the families of a bucket
   chunk, the scatter of the numerators into reduction lanes (over
-  numerators), and the reduction in both backends, in every carrier, in the
-  reduction-direction check frames, NinjaRS's cancellation rescue and the lane
-  rescue: NinjaRS over slices of each (propagators, rank) bucket's lanes, each
-  worker with an engine of its own and one master table shared by the call;
-  TIRust over slices of kinematic rows, each row's whole pipeline (gates,
-  method choice, last resort, acceptance frame) in its slice, every TIRust
-  workspace lane-independent (a lane starts from the plan's base variant
-  whatever was reduced before it), the plans shared by the workers. The
+  numerators), and the reduction in both backends, in the reduction-direction
+  check frames, NinjaRS's cancellation rescue and the lane rescue. NinjaRS in
+  binary64: over slices of each (propagators, rank) bucket's lanes, each worker
+  with a fast engine of its own and one master table shared by the call;
+  NinjaRS in double-double and arbitrary precision (and their lane rescue):
+  over buckets only, each bucket on the reducer's own built templates (none is
+  built per worker), so these carriers run at about one-thread speed.
+  TIRust, in every carrier: over slices of kinematic rows, each row's whole
+  pipeline (gates, method choice, last resort, acceptance frame) in its
+  slice, every TIRust workspace lane-independent (a lane starts from the
+  plan's base variant whatever was reduced before it), the plans shared by
+  the workers. The
   slices are about four per worker, the most expensive first. One 16-point
   call on 8 cores (binary64, unchecked) runs about 4 (NinjaRS) and 5.5
   (TIRust) times faster than on one for `g g > g g g g`, about 4 for
   `g g > h g g` and `g g > z z` with NinjaRS, 2.3 for `g g > t t~ g` and
   1.6 for `u u~ > e+ e- g g`.
-- Memory: each worker keeps engines of its own between calls, so a runtime's
-  memory grows with its thread count. With TIRust a worker's own engine is
+- A call too small to gain from the pool (a few milliseconds) runs on one
+  thread: the first calls of each batch size are timed on the pool and on one
+  thread alternately, and the faster is kept for that batch size; the values
+  do not depend on the choice.
+- Memory: pyAmpliCol's built templates, compiled evaluators and tables are
+  built once and shared by the workers. A NinjaRS worker keeps only its settings and its
+  master provider between calls (its buffers are released after every call:
+  about 15 MB per worker during a call on `g g > g g g g`). With TIRust a
+  worker's own engine is
   small (its workspaces of the plans it meets, built when first needed: a
   few MB; the plans themselves are shared); most of a worker's memory is
   TIRust's own per-thread working state of its method choice (the
@@ -1075,7 +1086,8 @@ use (its affinity mask and its cgroup CPU quota,
   `g g > t t~ g`, and almost nothing for `g g > h g g` and `g g > z z`.
   Size `threads` to the memory available where many runtimes share a
   process.
-- What does not scale: the Python assembly of the result (labelling and
+- What does not scale: NinjaRS in double-double and arbitrary precision
+  (above), the Python part of the result's assembly (labelling and
   summing every lane under the interpreter lock; on small processes up to a
   third of a call at 8 threads), the tree programs past a few threads (bound
   by the memory reads of the per-point states), the dressing of small

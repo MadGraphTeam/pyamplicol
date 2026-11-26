@@ -37,40 +37,6 @@ dependency source patches or unpublished wheels are needed.
 
 ## Changes after 1.0.3
 
-**The one-loop runtime uses its threads.** Until now the reduction, most of
-a one-loop call's time, ran on one thread whatever `threads` allowed: 8
-threads gained x1.0 to x1.1 on loop-induced processes with NinjaRS and at most
-x2.9 elsewhere. Both reductions now run in parallel on the runtime's own pool
-(NinjaRS over slices of lanes, TIRust over slices of kinematic rows, in every
-carrier, the check frames, the cancellation rescue and the lane rescue
-included), and so do the tree programs, the tree interferences and the
-scatter of numerators into lanes. One 16-point call on 8 cores (binary64,
-unchecked) is about 4.3 (NinjaRS) and 5.6 (TIRust) times faster than on one
-on `g g > g g g g`, 4.1 on `g g > h g g` with NinjaRS (1.7 with TIRust), 4.3
-on `g g > z z`, 2.3 on `g g > t t~ g`, 1.6 on `u u~ > e+ e- g g`
-([Configuration](configuration.md#threads): what runs in parallel and what
-does not scale).
-
-Compatibility: results do not depend on the thread count, bit for bit (every
-value, diagnostic, rescue and uncertified record, checked and unchecked, every
-carrier and batch size, both reductions), and one thread gives the values it
-gave before this change, bit for bit; the one-core cost is unchanged with
-NinjaRS and up to about 1.5 % higher with TIRust (lane independence, below).
-TIRust's workspaces are now
-lane-independent: a lane starts from the plan's base variant instead of the
-variant the lane before it selected, which made a nearly degenerate row's
-last bits (and, in the last-resort pass, its value) depend on the rows reduced
-before it in the same workspace; no value of the shipped and profiled
-processes changes. Limits: the Python assembly of the result runs under the
-interpreter lock, the tree programs are bound by memory reads past a few
-threads, the dressing of a small process has few families to share out, and
-a TIRust row refused by its gates has its method choice as one serial
-computation; each worker keeps engines of its own, so memory grows with the
-thread count.
-
-Dependencies: TIRust `780410ce` (huashengshao/TIRust#63 on `1c130a81`:
-lane-independent workspaces); the other pins are unchanged.
-
 **Fixed parameters now define the masses of the generated points.** In 1.0.2
 and 1.0.3 (every one-loop artifact), a card's `[loop.preparation]
 fixed_parameters` were bound by the amplitude but ignored by the kinematics:
@@ -204,6 +170,73 @@ Dependencies: NinjaRS `e1d94412` (main after alphal00p/ninjars#23); the other
 pins and the Python dependencies are those of 1.0.3.
 
 ## 1.0.3 release
+
+**The one-loop runtime uses its threads.** Until now the reduction, most of
+a one-loop call's time, ran on one thread whatever `threads` allowed: 8
+threads gained x1.0 to x1.1 on loop-induced processes with NinjaRS and at most
+x2.9 elsewhere. Both reductions now run in parallel on the runtime's own pool
+(NinjaRS in binary64 over slices of lanes, TIRust in every carrier over
+slices of kinematic rows; the check frames, the cancellation rescue and the
+lane rescue included), and so do the tree programs (with a faster state
+layout), the tree interferences and the scatter of numerators into lanes;
+more of the result's assembly is native, and NinjaRS's master-integral cache
+looks rows up faster (also on one thread). NinjaRS in double-double and
+arbitrary precision stays at about one-thread speed (parallel over buckets
+only, on one set of built templates), and a call too small to gain from the
+pool runs on one thread. One 16-point call on 8 cores (binary64,
+unchecked) is about 4.3 (NinjaRS) and 5.6 (TIRust) times faster than on one
+on `g g > g g g g`, 4.1 on `g g > h g g` with NinjaRS (1.7 with TIRust), 4.3
+on `g g > z z`, 2.3 on `g g > t t~ g`, 1.6 on `u u~ > e+ e- g g`
+([Configuration](configuration.md#threads): what runs in parallel and what
+does not scale).
+
+Compatibility: results do not depend on the thread count, bit for bit (every
+value, diagnostic, rescue and uncertified record, checked and unchecked, every
+carrier and batch size, both reductions), and one thread gives the values it
+gave before this change, bit for bit; the one-core cost is unchanged or lower
+with NinjaRS and up to about 1.5 % higher with TIRust (lane independence,
+below).
+TIRust's workspaces are now
+lane-independent: a lane starts from the plan's base variant instead of the
+variant the lane before it selected, which made a nearly degenerate row's
+last bits (and, in the last-resort pass, its value) depend on the rows reduced
+before it in the same workspace; no value of the shipped and profiled
+processes changes. Limits: the Python assembly of the result runs under the
+interpreter lock, the tree programs are bound by memory reads past a few
+threads, the dressing of a small process has few families to share out, and
+a TIRust row refused by its gates has its method choice as one serial
+computation; with TIRust each extra worker holds TIRust's own per-thread
+method-choice state (about 120 MB on `g g > g g g g`, a few MB to 75 MB on
+smaller processes), bounded by the plans and not growing with the calls.
+
+Dependencies: TIRust `780410ce` (huashengshao/TIRust#63 on `1c130a81`:
+lane-independent workspaces); the other pins are unchanged.
+
+**Check verdicts: one rule, R < K P, for every check row.** Every verdict of
+`pyamplicol check` and of the generation-time loop-induced probes is one
+relative test per independently required row (a point, a squared-order
+sector or loop order and helicity row, a leg and factor, a Laurent
+coefficient): the row passes when its residue R is below K times its physical
+reference P, the size of the physical quantities whose difference or
+vanishing the identity tests. K is `check.tolerance` (`--tolerance`), by
+default the requested accuracy `evaluation.reduction_target` (1e-5). A
+known-zero reference is judged against the row's term scale T
+(term-relative); a row with no contributing term is vacuous (skipped and
+counted); a row whose P may be noise is evaluated at the next carrier at the
+same point, where P either reproduces, collapses with the carriers' noise
+(then judged term-relative) or leaves the row inconclusive (exit code 4,
+never a pass); a loop-induced row below the numerical resolution of its
+helicities is deferred to the next carrier. Carriers per row: binary64, then
+double-double for the rows binary64 does not decide, then (Born-interfered)
+arbitrary precision. The error estimate is still reported but decides
+nothing; "undecided" is no longer produced. The generation-time probes read
+the same K, the campaign manifest and the stored-process harness judge with
+the same rule and record it, and non-finite, refused or missing operands are
+inconclusive instead of raising. Behaviour changes: g g > Z generates (its
+forbidden helicity rows are below numerical resolution: inconclusive with a
+warning, `check` exits 4); g g > h a and g g > h settle in double-double;
+c c~ > h h has nothing to test (vacuous, with a warning); the
+`loop_gg_epemmpmm` example passes `check`. Evaluation values are unchanged.
 
 **Changed default: a refused point no longer interrupts a run.** A one-loop
 evaluation now returns, by default (`on_failure="best-effort"`; CLI
