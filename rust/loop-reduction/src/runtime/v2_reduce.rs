@@ -669,26 +669,15 @@ struct Slice {
     members: Vec<(usize, usize)>,
 }
 
-/// `members` stably ordered by their point (a counting sort: points are
-/// the indices of a call's points), with each one's point.
+/// `members` stably ordered by their point, with each one's point: a
+/// stable comparison sort, O(n log n) in the lanes (fewer comparisons on the
+/// sorted runs the executor's point-major groups form). A point is any
+/// label: nothing is sized or scanned by its value.
 fn by_point(members: &[(usize, usize)], points: &[&[usize]]) -> (Vec<(usize, usize)>, Vec<usize>) {
     let point = |&(group, row): &(usize, usize)| points[group][row];
-    let last = members.iter().map(point).max().unwrap_or(0);
-    let mut next = vec![0usize; last + 2];
-    for member in members {
-        next[point(member) + 1] += 1;
-    }
-    for k in 1..next.len() {
-        next[k] += next[k - 1];
-    }
-    let mut ordered = vec![(0, 0); members.len()];
-    let mut affinity = vec![0; members.len()];
-    for member in members {
-        let p = point(member);
-        ordered[next[p]] = *member;
-        affinity[next[p]] = p;
-        next[p] += 1;
-    }
+    let mut ordered = members.to_vec();
+    ordered.sort_by_key(point);
+    let affinity = ordered.iter().map(point).collect();
     (ordered, affinity)
 }
 
@@ -787,6 +776,23 @@ fn retire_copies<T, E: BucketEngine<T>>(engine: &mut E, mut pool: EnginePool<E>)
         copy.release();
     }
     *engine.pool() = pool;
+}
+
+/// The serial reduction of a call's frames: the direct frame, then the
+/// check's.
+fn serial_frames<T: Carrier, E: BucketEngine<T>>(
+    engine: &mut E,
+    groups: &[Lanes<'_, T>],
+    buckets: &Buckets,
+    options: ReduceOptions,
+    source: Option<&dyn GroupRefinementSource>,
+) -> ExecutionResult<(FrameOutcomes<T>, Option<FrameOutcomes<T>>)> {
+    let direct = reduce_groups(engine, groups, buckets, None, options.poles, source)?;
+    let check = options
+        .check
+        .map(|frame| reduce_groups(engine, groups, buckets, Some(frame), options.poles, None))
+        .transpose()?;
+    Ok((direct, check))
 }
 
 /// Empty outcome tables of `frames` frames.
@@ -1044,6 +1050,13 @@ struct FastEngine {
     shared_exact: Option<SharedExact>,
 }
 
+/// A fast engine's counters ([`FastEngine::counters`]).
+struct FastCounters {
+    masters: MasterStatistics,
+    exact_lanes: u64,
+    rescued_lanes: u64,
+}
+
 /// The exact engine of a parallel fast reduction, lent to one worker at a
 /// time.
 type SharedExact = Arc<std::sync::Mutex<Option<GenericEngine<f64>>>>;
@@ -1144,6 +1157,44 @@ impl FastEngine {
             lanes += std::mem::take(&mut copy.rescued_lanes);
         }
         lanes
+    }
+
+    /// The counters of this engine at the start of a call (its copies' are
+    /// zero between calls, [`retire_copies`]).
+    fn counters(&self) -> FastCounters {
+        FastCounters {
+            masters: self.masters.statistics(),
+            exact_lanes: self.exact_lanes,
+            rescued_lanes: self.rescued_lanes,
+        }
+    }
+
+    /// Discard what a failed call (an error or a panic) left behind,
+    /// serially and in parallel alike: the exact engine handed back from its
+    /// shared slot (or dropped if the call broke inside it), the call's
+    /// ladder records, every cached master and the call's failed keys, the
+    /// copies' working state, and the counters restored to `before`. The
+    /// next call then sees what it would see after the serial reduction's
+    /// failure, at every worker count.
+    fn discard_call(&mut self, before: FastCounters) {
+        if let Some(shared) = self.shared_exact.take() {
+            self.exact = shared
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .take();
+        }
+        if let Some(exact) = &mut self.exact {
+            exact.discard_call();
+        }
+        self.masters.discard_call(before.masters);
+        self.exact_lanes = before.exact_lanes;
+        self.rescued_lanes = before.rescued_lanes;
+        for copy in self.workers.engines_mut() {
+            let _ = copy.masters.take_statistics();
+            copy.exact_lanes = 0;
+            copy.rescued_lanes = 0;
+            copy.release();
+        }
     }
 
     /// Distinct cached master rows: the shared tier's, else this engine's
@@ -1256,7 +1307,10 @@ impl BucketEngine<f64> for FastEngine {
 
     fn end_parallel(&mut self) {
         if let Some(shared) = self.shared_exact.take() {
-            self.exact = shared.lock().expect("the shared exact engine").take();
+            self.exact = shared
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .take();
         }
     }
 
@@ -1715,6 +1769,19 @@ where
             self.set_cancellation_target(settings.target);
         }
         self.vanishing = settings.vanishing;
+    }
+
+    /// Discard what a failed call left in this engine: the ladder records of
+    /// its templates (taken per engine call, so an interrupted one leaves
+    /// them), and its copies' templates if any (a parallel call that broke
+    /// keeps none: the lent ones go with it).
+    fn discard_call(&mut self) {
+        for reductions in self.reductions.values_mut() {
+            let _ = reductions.take_ladder_records();
+        }
+        for copy in self.workers.engines_mut() {
+            copy.reductions.clear();
+        }
     }
 
     /// Whether the plans carry NinjaRS's cancellation ladder: the checked
@@ -2463,52 +2530,72 @@ impl V2Reducer {
             )),
             Engines::Fast(engine) => {
                 engine.share_masters(lane_slices::workers());
-                run(
-                    engine.as_mut(),
-                    &double()?,
-                    options,
-                    bits,
-                    source,
-                    points,
-                    &mut self.sliced,
-                )
+                // A failed master row counts once per call (master_cache).
+                engine.masters.begin_call();
+                let lanes = double()?;
+                let before = engine.counters();
+                let sliced = &mut self.sliced;
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run(
+                        engine.as_mut(),
+                        &lanes,
+                        options,
+                        bits,
+                        source,
+                        points,
+                        sliced,
+                    )
+                }));
+                settle(outcome, || engine.discard_call(before))
             }
             Engines::Double(engine) => {
                 engine.select(options.masters);
-                run(
-                    engine,
-                    &double()?,
-                    options,
-                    bits,
-                    source,
-                    points,
-                    &mut self.sliced,
-                )
+                let lanes = double()?;
+                let sliced = &mut self.sliced;
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run(engine, &lanes, options, bits, source, points, sliced)
+                }));
+                settle(outcome, || engine.discard_call())
             }
             Engines::DoubleDouble(engine) => {
                 engine.select(options.masters);
-                run(
-                    engine,
-                    &double_double()?,
-                    options,
-                    bits,
-                    source,
-                    points,
-                    &mut self.sliced,
-                )
+                let lanes = double_double()?;
+                let sliced = &mut self.sliced;
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run(engine, &lanes, options, bits, source, points, sliced)
+                }));
+                settle(outcome, || engine.discard_call())
             }
             Engines::Arbitrary(engine) => {
                 engine.select(options.masters);
-                run(
-                    engine,
-                    &arbitrary()?,
-                    options,
-                    bits,
-                    source,
-                    points,
-                    &mut self.sliced,
-                )
+                let lanes = arbitrary()?;
+                let sliced = &mut self.sliced;
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    run(engine, &lanes, options, bits, source, points, sliced)
+                }));
+                settle(outcome, || engine.discard_call())
             }
+        }
+    }
+}
+
+/// The end of a reduction call: its output, or, when it failed (an error
+/// or a panic, resumed after), the call's state discarded first by
+/// `discard` (review finding 3: what a failed call leaves behind is the
+/// same at every worker count, and nothing of it reaches the next call).
+fn settle(
+    outcome: std::thread::Result<ExecutionResult<V2Output>>,
+    discard: impl FnOnce(),
+) -> ExecutionResult<V2Output> {
+    match outcome {
+        Ok(Ok(output)) => Ok(output),
+        Ok(Err(error)) => {
+            discard();
+            Err(error)
+        }
+        Err(panic) => {
+            discard();
+            std::panic::resume_unwind(panic)
         }
     }
 }
@@ -2652,18 +2739,23 @@ fn run<T: BatchCarrier + Send + Sync, E: BucketEngine<T>>(
             workers,
         );
         *sliced += start.elapsed().as_secs_f64();
-        let mut reduced = reduced?.into_iter();
-        let direct = reduced
-            .next()
-            .ok_or_else(|| error("the direct frame was not reduced"))?;
-        (direct, reduced.next())
+        match reduced {
+            Ok(reduced) => {
+                let mut reduced = reduced.into_iter();
+                let direct = reduced
+                    .next()
+                    .ok_or_else(|| error("the direct frame was not reduced"))?;
+                (direct, reduced.next())
+            }
+            // A failed parallel call is replayed serially (review finding
+            // 4): its error is the one the serial reduction reports, the
+            // first in serial order, whichever slice failed first here or
+            // how many inputs are invalid. The call's state is discarded by
+            // the caller either way (`settle`).
+            Err(_) => serial_frames(engine, groups, &buckets, options, source)?,
+        }
     } else {
-        let direct = reduce_groups(engine, groups, &buckets, None, options.poles, source)?;
-        let check = options
-            .check
-            .map(|frame| reduce_groups(engine, groups, &buckets, Some(frame), options.poles, None))
-            .transpose()?;
-        (direct, check)
+        serial_frames(engine, groups, &buckets, options, source)?
     };
     let rescued = direct
         .iter()
@@ -2813,6 +2905,43 @@ mod tests {
         );
         let generic = V2Reducer::new("double-double", None, "generic", true).unwrap();
         assert_eq!(generic.refinement_carrier(), None);
+    }
+
+    /// Lanes ordered by point: stable, every label (any `usize`) is only
+    /// compared, and the cost follows the lanes, not the labels' values
+    /// (review finding 1). The timings of long batches are printed
+    /// (`--nocapture`): about linear in the lanes.
+    #[test]
+    fn lanes_by_point_are_stable_for_any_label() {
+        let labels: [&[usize]; 2] = [&[usize::MAX, 3, usize::MAX, 0], &[3, usize::MAX - 1]];
+        let members = [(0, 0), (0, 1), (1, 0), (0, 2), (1, 1), (0, 3)];
+        let (ordered, affinity) = by_point(&members, &labels);
+        assert_eq!(ordered, [(0, 3), (0, 1), (1, 0), (1, 1), (0, 0), (0, 2)]);
+        assert_eq!(affinity, [0, 3, 3, usize::MAX - 1, usize::MAX, usize::MAX]);
+        // Long batches whose points start far from zero (the executor's
+        // absolute positions), in point-major groups as the executor lays
+        // them out.
+        for lanes in [1usize << 16, 1 << 18, 1 << 20, 1 << 22] {
+            let groups = 64;
+            let per = lanes / groups;
+            let points: Vec<Vec<usize>> = (0..groups)
+                .map(|_| (0..per).map(|row| (1usize << 40) + row / 16).collect())
+                .collect();
+            let views: Vec<&[usize]> = points.iter().map(Vec::as_slice).collect();
+            let members: Vec<(usize, usize)> = (0..groups)
+                .flat_map(|g| (0..per).map(move |row| (g, row)))
+                .collect();
+            let start = std::time::Instant::now();
+            let (ordered, affinity) = by_point(&members, &views);
+            let seconds = start.elapsed().as_secs_f64();
+            assert_eq!(ordered.len(), lanes);
+            assert!(affinity.windows(2).all(|w| w[0] <= w[1]));
+            eprintln!(
+                "by_point: {lanes} lanes {:.2} ms ({:.1} ns per lane)",
+                seconds * 1e3,
+                seconds * 1e9 / lanes as f64
+            );
+        }
     }
 
     #[test]

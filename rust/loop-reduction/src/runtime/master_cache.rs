@@ -24,6 +24,14 @@
 //! Only successful rows are cached; keys are exact, so entries never go stale,
 //! and [`MasterCache::clear`] only bounds memory.
 //!
+//! **Failed rows.** A row the provider fails is not cached across reduction
+//! calls (a later call asks the provider again), but within one call
+//! ([`MasterCache::begin_call`]) its key is remembered: it is evaluated and
+//! counted once per call, the later requests of the call are hits served
+//! failed. So `evaluated` does not depend on how a call is cut into engine
+//! calls or into the slices of a parallel reduction (the shared tier
+//! remembers the call's failed keys for all workers).
+//!
 //! **Shared tier (parallel reduction).** The engines of one parallel
 //! reduction (`crate::lane_slices`) share one [`SharedMasters`]
 //! ([`MasterCache::share`]): a cache of the same exact keys that every
@@ -323,6 +331,10 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
 /// rarely wait for one another.
 pub struct SharedMasters {
     shards: Vec<RwLock<ExactMap<[[C64; 3]; MAX_OUTPUTS]>>>,
+    /// The keys the provider failed in the current reduction call
+    /// ([`MasterCache::begin_call`]): each counts once per call however the
+    /// call is sliced, as in the serial cache. Looked at on a miss only.
+    failed: std::sync::Mutex<ExactMap<()>>,
 }
 
 impl SharedMasters {
@@ -334,6 +346,7 @@ impl SharedMasters {
             shards: (0..shards)
                 .map(|_| RwLock::new(ExactMap::default()))
                 .collect(),
+            failed: std::sync::Mutex::new(ExactMap::default()),
         }
     }
 
@@ -344,11 +357,23 @@ impl SharedMasters {
         &self.shards[((hash >> 40) as usize) & (self.shards.len() - 1)]
     }
 
-    /// Drop every value (a new chunk of points).
+    /// Drop every value (a new chunk of points, or a failed call).
     pub fn clear(&self) {
         for shard in &self.shards {
-            shard.write().expect("shared masters").clear();
+            shard
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clear();
         }
+        self.forget_failures();
+    }
+
+    /// Forget the current call's failed keys (a new reduction call).
+    fn forget_failures(&self) {
+        self.failed
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clear();
     }
 
     /// Number of distinct stored rows.
@@ -365,11 +390,13 @@ impl SharedMasters {
 }
 
 /// Where a request row's outputs come from: a cached value (its offset in
-/// the cache's values) or a miss of the current call (its index).
+/// the cache's values), a miss of the current call (its index), or a key the
+/// provider already failed in the current reduction call (no value).
 #[derive(Clone, Copy)]
 enum Source {
     Cached(usize),
     Evaluated(usize),
+    Failed,
 }
 
 /// Whether a family's rows have a canonical form other than themselves
@@ -404,6 +431,11 @@ pub struct MasterCache<M> {
     miss_ok: Vec<bool>,
     /// The shared tier of a parallel reduction ([`Self::share`]).
     shared: Option<Arc<SharedMasters>>,
+    /// The keys the provider failed in the current reduction call
+    /// ([`Self::begin_call`]): a failed row is not cached, but within one
+    /// call it is evaluated and counted once, so that the count does not
+    /// depend on how the call is cut into engine calls or slices.
+    failed: ExactMap<()>,
 }
 
 impl<M: FastMasters> MasterCache<M> {
@@ -425,23 +457,66 @@ impl<M: FastMasters> MasterCache<M> {
             miss_out: Vec::new(),
             miss_ok: Vec::new(),
             shared: None,
+            failed: ExactMap::default(),
         }
     }
 
-    /// Use `shared` as this cache's values (module docs, 'Shared tier'), or
-    /// none: the cache's own. The cache's own values are dropped either way
-    /// when the tier changes (they would be counted again), so that the
-    /// statistics follow the keys of the reduction alone.
+    /// A new reduction call: forget the failed keys of the last one (this
+    /// cache's and its shared tier's). A failed row is asked of the provider
+    /// again in a later call, as before; within a call it is evaluated and
+    /// counted once (module docs).
+    pub fn begin_call(&mut self) {
+        self.failed.clear();
+        if let Some(shared) = &self.shared {
+            shared.forget_failures();
+        }
+    }
+
+    /// Use `shared` as this cache's tier (module docs, 'Shared tier'), or
+    /// none: the cache's own values only. A change of tier keeps every value
+    /// cached so far (review finding 4, a warm cache switching between the
+    /// serial and the parallel reduction): a new tier receives this cache's
+    /// values, and leaving a tier keeps the tier's values in this cache, so
+    /// a row cached before the switch is a hit after it, as in a reduction
+    /// that never switched.
     pub fn share(&mut self, shared: Option<Arc<SharedMasters>>) {
         let same = match (&self.shared, &shared) {
             (Some(a), Some(b)) => Arc::ptr_eq(a, b),
             (None, None) => true,
             _ => false,
         };
-        if !same {
-            self.forget();
-            self.shared = shared;
+        if same {
+            return;
         }
+        if let Some(old) = self.shared.take() {
+            // Keep the old tier's values in front of whatever comes next.
+            for shard in &old.shards {
+                let shard = shard
+                    .read()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                for (key, value) in shard.iter() {
+                    if !self.entries.contains_key(key) {
+                        let width = key.family.outputs();
+                        self.entries.insert(*key, self.values.len());
+                        self.values.extend_from_slice(&value[..width]);
+                    }
+                }
+            }
+        }
+        if let Some(new) = &shared {
+            for (key, &offset) in self.entries.iter() {
+                let width = key.family.outputs();
+                let mut value = [[C64::ZERO; 3]; MAX_OUTPUTS];
+                value[..width].copy_from_slice(&self.values[offset..offset + width]);
+                new.shard(key)
+                    .write()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .entry(*key)
+                    .or_insert(value);
+            }
+        }
+        self.failed.clear();
+        self.shared = shared;
     }
 
     /// The shared tier in use ([`Self::share`]).
@@ -468,6 +543,7 @@ impl<M: FastMasters> MasterCache<M> {
         self.miss_out = Vec::new();
         self.miss_ok = Vec::new();
         self.shared = None;
+        self.failed = ExactMap::default();
     }
 
     pub fn enabled(&self) -> bool {
@@ -487,6 +563,7 @@ impl<M: FastMasters> MasterCache<M> {
         self.entries.clear();
         self.asked.clear();
         self.values.clear();
+        self.failed.clear();
     }
 
     /// Number of distinct cached rows (the shared tier's when in use).
@@ -507,6 +584,19 @@ impl<M: FastMasters> MasterCache<M> {
 
     pub fn take_statistics(&mut self) -> MasterStatistics {
         std::mem::take(&mut self.statistics)
+    }
+
+    /// Discard a failed reduction call (an error or a caught panic): the
+    /// statistics back to `before` (those at the call's start), every value,
+    /// remembered row and failed key dropped, the shared tier's too. The next
+    /// call starts as after the serial reduction's failure, whatever the
+    /// interrupted call had reached.
+    pub fn discard_call(&mut self, before: MasterStatistics) {
+        self.statistics = before;
+        self.forget();
+        if let Some(shared) = &self.shared {
+            shared.clear();
+        }
     }
 
     /// Add another cache's statistics to this one's (a parallel reduction's
@@ -637,15 +727,26 @@ impl<M: FastMasters> MasterCache<M> {
                 return result;
             }
         }
-        // Store the successful misses. On the shared tier, a successful row
-        // is evaluated when its value is the first stored under its key; a
-        // failed row always (as the serial cache counts it).
+        // Store the successful misses and remember the failed ones for the
+        // rest of the call. On the shared tier, a row is evaluated when it is
+        // the first stored under its key, its value or, for a failed row, its
+        // failure (once per call, as the serial cache counts it).
         self.stored.clear();
         let mut evaluated = 0;
         for (miss, key) in self.pending_keys.iter().enumerate() {
             if !self.miss_ok[miss] {
                 self.stored.push(None);
-                evaluated += 1;
+                self.failed.insert(*key, ());
+                if let Some(shared) = shared
+                    && shared
+                        .failed
+                        .lock()
+                        .expect("shared masters")
+                        .insert(*key, ())
+                        .is_none()
+                {
+                    evaluated += 1;
+                }
                 continue;
             }
             let outputs = &self.miss_out[miss * width..(miss + 1) * width];
@@ -699,6 +800,10 @@ impl<M: FastMasters> MasterCache<M> {
                 Source::Evaluated(miss) => {
                     target.copy_from_slice(&self.miss_out[miss * width..(miss + 1) * width]);
                     *status = self.miss_ok[miss];
+                }
+                Source::Failed => {
+                    target.fill([C64::ZERO; 3]);
+                    *status = false;
                 }
             }
         }
@@ -756,6 +861,18 @@ impl<M: FastMasters> MasterCache<M> {
                 self.entries.insert(key, offset);
                 self.values.extend_from_slice(&found[..width]);
                 Source::Cached(offset)
+            } else if self.failed.contains_key(&key)
+                || shared.is_some_and(|shared| {
+                    shared
+                        .failed
+                        .lock()
+                        .expect("shared masters")
+                        .contains_key(&key)
+                })
+            {
+                // Failed earlier in this call (here or on another worker):
+                // a hit without a value, not evaluated again.
+                Source::Failed
             } else {
                 let miss = self.pending_keys.len();
                 self.pending.insert(key, miss);
@@ -763,7 +880,7 @@ impl<M: FastMasters> MasterCache<M> {
                 self.miss_args.extend_from_slice(canonical);
                 Source::Evaluated(miss)
             };
-            if relabelled {
+            if relabelled && !matches!(source, Source::Failed) {
                 self.asked.insert(asked, source);
                 if let Source::Evaluated(_) = source {
                     self.asked_misses.push(asked);
@@ -904,16 +1021,26 @@ mod tests {
         assert_eq!(ok, [true, true, false]);
         assert_eq!(out[..4], out[4..8]);
         assert_eq!(cache.inner.0, 2);
+        // Asked again in the same reduction call: the failed row is not
+        // evaluated (nor counted) again, and still fails.
         cache
             .evaluate(FastMaster::BubbleRank3, &rows, &mut out, &mut ok)
             .unwrap();
-        // The successful row is cached; the failed one is evaluated again.
+        assert_eq!(ok, [true, true, false]);
+        assert_eq!(cache.inner.0, 2);
+        // A new call: the successful row is cached; the failed one is
+        // evaluated again.
+        cache.begin_call();
+        cache
+            .evaluate(FastMaster::BubbleRank3, &rows, &mut out, &mut ok)
+            .unwrap();
+        assert_eq!(ok, [true, true, false]);
         assert_eq!(cache.inner.0, 3);
         assert_eq!(cache.len(), 1);
         let statistics = cache.statistics();
-        assert_eq!(statistics.total_requests(), 6);
+        assert_eq!(statistics.total_requests(), 9);
         assert_eq!(statistics.total_evaluated(), 3);
-        assert_eq!(statistics.total_hits(), 3);
+        assert_eq!(statistics.total_hits(), 6);
     }
 
     /// Fails the whole call (an error, not row statuses) while `broken`.
@@ -994,8 +1121,9 @@ mod tests {
         assert_eq!(cache.inner.0, 3);
     }
 
-    /// A failed triangle row and the rows of a call whose provider failed
-    /// are not remembered: asked again, they are evaluated again.
+    /// A failed triangle row (in a later reduction call) and the rows of a
+    /// call whose provider failed are not remembered: asked again, they are
+    /// evaluated again.
     #[test]
     fn failed_rows_and_failed_calls_are_asked_again() {
         let triangle = |[a, b, c]: [f64; 3], [m0, m1, m2]: [f64; 3]| {
@@ -1025,6 +1153,7 @@ mod tests {
         let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
         assert_eq!(ok, [false, true, false]);
         assert_eq!(cache.inner.counting.0, 2);
+        cache.begin_call();
         let (_, ok) = evaluate_rows(&mut cache, FastMaster::C0, &rows).unwrap();
         assert_eq!(ok, [false, true, false]);
         assert_eq!(cache.inner.counting.0, 3);
