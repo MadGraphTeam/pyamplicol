@@ -422,7 +422,11 @@ thread_local! {
 
 /// What the generic engine's cancellation ladder did on this thread since
 /// the last call: lanes served (accepted, below resolution), refused, and
-/// re-reductions per precision.
+/// re-reductions per precision. The counts are the calling thread's only: a
+/// reduction run on several threads leaves each worker's counts on that
+/// worker, so after such a call this reads only the share reduced on the
+/// calling thread (nothing in pyAmpliCol reads it; the executor's report
+/// counts lanes from the reduction's outcomes instead).
 pub fn take_ladder_counts() -> LadderCounts {
     LADDER_COUNTS.with(|c| std::mem::take(&mut *c.borrow_mut()))
 }
