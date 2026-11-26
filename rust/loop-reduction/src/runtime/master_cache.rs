@@ -350,8 +350,9 @@ pub(crate) fn canonicalise(family: FastMaster, row: &[C64], out: &mut [C64]) {
 struct Calls {
     /// The id of the open grouped call; zero when none is open.
     open: AtomicU64,
-    /// The last id given (ids are never reused, so failed keys stamped with
-    /// an ended call's id are never read again).
+    /// The last id given (ids increase and are never reused, so failed keys
+    /// stamped with an ended call's id are never read again, and a failure
+    /// stamped with an older id than the remembered keys' is not remembered).
     last: AtomicU64,
 }
 
@@ -463,10 +464,17 @@ impl SharedMasters {
     }
 
     /// Remember that the provider failed `key` in grouped call `call`
-    /// (forgetting the keys of an earlier one); whether it is new.
+    /// (forgetting the keys of an earlier one); whether it is new. A failure
+    /// of a call older than the one the keys belong to (an engine finishing
+    /// an `evaluate` it began before another engine opened a new grouped
+    /// call) is not remembered: its call has ended, and the newer call's keys
+    /// stay as they are. It counts as evaluated, as in an ordinary call.
     fn record_failure(&self, call: u64, key: Key) -> bool {
         let mut failures = self.failed.lock().expect("shared masters");
-        if failures.call != call {
+        if call < failures.call {
+            return true;
+        }
+        if call > failures.call {
             failures.keys.clear();
             failures.call = call;
         }
@@ -1826,5 +1834,148 @@ mod tests {
         drop(call);
         ask_failing(&mut b, &f, 5);
         ask_failing(&mut b, &f, 6);
+    }
+
+    /// Relabellings of one triangle row asked in one `evaluate`, with a
+    /// provider that fails the first row it sees: an ordinary call asks the
+    /// provider again in the next `evaluate`, a grouped call serves the
+    /// failure until it ends; either way every relabelling gets the
+    /// canonical row's value and status, with and without a shared tier.
+    #[test]
+    fn relabelled_rows_follow_the_grouped_call_rule() {
+        let a = [2., -5., 11., 0., 3., 7., 4.].map(value).to_vec();
+        let r = [-5., 11., 2., 3., 7., 0., 4.].map(value).to_vec();
+        for shared in [false, true] {
+            for grouped in [false, true] {
+                let tag = format!("shared {shared} grouped {grouped}");
+                let mut cache = MasterCache::new(
+                    Recovering {
+                        failures: 1,
+                        ..Recovering::default()
+                    },
+                    true,
+                );
+                if shared {
+                    cache.share(Some(Arc::new(SharedMasters::new(2))));
+                }
+                let g = grouped.then(|| cache.begin_call());
+                let (_, ok) =
+                    evaluate_rows(&mut cache, FastMaster::C0, &[a.clone(), r.clone()]).unwrap();
+                assert_eq!((ok, cache.inner.rows), (vec![false; 2], 1), "{tag}");
+                let (out, ok) =
+                    evaluate_rows(&mut cache, FastMaster::C0, &[r.clone(), a.clone()]).unwrap();
+                if grouped {
+                    assert_eq!((ok, cache.inner.rows), (vec![false; 2], 1), "{tag}");
+                    assert_eq!(scales(&out), vec![0.; 2], "{tag}");
+                    drop(g);
+                    let (out, ok) =
+                        evaluate_rows(&mut cache, FastMaster::C0, &[r.clone(), a.clone()]).unwrap();
+                    assert_eq!((ok, cache.inner.rows), (vec![true; 2], 2), "{tag}");
+                    assert_eq!(scales(&out), vec![4.; 2], "{tag}");
+                } else {
+                    assert_eq!((ok, cache.inner.rows), (vec![true; 2], 2), "{tag}");
+                    assert_eq!(scales(&out), vec![4.; 2], "{tag}");
+                }
+                let (out, ok) = evaluate_rows(
+                    &mut cache,
+                    FastMaster::C0,
+                    &[a.clone(), r.clone(), a.clone()],
+                )
+                .unwrap();
+                assert_eq!((ok, cache.inner.rows), (vec![true; 3], 2), "{tag}");
+                assert_eq!(scales(&out), vec![4.; 3], "{tag}");
+                let st = cache.statistics();
+                let req = if grouped { 9 } else { 7 };
+                assert_eq!(
+                    (st.total_requests(), st.total_evaluated(), st.total_hits()),
+                    (req, 2, req - 2),
+                    "{tag}"
+                );
+                assert_eq!(cache.len(), 1, "{tag}");
+            }
+        }
+    }
+
+    type Shared<T> = Arc<Mutex<T>>;
+
+    /// A provider that, the first time it evaluates, lets another cache on
+    /// the same tier open a new grouped call and fail a row in it, then
+    /// fails its own rows as [`Faulty`] does: its cache finishes an
+    /// `evaluate` of the older grouped call after the newer one has begun.
+    struct Interloper {
+        faulty: Faulty,
+        other: Option<Shared<MasterCache<Faulty>>>,
+        newer: Shared<Option<GroupedCall>>,
+        row: Vec<C64>,
+    }
+    impl FastMasters for Interloper {
+        fn evaluate(
+            &mut self,
+            family: FastMaster,
+            args: &[C64],
+            out: &mut [[C64; 3]],
+            ok: &mut [bool],
+        ) -> Result<()> {
+            if let Some(other) = self.other.take() {
+                let mut other = other.lock().unwrap();
+                *self.newer.lock().unwrap() = Some(other.begin_call());
+                ask_failing(&mut other, &self.row, 1);
+            }
+            self.faulty.evaluate(family, args, out, ok)
+        }
+    }
+
+    /// A cache still inside an `evaluate` of an ended grouped call when
+    /// another cache on its tier opens a new one: the failure it records
+    /// belongs to the ended call, so the newer call is undisturbed (its
+    /// failed row stays coalesced, the late row is not served failed in it).
+    #[test]
+    fn a_late_failure_of_an_ended_grouped_call_leaves_the_newer_one_alone() {
+        let f = [-2., -5., -11., 0., 3., 7., 4.].map(value).to_vec();
+        let late = [-3., -6., -13., 0., 3., 7., 4.].map(value).to_vec();
+        let tier = Arc::new(SharedMasters::new(2));
+        let mut other = MasterCache::new(Faulty::default(), true);
+        other.share(Some(tier.clone()));
+        let other = Arc::new(Mutex::new(other));
+        let newer = Arc::new(Mutex::new(None));
+        let mut cache = MasterCache::new(
+            Interloper {
+                faulty: Faulty::default(),
+                other: Some(other.clone()),
+                newer: newer.clone(),
+                row: f.clone(),
+            },
+            true,
+        );
+        cache.share(Some(tier.clone()));
+        let older = cache.begin_call();
+        let (_, ok) =
+            evaluate_rows(&mut cache, FastMaster::C0, std::slice::from_ref(&late)).unwrap();
+        assert_eq!((ok, cache.inner.faulty.rows), (vec![false], 1));
+        let statistics = cache.statistics();
+        assert_eq!(
+            (statistics.total_requests(), statistics.total_evaluated()),
+            (1, 1)
+        );
+        drop(older);
+        assert!(
+            newer.lock().unwrap().is_some(),
+            "the newer grouped call is open"
+        );
+        let mut other = other.lock().unwrap();
+        // The newer call's failed row is still coalesced: no provider call.
+        ask_failing(&mut other, &f, 1);
+        // The late row did not fail in the newer call: the provider is asked.
+        ask_failing(&mut other, &late, 2);
+        ask_failing(&mut other, &late, 2);
+        let statistics = other.statistics();
+        assert_eq!(
+            (
+                statistics.total_requests(),
+                statistics.total_evaluated(),
+                statistics.total_hits()
+            ),
+            (4, 2, 2)
+        );
     }
 }
