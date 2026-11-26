@@ -124,6 +124,31 @@ def test_the_real_kind_tests_the_imaginary_part_with_the_same_scale() -> None:
     assert refusal is not None and "not real" in refusal
 
 
+def test_a_real_guard_is_structural_where_every_binding_is_real() -> None:
+    environment = GuardEnvironment(
+        externals={"MT": 173.0 + 0j, "aS": 0.118 + 0j, "CKM": 1.0 + 0j},
+        definitions={"G": E("2*UFO::aS^(1/2)*UFO::pi^(1/2)")},
+        constants={"pi": math.pi, "I": 1j},
+        real_externals=frozenset({"MT", "aS"}),
+    )
+
+    def real(expression: str) -> SpecializationGuard | None:
+        return SpecializationGuard.real(
+            environment, expression, subject="s", producer="p", message="m"
+        )
+
+    # Real for every real MT and aS: nothing to record.
+    assert real("UFO::MT^2*UFO::aS") is None
+    assert real("UFO::complex(0,1)^2*UFO::MT") is None
+    # A square root of a real parameter, or a complex-declared external, is
+    # real only on part of the domain: recorded, and refused outside it.
+    root = real("UFO::G")
+    assert root is not None and root.parameters == ("aS",)
+    assert binding_refusal([root], {"aS": 0.12}) is None
+    assert binding_refusal([root], {"aS": -0.12}) is not None
+    assert real("UFO::CKM*UFO::MT") is not None
+
+
 def test_programs_agree_with_symbolica() -> None:
     expression = E(
         "sqrt(x)*cos(y)+exp(x-y)^2/(1+x^2)+log(x)*conj(y)+x^(3/2)-tan(y)/sinh(x)"
