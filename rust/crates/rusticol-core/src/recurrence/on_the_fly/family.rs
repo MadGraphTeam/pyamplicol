@@ -4411,7 +4411,7 @@ mod tests {
         second_projection: OnTheFlyProjectionProbeV1,
         split: bool,
     ) -> OnTheFlyStreamedQueryFamilyCandidateV1 {
-        build_streamed_query_family_candidate_v1(catalog, |consumer| {
+        build_streamed_query_family_candidate_v1(catalog, None, |consumer| {
             if split {
                 assert_eq!(
                     consumer.push_chunk(&[QueryFamilyTraceInput {
@@ -4491,7 +4491,7 @@ mod tests {
         assert_eq!(monolithic.identity, chunked.identity);
         assert_eq!(monolithic.family, chunked.family);
 
-        let reversed = build_streamed_query_family_candidate_v1(&catalog, |consumer| {
+        let reversed = build_streamed_query_family_candidate_v1(&catalog, None, |consumer| {
             assert_eq!(
                 consumer.push_chunk(&[
                     QueryFamilyTraceInput {
@@ -4570,7 +4570,7 @@ mod tests {
         let catalog = direct_catalog();
         let (first, first_projection) =
             OnTheFlyStructuralTraceV1::test_query_family_trace(0x81, factor(1));
-        let repeated = build_streamed_query_family_candidate_v1(&catalog, |consumer| {
+        let repeated = build_streamed_query_family_candidate_v1(&catalog, None, |consumer| {
             consumer.push_chunk(&[QueryFamilyTraceInput {
                 trace: &first,
                 projection: first_projection,
@@ -4586,7 +4586,7 @@ mod tests {
 
         let (second, second_projection) =
             OnTheFlyStructuralTraceV1::test_query_family_trace(0x82, factor(2));
-        let conflicting = build_streamed_query_family_candidate_v1(&catalog, |consumer| {
+        let conflicting = build_streamed_query_family_candidate_v1(&catalog, None, |consumer| {
             consumer.push_chunk(&[QueryFamilyTraceInput {
                 trace: &first,
                 projection: first_projection,
