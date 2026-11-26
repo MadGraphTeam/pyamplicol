@@ -191,9 +191,15 @@ fn primary_local_color_destination_map(
             contraction.local_group_count() as usize
         }
     };
+    // A certified zero colour flow keeps a selector destination without
+    // closure rows and has no primary local group.
+    let nonzero_auxiliary_count = auxiliary_destinations
+        .iter()
+        .filter(|destination| destination.closure_row_count != 0)
+        .count();
     if local_group_count == 0
         || component_count == 0
-        || auxiliary_destinations.len() != local_group_count
+        || nonzero_auxiliary_count != local_group_count
     {
         return Err(RusticolError::integrity(
             "persisted selector physical destinations disagree with the primary local color domain",
@@ -218,32 +224,41 @@ fn primary_local_color_destination_map(
             .map_err(|_| RusticolError::artifact("primary color owner rank exceeds u32"))?;
     }
 
-    let mut auxiliary_destination_by_rank = vec![DIRECT_NONE_U32; local_group_count];
+    // Every physical owner sector has exactly one selector destination; the
+    // sectors with closure rows, in ascending order, take the dense ranks of
+    // the primary's active owners (without a zero flow, the sector IDs).
+    let mut auxiliary_destination_by_sector = vec![None; auxiliary_destinations.len()];
     for destination in auxiliary_destinations {
         if destination.target_helicity_id_or_sentinel != DIRECT_NONE_U32 {
             return Err(RusticolError::integrity(
                 "persisted selector auxiliary destination fixes a numerical helicity",
             ));
         }
-        let slot = auxiliary_destination_by_rank
+        let slot = auxiliary_destination_by_sector
             .get_mut(destination.target_sector_id as usize)
             .ok_or_else(|| {
                 RusticolError::integrity(
                     "persisted selector auxiliary destination has a non-dense physical sector",
                 )
             })?;
-        if *slot != DIRECT_NONE_U32 {
+        if slot.is_some() {
             return Err(RusticolError::integrity(
                 "persisted selector repeats an auxiliary physical sector",
             ));
         }
-        *slot = destination.id;
+        *slot = Some(destination);
     }
-    if auxiliary_destination_by_rank.contains(&DIRECT_NONE_U32) {
+    if auxiliary_destination_by_sector.contains(&None) {
         return Err(RusticolError::integrity(
             "persisted selector does not cover every dense auxiliary physical sector",
         ));
     }
+    let auxiliary_destination_by_rank = auxiliary_destination_by_sector
+        .into_iter()
+        .flatten()
+        .filter(|destination| destination.closure_row_count != 0)
+        .map(|destination| destination.id)
+        .collect::<Vec<_>>();
 
     let ordered_groups = contraction.ordered_group_ids();
     let sectors = contraction.sector_by_group();
@@ -4729,7 +4744,8 @@ mod replay_destination_helicity_tests {
                 id,
                 target_sector_id: id,
                 target_helicity_id_or_sentinel: DIRECT_NONE_U32,
-                closure_row_count: 0,
+                // A destination without closure rows is a zero colour flow.
+                closure_row_count: 1,
                 selector_domain_id: 0,
             })
             .collect()
@@ -4763,6 +4779,30 @@ mod replay_destination_helicity_tests {
             expanded_view.local_group_by_primary_destination.as_ref(),
             &[0]
         );
+    }
+
+    #[test]
+    fn primary_local_color_view_skips_zero_colour_flow_destinations() {
+        // Sector 5 of 14 is a certified zero colour flow: its selector
+        // destination owns no closure rows and has no primary local group.
+        let contraction =
+            RecurrenceColorContraction::symmetric_group_s3_for_runtime_test((0..13).collect(), 13)
+                .with_sparse_sector_domain_for_runtime_test();
+        let mut auxiliary = auxiliary_physical_destinations(14);
+        auxiliary[5].closure_row_count = 0;
+        let view = primary_local_color_destination_map(&contraction, &auxiliary).unwrap();
+        assert_eq!(
+            view.auxiliary_destination_by_local_group.as_ref(),
+            &[0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13]
+        );
+        // Without the zero flow, one destination too many; a zero flow must
+        // still keep its destination (dense owner sectors).
+        auxiliary[5].closure_row_count = 1;
+        assert!(primary_local_color_destination_map(&contraction, &auxiliary).is_err());
+        let mut without = auxiliary_physical_destinations(14);
+        without[5].closure_row_count = 0;
+        without.remove(13);
+        assert!(primary_local_color_destination_map(&contraction, &without).is_err());
     }
 
     #[test]

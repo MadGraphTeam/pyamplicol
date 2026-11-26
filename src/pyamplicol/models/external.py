@@ -40,6 +40,7 @@ class CompiledUFOModel(
         _sym._ensure_symbolica()
         self.compiled = compiled
         self.name = compiled.name
+        self._project_full_inputs = _prepared_pack_projects_full_inputs(compiled)
         self._model_symbols = symbols.model(self.name)
         self._particle_records_by_name = {
             particle.name: particle for particle in compiled.ir.particles
@@ -201,3 +202,25 @@ class CompiledUFOModel(
 
 
 __all__ = ["CompiledUFOModel"]
+
+
+def _prepared_pack_projects_full_inputs(compiled: CompiledModel) -> bool:
+    """Whether the model gives the Weyl projection of full inputs
+    (``_result_chiralities``): always without a prepared pack, and with one
+    only when its recurrence template carries the projection's rows
+    (``RECURRENCE_TEMPLATE_EXECUTION_ABI``). A pack prepared before the
+    projection has no kernels for it, so its model keeps the full results
+    the pack was built for."""
+
+    from .recurrence_template import RECURRENCE_TEMPLATE_EXECUTION_ABI
+
+    bundle = compiled.prepared_bundle
+    if bundle is None:
+        return True
+    template = bundle.kernel_pack.recurrence_template
+    if not isinstance(template, Mapping):
+        return False
+    header = template.get("header")
+    return isinstance(header, Mapping) and (
+        header.get("abi") == RECURRENCE_TEMPLATE_EXECUTION_ABI
+    )

@@ -19,6 +19,16 @@ from fractions import Fraction
 from typing import ClassVar, Literal, TypeAlias
 
 RECURRENCE_TEMPLATE_ABI = "pyamplicol-recurrence-template-v1"
+#: The ABI of a catalog whose transitions carry execution markers (the
+#: ``;execution=...`` suffix of a transition's output projection: a Weyl
+#: projection of full inputs and its full-state counterpart, of which each
+#: recurrence strategy runs one). A reader that ignored the markers would run
+#: both rows and count such a vertex twice, so these catalogs carry an ABI
+#: that readers without the markers refuse; a catalog without marked
+#: transitions keeps ``RECURRENCE_TEMPLATE_ABI`` and its bytes.
+RECURRENCE_TEMPLATE_EXECUTION_ABI = "pyamplicol-recurrence-template-v2"
+RECURRENCE_TEMPLATE_ABIS = (RECURRENCE_TEMPLATE_ABI, RECURRENCE_TEMPLATE_EXECUTION_ABI)
+TRANSITION_EXECUTION_MARKER = ";execution="
 RECURRENCE_TEMPLATE_CANONICALIZATION_ABI = "pyamplicol-canonical-json-v1"
 RECURRENCE_TEMPLATE_EXACT_SCALAR_ABI = "pyamplicol-exact-complex-rational-v1"
 _DYNAMIC_UNION_SOURCE_SPIN_STATE = -(1 << 31)
@@ -2062,7 +2072,7 @@ class RecurrenceTemplateCatalogHeaderV1:
     exact_scalar_abi: str = RECURRENCE_TEMPLATE_EXACT_SCALAR_ABI
 
     def __post_init__(self) -> None:
-        if self.abi != RECURRENCE_TEMPLATE_ABI:
+        if self.abi not in RECURRENCE_TEMPLATE_ABIS:
             raise RecurrenceTemplateError(
                 f"unsupported recurrence template ABI {self.abi!r}"
             )
@@ -2166,6 +2176,17 @@ class RecurrenceTemplateCatalog:
                 "recurrence template semantic identities must be globally unique"
             )
         self._validate_references()
+        marked = any(
+            TRANSITION_EXECUTION_MARKER in transition.output_projection
+            for transition in self.transitions
+        )
+        if marked != (self.header.abi == RECURRENCE_TEMPLATE_EXECUTION_ABI):
+            raise RecurrenceTemplateError(
+                "recurrence template ABI does not match its transitions: "
+                f"{self.header.abi!r} with"
+                + ("" if marked else "out")
+                + " execution-marked transitions"
+            )
         expected = _digest(self.digest_payload())
         if self.header.catalog_digest != expected:
             raise RecurrenceTemplateError("stale recurrence template catalog digest")
@@ -2217,8 +2238,16 @@ class RecurrenceTemplateCatalog:
                 sorted(evaluator_bindings, key=_record_identity)
             ),
         }
+        abi = (
+            RECURRENCE_TEMPLATE_EXECUTION_ABI
+            if any(
+                TRANSITION_EXECUTION_MARKER in transition.output_projection
+                for transition in sorted_sections["transitions"]
+            )
+            else RECURRENCE_TEMPLATE_ABI
+        )
         provisional_header = {
-            "abi": RECURRENCE_TEMPLATE_ABI,
+            "abi": abi,
             "canonicalization_abi": RECURRENCE_TEMPLATE_CANONICALIZATION_ABI,
             "compiled_model_digest": compiled_model_digest,
             "exact_scalar_abi": RECURRENCE_TEMPLATE_EXACT_SCALAR_ABI,
@@ -2235,6 +2264,7 @@ class RecurrenceTemplateCatalog:
             compiled_model_digest=compiled_model_digest,
             prepared_kernel_pack_digest=prepared_kernel_pack_digest,
             catalog_digest=_digest(digest_payload),
+            abi=abi,
         )
         return cls(header=header, **sorted_sections)
 
@@ -3904,9 +3934,12 @@ RecurrenceTemplateCatalogV1 = RecurrenceTemplateCatalog
 
 __all__ = [
     "RECURRENCE_TEMPLATE_ABI",
+    "RECURRENCE_TEMPLATE_ABIS",
     "RECURRENCE_TEMPLATE_CANONICALIZATION_ABI",
     "RECURRENCE_TEMPLATE_EXACT_SCALAR_ABI",
+    "RECURRENCE_TEMPLATE_EXECUTION_ABI",
     "SUPPORTED_SYMMETRY_PROOF_ALGORITHMS",
+    "TRANSITION_EXECUTION_MARKER",
     "CatalogHeader",
     "ClosureTemplate",
     "ClosureTemplateV1",

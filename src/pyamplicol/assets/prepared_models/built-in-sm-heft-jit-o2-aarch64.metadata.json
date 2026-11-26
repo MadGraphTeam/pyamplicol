@@ -4,8 +4,8 @@
     "mode": "release"
   },
   "bundle": "built-in-sm-heft-jit-o2-aarch64.pyamplicol-model",
-  "bundle_sha256": "a15343a2870d052e0dab070cb30464765d9020f5a6957047872fa676a163cc32",
-  "bundle_size": 18121782,
+  "bundle_sha256": "e811c5efefc37c645c656bf5fa2ce2cf479b18771e2c8f57ee18ffdbf4fba64c",
+  "bundle_size": 18588258,
   "dependencies": {
     "symbolica_serialization_abi": "symbolica-bincode2-v2",
     "symbolica_version": "3.0.3",
@@ -17,12 +17,12 @@
   "eager_kernel_abi": "pyamplicol-eager-kernel-v1",
   "id": "built-in-sm-heft-jit-o2",
   "jit_optimization_level": 2,
-  "kernel_count": 450,
+  "kernel_count": 463,
   "model": "built-in-sm-heft",
   "prepared_model_bundle_schema": 1,
   "producer": {
     "compiled_model_schema": 9,
-    "model_compiler_sha256": "d94a627db542be4818e0d0149e8aba61557e50f62fcf741fdfc3186665a359b6",
+    "model_compiler_sha256": "8d63642190ddc8c1dee84aaf3adcd4813690aa8cd8e9473bf5d00dfd8bffc997",
     "model_compiler_version": 17,
     "model_source_digest": "73465ce130dc82213e0fc9b9d759e68296c249811c7583947ff1d95944930546",
     "package_version": "1.0.3"

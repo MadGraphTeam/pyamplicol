@@ -1815,6 +1815,10 @@ class V2VirtualRuntime:
             for record in compiled.ir.parameters
             if record.nature == "external"
         }
+        # The model's specialisation guards: a binding under which what its
+        # compile specialised (a coupling restriction simplification removed)
+        # no longer holds is refused (``_checked_parameters``).
+        self._specialization_guards = compiled.specialization_guards
         del model_payload
         if execution["point_inputs"] != LOOP_V2_NATIVE_POINT_INPUTS:
             # The native admission refuses every other declaration first.
@@ -1882,6 +1886,14 @@ class V2VirtualRuntime:
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
         self._scale_parameter = record["scale_parameter"]
+        if self._specialization_guards:
+            from pyamplicol.models.specialization_guards import (
+                admit_loop_specialization_guards,
+            )
+
+            admit_loop_specialization_guards(
+                self._specialization_guards, self._fixed, self._scale_parameter
+            )
         # The mass-shell guard's mass evaluator (``_bound_leg_masses``): the
         # model's parameter records and each leg's mass parameter (the
         # representative's legs); the rest of the compiled model is read
@@ -3557,13 +3569,33 @@ class V2VirtualRuntime:
 
         if isinstance(mapping, Mapping) and all(isinstance(n, str) for n in mapping):
             mapping = {name: mapping[name] for name in sorted(mapping)}
-        return check_model_parameters(
+        checked = check_model_parameters(
             _real_parameters(mapping),
             self._externals,
             self._scale_parameter,
             self._fixed,
             self._prepared_fixed,
         )
+        if self._specialization_guards:
+            from pyamplicol.models.specialization_guards import (
+                exact_decimal_binding_refusal,
+            )
+
+            # Exact: the decimal value as bound against the exact value of
+            # the recorded binary64 (no narrowing of the binding).
+            # A float binding is compared as a binary64 (the value it is),
+            # any other as the exact decimal the checks read.
+            raw = mapping if isinstance(mapping, Mapping) else {}
+            refusal = exact_decimal_binding_refusal(
+                self._specialization_guards,
+                {
+                    name: raw[name] if isinstance(raw.get(name), float) else value
+                    for name, value in checked.items()
+                },
+            )
+            if refusal is not None:
+                raise ValueError(refusal)
+        return checked
 
     def set_model_parameters(self, mapping: ModelParameters) -> None:
         parameters = self._checked_parameters(mapping)

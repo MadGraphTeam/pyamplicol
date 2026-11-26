@@ -75,6 +75,18 @@ def _builtin_vertex_result_chiralities(
     result_pdg = vertex.particles[2]
     if model.is_chiral_eligible(result_pdg):
         input_chirality = _model_fermion_input_chirality(model, left_index, right_index)
+        if input_chirality == 0 and getattr(model, "_project_full_inputs", True):
+            # A full (Dirac) input: a vertex that feeds one result chirality
+            # only (a single chiral projector, the W) makes the massless result
+            # that Weyl state, the only nonzero half of its Dirac kernel
+            # (``_project_dirac_current_to_weyl``); with both chiralities
+            # (vector-like couplings) the result stays the full state.
+            projected = tuple(
+                chirality
+                for chirality in (-1, 1)
+                if _model_weyl_vertex_allowed(vertex, result_pdg, chirality)
+            )
+            return projected if len(projected) == 1 else (0,)
         if input_chirality == 0:
             return (0,)
         if not _model_weyl_vertex_allowed(vertex, result_pdg, input_chirality):
@@ -323,6 +335,24 @@ def _embed_weyl_current_in_dirac(
     if chirality == 1:
         return (zero, zero, *current)
     raise ValueError("Weyl-to-Dirac embedding needs nonzero chirality")
+
+
+def _project_dirac_current_to_weyl(
+    current: tuple[Any, ...],
+    chirality: int,
+) -> tuple[Any, ...]:
+    """The half of a Dirac vertex current that a Weyl result of ``chirality``
+    holds (the inverse of ``_embed_weyl_current_in_dirac``). Exact only where
+    the other half vanishes identically: a vertex with a single chiral
+    coupling (``_builtin_vertex_result_chiralities``)."""
+
+    if len(current) != 4:
+        raise ValueError("Dirac-to-Weyl projection expects four components")
+    if chirality == -1:
+        return current[0:2]
+    if chirality == 1:
+        return current[2:4]
+    raise ValueError("Dirac-to-Weyl projection needs nonzero chirality")
 
 
 def _expr_fermion_vector_dirac(

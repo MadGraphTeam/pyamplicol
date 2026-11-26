@@ -14,8 +14,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::{
     CheckedTableRange, ExactComplexRational, LCColorComponentKind, LCColorComponentRole,
-    LCColorSourceSeed, LCColorSourceSeedOperation, RECURRENCE_TEMPLATE_ABI, SemanticDigest,
-    validate_concrete_spin_state, validate_packed_ranges, validate_u32_references,
+    LCColorSourceSeed, LCColorSourceSeedOperation, RECURRENCE_TEMPLATE_ABI,
+    RECURRENCE_TEMPLATE_EXECUTION_ABI, SemanticDigest, validate_concrete_spin_state,
+    validate_packed_ranges, validate_u32_references,
 };
 use crate::{RusticolError, RusticolResult};
 
@@ -404,6 +405,52 @@ pub struct ContactOrbitStepRow {
     pub source_particle_leg_sequence_id: u32,
     pub reconstruction_factor_id: u32,
     pub semantic_digest_id: u32,
+}
+
+/// Where a template transition runs (Weyl projection at chiral vertices).
+///
+/// A vertex with a single chiral projector that takes full (chirality-0)
+/// inputs to a massless fermion has two transitions: the projection, whose
+/// result is the Weyl state of that chirality (the only nonzero half of the
+/// full result), and its full-state counterpart, whose result is the full
+/// state. The model marks them in the transition's output projection
+/// (`...;execution=weyl-states`, `...;execution=full-states`). Strategies
+/// whose currents carry Weyl states run the projection; the all-flow union,
+/// which runs every source family through its full state, runs the
+/// counterpart. Each sees one of the two, so neither counts the vertex twice.
+/// Unmarked transitions run everywhere.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum TransitionExecution {
+    Everywhere,
+    WeylStates,
+    FullStates,
+}
+
+impl TransitionExecution {
+    const WEYL_STATES_SUFFIX: &'static str = ";execution=weyl-states";
+    const FULL_STATES_SUFFIX: &'static str = ";execution=full-states";
+
+    /// The execution a transition's output projection string declares.
+    pub(crate) fn of_output_projection(output_projection: &str) -> Self {
+        if output_projection.ends_with(Self::WEYL_STATES_SUFFIX) {
+            Self::WeylStates
+        } else if output_projection.ends_with(Self::FULL_STATES_SUFFIX) {
+            Self::FullStates
+        } else {
+            Self::Everywhere
+        }
+    }
+
+    /// Whether a strategy whose currents carry Weyl states runs it.
+    pub(crate) fn runs_with_weyl_states(self) -> bool {
+        self != Self::FullStates
+    }
+
+    /// Whether a strategy that runs every source through its full state runs
+    /// it.
+    pub(crate) fn runs_with_full_states(self) -> bool {
+        self != Self::WeylStates
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1281,12 +1328,34 @@ impl<'a> RecurrenceTemplateInputView<'a> {
                 header.schema_version, RECURRENCE_TEMPLATE_INPUT_SCHEMA_VERSION
             )));
         }
-        require_string_value(
+        let abi = required_string(
             &catalogs.strings,
             header.abi_string_id,
-            RECURRENCE_TEMPLATE_ABI,
             "recurrence template ABI",
         )?;
+        if abi != RECURRENCE_TEMPLATE_ABI && abi != RECURRENCE_TEMPLATE_EXECUTION_ABI {
+            return Err(RusticolError::compatibility(format!(
+                "unsupported recurrence template ABI {abi:?}; expected \
+                 {RECURRENCE_TEMPLATE_ABI:?} or {RECURRENCE_TEMPLATE_EXECUTION_ABI:?}"
+            )));
+        }
+        let mut marked = false;
+        for row in self.transitions {
+            let projection = required_string(
+                &catalogs.strings,
+                row.output_projection_string_id,
+                "transition output projection",
+            )?;
+            marked |= TransitionExecution::of_output_projection(projection)
+                != TransitionExecution::Everywhere;
+        }
+        if marked != (abi == RECURRENCE_TEMPLATE_EXECUTION_ABI) {
+            return Err(RusticolError::compatibility(format!(
+                "recurrence template ABI {abi:?} does not match its transitions: \
+                 execution-marked transitions require {RECURRENCE_TEMPLATE_EXECUTION_ABI:?} \
+                 and only they"
+            )));
+        }
         require_string_value(
             &catalogs.strings,
             header.canonicalization_abi_string_id,
@@ -4386,6 +4455,24 @@ mod tests {
     }
 
     #[test]
+    fn the_execution_abi_requires_execution_marked_transitions() {
+        // The same catalog under the execution ABI: it has no marked
+        // transition, so it is refused (the ABI names what the reader must
+        // honour), and readers without the execution ABI refuse it anyway.
+        let mut input = empty_canonical_input();
+        let v1 = RECURRENCE_TEMPLATE_ABI.as_bytes();
+        let at = input
+            .string_bytes
+            .windows(v1.len())
+            .position(|window| window == v1)
+            .unwrap();
+        input.string_bytes[at..at + v1.len()]
+            .copy_from_slice(RECURRENCE_TEMPLATE_EXECUTION_ABI.as_bytes());
+        let error = input.validate().unwrap_err().to_string();
+        assert!(error.contains("does not match its transitions"), "{error}");
+    }
+
+    #[test]
     fn indirect_parameter_dependency_cycles_are_rejected() {
         let mut input = empty_canonical_input();
         input.catalog_header[0].parameter_count = 2;
@@ -4439,5 +4526,26 @@ mod tests {
             error.contains("parameter dependency graph contains a cycle"),
             "unexpected validation error: {error}"
         );
+    }
+}
+
+#[cfg(test)]
+mod transition_execution_tests {
+    use super::TransitionExecution;
+
+    #[test]
+    fn the_output_projection_marks_where_a_transition_runs() {
+        let projected = TransitionExecution::of_output_projection(
+            "weyl-chiral:chirality=-1;execution=weyl-states",
+        );
+        let counterpart =
+            TransitionExecution::of_output_projection("dirac:chirality=0;execution=full-states");
+        let plain = TransitionExecution::of_output_projection("dirac:chirality=0");
+        assert_eq!(projected, TransitionExecution::WeylStates);
+        assert_eq!(counterpart, TransitionExecution::FullStates);
+        assert_eq!(plain, TransitionExecution::Everywhere);
+        assert!(projected.runs_with_weyl_states() && !projected.runs_with_full_states());
+        assert!(!counterpart.runs_with_weyl_states() && counterpart.runs_with_full_states());
+        assert!(plain.runs_with_weyl_states() && plain.runs_with_full_states());
     }
 }

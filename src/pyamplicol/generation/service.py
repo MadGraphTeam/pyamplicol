@@ -10,6 +10,7 @@ import logging
 import math
 import os
 import time
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, replace
@@ -110,7 +111,11 @@ from .artifact_writer import (
     write_schema_v3_artifact,
 )
 from .born_orders import process_born_amplitude_orders
-from .contracts import RuntimeExpressionSchema, StageCompilationInput
+from .contracts import (
+    RuntimeExpressionSchema,
+    StageCompilationInput,
+    runtime_coupling_component_guards,
+)
 from .dag_algorithms import (
     _closure_totals_from_color_plan,
     _minimal_coupling_order_limits_from_totals,
@@ -238,6 +243,7 @@ from .stage_compiler import (
     build_and_write_generic_stage_evaluator_artifacts,
     write_model_parameter_evaluator_artifact,
 )
+from .stage_planning import lc_zero_color_sector_ids
 from .validation import (
     ValidationPointRecord,
     build_process_validation_point,
@@ -2142,11 +2148,6 @@ def _validate_rust_recurrence_lowering_result(
             )
         zero_certificate = None
     else:
-        if builder_input.layout != "contracted-color-union":
-            raise GenerationError(
-                "Rust recurrence lowering emitted a structural-zero physical-sector "
-                "certificate outside contracted color"
-            )
         certificate = _strict_mapping(
             raw_zero_certificate,
             "Rust recurrence structural-zero physical-sector certificate",
@@ -2181,9 +2182,15 @@ def _validate_rust_recurrence_lowering_result(
         resolved_count = _result_integer(
             certificate["resolved_helicity_count"],
             "Rust recurrence structural-zero certificate resolved-helicity count",
-            minimum=1,
+            # All-flow plans select source helicities at runtime.
+            minimum=1 if builder_input.layout == "contracted-color-union" else 0,
         )
-        if resolved_count != len(resolved_helicities):
+        # An all-flow plan selects source helicities at runtime: its program
+        # has no resolved helicities, which its certificate records.
+        expected_resolved_count = (
+            0 if builder_input.layout == "all-flow-union" else len(resolved_helicities)
+        )
+        if resolved_count != expected_resolved_count:
             raise GenerationError(
                 "Rust recurrence structural-zero certificate disagrees with the "
                 "resolved-helicity domain"
@@ -2210,8 +2217,26 @@ def _validate_rust_recurrence_lowering_result(
                 "Rust recurrence certified structural-zero physical-sector IDs "
                 "are not canonical"
             )
-        active_sector_ids = {sector_id for sector_id, _ in amplitude_destinations}
-        if active_sector_ids.intersection(sector_ids):
+        # Topology-replay and all-flow plans carry a certificate only for
+        # their zero colour flows (pure electroweak four-quark pairings).
+        if builder_input.layout != "contracted-color-union" and not sector_ids:
+            raise GenerationError(
+                "Rust recurrence lowering emitted a structural-zero physical-sector "
+                "certificate without a zero colour flow outside contracted color"
+            )
+        destination_counts = Counter(
+            sector_id for sector_id, _ in amplitude_destinations
+        )
+        # A topology-replay or all-flow zero colour flow keeps exactly one
+        # destination, without closure terms, so that its public flow and
+        # replay targets resolve.
+        allowed_destinations = (
+            0 if builder_input.layout == "contracted-color-union" else 1
+        )
+        if any(
+            destination_counts[sector_id] > allowed_destinations
+            for sector_id in sector_ids
+        ):
             raise GenerationError(
                 "Rust recurrence structural-zero certificate overlaps active "
                 "amplitude destinations"
@@ -2545,10 +2570,18 @@ def _eager_lowering_kernel_ids(
     return frozenset(references)
 
 
-def _builtin_sm_model() -> Model:
-    from ..models import BuiltinSMModel
+def _builtin_sm_model(compiled: object | None = None) -> Model:
+    """The built-in SM; with a prepared pack that predates the Weyl projection
+    of full inputs, without that projection (the pack has no kernels for it;
+    ``models.external._prepared_pack_projects_full_inputs``)."""
 
-    return BuiltinSMModel()
+    from ..models import BuiltinSMModel
+    from ..models.external import _prepared_pack_projects_full_inputs
+
+    model = BuiltinSMModel()
+    if compiled is not None and getattr(compiled, "prepared_bundle", None) is not None:
+        model._project_full_inputs = _prepared_pack_projects_full_inputs(compiled)
+    return model
 
 
 def _nested_config_value(values: Mapping[str, object], path: str) -> object:
@@ -5189,6 +5222,26 @@ class GenerationBackend:
             raise GenerationError(
                 "recurrence generation has no recurrence-template-v1 catalog"
             )
+        if resolved_model.model is not None:
+            from ..models.recurrence_catalog_builder import (
+                stale_template_parameter_types,
+            )
+
+            stale = stale_template_parameter_types(
+                resolved_model.model, catalog, bundle.kernel_pack.provenance
+            )
+            if stale:
+                # A pack typed by an older rule holds these derived
+                # parameters real; the template lanes would drop their
+                # imaginary part at a binding that makes them complex.
+                raise GenerationError(
+                    "the prepared model's recurrence template was typed by an "
+                    "older rule: it holds the derived parameters "
+                    + ", ".join(stale[:8])
+                    + (" ..." if len(stale) > 8 else "")
+                    + " real although they are not proven real for every "
+                    "binding; prepare the model again with this version"
+                )
         direct_catalog = bundle.kernel_pack.recurrence_direct_template_catalog
         if direct_catalog is None:  # pragma: no cover - preflighted during loading
             raise GenerationError(
@@ -5407,7 +5460,14 @@ class GenerationBackend:
             helicity_dispatch_resolved_helicity_count=(
                 dispatch.resolved_helicity_count
             ),
-            physical_destination_count=len(destinations),
+            # A certified zero colour flow keeps a destination without
+            # closure terms and has no primary local colour group.
+            physical_destination_count=len(destinations)
+            - (
+                0
+                if output.structural_zero_physical_sector_certificate is None
+                else len(output.structural_zero_physical_sector_certificate.sector_ids)
+            ),
             builder_input_sha256=builder_input.digest,
             inspection_summary=inspection_summary,
             referenced_kernel_ids=recurrence_referenced_kernel_ids(logical),
@@ -6867,16 +6927,20 @@ class GenerationBackend:
             raise GenerationError("eager generation has no evaluator configuration")
         ir = process.expanded.process_ir
         dag = process.dag
+        parameter_records = runtime_model_parameter_records_from_eager_input(
+            lowering_input
+        )
         physics = build_resolved_physics_from_dag(
             dag,
             model,
             process_id=process_name,
             native_eager_plan_v3_reduction_groups=True,
-            runtime_model_parameters=(
-                runtime_model_parameter_records_from_eager_input(lowering_input)
-            ),
+            runtime_model_parameters=parameter_records,
         )
         return EagerPlanV3ProcessArtifact(
+            specialization_guards=runtime_coupling_component_guards(
+                model, parameter_records
+            ),
             process_id=process_name,
             expression=ir.process,
             color_accuracy=ir.color_accuracy,
@@ -7223,6 +7287,9 @@ class GenerationBackend:
         ir = process.compiled.expanded.process_ir
         dag = process.compiled.dag
         return CompiledProcessArtifact(
+            specialization_guards=runtime_coupling_component_guards(
+                model, process.runtime_schema.to_mapping().get("model_parameters", ())
+            ),
             process_id=process_id,
             expression=ir.process,
             color_accuracy=public_color_accuracy(dag),
@@ -7251,6 +7318,7 @@ class GenerationBackend:
             helicity_sum_execution=helicity_sum_execution,
             helicity_selector_executions=tuple(helicity_selector_executions),
             color_selector_executions=primary_color_selector_executions,
+            zero_color_flow_count=len(lc_zero_color_sector_ids(dag)),
         )
 
     def _process_worker_count(self, process_count: int) -> int:
@@ -7773,7 +7841,7 @@ class GenerationBackend:
             is_builtin = self._is_builtin_compiled_model(compiled)
             return _ResolvedModel(
                 self._source_for_compiled_model(compiled),
-                _builtin_sm_model() if is_builtin else None,
+                _builtin_sm_model(compiled) if is_builtin else None,
                 compiled,
                 use_compiled_process_catalog=not is_builtin,
             )
@@ -7791,11 +7859,17 @@ class GenerationBackend:
             raise ModelError("external model source has no path")
 
         from .._internal.sm_heft import load_cached_sm_heft_source
-        from ..models.loading import load_cached_model_source, load_compiled_model
+        from ..models.loading import (
+            load_cached_model_source,
+            load_compiled_model,
+            require_specialization_record,
+        )
 
         try:
             if source.kind in {"compiled", "prepared"}:
-                compiled = load_compiled_model(source.path)
+                compiled = require_specialization_record(
+                    load_compiled_model(source.path)
+                )
             else:
                 run = self._run_config
                 use_cache = True if run is None else run.model.cache
@@ -7842,7 +7916,7 @@ class GenerationBackend:
         is_builtin = self._is_builtin_compiled_model(compiled)
         return _ResolvedModel(
             source,
-            _builtin_sm_model() if is_builtin else None,
+            _builtin_sm_model(compiled) if is_builtin else None,
             compiled,
             use_compiled_process_catalog=not is_builtin,
         )
@@ -7887,7 +7961,7 @@ class GenerationBackend:
             if self._is_builtin_compiled_model(compiled):
                 return _ResolvedModel(
                     self._source_for_compiled_model(compiled),
-                    _builtin_sm_model(),
+                    _builtin_sm_model(compiled),
                     compiled,
                     use_compiled_process_catalog=False,
                 )
@@ -7913,11 +7987,17 @@ class GenerationBackend:
             raise ModelError("external model source has no path")
         from .._internal.sm_heft import compile_sm_heft_source
         from ..models.external import CompiledUFOModel
-        from ..models.loading import compile_model_source, load_compiled_model
+        from ..models.loading import (
+            compile_model_source,
+            load_compiled_model,
+            require_specialization_record,
+        )
 
         try:
             if source.kind in {"compiled", "prepared"}:
-                compiled = load_compiled_model(source.path)
+                compiled = require_specialization_record(
+                    load_compiled_model(source.path)
+                )
             else:
                 run = self._run_config
                 use_cache = True if run is None else run.model.cache
@@ -7948,7 +8028,7 @@ class GenerationBackend:
         if self._is_builtin_compiled_model(compiled):
             return _ResolvedModel(
                 source,
-                _builtin_sm_model(),
+                _builtin_sm_model(compiled),
                 compiled,
                 use_compiled_process_catalog=False,
             )

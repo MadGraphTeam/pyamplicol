@@ -541,11 +541,7 @@ def _stage_with_selector_domain_memberships(
     return replace(stage, output_slots=tuple(output_slots))
 
 
-def _lc_materialized_sector_memberships(
-    dag: GenericDAG,
-) -> tuple[dict[int, tuple[int, ...]], dict[int, tuple[int, ...]]]:
-    if dag.process.color_accuracy != "lc" or dag.color_coverage != "complete":
-        return {}, {}
+def _lc_materialized_roots_by_sector(dag: GenericDAG) -> dict[int, list[int]]:
     replay = dag.lc_topology_replay
     materialized_sector_ids = (
         {int(sector.id) for sector in dag.color_plan.sectors}
@@ -555,7 +551,6 @@ def _lc_materialized_sector_memberships(
     roots_by_sector: dict[int, list[int]] = {
         sector_id: [] for sector_id in materialized_sector_ids
     }
-    root_by_id = {int(root.id): root for root in dag.amplitude_roots}
     for root in dag.amplitude_roots:
         sector_id = (
             int(root.color_sector_id)
@@ -564,6 +559,46 @@ def _lc_materialized_sector_memberships(
         )
         if sector_id in roots_by_sector:
             roots_by_sector[sector_id].append(int(root.id))
+    return roots_by_sector
+
+
+def lc_zero_color_sector_ids(dag: GenericDAG) -> tuple[int, ...]:
+    """The materialized LC sectors that are zero colour flows.
+
+    An open-lines sector without an amplitude root, in a complete LC colour
+    plan with at least one rooted sector: the DAG's closure enumeration is
+    exhaustive, so no tree diagram has that flow at the requested orders (only
+    the pairing of the lines a W joins has diagrams in a pure electroweak
+    four-quark amplitude; the recurrence lane's ``closes_to_zero_flow``).
+    Its flow is listed in public physics and covered by no reduction group;
+    the compiled runtime evaluates it as an exact zero
+    (``rusticol.compiled.zero-color-flows.v1``). Any other rootless sector
+    stays refused (``_lc_materialized_sector_memberships``).
+    """
+
+    if dag.process.color_accuracy != "lc" or dag.color_coverage != "complete":
+        return ()
+    roots_by_sector = _lc_materialized_roots_by_sector(dag)
+    if not any(roots_by_sector.values()):
+        return ()
+    sector_kinds = {int(sector.id): sector.kind for sector in dag.color_plan.sectors}
+    return tuple(
+        sorted(
+            sector_id
+            for sector_id, root_ids in roots_by_sector.items()
+            if not root_ids and sector_kinds.get(sector_id) == "open-lines"
+        )
+    )
+
+
+def _lc_materialized_sector_memberships(
+    dag: GenericDAG,
+) -> tuple[dict[int, tuple[int, ...]], dict[int, tuple[int, ...]]]:
+    if dag.process.color_accuracy != "lc" or dag.color_coverage != "complete":
+        return {}, {}
+    roots_by_sector = _lc_materialized_roots_by_sector(dag)
+    zero_sector_ids = set(lc_zero_color_sector_ids(dag))
+    root_by_id = {int(root.id): root for root in dag.amplitude_roots}
 
     interactions_by_result: dict[int, list[tuple[int, int]]] = {}
     for interaction in dag.interactions:
@@ -575,6 +610,8 @@ def _lc_materialized_sector_memberships(
     sectors_by_current: dict[int, set[int]] = {}
     sectors_by_root: dict[int, set[int]] = {}
     for sector_id, root_ids in roots_by_sector.items():
+        if sector_id in zero_sector_ids:
+            continue
         if not root_ids:
             raise ValueError(
                 "LC topology replay materialized sector "

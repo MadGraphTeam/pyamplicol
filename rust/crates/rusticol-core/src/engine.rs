@@ -207,6 +207,9 @@ pub const COMPILED_COLOR_CONTRACTION_WALSH_C2K_CAPABILITY: &str =
     "rusticol.compiled.color-contraction-walsh-c2k.v1";
 pub const COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY: &str =
     "rusticol.compiled.color-topology-lanes.v1";
+/// A compiled LC process with zero colour flows: computed flows that no
+/// reduction group covers. Selecting one yields an exact zero.
+pub const COMPILED_ZERO_COLOR_FLOWS_CAPABILITY: &str = "rusticol.compiled.zero-color-flows.v1";
 pub const SYMJIT_APPLICATION_STORAGE_ABI: &str = "symjit-application-storage-v4";
 pub const SYMJIT_PLANE_APPLICATION_ABI: &str = "pyamplicol-symjit-plane-application-v2";
 
@@ -252,6 +255,7 @@ pub enum RuntimeCapability {
     CompiledColorContractionWalshC2kV1,
     CompiledColorContractionWalshV1,
     CompiledColorTopologyLanesV1,
+    CompiledZeroColorFlowsV1,
     CompiledHelicityDualLaneV1,
     CompiledHelicityPrimaryRecurrenceV1,
     CompiledHelicitySelectorUnionV1,
@@ -286,6 +290,7 @@ impl RuntimeCapability {
             }
             Self::CompiledColorContractionWalshV1 => COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
             Self::CompiledColorTopologyLanesV1 => COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY,
+            Self::CompiledZeroColorFlowsV1 => COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
             Self::CompiledHelicityDualLaneV1 => COMPILED_HELICITY_DUAL_LANE_CAPABILITY,
             Self::CompiledHelicityPrimaryRecurrenceV1 => {
                 COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY
@@ -330,6 +335,8 @@ pub fn supported_runtime_capabilities() -> Vec<&'static str> {
         COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY,
+        #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+        COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         COMPILED_HELICITY_DUAL_LANE_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
@@ -397,6 +404,7 @@ fn runtime_capability_is_supported(capability: &str) -> bool {
         COMPILED_COLOR_CONTRACTION_WALSH_C2K_CAPABILITY
         | COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY
         | COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY
+        | COMPILED_ZERO_COLOR_FLOWS_CAPABILITY
         | COMPILED_HELICITY_DUAL_LANE_CAPABILITY
         | COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY
         | COMPILED_HELICITY_SELECTOR_UNION_CAPABILITY
@@ -3351,6 +3359,12 @@ struct ExecutionRuntime {
     stage_count: usize,
     amplitude_output_count: usize,
     lc_topology_replay_enabled: bool,
+    /// The execution declares `rusticol.compiled.zero-color-flows.v1`.
+    zero_color_flows_declared: bool,
+    /// The LC flows this process evaluates as exact zeros (computed, covered
+    /// by no reduction group of the public physics), set when physics is
+    /// attached and shared by the nested lanes.
+    zero_color_indices: BTreeSet<usize>,
     lc_topology_replay_mappings: Arc<LcTopologyReplayMappings>,
     lc_topology_replay_public_mappings: LcTopologyReplayMappings,
     lc_topology_replay_routes: Vec<Vec<LcTopologyReplaySectorRoute>>,
@@ -4568,6 +4582,9 @@ pub struct NativeRuntime {
     selector_simd_lane_width: usize,
     // Cold, opt-in metadata and vector defaults; ordinary evaluation never reads it.
     correlated: Option<correlated::CorrelatedRuntime>,
+    /// The artifact's specialisation guards of this process, evaluated at
+    /// every binding (`set_model_parameters`); empty for most artifacts.
+    specialization_guards: crate::specialization_guards::SpecializationGuards,
 }
 
 enum NativeExecutionLane {

@@ -4301,6 +4301,8 @@ fn assemble_common_runtime(
         stage_count,
         amplitude_output_count,
         lc_topology_replay_enabled: false,
+        zero_color_flows_declared: false,
+        zero_color_indices: BTreeSet::new(),
         lc_topology_replay_mappings: Arc::new(Vec::new()),
         lc_topology_replay_public_mappings: Vec::new(),
         lc_topology_replay_routes: Vec::new(),

@@ -35,6 +35,8 @@ const RUNTIME_IDENTITY_PAYLOAD_ROLES: [&str; 5] = [
     "model-parameters",
     "runtime-physics",
 ];
+/// The one path of an artifact's specialisation guards.
+const SPECIALIZATION_GUARDS_PATH: &str = "model/specialization-guards.json";
 const EVALUATOR_PAYLOAD_CONTAINER_EXTENSION: &str = "evaluator_payload_container";
 const EVALUATOR_PAYLOAD_CONTAINER_KIND: &str = "pyamplicol-evaluator-payload-container";
 const EVALUATOR_PAYLOAD_CONTAINER_STORAGE_ABI: &str = "pacbin-v1";
@@ -209,6 +211,10 @@ pub enum PayloadRole {
     ApiBuildFile,
     SdkMetadata,
     ProcessGroups,
+    /// `model/specialization-guards.json` (`crate::specialization_guards`).
+    /// Released readers refuse this role, so a guarded artifact never runs
+    /// without its guards.
+    SpecializationGuards,
 }
 
 #[derive(Clone, Debug, Decode, Deserialize, Eq, PartialEq, Serialize)]
@@ -1544,6 +1550,7 @@ fn payload_role_name(role: PayloadRole) -> &'static str {
         PayloadRole::ApiBuildFile => "api-build-file",
         PayloadRole::SdkMetadata => "sdk-metadata",
         PayloadRole::ProcessGroups => "process-groups",
+        PayloadRole::SpecializationGuards => "specialization-guards",
     }
 }
 
@@ -3326,6 +3333,17 @@ fn validate_payload_declaration(payload: &Payload) -> RusticolResult<()> {
             )));
         }
     }
+    if payload.role == PayloadRole::SpecializationGuards
+        && (payload.path != SPECIALIZATION_GUARDS_PATH
+            || payload.media_type != "application/json"
+            || payload.process_id.is_some()
+            || payload.target.is_some())
+    {
+        return Err(RusticolError::artifact(format!(
+            "specialization-guards payload {:?} must be the artifact-wide JSON payload {SPECIALIZATION_GUARDS_PATH:?}",
+            payload.path
+        )));
+    }
     if payload.executable
         && !matches!(
             payload.role,
@@ -3631,6 +3649,7 @@ fn validate_runtime_capabilities(
         RuntimeCapability::CompiledColorContractionWalshC2kV1,
         RuntimeCapability::CompiledColorContractionWalshV1,
         RuntimeCapability::CompiledColorTopologyLanesV1,
+        RuntimeCapability::CompiledZeroColorFlowsV1,
         RuntimeCapability::CompiledHelicityDualLaneV1,
         RuntimeCapability::CompiledHelicityPrimaryRecurrenceV1,
         RuntimeCapability::CompiledHelicitySelectorUnionV1,

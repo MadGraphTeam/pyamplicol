@@ -22,10 +22,13 @@ from types import SimpleNamespace
 from typing import Any
 
 from .base import (
+    FULL_STATE_EXECUTION,
+    WEYL_STATE_EXECUTION,
     Model,
     RecurrenceQuantumFlowContract,
     Vertex,
     _runtime_particle_parameter_name,
+    weyl_projection_of_full_inputs,
 )
 from .contact_decomposition import HEFT_CONTACT_ORBIT_EVALUATOR_CLASS
 from .lc_color_port_wiring import compile_lc_color_port_wirings
@@ -671,8 +674,29 @@ def _build_parameters(
     derived_defaults = (
         dict(derived_defaults_provider()) if callable(derived_defaults_provider) else {}
     )
+    # A derived parameter's runtime components follow from its value type.
+    # Its default says nothing about other runtime bindings: a coupling that
+    # is real (or zero) at the defaults may be complex at another binding (an
+    # imaginary part proportional to MT - 173), and the template lanes would
+    # drop that part. A derived parameter is therefore real only where the
+    # model proves it real for every binding (its definition in the declared
+    # domains of the parameters it reads,
+    # ``runtime_derived_parameter_domains_for``), and complex otherwise.
+    real_defaults = tuple(
+        str(name)
+        for name, value in derived_defaults.items()
+        if complex(value).imag == 0
+    )
+    domains_provider = getattr(model, "runtime_derived_parameter_domains_for", None)
+    domains = (
+        dict(domains_provider(real_defaults))
+        if real_defaults and callable(domains_provider)
+        else {}
+    )
     for name, value in derived_defaults.items():
         add_default(name, value, kind="derived")
+        if str(name) in real_defaults and domains.get(str(name)) != "real":
+            value_types[str(name)] = "complex"
 
     missing = sorted(required_names - defaults.keys() - definitions.keys())
     if missing:
@@ -740,6 +764,36 @@ def _build_parameters(
             )
         )
     return tuple(records)
+
+
+#: The rule that typed a template's derived parameters (recorded in a
+#: prepared pack's provenance as ``recurrence_parameter_typing``): a derived
+#: parameter is real only where the model proves it real for every binding.
+#: A pack without it was typed by an older rule (real from a real default).
+RECURRENCE_PARAMETER_TYPING = "proven-real-v1"
+
+
+def stale_template_parameter_types(
+    model: Any, catalog: RecurrenceTemplateCatalog, provenance: Mapping[str, object]
+) -> tuple[str, ...]:
+    """The derived parameters ``catalog`` holds real although the current
+    rule would not (``_build_parameters``: real only where the model proves
+    it real), or ``()`` when the template follows the current rule: its pack
+    records ``RECURRENCE_PARAMETER_TYPING``, or every derived parameter it
+    holds real is proven real now."""
+
+    if provenance.get("recurrence_parameter_typing") == RECURRENCE_PARAMETER_TYPING:
+        return ()
+    held_real = tuple(
+        str(parameter.name)
+        for parameter in catalog.parameters
+        if parameter.parameter_kind == "derived" and parameter.value_type == "real"
+    )
+    if not held_real:
+        return ()
+    domains_provider = getattr(model, "runtime_derived_parameter_domains_for", None)
+    domains = dict(domains_provider(held_real)) if callable(domains_provider) else {}
+    return tuple(name for name in held_real if domains.get(name) != "real")
 
 
 def _canonical_binary64_mapping(values: Mapping[object, object]) -> str:
@@ -1694,7 +1748,9 @@ def _build_transitions(
                             f"vertex kind {vertex.kind} input-exchange factor",
                         )
                     ),
-                    output_projection=f"{binding.result_state.basis}:chirality={binding.result_state.chirality}",
+                    output_projection=_transition_output_projection(
+                        model, vertex, binding
+                    ),
                     contact_orbit_step_template_ids=tuple(
                         step.template_id for step in contact_orbit_steps
                     ),
@@ -2425,6 +2481,58 @@ def _validate_vertex_binding_against_model(
         )
 
 
+def _transition_output_projection(
+    model: Model,
+    vertex: Vertex,
+    binding: PreparedVertexBinding,
+) -> str:
+    """The transition's output projection: the result state's basis and
+    chirality, and the execution marker of a Weyl projection of full inputs
+    (``WEYL_STATE_EXECUTION``) or its full-state counterpart
+    (``FULL_STATE_EXECUTION``; ``Model.recurrence_quantum_flows``)."""
+
+    result = binding.result_state
+    projection = f"{result.basis}:chirality={result.chirality}"
+    left = binding.left_state.chirality
+    right = binding.right_state.chirality
+    if result.chirality != 0:
+        projected = weyl_projection_of_full_inputs(
+            model, left, right, result.particle_id, (result.chirality,)
+        )
+        execution = WEYL_STATE_EXECUTION if projected else None
+    elif left == 0 and right == 0 and model.is_fermion(result.particle_id):
+        chiralities = _reachable_result_chiralities(model, vertex, binding)
+        projected = weyl_projection_of_full_inputs(
+            model, left, right, result.particle_id, chiralities
+        )
+        execution = FULL_STATE_EXECUTION if projected else None
+    else:
+        execution = None
+    return projection if execution is None else f"{projection};execution={execution}"
+
+
+def _reachable_result_chiralities(
+    model: Model,
+    vertex: Vertex,
+    binding: PreparedVertexBinding,
+) -> tuple[int, ...]:
+    """The result chiralities of the model's flows (``allowed_quantum_flows``)
+    for the binding's input states."""
+
+    left_spin = _spin_states_for_chirality(
+        model, binding.left_state.particle_id, binding.left_state.chirality
+    )[0]
+    right_spin = _spin_states_for_chirality(
+        model, binding.right_state.particle_id, binding.right_state.chirality
+    )[0]
+    flows = model.allowed_quantum_flows(
+        vertex,
+        _flow_probe_index(model, binding.left_state, left_spin),
+        _flow_probe_index(model, binding.right_state, right_spin),
+    )
+    return tuple(sorted({int(flow.chirality) for flow in flows}))
+
+
 def _probe_quantum_flows(
     model: Model,
     vertex: Vertex,
@@ -2457,7 +2565,7 @@ def _probe_quantum_flows(
                 right: SimpleNamespace,
             ) -> tuple[dict[str, Any], ...]:
                 try:
-                    flows = model.allowed_quantum_flows(vertex, left, right)
+                    flows = model.recurrence_quantum_flows(vertex, left, right)
                 except Exception as exc:
                     raise RecurrenceTemplateError(
                         "cannot evaluate model quantum-flow callback for "

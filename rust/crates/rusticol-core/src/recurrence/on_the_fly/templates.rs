@@ -5,6 +5,7 @@ use crate::recurrence::construct::TransitionReflectionIndex;
 use crate::recurrence::fermion_ordering::FermionOrderingContext;
 use crate::recurrence::template::{
     CurrentOrientation, EvaluatorCallableKind, OutputFactorSource, ParticleStatistics,
+    TransitionExecution,
 };
 
 /// Immutable grammar prepared once for one loaded on-the-fly runtime.
@@ -800,6 +801,15 @@ pub(super) fn prepared_transitions(
 ) -> RusticolResult<BTreeMap<(u32, u32), Vec<PreparedTransition>>> {
     let mut result = BTreeMap::<(u32, u32), Vec<PreparedTransition>>::new();
     for row in templates.input().transitions.iter().copied() {
+        // The lane's currents carry Weyl states: it runs the Weyl projections
+        // of full inputs, not their full-state counterparts.
+        let execution = TransitionExecution::of_output_projection(catalog.string(
+            row.output_projection_string_id,
+            "transition output projection",
+        )?);
+        if !execution.runs_with_weyl_states() {
+            continue;
+        }
         let prepared = PreparedTransition::new(row, templates, catalog)?;
         result
             .entry(canonical_state_pair(
