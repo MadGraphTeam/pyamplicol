@@ -1024,9 +1024,7 @@ pub mod v2 {
 
         /// The pool of a call ([`Self::serial_call`]).
         fn call_pool(&self, serial: bool) -> &rayon::ThreadPool {
-            if serial
-                && let Some(pool) = self.serial.get_or_init(|| executor_pool(Some(1)).ok())
-            {
+            if serial && let Some(pool) = self.serial.get_or_init(|| executor_pool(Some(1)).ok()) {
                 return pool;
             }
             &self.pool
