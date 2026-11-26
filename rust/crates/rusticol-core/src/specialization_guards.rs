@@ -130,7 +130,9 @@ impl SpecializationGuard {
                     .get(name)
                     .ok_or_else(|| invalid(format!("no generation value of {name:?}")))?;
                 if !(re.is_finite() && im.is_finite()) {
-                    return Err(invalid(format!("generation value of {name:?} is not finite")));
+                    return Err(invalid(format!(
+                        "generation value of {name:?} is not finite"
+                    )));
                 }
                 Ok(Complex64::new(*re, *im))
             })
@@ -295,9 +297,7 @@ impl SpecializationGuards {
     pub fn check_binding(&self, binding: &BTreeMap<String, (f64, f64)>) -> RusticolResult<()> {
         self.check_with(|parameter| match binding.get(parameter.name) {
             None => (Bound::Untouched, String::new()),
-            Some(&(re, im))
-                if re == parameter.generation.re && im == parameter.generation.im =>
-            {
+            Some(&(re, im)) if re == parameter.generation.re && im == parameter.generation.im => {
                 (Bound::Unchanged, String::new())
             }
             Some(&(re, im)) => (Bound::Changed, format_complex(Complex64::new(re, im))),

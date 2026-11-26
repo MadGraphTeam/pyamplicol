@@ -51,33 +51,55 @@ fn any_change_of_a_guarded_parameter_is_refused_naming_it() {
     assert!(message.contains("recorded by restriction-simplification"));
     // The smallest change is refused too.
     let next = f64::from_bits(173.0_f64.to_bits() + 1);
-    assert!(guards.check_binding(&binding(&[("MT", next, 0.0)])).is_err());
+    assert!(
+        guards
+            .check_binding(&binding(&[("MT", next, 0.0)]))
+            .is_err()
+    );
 }
 
 #[test]
 fn exactly_the_generation_value_is_accepted() {
     let guards = SpecializationGuards::parse(&guard_file(None), "p").unwrap();
-    guards.check_binding(&binding(&[("MT", 173.0, 0.0)])).unwrap();
+    guards
+        .check_binding(&binding(&[("MT", 173.0, 0.0)]))
+        .unwrap();
     guards
         .check_binding(&binding(&[("CKM", 0.97, 0.25), ("MT", 173.0, -0.0)]))
         .unwrap();
     // Unguarded parameters are free.
-    guards.check_binding(&binding(&[("MZ", 91.0, 0.0)])).unwrap();
+    guards
+        .check_binding(&binding(&[("MZ", 91.0, 0.0)]))
+        .unwrap();
 }
 
 #[test]
 fn both_components_of_a_complex_parameter_are_held() {
     let guards = SpecializationGuards::parse(&guard_file(None), "p").unwrap();
-    assert!(guards.check_binding(&binding(&[("CKM", 0.97, 0.0)])).is_err());
-    assert!(guards.check_binding(&binding(&[("CKM", 0.97, 0.26)])).is_err());
-    assert!(guards.check_binding(&binding(&[("CKM", 0.98, 0.25)])).is_err());
+    assert!(
+        guards
+            .check_binding(&binding(&[("CKM", 0.97, 0.0)]))
+            .is_err()
+    );
+    assert!(
+        guards
+            .check_binding(&binding(&[("CKM", 0.97, 0.26)]))
+            .is_err()
+    );
+    assert!(
+        guards
+            .check_binding(&binding(&[("CKM", 0.98, 0.25)]))
+            .is_err()
+    );
 }
 
 #[test]
 fn a_guard_scoped_to_other_processes_does_not_apply() {
     let guards = SpecializationGuards::parse(&guard_file(Some(vec!["other"])), "p").unwrap();
     assert!(guards.is_empty());
-    guards.check_binding(&binding(&[("MT", 174.0, 0.0)])).unwrap();
+    guards
+        .check_binding(&binding(&[("MT", 174.0, 0.0)]))
+        .unwrap();
     let guards = SpecializationGuards::parse(&guard_file(Some(vec!["p"])), "p").unwrap();
     assert_eq!(guards.len(), 1);
 }
