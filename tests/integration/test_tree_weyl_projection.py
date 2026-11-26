@@ -662,13 +662,14 @@ def mt_phase_models(tmp_path_factory: pytest.TempPathFactory):
     ("lane", "accuracy"),
     [("recurrence", "lc"), ("recurrence", "full"), ("on-the-fly", "lc")],
 )
-def test_a_template_lane_refuses_a_binding_that_makes_a_real_parameter_complex(
+def test_a_template_lane_follows_a_binding_that_makes_a_coupling_complex(
     mt_phase_models, tmp_path: Path, lane: str, accuracy: str
 ) -> None:
-    """vt e- > ve ta-: the template lanes held the coupling real and gave
-    the MT = 173 value after MT = 174 (half the right one). The template's
-    "real" guard refuses that binding, accepts those that keep the coupling
-    real, and the 174 artifact equals the eager lane."""
+    """vt e- > ve ta-: the template lanes held the coupling real (its
+    default is real) and gave the MT = 173 value after MT = 174, half the
+    right one. The template now types a derived parameter real only where the
+    model proves it real, so the 173 artifact bound to 174 equals the 174
+    artifact and the eager lane."""
 
     process = "vt e- > ve ta-"
     points = _reference("default", process)["points"]
@@ -676,13 +677,8 @@ def test_a_template_lane_refuses_a_binding_that_makes_a_real_parameter_complex(
         mt_phase_models["173"], process, tmp_path / "a173", lane=lane, accuracy=accuracy
     )
     before = _values(at_173, points)
-    with pytest.raises(
-        Exception,
-        match=r"specialisation-guard: binding MT.*held real by the recurrence template",
-    ):
-        at_173.set_model_parameters({"MT": 174.0})
-    assert _values(at_173, points) == before
-    at_173.set_model_parameters({"MZ": 91.0})
+    at_173.set_model_parameters({"MT": 174.0})
+    updated = _values(at_173, points)
     fresh = _values(
         _runtime(
             mt_phase_models["174"],
@@ -700,7 +696,9 @@ def test_a_template_lane_refuses_a_binding_that_makes_a_real_parameter_complex(
         lane="eager",
         accuracy="full",
     )
+    _assert_close(updated, fresh)
     _assert_close(fresh, _values(eager, points))
+    assert all(abs(u - b) > 0.5 * abs(b) for u, b in zip(updated, before, strict=True))
 
 
 @pytest.mark.parametrize("lane", ["eager", "compiled"])
