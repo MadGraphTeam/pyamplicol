@@ -766,6 +766,36 @@ def _build_parameters(
     return tuple(records)
 
 
+#: The rule that typed a template's derived parameters (recorded in a
+#: prepared pack's provenance as ``recurrence_parameter_typing``): a derived
+#: parameter is real only where the model proves it real for every binding.
+#: A pack without it was typed by an older rule (real from a real default).
+RECURRENCE_PARAMETER_TYPING = "proven-real-v1"
+
+
+def stale_template_parameter_types(
+    model: Any, catalog: RecurrenceTemplateCatalog, provenance: Mapping[str, object]
+) -> tuple[str, ...]:
+    """The derived parameters ``catalog`` holds real although the current
+    rule would not (``_build_parameters``: real only where the model proves
+    it real), or ``()`` when the template follows the current rule: its pack
+    records ``RECURRENCE_PARAMETER_TYPING``, or every derived parameter it
+    holds real is proven real now."""
+
+    if provenance.get("recurrence_parameter_typing") == RECURRENCE_PARAMETER_TYPING:
+        return ()
+    held_real = tuple(
+        str(parameter.name)
+        for parameter in catalog.parameters
+        if parameter.parameter_kind == "derived" and parameter.value_type == "real"
+    )
+    if not held_real:
+        return ()
+    domains_provider = getattr(model, "runtime_derived_parameter_domains_for", None)
+    domains = dict(domains_provider(held_real)) if callable(domains_provider) else {}
+    return tuple(name for name in held_real if domains.get(name) != "real")
+
+
 def _canonical_binary64_mapping(values: Mapping[object, object]) -> str:
     return _canonical_json(
         {

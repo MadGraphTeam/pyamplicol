@@ -79,7 +79,10 @@ from .prepared_target import (
     native_prepared_target,
     symjit_storage_v4_target,
 )
-from .recurrence_catalog_builder import build_recurrence_template_catalog
+from .recurrence_catalog_builder import (
+    RECURRENCE_PARAMETER_TYPING,
+    build_recurrence_template_catalog,
+)
 from .recurrence_direct_template import (
     RECURRENCE_DIRECT_BACKEND_ABI,
     PreparedJitDirectSourceV1,
@@ -470,6 +473,7 @@ def prepare_model_bundle(
                 "prepared_kernel_payload_digest": pack_identity.payload_digest,
                 "prepared_kernel_pack_digest": pack_identity.pack_digest,
                 "recurrence_template_abi": recurrence_catalog.header.abi,
+                "recurrence_parameter_typing": RECURRENCE_PARAMETER_TYPING,
                 "recurrence_template_digest": recurrence_catalog.catalog_digest,
                 "recurrence_direct_backend_abi": RECURRENCE_DIRECT_BACKEND_ABI,
                 "recurrence_direct_template_abi": direct_catalog.abi,

@@ -775,3 +775,45 @@ def test_a_pack_without_paired_rows_keeps_the_full_results(sm_models) -> None:
         (vertex,) = (v for v in model.vertices if v.particles == (15, 24, 16))
         flows = model.allowed_quantum_flows(vertex, *full)
         assert tuple(flow.chirality for flow in flows) in expected
+
+
+def test_a_pack_typed_by_the_older_rule_is_refused_by_the_template_lanes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A prepared model typed by the older rule (a derived parameter real
+    from a real default, no ``recurrence_parameter_typing`` record), also an
+    unsimplified one, is refused by the recurrence and on-the-fly lanes
+    instead of holding a coupling that becomes complex at a binding real."""
+
+    from pyamplicol.models import external_evaluation, prepared_compile
+
+    source = _mt_dependent_phase_sm(tmp_path / "sm_mt_phase")
+    bundle = tmp_path / "legacy.pyamplicol-model"
+    with monkeypatch.context() as patched:
+        # The older rule: every derived parameter with a real default real.
+        patched.setattr(
+            external_evaluation.ExternalModelEvaluationMixin,
+            "runtime_derived_parameter_domains_for",
+            lambda self, names: {name: "real" for name in names},
+        )
+        patched.setattr(prepared_compile, "RECURRENCE_PARAMETER_TYPING", "older")
+        ModelSource.from_path(source, simplify=False).compile(
+            cache_dir=tmp_path / "cache",
+            prepared_output=bundle,
+            evaluator=EvaluatorConfig(),
+        )
+    for lane, accuracy in (("recurrence", "lc"), ("on-the-fly", "lc")):
+        with pytest.raises(GenerationError, match="typed by an older rule"):
+            _runtime(
+                ModelSource.from_path(bundle),
+                "vt e- > ve ta-",
+                tmp_path / lane,
+                lane=lane,
+                accuracy=accuracy,
+            )
+    # The eager lane does not read the template: it follows the binding.
+    eager = _runtime(
+        ModelSource.from_path(bundle), "vt e- > ve ta-", tmp_path / "eager",
+        lane="eager", accuracy="full",
+    )  # fmt: skip
+    eager.set_model_parameters({"MT": 174.0})
