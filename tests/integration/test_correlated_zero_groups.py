@@ -2,16 +2,18 @@
 """Colour and spin correlations of processes with helicity-dependent zeros.
 
 Correlated generation keeps one coherent amplitude group per retained helicity
-and colour sector that has diagrams. Two quark lines that only a W joins in
-one of their pairings (``u u~ > d d~`` at QCD = 0, ``u c~ > d s~ d d~`` at
-every order) have diagrams in that pairing only at the helicities whose
-massless-fermion chiralities the W vertex passes: there that colour sector's
-amplitude is an exact zero. The correlator payload lists each such
-(helicity, sector) pair as a certified zero group (correlator schema 2, written
-only when there is one); readers take a listed group as an exact zero and
-refuse any other gap. The zero comes from the chirality selection of the DAG
-build, whose decision is a specialisation guard: a binding that would revive
-the dropped chirality is refused.
+and colour sector that has diagrams. When a pairing of the quark lines is
+joined only by colour-neutral exchanges (``u u~ > d d~`` at QCD = 0,
+``u c~ > d s~ d d~`` at every order), that pairing has diagrams only at the
+helicities that keep each of its massless lines at one chirality, and for a W
+only at the left-handed ones: there that colour sector's amplitude is an exact
+zero. The correlator payload lists each such (helicity, sector) pair as a
+certified zero group (correlator schema 2, written only when there is one);
+readers take a listed group as an exact zero and refuse any other gap. Where
+the chirality selection of the DAG build rests on a coupling that is zero only
+at the generation values of runtime parameters, its decision is a
+specialisation guard: a binding that would revive the dropped chirality is
+refused.
 
 References: the uncorrelated amplitude of independent generations in the
 compiled and eager lanes, MadGraph 3.7.0 (``madgraph-split-orders.json``, UFO
@@ -549,3 +551,157 @@ def test_native_sdks_serve_certified_zero_groups(
                 assert measured[label, point] == pytest.approx(
                     complex(oracle[label][point]), rel=2e-10, abs=abs(born) * 1e-12
                 )
+
+
+def _right_handed_w_model(root: Path, madgraph_source: Path, mt: int) -> Path:
+    """The UFO sm whose u-d W vertices also have a right-handed coupling
+    proportional to MT - 173, with MT set to ``mt`` on the default card."""
+
+    import re
+    import shutil
+
+    model = root / f"sm-right-w-mt{mt}"
+    shutil.copytree(
+        madgraph_source / "models/sm",
+        model,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pkl"),
+    )
+    lorentz = model / "lorentz.py"
+    lorentz.write_text(
+        lorentz.read_text(encoding="utf-8") + "\nFFVR = Lorentz(name = 'FFVR',\n"
+        "               spins = [ 2, 2, 3 ],\n"
+        "               structure = 'Gamma(3,2,-1)*ProjP(-1,1)')\n",
+        encoding="utf-8",
+    )
+    couplings = model / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    for name in ("41", "100"):
+        value = re.search(
+            rf"GC_{name} = Coupling\(name = 'GC_{name}',\s+value = '([^']+)'", text
+        )
+        assert value is not None
+        text += (
+            f"\nGC_R{name} = Coupling(name = 'GC_R{name}',\n"
+            f"                 value = '(MT-173)*({value[1]})',\n"
+            "                 order = {'QED':1})\n"
+        )
+    couplings.write_text(text, encoding="utf-8")
+    vertices = model / "vertices.py"
+    text = vertices.read_text(encoding="utf-8")
+    for name in ("41", "100"):
+        text, count = re.subn(
+            rf"lorentz = \[ L\.FFV2 \],(\s+)couplings = \{{\(0,0\):C\.GC_{name}\}}",
+            rf"lorentz = [ L.FFV2, L.FFVR ],\g<1>couplings = "
+            rf"{{(0,0):C.GC_{name},(0,1):C.GC_R{name}}}",
+            text,
+        )
+        assert count == 1
+    vertices.write_text(text, encoding="utf-8")
+    card = model / "restrict_default.dat"
+    text = card.read_text(encoding="utf-8")
+    assert "1.730000e+02 # MT " in text
+    card.write_text(text.replace("1.730000e+02 # MT ", f"{mt}.0 # MT "))
+    return model
+
+
+def _zero_set(path: Path) -> set[tuple[tuple[int, ...], int]]:
+    payload = json.loads((path / "correlators.json").read_text())
+    return {
+        (tuple(item["helicities"]), item["color_sector_id"])
+        for record in payload["processes"].values()
+        for item in record.get("zero_coherent_groups", ())
+    }
+
+
+def _present_set(path: Path) -> set[tuple[tuple[int, ...], int]]:
+    payload = json.loads((path / "correlators.json").read_text())
+    return {
+        (tuple(item["helicities"]), item["color_sector_id"])
+        for record in payload["processes"].values()
+        for item in record["coherent_groups"]
+    }
+
+
+def test_a_binding_that_revives_a_zero_group_is_refused(
+    madgraph_source: Path, tmp_path: Path
+):
+    """A right-handed W coupling proportional to MT - 173 vanishes at
+    MT = 173, where the restriction removes it: the W pairing of
+    u u~ > d d~ at QCD = 0 then exists for left-handed lines only, and its
+    right-handed (helicity, sector) amplitudes are certified zero groups
+    (besides those helicity conservation gives at every MT).
+    The removal is a specialisation guard on MT, so a binding of MT is
+    refused (at load and through set_model_parameters) instead of returning
+    those zeros where the artifact generated at MT = 174 has amplitudes.
+    Unsimplified, the coupling is kept, only the structural zeros are
+    certified, and the artifact bound to MT = 174 equals the one generated
+    there."""
+
+    pytest.importorskip("pyamplicol._rusticol")
+    process = "u u~ > d d~"
+    points = _points(4)
+    requests = {
+        "born": CorrelatedRequest("born", {}),
+        "T13": CorrelatedRequest("T13", {}),
+        "T14": CorrelatedRequest("T14", {}),
+    }
+    runtimes = {}
+    zeros = {}
+    present = {}
+    for mt in (173, 174):
+        source = _right_handed_w_model(tmp_path, madgraph_source, mt)
+        bundle = tmp_path / f"sm-{mt}.pyamplicol-model"
+        ModelSource.from_path(source, restriction="default").compile(
+            cache_dir=tmp_path / "cache",
+            prepared_output=bundle,
+            evaluator=EvaluatorConfig(),
+        )
+        path = tmp_path / f"at-{mt}"
+        runtimes[mt] = _generate(
+            ModelSource.from_path(bundle), process, QCD_ZERO, "full", path
+        )
+        zeros[mt] = _zero_set(path)
+        present[mt] = _present_set(path)
+    # Helicity conservation alone leaves one pairing at some helicities (zero
+    # groups at both MT). At MT = 173 the right-handed W amplitudes are absent:
+    # certified zero groups, or helicities without any amplitude.
+    assert zeros[174] and present[173] < present[174]
+    retained = {helicities for helicities, _ in present[173]}
+    for helicities, sector in present[174] - present[173]:
+        assert (helicities, sector) in zeros[173] or helicities not in retained
+    assert zeros[173] - zeros[174]
+    at_173 = runtimes[173].evaluate_correlated_many(points, requests, precision=32)
+    at_174 = runtimes[174].evaluate_correlated_many(points, requests, precision=32)
+    assert float(at_173["born"][0].real) != pytest.approx(
+        float(at_174["born"][0].real), rel=1e-6
+    )
+    refusal = "specialisation-guard: binding MT"
+    with pytest.raises(EvaluationError, match=refusal):
+        runtimes[173].set_model_parameters({"MT": 174.0})
+    with pytest.raises(EvaluationError, match=refusal):
+        Runtime.load(tmp_path / "at-173", model_parameters={"MT": 174.0})
+    assert (
+        runtimes[173].evaluate_correlated_many(points, requests, precision=32) == at_173
+    )
+    unsimplified = _generate(
+        ModelSource.from_path(
+            _right_handed_w_model(tmp_path / "plain", madgraph_source, 173),
+            restriction="default",
+            simplify=False,
+        ),
+        process,
+        QCD_ZERO,
+        "full",
+        tmp_path / "unsimplified",
+    )
+    # The coupling is kept (merely zero at MT = 173): only the structural
+    # zeros of MT = 174 are certified.
+    assert _zero_set(tmp_path / "unsimplified") == zeros[174]
+    unsimplified.set_model_parameters({"MT": 174.0})
+    bound = unsimplified.evaluate_correlated_many(points, requests, precision=32)
+    with localcontext() as context:
+        context.prec = 40
+        for label in requests:
+            for point in range(len(points)):
+                expected = at_174[label][point].real
+                assert abs(bound[label][point].real / expected - 1) < Decimal("1e-20")

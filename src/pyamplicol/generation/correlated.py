@@ -532,13 +532,15 @@ def _certified_zero_groups(
     """The (helicity, colour sector) amplitudes that are exactly zero.
 
     The complete source basis keeps a coherent group for every retained
-    helicity and colour sector that has diagrams.  A sector reached only
-    through a chiral exchange (a W joining two quark lines) has none at the
-    helicities whose massless fermion chiralities that vertex does not pass:
-    that amplitude is an exact zero, decided when the DAG was built (the
-    chirality selection, covered by the guards recorded for it).  The
-    correlator matrices span every owner sector; readers take a listed group
-    as an exact zero and refuse any other gap.
+    helicity and colour sector that has diagrams.  A pairing of quark lines
+    joined only by colour-neutral exchanges has diagrams only at the
+    helicities that keep each of its massless lines at one chirality (for a
+    W, the left-handed one): elsewhere that sector's amplitude is an exact
+    zero, decided when the DAG was built (the chirality selection; a decision
+    that rests on a coupling zero only at the generation values of runtime
+    parameters is covered by the guards recorded for it).  The correlator
+    matrices span every owner sector; readers take a listed group as an exact
+    zero and refuse any other gap.
 
     A replaced spin leg evaluates one placeholder helicity per spectator
     configuration, so that leg's helicity must not decide which sectors
