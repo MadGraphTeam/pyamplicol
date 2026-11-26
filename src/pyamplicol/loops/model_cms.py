@@ -989,6 +989,21 @@ def apply_mass_scheme(
         return compiled
     if transformed:
         return compiled
+    guards = getattr(compiled, "specialization_guards", ())
+    if guards:
+        # Restriction simplification removed couplings that vanish at the
+        # real-scheme values; the complex-mass continuation changes what a
+        # mass parameter is (MT becomes a complex pole mass), so such a term
+        # need not vanish there, with no binding changed.
+        raise ComplexMassSchemeUnsupported(
+            "complex-mass-scheme",
+            "the model's restriction simplification removed couplings that vanish "
+            "only at its real-scheme parameter values ("
+            + "; ".join(guard.subject for guard in guards)
+            + "), which the complex-mass continuation does not preserve; compile "
+            "the model with simplify=False, or use a restriction under which those "
+            "couplings vanish structurally",
+        )
     if compiled.raw_loop_model is None:
         raise ComplexMassSchemeUnsupported(
             "complex-mass-scheme",

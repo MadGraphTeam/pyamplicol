@@ -2483,6 +2483,17 @@ class LoopSlice:
             photons = ew_policy.external_photon_scheme(
                 compiled, request, process, fixed, structure.perturbative_species_orders
             )
+            if photons is not None and guards:
+                # The alpha(0) coupling of tagged photons redefines the QED
+                # coupling per leg; a specialisation taken at the model's
+                # values is not shown to survive it.
+                raise ValueError(
+                    "specialisation-guard: on-shell external photons take alpha(0), "
+                    "which the model's restriction-simplification specialisations ("
+                    + "; ".join(guard.subject for guard in guards)
+                    + ") are not shown to survive; compile the model with "
+                    "simplify=False"
+                )
             # One gauge throughout (DESIGN §6.8, WP3.2 EWI-4b): Born, blocks,
             # loop lines and counterterms of a request with electroweak loop
             # species take 't Hooft-Feynman gauge with explicit Goldstones
