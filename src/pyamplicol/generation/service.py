@@ -9,6 +9,7 @@ import json
 import logging
 import math
 import os
+import re
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -154,6 +155,7 @@ from .helicity_materialization import materialize_helicity_recurrence
 from .helicity_replay import (
     HELICITY_RECURRENCE_CONTRACT_VERSION,
     build_helicity_recurrence_plan,
+    topology_replay_opens_helicity_support,
 )
 from .numerical_current_warmup import (
     generic_dag_numerical_current_opt_out_report,
@@ -5530,6 +5532,45 @@ class GenerationBackend:
         lowering_cache: RecurrenceScheduleLoweringCache[_RustRecurrenceLoweringOutput],
         generation_timings: dict[str, float] | None = None,
     ) -> _GeneratedRecurrenceProcess:
+        """Construct one recurrence process; an LC topology replay whose
+        permuted helicity support leaves the materialized one (identical
+        fermion lines joined by colour-singlet exchange only) is built again
+        with every sector materialized, as the DAG lanes do
+        (``topology_replay_opens_helicity_support``)."""
+
+        def attempt(topology_replay: bool) -> _GeneratedRecurrenceProcess:
+            return self._construct_recurrence_artifact_attempt(
+                expanded,
+                model,
+                model_inputs,
+                temporary_root,
+                index=index,
+                phase=phase,
+                lowering_cache=lowering_cache,
+                generation_timings=generation_timings,
+                topology_replay=topology_replay,
+            )
+
+        try:
+            return attempt(True)
+        except GenerationError as exc:
+            if not _recurrence_replay_opens_helicity_support(exc):
+                raise
+        return attempt(False)
+
+    def _construct_recurrence_artifact_attempt(
+        self,
+        expanded: _ExpandedProcess,
+        model: Model,
+        model_inputs: _RecurrenceModelInputs,
+        temporary_root: Path,
+        *,
+        index: int,
+        phase: PhaseHandle,
+        lowering_cache: RecurrenceScheduleLoweringCache[_RustRecurrenceLoweringOutput],
+        generation_timings: dict[str, float] | None,
+        topology_replay: bool,
+    ) -> _GeneratedRecurrenceProcess:
         process_name = expanded.request.name
         profile_started = time.perf_counter()
         profile: dict[str, float] = {}
@@ -5541,7 +5582,9 @@ class GenerationBackend:
             details={"process": process_name, "step": "colour planning"},
         ) as task:
             preparation_started = time.perf_counter()
-            prepared = self._prepare_process_construction(expanded.process_ir, model)
+            prepared = self._prepare_process_construction(
+                expanded.process_ir, model, topology_replay=topology_replay
+            )
             profile["process-model-color-preparation"] = (
                 time.perf_counter() - preparation_started
             )
@@ -8536,7 +8579,18 @@ class GenerationBackend:
                 for partition in replay_plan.partitions
                 if int(partition.materialized_sector_id) not in root_sector_ids
             }
-            if missing_representatives:
+            if missing_representatives or topology_replay_opens_helicity_support(
+                dag,
+                model,
+                tuple(
+                    mapping
+                    for partition in replay_plan.partitions
+                    for mapping in partition.label_permutations
+                ),
+            ):
+                # Materialize every sector: a representative without roots,
+                # or a replay whose permuted helicity support leaves the
+                # materialized one (the helicity axis is shared by all flows).
                 replay_plan = None
                 dag = compile_generic_dag(
                     process,
@@ -8634,8 +8688,12 @@ class GenerationBackend:
         self,
         process: CanonicalProcessIR,
         model: Model,
+        *,
+        topology_replay: bool = True,
     ) -> _PreparedProcessConstruction:
-        """Prepare the shared model/color contract before choosing a builder."""
+        """Prepare the shared model/color contract before choosing a builder.
+
+        ``topology_replay=False`` materializes every LC sector."""
 
         selection = self._process_selection
         self._validate_lc_flow_layout(selection)
@@ -8703,6 +8761,7 @@ class GenerationBackend:
             pass
         elif (
             self._color_accuracy == "lc"
+            and topology_replay
             and not self._all_flow_union_enabled
             and selection.selected_color_sector_ids is None
             and selection.selected_source_helicities is None
@@ -8922,6 +8981,20 @@ def _select_color_ready_processes(
         detail = "; ".join(color_plan.diagnostics) or "no color sectors"
         rejected.append(f"{process.process}: {detail}")
     return tuple(selected), tuple(rejected)
+
+
+# The recurrence lowering's refusal of an LC topology replay that maps a
+# resolved helicity of the materialized sector outside the retained
+# source-state coverage (``recurrence/direct_lowering.rs``): the permuted
+# helicity support leaves the materialized one.
+_RECURRENCE_REPLAY_OPEN_SUPPORT = re.compile(
+    r"replay target \d+ maps resolved helicity \d+ outside retained "
+    r"source-state coverage"
+)
+
+
+def _recurrence_replay_opens_helicity_support(error: BaseException) -> bool:
+    return _RECURRENCE_REPLAY_OPEN_SUPPORT.search(str(error)) is not None
 
 
 def _expanded_name(base: str, index: int, count: int) -> str:
