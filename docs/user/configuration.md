@@ -1044,9 +1044,20 @@ use (its affinity mask and its cgroup CPU quota,
   (TIRust) times faster than on one for `g g > g g g g`, about 4 for
   `g g > h g g` and `g g > z z` with NinjaRS, 2.3 for `g g > t t~ g` and
   1.6 for `u u~ > e+ e- g g`.
-- Memory: each worker keeps engines of its own between calls (on
-  `g g > g g g g` with TIRust about 100 MB per worker), so a runtime's
-  memory grows with its thread count.
+- Memory: each worker keeps engines of its own between calls, so a runtime's
+  memory grows with its thread count. With TIRust a worker's own engine is
+  small (its workspaces of the plans it meets, built when first needed: a
+  few MB; the plans themselves are shared); most of a worker's memory is
+  TIRust's own per-thread working state of its method choice (the
+  small-Gram expansions of the pentagons and hexagons its gates refuse),
+  built once per thread and per plan, not growing with the number of calls,
+  and released with the runtime. Measured per worker beyond the first on a
+  16-point call: about 120 MB for `g g > g g g g` in binary64 (about
+  200 MB after its checked, double-double and arbitrary-precision calls as
+  well), about 75 MB for `u u~ > e+ e- g g`, about 20 MB for
+  `g g > t t~ g`, and almost nothing for `g g > h g g` and `g g > z z`.
+  Size `threads` to the memory available where many runtimes share a
+  process.
 - What does not scale: the Python assembly of the result (labelling and
   summing every lane under the interpreter lock; on small processes up to a
   third of a call at 8 threads), the tree programs past a few threads (bound
