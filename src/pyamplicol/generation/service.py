@@ -10,6 +10,7 @@ import logging
 import math
 import os
 import time
+from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, replace
@@ -2142,11 +2143,6 @@ def _validate_rust_recurrence_lowering_result(
             )
         zero_certificate = None
     else:
-        if builder_input.layout != "contracted-color-union":
-            raise GenerationError(
-                "Rust recurrence lowering emitted a structural-zero physical-sector "
-                "certificate outside contracted color"
-            )
         certificate = _strict_mapping(
             raw_zero_certificate,
             "Rust recurrence structural-zero physical-sector certificate",
@@ -2181,9 +2177,15 @@ def _validate_rust_recurrence_lowering_result(
         resolved_count = _result_integer(
             certificate["resolved_helicity_count"],
             "Rust recurrence structural-zero certificate resolved-helicity count",
-            minimum=1,
+            # All-flow plans select source helicities at runtime.
+            minimum=1 if builder_input.layout == "contracted-color-union" else 0,
         )
-        if resolved_count != len(resolved_helicities):
+        # An all-flow plan selects source helicities at runtime: its program
+        # has no resolved helicities, which its certificate records.
+        expected_resolved_count = (
+            0 if builder_input.layout == "all-flow-union" else len(resolved_helicities)
+        )
+        if resolved_count != expected_resolved_count:
             raise GenerationError(
                 "Rust recurrence structural-zero certificate disagrees with the "
                 "resolved-helicity domain"
@@ -2210,8 +2212,26 @@ def _validate_rust_recurrence_lowering_result(
                 "Rust recurrence certified structural-zero physical-sector IDs "
                 "are not canonical"
             )
-        active_sector_ids = {sector_id for sector_id, _ in amplitude_destinations}
-        if active_sector_ids.intersection(sector_ids):
+        # Topology-replay and all-flow plans carry a certificate only for
+        # their zero colour flows (pure electroweak four-quark pairings).
+        if builder_input.layout != "contracted-color-union" and not sector_ids:
+            raise GenerationError(
+                "Rust recurrence lowering emitted a structural-zero physical-sector "
+                "certificate without a zero colour flow outside contracted color"
+            )
+        destination_counts = Counter(
+            sector_id for sector_id, _ in amplitude_destinations
+        )
+        # A topology-replay or all-flow zero colour flow keeps exactly one
+        # destination, without closure terms, so that its public flow and
+        # replay targets resolve.
+        allowed_destinations = (
+            0 if builder_input.layout == "contracted-color-union" else 1
+        )
+        if any(
+            destination_counts[sector_id] > allowed_destinations
+            for sector_id in sector_ids
+        ):
             raise GenerationError(
                 "Rust recurrence structural-zero certificate overlaps active "
                 "amplitude destinations"
@@ -5404,7 +5424,14 @@ class GenerationBackend:
             helicity_dispatch_resolved_helicity_count=(
                 dispatch.resolved_helicity_count
             ),
-            physical_destination_count=len(destinations),
+            # A certified zero colour flow keeps a destination without
+            # closure terms and has no primary local colour group.
+            physical_destination_count=len(destinations)
+            - (
+                0
+                if output.structural_zero_physical_sector_certificate is None
+                else len(output.structural_zero_physical_sector_certificate.sector_ids)
+            ),
             builder_input_sha256=builder_input.digest,
             inspection_summary=inspection_summary,
             referenced_kernel_ids=recurrence_referenced_kernel_ids(logical),

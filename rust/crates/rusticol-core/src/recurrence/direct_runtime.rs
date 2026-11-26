@@ -2686,7 +2686,10 @@ fn selected_replay_row_groups(
             selected.push(run);
         }
     }
-    if selected.is_empty() {
+    // A zero colour flow (a certified structural-zero sector whose
+    // destinations own no closure rows) executes nothing: its cleared
+    // destination is its exact zero amplitude.
+    if selected.is_empty() && !is_zero_flow_sector(plan, representative_sector_id) {
         return Err(RusticolError::integrity(format!(
             "direct recurrence representative sector {representative_sector_id} has no executable rows"
         )));
@@ -2754,7 +2757,33 @@ fn amplitude_clear_ranges(plan: &DirectRecurrencePlan) -> RusticolResult<Vec<Ran
             "amplitude",
         )?;
     }
+    // Zero colour-flow destinations own no closure rows; clearing them is
+    // their exact zero amplitude. Plans without one keep the same ranges.
+    for destination in plan
+        .amplitude_destinations()
+        .iter()
+        .filter(|destination| destination.closure_row_count == 0)
+    {
+        mark_range(
+            &mut marked,
+            destination.id as usize,
+            1,
+            "zero-flow amplitude",
+        )?;
+    }
     compact_ranges(&marked, "amplitude")
+}
+
+/// Whether every amplitude destination of `sector_id` is a zero colour flow
+/// (owns no closure rows), and there is at least one.
+fn is_zero_flow_sector(plan: &DirectRecurrencePlan, sector_id: u32) -> bool {
+    let mut destinations = plan
+        .amplitude_destinations()
+        .iter()
+        .filter(|destination| destination.target_sector_id == sector_id)
+        .peekable();
+    destinations.peek().is_some()
+        && destinations.all(|destination| destination.closure_row_count == 0)
 }
 
 fn zeroed_marks(len: usize, label: &str) -> RusticolResult<Vec<u8>> {

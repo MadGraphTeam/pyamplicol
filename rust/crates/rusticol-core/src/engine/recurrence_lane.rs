@@ -177,6 +177,12 @@ fn primary_local_color_destination_map(
     contraction: &RecurrenceColorContraction,
     auxiliary_destinations: &[DirectAmplitudeDestinationDescriptor],
 ) -> RusticolResult<PrimaryLocalColorViewV1> {
+    // A certified zero colour flow keeps a selector destination without
+    // closure rows and has no primary local group: it is left out.
+    let auxiliary_destinations = auxiliary_destinations
+        .iter()
+        .filter(|destination| destination.closure_row_count != 0)
+        .collect::<Vec<_>>();
     if contraction.storage() == RecurrenceColorStorage::Expanded
         && contraction.component_count() != 1
     {
@@ -218,6 +224,14 @@ fn primary_local_color_destination_map(
             .map_err(|_| RusticolError::artifact("primary color owner rank exceeds u32"))?;
     }
 
+    // The other physical owner sectors in ascending order take the dense
+    // ranks of the primary's active owners (without a zero flow, the sector
+    // IDs themselves).
+    let mut auxiliary_sector_ids = auxiliary_destinations
+        .iter()
+        .map(|destination| destination.target_sector_id)
+        .collect::<Vec<_>>();
+    auxiliary_sector_ids.sort_unstable();
     let mut auxiliary_destination_by_rank = vec![DIRECT_NONE_U32; local_group_count];
     for destination in auxiliary_destinations {
         if destination.target_helicity_id_or_sentinel != DIRECT_NONE_U32 {
@@ -225,13 +239,13 @@ fn primary_local_color_destination_map(
                 "persisted selector auxiliary destination fixes a numerical helicity",
             ));
         }
-        let slot = auxiliary_destination_by_rank
-            .get_mut(destination.target_sector_id as usize)
-            .ok_or_else(|| {
-                RusticolError::integrity(
-                    "persisted selector auxiliary destination has a non-dense physical sector",
-                )
-            })?;
+        let rank = auxiliary_sector_ids
+            .partition_point(|sector_id| *sector_id < destination.target_sector_id);
+        let slot = auxiliary_destination_by_rank.get_mut(rank).ok_or_else(|| {
+            RusticolError::integrity(
+                "persisted selector auxiliary destination has a non-dense physical sector",
+            )
+        })?;
         if *slot != DIRECT_NONE_U32 {
             return Err(RusticolError::integrity(
                 "persisted selector repeats an auxiliary physical sector",

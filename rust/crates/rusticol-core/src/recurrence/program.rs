@@ -171,6 +171,41 @@ impl ClosureTargetDomainCertificateV1 {
         })
     }
 
+    /// The certificate of the zero colour flows of a topology-replay or
+    /// all-flow program (`construct::zero_flow_sector_certificate`): at least
+    /// one, not every, physical sector. An all-flow program selects source
+    /// helicities at runtime and has no resolved helicities.
+    pub fn new_zero_flow(
+        physical_sector_count: u32,
+        resolved_helicity_count: u32,
+        certified_structural_zero_physical_sector_ids: Vec<u32>,
+        semantic_digest: SemanticDigest,
+    ) -> RusticolResult<Self> {
+        if physical_sector_count == 0 {
+            return Err(invalid("zero-flow certificate requires physical sectors"));
+        }
+        if certified_structural_zero_physical_sector_ids.is_empty()
+            || certified_structural_zero_physical_sector_ids.len() >= physical_sector_count as usize
+            || certified_structural_zero_physical_sector_ids
+                .windows(2)
+                .any(|pair| pair[0] >= pair[1])
+            || certified_structural_zero_physical_sector_ids
+                .iter()
+                .any(|sector_id| *sector_id >= physical_sector_count)
+        {
+            return Err(invalid(
+                "zero-flow certificate sectors are not a canonical proper subset",
+            ));
+        }
+        Ok(Self {
+            physical_sector_count,
+            resolved_helicity_count,
+            certified_structural_zero_physical_sector_ids:
+                certified_structural_zero_physical_sector_ids.into_boxed_slice(),
+            semantic_digest,
+        })
+    }
+
     pub const fn physical_sector_count(&self) -> u32 {
         self.physical_sector_count
     }
@@ -1946,6 +1981,23 @@ impl RecurrenceAmplitudeDestination {
         })
     }
 
+    /// The destination of a certified zero colour flow: no closure terms
+    /// (`RecurrenceProgram::validate` accepts it only for a sector of the
+    /// program's zero-flow certificate). Its amplitude is exactly zero.
+    pub fn zero_flow(
+        id: u32,
+        target_sector_id: u32,
+        target_helicity_id: Option<u32>,
+        closure_start: u64,
+    ) -> Self {
+        Self {
+            id,
+            target_sector_id,
+            target_helicity_id,
+            closure_range: CheckedTableRange::new(closure_start, 0),
+        }
+    }
+
     pub const fn id(self) -> u32 {
         self.id
     }
@@ -2180,6 +2232,48 @@ impl RecurrenceProgram {
         closure_terms: Vec<RecurrenceClosureTerm>,
         closure_proofs: ClosureProofMetadataV2,
     ) -> RusticolResult<Self> {
+        Self::new_with_closure_proofs_and_zero_flows(
+            strategy,
+            physical_sector_count,
+            retained_helicity_count,
+            dynamic_color_states,
+            currents,
+            contributions,
+            finalizations,
+            replay_targets,
+            resolved_helicities,
+            amplitude_destinations,
+            closure_terms,
+            closure_proofs,
+            None,
+        )
+    }
+
+    /// `new_with_closure_proofs` for a topology-replay or all-flow program
+    /// with zero colour flows, certified by `zero_flow_certificate`
+    /// (`ClosureTargetDomainCertificateV1::new_zero_flow`), which validation
+    /// checks against the program's destinations.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn new_with_closure_proofs_and_zero_flows(
+        strategy: RecurrenceStrategy,
+        physical_sector_count: u32,
+        retained_helicity_count: u64,
+        dynamic_color_states: Vec<DynamicLCColorState>,
+        currents: Vec<RecurrenceCurrent>,
+        contributions: Vec<RecurrenceContribution>,
+        finalizations: Vec<RecurrenceFinalization>,
+        replay_targets: Vec<RecurrenceReplayTarget>,
+        resolved_helicities: Vec<RecurrenceResolvedHelicity>,
+        amplitude_destinations: Vec<RecurrenceAmplitudeDestination>,
+        closure_terms: Vec<RecurrenceClosureTerm>,
+        closure_proofs: ClosureProofMetadataV2,
+        zero_flow_certificate: Option<ClosureTargetDomainCertificateV1>,
+    ) -> RusticolResult<Self> {
+        if zero_flow_certificate.is_some() && strategy == RecurrenceStrategy::ContractedColorUnion {
+            return Err(invalid(
+                "a contracted program certifies its closure target domain separately",
+            ));
+        }
         let program = Self {
             strategy,
             physical_sector_count,
@@ -2193,7 +2287,7 @@ impl RecurrenceProgram {
             amplitude_destinations: amplitude_destinations.into_boxed_slice(),
             closure_terms: closure_terms.into_boxed_slice(),
             closure_proofs,
-            closure_target_domain_certificate: None,
+            closure_target_domain_certificate: zero_flow_certificate,
             color_projection_certificate_body: None,
         };
         program.validate()?;
@@ -2816,6 +2910,40 @@ impl RecurrenceProgram {
                 "packed amplitude-destination ranges cover {next_closure} of {closure_count} terms"
             )));
         }
+        // A destination without closure terms is the zero colour flow of a
+        // sector the program's zero-flow certificate names, and a certified
+        // sector has no other destination.
+        let zero_flow_sector_ids = match (
+            self.strategy,
+            self.closure_target_domain_certificate.as_ref(),
+        ) {
+            (RecurrenceStrategy::ContractedColorUnion, _) | (_, None) => BTreeSet::new(),
+            (_, Some(certificate)) => {
+                if certificate.physical_sector_count() != self.physical_sector_count
+                    || certificate.resolved_helicity_count() as usize
+                        != self.resolved_helicities.len()
+                {
+                    return Err(invalid(
+                        "zero-flow certificate disagrees with its recurrence domain",
+                    ));
+                }
+                certificate
+                    .certified_structural_zero_physical_sector_ids()
+                    .iter()
+                    .copied()
+                    .collect()
+            }
+        };
+        for destination in &self.amplitude_destinations {
+            if (destination.closure_range.count == 0)
+                != zero_flow_sector_ids.contains(&destination.target_sector_id)
+            {
+                return Err(invalid(format!(
+                    "amplitude destination {} of sector {} disagrees with the zero-flow certificate",
+                    destination.id, destination.target_sector_id
+                )));
+            }
+        }
 
         for (index, term) in self.closure_terms.iter().enumerate() {
             let expected_id = index as u32;
@@ -3359,6 +3487,89 @@ mod tests {
             ],
         )
         .unwrap()
+    }
+
+    /// A two-sector topology-replay program whose sector 1 is a zero colour
+    /// flow: one destination without closure terms, valid only under a
+    /// zero-flow certificate that names exactly that sector.
+    fn program_with_a_zero_flow(
+        certificate: Option<ClosureTargetDomainCertificateV1>,
+    ) -> RusticolResult<RecurrenceProgram> {
+        let currents = vec![
+            RecurrenceCurrent::new(
+                0,
+                source_key(),
+                Some(ExactComplexRational::ONE),
+                CheckedTableRange::new(0, 0),
+                None,
+            )
+            .unwrap(),
+            RecurrenceCurrent::new(
+                1,
+                propagated_key(),
+                None,
+                CheckedTableRange::new(0, 1),
+                Some(0),
+            )
+            .unwrap(),
+        ];
+        let destinations = vec![
+            RecurrenceAmplitudeDestination::new(0, 0, Some(0), CheckedTableRange::new(0, 1))
+                .unwrap(),
+            RecurrenceAmplitudeDestination::zero_flow(1, 1, Some(0), 1),
+        ];
+        let terms = vec![
+            RecurrenceClosureTerm::new(0, 0, 0, None, vec![1], ExactComplexRational::ONE).unwrap(),
+        ];
+        let proofs = closure_proofs_from_materialized_terms(&currents, &destinations, &terms)?;
+        RecurrenceProgram::new_with_closure_proofs_and_zero_flows(
+            RecurrenceStrategy::TopologyReplay,
+            2,
+            1,
+            vec![DynamicLCColorState::new(0, None, vec![]).unwrap()],
+            currents,
+            vec![contribution(0)],
+            vec![RecurrenceFinalization::new(0, 1, Some(0), ExactComplexRational::ONE).unwrap()],
+            vec![
+                identity_replay_target(),
+                RecurrenceReplayTarget::new(1, 1, 1, vec![0], vec![1], ExactComplexRational::ONE)
+                    .unwrap(),
+            ],
+            vec![resolved_helicity()],
+            destinations,
+            terms,
+            proofs,
+            certificate,
+        )
+    }
+
+    #[test]
+    fn a_destination_without_closure_terms_needs_a_zero_flow_certificate() {
+        let certificate = |sector_ids: Vec<u32>| {
+            ClosureTargetDomainCertificateV1::new_zero_flow(2, 1, sector_ids, digest(30))
+        };
+        let program = program_with_a_zero_flow(Some(certificate(vec![1]).unwrap())).unwrap();
+        assert_eq!(
+            program.closure_target_domain_certificate().map(
+                ClosureTargetDomainCertificateV1::certified_structural_zero_physical_sector_ids
+            ),
+            Some([1].as_slice())
+        );
+        for certificate in [None, Some(certificate(vec![0]).unwrap())] {
+            let error = program_with_a_zero_flow(certificate).unwrap_err();
+            assert!(
+                error
+                    .message()
+                    .contains("disagrees with the zero-flow certificate"),
+                "{error}"
+            );
+        }
+        // A zero-flow certificate names a proper, canonical, nonempty subset.
+        for sector_ids in [vec![], vec![0, 1], vec![1, 1], vec![2]] {
+            assert!(certificate(sector_ids).is_err());
+        }
+        // All-flow programs resolve no helicities; their certificate has none.
+        assert!(ClosureTargetDomainCertificateV1::new_zero_flow(2, 0, vec![1], digest(30)).is_ok());
     }
 
     #[test]

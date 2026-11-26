@@ -5436,6 +5436,11 @@ fn build_recurrence_program_impl(
         );
         stage_diagnostics.extend(lane_stage_diagnostics);
     }
+    if isolate_replay_lanes && closures.is_empty() {
+        return Err(invalid(
+            "recurrence builder found no exact closure for any physical LC sector of the isolated replay lanes",
+        ));
+    }
     if pending_contribution_entry_count(&currents)? != resident_contribution_count {
         return Err(invalid(
             "resident recurrence contribution count disagrees with pending storage",
@@ -8476,10 +8481,8 @@ fn build_bulk_color_union_closures(
             .keys()
             .map(|key| key.target_sector_id)
             .collect::<BTreeSet<_>>();
-        if let Some(sector_id) = materialized_sectors
-            .iter()
-            .copied()
-            .find(|sector_id| !covered_sector_ids.contains(sector_id))
+        if let Some(sector_id) =
+            uncovered_nonzero_sector(prepared_sectors, materialized_sectors, &covered_sector_ids)?
         {
             return Err(invalid(format!(
                 "recurrence builder found no exact closure for physical LC sector {sector_id} after bulk all-flow closure routing"
@@ -8677,7 +8680,8 @@ fn build_closures_per_sector(
             }
         }
         if result.len() == sector_result_start && strategy != RecurrenceStrategy::AllFlowUnion {
-            if strategy == RecurrenceStrategy::ContractedColorUnion {
+            if strategy == RecurrenceStrategy::ContractedColorUnion || closes_to_zero_flow(sector)?
+            {
                 continue;
             }
             let closure_color_attempts = collect_closure_color_attempts(
@@ -8723,12 +8727,23 @@ fn build_closures_per_sector(
     // before its partner; only the authenticated certificate establishes that
     // relationship.  Coverage is recorded exclusively after the corresponding
     // exact row (and optional phase-bearing partner row) was inserted above.
-    if strategy == RecurrenceStrategy::AllFlowUnion
-        && let Some(sector_id) = materialized_sectors
-            .iter()
-            .copied()
-            .find(|sector_id| !covered_sector_ids.contains(sector_id))
-    {
+    // Zero colour flows (`closes_to_zero_flow`) are skipped above; a process
+    // none of whose sectors closes is refused with its first sector's
+    // diagnostics.
+    let refused_sector_id = match strategy {
+        RecurrenceStrategy::AllFlowUnion => {
+            uncovered_nonzero_sector(prepared_sectors, materialized_sectors, &covered_sector_ids)?
+        }
+        // Isolated topology-replay lanes each build one sector group; the
+        // caller refuses a process none of whose lanes closes.
+        RecurrenceStrategy::TopologyReplay
+            if result.is_empty() && construction_domain.is_none() =>
+        {
+            materialized_sectors.first().copied()
+        }
+        RecurrenceStrategy::TopologyReplay | RecurrenceStrategy::ContractedColorUnion => None,
+    };
+    if let Some(sector_id) = refused_sector_id {
         let sector = prepared_sectors.get(sector_id)?;
         let anchor_ids = support_index
             .current_ids(&sector.anchor_support)
@@ -8812,6 +8827,41 @@ fn build_closures_per_sector(
         materialized_sectors,
         closure_domain_sector_owners(strategy, prepared_sectors, materialized_sectors)?,
     )
+}
+
+/// Whether a physical sector whose closure enumeration closed nothing is a
+/// zero colour flow rather than a construction failure. An open-lines sector
+/// is covered only by its own closures (reflection certificates relate
+/// single-trace sectors, `closure_reflection_projection`), and the enumeration
+/// over every anchor current, complement current and closure row of the sector
+/// is exhaustive: no tree diagram has that colour flow at the requested
+/// orders. Pure electroweak four-quark amplitudes are the case, where only the
+/// pairing of the lines a W joins has diagrams (c d > u s, u d~ > t b~). The
+/// Dirac-Weyl closures the enumeration cannot build are refused before, by the
+/// structural-demand pass (`DiracWeylClosureGuard`). A process none of whose
+/// sectors closes stays refused.
+fn closes_to_zero_flow(sector: &PreparedClosureSector) -> RusticolResult<bool> {
+    Ok(sector.row.kind()? == ProcessLCSectorKind::OpenLines)
+}
+
+/// The first materialized sector an all-flow union left uncovered that is not
+/// a zero colour flow (`closes_to_zero_flow`): every sector when none is
+/// covered.
+fn uncovered_nonzero_sector(
+    prepared_sectors: &PreparedClosureSectorCatalog,
+    materialized_sectors: &BTreeSet<u32>,
+    covered_sector_ids: &BTreeSet<u32>,
+) -> RusticolResult<Option<u32>> {
+    for sector_id in materialized_sectors.iter().copied() {
+        if covered_sector_ids.contains(&sector_id) {
+            continue;
+        }
+        if covered_sector_ids.is_empty() || !closes_to_zero_flow(prepared_sectors.get(sector_id)?)?
+        {
+            return Ok(Some(sector_id));
+        }
+    }
+    Ok(None)
 }
 
 fn collect_closure_color_attempts(
@@ -10534,6 +10584,74 @@ fn complete_closure_target_domain_certificate(
     .map(Some)
 }
 
+/// The structural-zero physical-sector certificate of a topology-replay or
+/// all-flow program with zero colour flows (`closes_to_zero_flow`): the
+/// physical sectors that no amplitude destination with closure terms targets,
+/// through their replay representative. `None` when every sector has a destination, so a
+/// program without a zero flow is unchanged; contracted programs certify
+/// their complete domain in `complete_closure_target_domain_certificate`.
+fn zero_flow_sector_certificate(
+    strategy: RecurrenceStrategy,
+    sector_count: usize,
+    replay_targets: &[RecurrenceReplayTarget],
+    amplitude_destinations: &[RecurrenceAmplitudeDestination],
+    resolved_helicity_count: usize,
+) -> RusticolResult<Option<ClosureTargetDomainCertificateV1>> {
+    if strategy == RecurrenceStrategy::ContractedColorUnion {
+        return Ok(None);
+    }
+    let physical_sector_count = u32::try_from(sector_count)
+        .map_err(|_| invalid("zero-flow certificate physical-sector count exceeds u32"))?;
+    let resolved_helicity_count = u32::try_from(resolved_helicity_count)
+        .map_err(|_| invalid("zero-flow certificate resolved-helicity count exceeds u32"))?;
+    let mut destination_counts = BTreeMap::<u32, u64>::new();
+    for destination in amplitude_destinations
+        .iter()
+        .filter(|destination| destination.closure_range().count != 0)
+    {
+        *destination_counts
+            .entry(destination.target_sector_id())
+            .or_default() += 1;
+    }
+    let mut hash = Sha256::new();
+    hash.update(b"pyamplicol-recurrence-zero-flow-sector-domain-v1\0");
+    hash.update(strategy.as_u32().to_le_bytes());
+    hash.update(physical_sector_count.to_le_bytes());
+    hash.update(resolved_helicity_count.to_le_bytes());
+    let mut zero_sector_ids = Vec::new();
+    for sector_id in 0..physical_sector_count {
+        let source_sector_id = if replay_targets.is_empty() {
+            sector_id
+        } else {
+            replay_targets
+                .get(sector_id as usize)
+                .filter(|target| target.id() == sector_id && target.target_sector_id() == sector_id)
+                .ok_or_else(|| invalid("zero-flow certificate replay targets are not canonical"))?
+                .materialized_sector_id()
+        };
+        let destination_count = destination_counts
+            .get(&source_sector_id)
+            .copied()
+            .unwrap_or(0);
+        hash.update(sector_id.to_le_bytes());
+        hash.update(source_sector_id.to_le_bytes());
+        hash.update(destination_count.to_le_bytes());
+        if destination_count == 0 {
+            zero_sector_ids.push(sector_id);
+        }
+    }
+    if zero_sector_ids.is_empty() {
+        return Ok(None);
+    }
+    ClosureTargetDomainCertificateV1::new_zero_flow(
+        physical_sector_count,
+        resolved_helicity_count,
+        zero_sector_ids,
+        SemanticDigest::new(hash.finalize().into())?,
+    )
+    .map(Some)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn finish_program(
     strategy: RecurrenceStrategy,
@@ -10648,11 +10766,50 @@ fn finish_program(
         finalizations,
     } = materialized;
 
-    let destination_keys = pending_closures
+    let mut destination_keys = pending_closures
         .iter()
         .filter(|(_, group)| !group.exact_factor.is_zero())
         .map(|(key, _)| (key.target_sector_id, key.complete_source_states.clone()))
         .collect::<BTreeSet<_>>();
+    // A topology-replay or all-flow sector that closes to a zero colour flow
+    // (`closes_to_zero_flow`) keeps one destination without closure terms
+    // (topology replay: at the first resolved helicity), so that its public
+    // flow and replay targets resolve at runtime and evaluate to an exact
+    // zero; the zero-flow certificate names it. Programs without a zero flow
+    // are unchanged.
+    let zero_flow_destination_keys = if strategy == RecurrenceStrategy::ContractedColorUnion {
+        BTreeSet::new()
+    } else {
+        let destination_sector_ids = destination_keys
+            .iter()
+            .map(|(sector_id, _)| *sector_id)
+            .collect::<BTreeSet<_>>();
+        let zero_flow_sector_ids = exhaustive_closure_sector_ids
+            .iter()
+            .copied()
+            .filter(|sector_id| !destination_sector_ids.contains(sector_id))
+            .collect::<Vec<_>>();
+        if zero_flow_sector_ids.is_empty() {
+            BTreeSet::new()
+        } else {
+            let source_states: Box<[SourceStateAssignment]> =
+                if strategy == RecurrenceStrategy::TopologyReplay {
+                    helicity_ids
+                        .iter()
+                        .find(|(_, helicity_id)| **helicity_id == 0)
+                        .map(|(source_states, _)| source_states.clone())
+                        .ok_or_else(|| invalid("a zero colour flow needs a resolved helicity"))?
+                } else {
+                    // All-flow destinations select source helicities at runtime.
+                    Box::default()
+                };
+            zero_flow_sector_ids
+                .into_iter()
+                .map(|sector_id| (sector_id, source_states.clone()))
+                .collect::<BTreeSet<_>>()
+        }
+    };
+    destination_keys.extend(zero_flow_destination_keys.iter().cloned());
     let mut closure_terms = Vec::new();
     let mut closure_proof_contributions = Vec::new();
     let mut closure_proof_groups = Vec::new();
@@ -10864,6 +11021,20 @@ fn finish_program(
                 },
             )?;
         }
+        if zero_flow_destination_keys.contains(&(sector_id, source_states.clone())) {
+            if closure_terms.len() as u64 != start {
+                return Err(invalid(
+                    "a zero colour-flow destination received closure terms",
+                ));
+            }
+            amplitude_destinations.push(RecurrenceAmplitudeDestination::zero_flow(
+                destination_id,
+                sector_id,
+                target_helicity_id,
+                start,
+            ));
+            continue;
+        }
         amplitude_destinations.push(RecurrenceAmplitudeDestination::new(
             destination_id,
             sector_id,
@@ -10910,7 +11081,14 @@ fn finish_program(
             materialize_three_line_certificates(&three_line_certificate_ids)?,
             candidate_domain_certificate,
         )?;
-    let mut program = RecurrenceProgram::new_with_closure_proofs(
+    let zero_flow_certificate = zero_flow_sector_certificate(
+        strategy,
+        sector_count,
+        &replay_targets,
+        &amplitude_destinations,
+        resolved_helicities.len(),
+    )?;
+    let mut program = RecurrenceProgram::new_with_closure_proofs_and_zero_flows(
         strategy,
         u32::try_from(sector_count).map_err(|_| invalid("physical sector count exceeds u32"))?,
         retained_helicity_count,
@@ -10923,6 +11101,7 @@ fn finish_program(
         amplitude_destinations,
         closure_terms,
         closure_proofs,
+        zero_flow_certificate,
     )?;
     if let Some(certificate) = closure_target_domain_certificate {
         program = program.with_closure_target_domain_certificate(certificate)?;
