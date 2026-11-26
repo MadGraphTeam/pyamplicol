@@ -182,6 +182,10 @@ impl OnTheFlyNativeRuntime {
                             &self.templates,
                         )?)?;
                 let mut executor = OnTheFlyQueryFamilyExecutorV1::new(resolver);
+                // A QED-order-weighted lane (several Born orders of a model
+                // whose couplings come from one global factor): the order
+                // family weights its closures exactly as the ordinary one.
+                executor.set_qed_order_index(self.qed_order_weights.map(|(_, _, index)| index));
                 executor.resolver_mut().bind_on_the_fly_family(
                     &self.templates,
                     &self.direct_catalog,
@@ -237,6 +241,17 @@ impl OnTheFlyNativeRuntime {
             runtime_parameters,
         )?;
         executor.set_parameters(&prepared)?;
+        if let Some((alpha_s_slot, alpha_ew_slot, _)) = self.qed_order_weights {
+            let value = |slot: usize| {
+                runtime_parameters.get(slot).copied().ok_or_else(|| {
+                    RusticolError::integrity("on-the-fly normalization input slot is absent")
+                })
+            };
+            executor.set_qed_order_weight(Some(super::super::qed_order_weight_at(
+                value(alpha_s_slot)?,
+                value(alpha_ew_slot)?,
+            )?))?;
+        }
         let source_major_len = on_the_fly_source_major_momenta_into(
             &self.seed,
             point_major_momenta,

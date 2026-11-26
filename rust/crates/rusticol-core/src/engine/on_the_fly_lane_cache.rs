@@ -88,12 +88,25 @@ impl OnTheFlyNativeRuntime {
         })
     }
 
+    /// The QED-order-weighted closure factors a cache of this lane carries
+    /// after its version-1 rows, `None` for an unweighted lane.
+    pub(in super::super) fn qed_closure_factors_snapshot(&self) -> Option<Vec<(u32, i32)>> {
+        self.qed_order_weights
+            .map(|_| self.executor.qed_closure_factors().to_vec())
+    }
+
+    pub(in super::super) fn is_qed_order_weighted(&self) -> bool {
+        self.qed_order_weights.is_some()
+    }
+
     pub(in super::super) fn restore_snapshot(
         &mut self,
         snapshot: OnTheFlyLaneSnapshotV1,
         requests: Option<Vec<OnTheFlyLcQueryRequestV1>>,
         contracted_selection: Option<(&[usize], usize)>,
+        qed_closure_factors: Vec<(u32, i32)>,
     ) -> RusticolResult<()> {
+        let qed_closure_factors = qed_closure_factors.into_boxed_slice();
         let OnTheFlyLaneSnapshotV1 {
             policy,
             process_preparation_count,
@@ -178,7 +191,8 @@ impl OnTheFlyNativeRuntime {
                     &self.direct_catalog,
                     executor.executor_keys(),
                 )?;
-                self.executor.restore_snapshot(executor, capacity)
+                self.executor
+                    .restore_snapshot(executor, capacity, qed_closure_factors)
             })();
             match restored {
                 Ok(handle) => {

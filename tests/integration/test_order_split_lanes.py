@@ -230,6 +230,8 @@ def test_leading_colour_partials_match_madgraph(
         ("g u > u d d~", "lc"),
         ("u u~ > t t~", "full"),
         ("u u~ > t t~", "lc"),
+        ("u u~ > d d~ g", "nlc"),
+        ("g u > u d d~", "nlc"),
     ],
 )
 def test_partials_equal_the_recurrence_lane_per_selection(
@@ -482,7 +484,7 @@ def test_compiled_artifact_without_recorded_orders_evaluates_and_refuses_partial
 
 
 @pytest.mark.parametrize("lane", _LANES)
-@pytest.mark.parametrize("accuracy", ["full", "lc"])
+@pytest.mark.parametrize("accuracy", ["full", "nlc", "lc"])
 def test_two_gluon_partials_equal_the_recurrence_lane(
     sm_model: ModelSource, tmp_path: Path, accuracy: str, lane: str
 ) -> None:

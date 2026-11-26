@@ -23,6 +23,7 @@ from pyamplicol._internal.versions import (
     ON_THE_FLY_CONTRACTED_COLOR_RUNTIME_CAPABILITY,
     ON_THE_FLY_LC_COLOR_RUNTIME_CAPABILITY,
     ON_THE_FLY_RUNTIME_CAPABILITY,
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_DIRECT_ARENA_RUNTIME_CAPABILITY,
     RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY,
     SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY,
@@ -1111,6 +1112,10 @@ class RusticolRuntimeBackend:
                     expected_capabilities.add(
                         SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY
                     )
+                # A QED-order-weighted normalization, authenticated against
+                # the execution's normalization by the native loader.
+                if QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY in capability_values:
+                    expected_capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
             # The native loader has already authenticated the OTF color payload.
             # Keep this adapter check exact: only contracted color may add FFT.
             if (

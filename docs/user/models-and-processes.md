@@ -62,9 +62,20 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
   contacts.
 - A request whose Born amplitudes carry several coupling orders (for example
   `u u~ > d d~` with `{ QCD = 2, QED = 2 }`, where gluon and electroweak
-  exchange interfere) is refused with a `GenerationError`: restrict
-  `max_coupling_orders` to one Born order or use a UFO model. The default
-  minimal policy keeps one order (QCD only for `u u~ > d d~`).
+  exchange interfere) is served in every execution mode and at every colour
+  accuracy, with the interference between the orders, as with the UFO `sm`.
+  The global factor is then `(4 pi alpha_s)^N`, `N` the common total order of
+  the Born amplitudes, and every QED order of an amplitude is weighted by
+  `sqrt(8 pi alpha_ew / (4 pi alpha_s))` from the current
+  `normalization.alpha_s_me_check` and `normalization.alpha_ew`: a run-time
+  change of either rescales each squared coupling order by its own powers.
+  The recurrence mode splits the result by squared coupling order
+  (`evaluate_orders`, in Python and the native SDKs). Such an artifact
+  requires the runtime capability `rusticol.normalization.qed-order-weights.v1`
+  (older runtimes refuse it), takes `normalization.alpha_s_me_check > 0`, and
+  its electroweak coupling components (`coupling.<kind>.<particles>.component_<i>`)
+  stay the local couplings: a binding of one is weighted the same way. The
+  default minimal policy keeps one order (QCD only for `u u~ > d d~`).
 - Concrete charged-current requests such as `u d~ > c s~` are served;
   inclusive `p`/`j` requests keep a quark-flavour-changing jet subprocess only
   when the request implies a W.

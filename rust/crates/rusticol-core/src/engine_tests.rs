@@ -4463,6 +4463,7 @@ pub(super) fn empty_generic_runtime() -> ExecutionRuntime {
         model_parameter_name_to_index: BTreeMap::new(),
         model_parameter_runtime_slots: BTreeMap::new(),
         model_parameter_values_f64: vec![0.118],
+        qed_order_weights: None,
         model_parameter_evaluator: None,
         physics_reduction_override: None,
         physics: None,

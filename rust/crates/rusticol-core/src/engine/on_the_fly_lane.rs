@@ -241,6 +241,9 @@ pub(super) struct OnTheFlyNativeRuntime {
     /// The order-split family of the last `evaluate_orders` selection; never
     /// part of the ordinary evaluation.
     order_state: Option<Box<orders::OnTheFlyOrderStateV1>>,
+    /// A QED-order-weighted lane: (`alpha_s` runtime slot, `alpha_ew` runtime
+    /// slot, QED coupling-order index); its closures carry `rho^QED`.
+    qed_order_weights: Option<(usize, usize, usize)>,
 }
 
 fn emit_progress(
@@ -413,6 +416,7 @@ impl OnTheFlyNativeRuntime {
             symmetric_group_color_workspace: None,
             order_catalog: std::cell::OnceCell::new(),
             order_state: None,
+            qed_order_weights: None,
         })
     }
 
@@ -625,128 +629,133 @@ impl OnTheFlyNativeRuntime {
             })?;
         amplitude_destinations.resize(requests.len(), None);
 
+        let qed_order_index = self.qed_order_index();
         let templates = &self.templates;
         let direct_catalog = &self.direct_catalog;
         let seed = &self.seed;
         let executor = &mut self.executor;
         let mut binding_started = false;
         let mut processed_query_count = 0_usize;
-        let streamed = build_streamed_query_family_candidate_v1(direct_catalog, |consumer| {
-            while processed_query_count < requests.len() {
-                let chunk_end = processed_query_count
-                    .saturating_add(query_pool.chunk_capacity())
-                    .min(requests.len());
-                let expected_queries = requests[processed_query_count..chunk_end]
-                    .iter()
-                    .map(|request| grammar.canonicalize_query(seed, request.query.clone()))
-                    .collect::<RusticolResult<Vec<_>>>()?;
-                let outcomes = query_pool.build_chunk(
-                    templates,
-                    direct_catalog,
-                    seed,
-                    coupling_policy,
-                    grammar,
-                    enable_cyclic_trace_reflection,
-                    expected_queries.clone(),
-                )?;
-                if outcomes.len() != expected_queries.len() {
-                    return Err(RusticolError::integrity(
-                        "on-the-fly LC warm-up trace builder changed a chunk count",
-                    ));
-                }
-
-                let mut traces = Vec::new();
-                let mut projection_slots = Vec::new();
-                traces.try_reserve_exact(outcomes.len()).map_err(|error| {
-                    RusticolError::invalid_argument(format!(
-                        "on-the-fly LC warm-up trace-chunk allocation failed: {error}"
-                    ))
-                })?;
-                projection_slots
-                    .try_reserve_exact(outcomes.len())
-                    .map_err(|error| {
-                        RusticolError::invalid_argument(format!(
-                            "on-the-fly LC warm-up projection-chunk allocation failed: {error}"
-                        ))
-                    })?;
-                for (chunk_offset, (expected_query, outcome)) in
-                    expected_queries.into_iter().zip(outcomes).enumerate()
-                {
-                    let request_index = processed_query_count + chunk_offset;
-                    match outcome {
-                        OnTheFlySelectedQueryOutcomeV1::Trace(selected) => {
-                            if selected.query != expected_query {
-                                return Err(RusticolError::integrity(
-                                    "on-the-fly LC warm-up trace query changed during construction",
-                                ));
-                            }
-                            projection_slots.push(request_index);
-                            traces.push(selected);
-                        }
-                        OnTheFlySelectedQueryOutcomeV1::StructuralZero { query } => {
-                            if query != expected_query {
-                                return Err(RusticolError::integrity(
-                                    "on-the-fly LC warm-up structural-zero query changed during construction",
-                                ));
-                            }
-                        }
-                    }
-                }
-                if !traces.is_empty() {
-                    if !binding_started {
-                        executor
-                            .resolver_mut()
-                            .begin_on_the_fly_family_binding(templates, direct_catalog)?;
-                        binding_started = true;
-                    }
-                    executor.resolver_mut().extend_on_the_fly_family_binding(
+        let streamed = build_streamed_query_family_candidate_v1(
+            direct_catalog,
+            qed_order_index,
+            |consumer| {
+                while processed_query_count < requests.len() {
+                    let chunk_end = processed_query_count
+                        .saturating_add(query_pool.chunk_capacity())
+                        .min(requests.len());
+                    let expected_queries = requests[processed_query_count..chunk_end]
+                        .iter()
+                        .map(|request| grammar.canonicalize_query(seed, request.query.clone()))
+                        .collect::<RusticolResult<Vec<_>>>()?;
+                    let outcomes = query_pool.build_chunk(
                         templates,
                         direct_catalog,
                         seed,
-                        traces.iter_mut().map(|selected| &mut selected.trace),
+                        coupling_policy,
+                        grammar,
+                        enable_cyclic_trace_reflection,
+                        expected_queries.clone(),
                     )?;
-                    let inputs = traces
-                        .iter()
-                        .map(|selected| QueryFamilyTraceInput {
-                            trace: &selected.trace,
-                            projection: selected.projection,
-                        })
-                        .collect::<Vec<_>>();
-                    let destinations = consumer.push_chunk(&inputs)?;
-                    if destinations.len() != projection_slots.len() {
+                    if outcomes.len() != expected_queries.len() {
                         return Err(RusticolError::integrity(
-                            "on-the-fly LC warm-up streamed destination range changed a chunk count",
+                            "on-the-fly LC warm-up trace builder changed a chunk count",
                         ));
                     }
-                    for (request_index, destination) in
-                        projection_slots.into_iter().zip(destinations)
+
+                    let mut traces = Vec::new();
+                    let mut projection_slots = Vec::new();
+                    traces.try_reserve_exact(outcomes.len()).map_err(|error| {
+                        RusticolError::invalid_argument(format!(
+                            "on-the-fly LC warm-up trace-chunk allocation failed: {error}"
+                        ))
+                    })?;
+                    projection_slots
+                        .try_reserve_exact(outcomes.len())
+                        .map_err(|error| {
+                            RusticolError::invalid_argument(format!(
+                                "on-the-fly LC warm-up projection-chunk allocation failed: {error}"
+                            ))
+                        })?;
+                    for (chunk_offset, (expected_query, outcome)) in
+                        expected_queries.into_iter().zip(outcomes).enumerate()
                     {
-                        let slot =
-                            amplitude_destinations
-                                .get_mut(request_index)
-                                .ok_or_else(|| {
-                                    RusticolError::integrity(
-                                        "on-the-fly LC warm-up projection slot is absent",
-                                    )
-                                })?;
-                        if slot.replace(destination as usize).is_some() {
-                            return Err(RusticolError::integrity(
-                                "on-the-fly LC warm-up projection slot is repeated",
-                            ));
+                        let request_index = processed_query_count + chunk_offset;
+                        match outcome {
+                            OnTheFlySelectedQueryOutcomeV1::Trace(selected) => {
+                                if selected.query != expected_query {
+                                    return Err(RusticolError::integrity(
+                                        "on-the-fly LC warm-up trace query changed during construction",
+                                    ));
+                                }
+                                projection_slots.push(request_index);
+                                traces.push(selected);
+                            }
+                            OnTheFlySelectedQueryOutcomeV1::StructuralZero { query } => {
+                                if query != expected_query {
+                                    return Err(RusticolError::integrity(
+                                        "on-the-fly LC warm-up structural-zero query changed during construction",
+                                    ));
+                                }
+                            }
                         }
                     }
+                    if !traces.is_empty() {
+                        if !binding_started {
+                            executor
+                                .resolver_mut()
+                                .begin_on_the_fly_family_binding(templates, direct_catalog)?;
+                            binding_started = true;
+                        }
+                        executor.resolver_mut().extend_on_the_fly_family_binding(
+                            templates,
+                            direct_catalog,
+                            seed,
+                            traces.iter_mut().map(|selected| &mut selected.trace),
+                        )?;
+                        let inputs = traces
+                            .iter()
+                            .map(|selected| QueryFamilyTraceInput {
+                                trace: &selected.trace,
+                                projection: selected.projection,
+                            })
+                            .collect::<Vec<_>>();
+                        let destinations = consumer.push_chunk(&inputs)?;
+                        if destinations.len() != projection_slots.len() {
+                            return Err(RusticolError::integrity(
+                                "on-the-fly LC warm-up streamed destination range changed a chunk count",
+                            ));
+                        }
+                        for (request_index, destination) in
+                            projection_slots.into_iter().zip(destinations)
+                        {
+                            let slot =
+                                amplitude_destinations
+                                    .get_mut(request_index)
+                                    .ok_or_else(|| {
+                                        RusticolError::integrity(
+                                            "on-the-fly LC warm-up projection slot is absent",
+                                        )
+                                    })?;
+                            if slot.replace(destination as usize).is_some() {
+                                return Err(RusticolError::integrity(
+                                    "on-the-fly LC warm-up projection slot is repeated",
+                                ));
+                            }
+                        }
+                    }
+                    processed_query_count = chunk_end;
+                    progress.emit(
+                        NativeOnTheFlyWarmUpEventKind::Update,
+                        NativeOnTheFlyWarmUpStage::QueryFamily,
+                        processed_query_count,
+                        requests.len(),
+                        None,
+                    )?;
                 }
-                processed_query_count = chunk_end;
-                progress.emit(
-                    NativeOnTheFlyWarmUpEventKind::Update,
-                    NativeOnTheFlyWarmUpStage::QueryFamily,
-                    processed_query_count,
-                    requests.len(),
-                    None,
-                )?;
-            }
-            Ok(())
-        })?;
+                Ok(())
+            },
+        )?;
         if processed_query_count != requests.len() {
             return Err(RusticolError::integrity(
                 "on-the-fly LC warm-up streamed construction omitted a selected query",
@@ -1292,6 +1301,7 @@ impl OnTheFlyNativeRuntime {
                 })?;
             amplitude_destinations.resize(query_count, None);
 
+            let qed_order_index = self.qed_order_index();
             let templates = &self.templates;
             let direct_catalog = &self.direct_catalog;
             let seed = &self.seed;
@@ -1300,149 +1310,155 @@ impl OnTheFlyNativeRuntime {
             let mut processed_query_count = 0_usize;
             #[cfg(test)]
             let mut max_live_query_outcomes = 0_usize;
-            let streamed = build_streamed_query_family_candidate_v1(direct_catalog, |consumer| {
-                while processed_query_count < query_count {
-                    let chunk_end = processed_query_count
-                        .saturating_add(query_pool.chunk_capacity())
-                        .min(query_count);
-                    let mut queries = Vec::new();
-                    queries
-                        .try_reserve_exact(chunk_end - processed_query_count)
-                        .map_err(|error| {
+            let streamed = build_streamed_query_family_candidate_v1(
+                direct_catalog,
+                qed_order_index,
+                |consumer| {
+                    while processed_query_count < query_count {
+                        let chunk_end = processed_query_count
+                            .saturating_add(query_pool.chunk_capacity())
+                            .min(query_count);
+                        let mut queries = Vec::new();
+                        queries
+                            .try_reserve_exact(chunk_end - processed_query_count)
+                            .map_err(|error| {
+                                RusticolError::invalid_argument(format!(
+                                    "on-the-fly contracted query-chunk allocation failed: {error}"
+                                ))
+                            })?;
+                        for request_index in processed_query_count..chunk_end {
+                            let helicity_position = request_index / structural_color_count;
+                            let owner_ordinal = request_index % structural_color_count;
+                            let query = selectors.decoded_query_at(
+                                seed,
+                                helicity_ordinals[helicity_position],
+                                owner_ordinal,
+                            )?;
+                            queries.push(grammar.canonicalize_query(seed, query)?);
+                        }
+                        let expected_queries = queries.clone();
+                        let outcomes = query_pool.build_chunk(
+                            templates,
+                            direct_catalog,
+                            seed,
+                            coupling_policy,
+                            grammar,
+                            enable_cyclic_trace_reflection,
+                            queries,
+                        )?;
+                        if outcomes.len() != expected_queries.len() {
+                            return Err(RusticolError::integrity(
+                                "on-the-fly contracted trace builder changed a chunk count",
+                            ));
+                        }
+                        #[cfg(test)]
+                        {
+                            max_live_query_outcomes = max_live_query_outcomes.max(outcomes.len());
+                        }
+
+                        let mut traces = Vec::new();
+                        let mut projection_slots = Vec::new();
+                        traces.try_reserve_exact(outcomes.len()).map_err(|error| {
                             RusticolError::invalid_argument(format!(
-                                "on-the-fly contracted query-chunk allocation failed: {error}"
+                                "on-the-fly contracted trace-chunk allocation failed: {error}"
                             ))
                         })?;
-                    for request_index in processed_query_count..chunk_end {
-                        let helicity_position = request_index / structural_color_count;
-                        let owner_ordinal = request_index % structural_color_count;
-                        let query = selectors.decoded_query_at(
-                            seed,
-                            helicity_ordinals[helicity_position],
-                            owner_ordinal,
-                        )?;
-                        queries.push(grammar.canonicalize_query(seed, query)?);
-                    }
-                    let expected_queries = queries.clone();
-                    let outcomes = query_pool.build_chunk(
-                        templates,
-                        direct_catalog,
-                        seed,
-                        coupling_policy,
-                        grammar,
-                        enable_cyclic_trace_reflection,
-                        queries,
-                    )?;
-                    if outcomes.len() != expected_queries.len() {
-                        return Err(RusticolError::integrity(
-                            "on-the-fly contracted trace builder changed a chunk count",
-                        ));
-                    }
-                    #[cfg(test)]
-                    {
-                        max_live_query_outcomes = max_live_query_outcomes.max(outcomes.len());
-                    }
-
-                    let mut traces = Vec::new();
-                    let mut projection_slots = Vec::new();
-                    traces.try_reserve_exact(outcomes.len()).map_err(|error| {
-                        RusticolError::invalid_argument(format!(
-                            "on-the-fly contracted trace-chunk allocation failed: {error}"
-                        ))
-                    })?;
-                    projection_slots
+                        projection_slots
                         .try_reserve_exact(outcomes.len())
                         .map_err(|error| {
                             RusticolError::invalid_argument(format!(
                                 "on-the-fly contracted projection-chunk allocation failed: {error}"
                             ))
                         })?;
-                    for (chunk_offset, (expected_query, outcome)) in
-                        expected_queries.into_iter().zip(outcomes).enumerate()
-                    {
-                        let request_index = processed_query_count + chunk_offset;
-                        let helicity_position = request_index / structural_color_count;
-                        let owner_ordinal = request_index % structural_color_count;
-                        let projection_index = contracted_projection_index(
-                            helicity_position,
-                            owner_ordinal,
-                            structural_color_count,
-                            destination_by_owner_ordinal,
-                        )?;
-                        match outcome {
-                            OnTheFlySelectedQueryOutcomeV1::Trace(selected) => {
-                                if selected.query != expected_query {
-                                    return Err(RusticolError::integrity(
-                                        "on-the-fly contracted trace query changed during construction",
-                                    ));
-                                }
-                                projection_slots.push(projection_index);
-                                traces.push(selected);
-                            }
-                            OnTheFlySelectedQueryOutcomeV1::StructuralZero { query: selected } => {
-                                if selected != expected_query {
-                                    return Err(RusticolError::integrity(
-                                        "on-the-fly contracted structural-zero query changed during construction",
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                    if !traces.is_empty() {
-                        if !binding_started {
-                            executor
-                                .resolver_mut()
-                                .begin_on_the_fly_family_binding(templates, direct_catalog)?;
-                            binding_started = true;
-                        }
-                        executor.resolver_mut().extend_on_the_fly_family_binding(
-                            templates,
-                            direct_catalog,
-                            seed,
-                            traces.iter_mut().map(|selected| &mut selected.trace),
-                        )?;
-                        let inputs = traces
-                            .iter()
-                            .map(|selected| QueryFamilyTraceInput {
-                                trace: &selected.trace,
-                                projection: selected.projection,
-                            })
-                            .collect::<Vec<_>>();
-                        let destinations = consumer.push_chunk(&inputs)?;
-                        if destinations.len() != projection_slots.len() {
-                            return Err(RusticolError::integrity(
-                                "on-the-fly streamed destination range changed a chunk count",
-                            ));
-                        }
-                        for (projection_index, destination) in
-                            projection_slots.into_iter().zip(destinations)
+                        for (chunk_offset, (expected_query, outcome)) in
+                            expected_queries.into_iter().zip(outcomes).enumerate()
                         {
-                            let slot = amplitude_destinations
-                                .get_mut(projection_index)
-                                .ok_or_else(|| {
-                                    RusticolError::integrity(
-                                        "on-the-fly contracted projection slot is absent",
-                                    )
-                                })?;
-                            if slot.replace(destination as usize).is_some() {
+                            let request_index = processed_query_count + chunk_offset;
+                            let helicity_position = request_index / structural_color_count;
+                            let owner_ordinal = request_index % structural_color_count;
+                            let projection_index = contracted_projection_index(
+                                helicity_position,
+                                owner_ordinal,
+                                structural_color_count,
+                                destination_by_owner_ordinal,
+                            )?;
+                            match outcome {
+                                OnTheFlySelectedQueryOutcomeV1::Trace(selected) => {
+                                    if selected.query != expected_query {
+                                        return Err(RusticolError::integrity(
+                                            "on-the-fly contracted trace query changed during construction",
+                                        ));
+                                    }
+                                    projection_slots.push(projection_index);
+                                    traces.push(selected);
+                                }
+                                OnTheFlySelectedQueryOutcomeV1::StructuralZero {
+                                    query: selected,
+                                } => {
+                                    if selected != expected_query {
+                                        return Err(RusticolError::integrity(
+                                            "on-the-fly contracted structural-zero query changed during construction",
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        if !traces.is_empty() {
+                            if !binding_started {
+                                executor
+                                    .resolver_mut()
+                                    .begin_on_the_fly_family_binding(templates, direct_catalog)?;
+                                binding_started = true;
+                            }
+                            executor.resolver_mut().extend_on_the_fly_family_binding(
+                                templates,
+                                direct_catalog,
+                                seed,
+                                traces.iter_mut().map(|selected| &mut selected.trace),
+                            )?;
+                            let inputs = traces
+                                .iter()
+                                .map(|selected| QueryFamilyTraceInput {
+                                    trace: &selected.trace,
+                                    projection: selected.projection,
+                                })
+                                .collect::<Vec<_>>();
+                            let destinations = consumer.push_chunk(&inputs)?;
+                            if destinations.len() != projection_slots.len() {
                                 return Err(RusticolError::integrity(
-                                    "on-the-fly contracted projection slot is repeated",
+                                    "on-the-fly streamed destination range changed a chunk count",
                                 ));
                             }
+                            for (projection_index, destination) in
+                                projection_slots.into_iter().zip(destinations)
+                            {
+                                let slot = amplitude_destinations
+                                    .get_mut(projection_index)
+                                    .ok_or_else(|| {
+                                        RusticolError::integrity(
+                                            "on-the-fly contracted projection slot is absent",
+                                        )
+                                    })?;
+                                if slot.replace(destination as usize).is_some() {
+                                    return Err(RusticolError::integrity(
+                                        "on-the-fly contracted projection slot is repeated",
+                                    ));
+                                }
+                            }
                         }
+                        processed_query_count = chunk_end;
+                        emit_progress(
+                            progress.as_deref_mut(),
+                            NativeOnTheFlyWarmUpEventKind::Update,
+                            NativeOnTheFlyWarmUpStage::QueryFamily,
+                            processed_query_count,
+                            query_count,
+                            None,
+                        )?;
                     }
-                    processed_query_count = chunk_end;
-                    emit_progress(
-                        progress.as_deref_mut(),
-                        NativeOnTheFlyWarmUpEventKind::Update,
-                        NativeOnTheFlyWarmUpStage::QueryFamily,
-                        processed_query_count,
-                        query_count,
-                        None,
-                    )?;
-                }
-                Ok(())
-            })?;
+                    Ok(())
+                },
+            )?;
             #[cfg(test)]
             {
                 self.contracted_max_live_query_outcomes = max_live_query_outcomes;
@@ -1832,8 +1848,54 @@ impl OnTheFlyNativeRuntime {
             runtime_values,
         )?;
         self.executor.set_parameters(&prepared)?;
+        self.apply_qed_order_weight(runtime_values)?;
         self.runtime_parameter_values = runtime_values.to_vec().into_boxed_slice();
         Ok(())
+    }
+
+    /// Make this lane QED-order weighted: closures of QED order e carry
+    /// `rho^e`, `rho = sqrt(2 alpha_ew / alpha_s)` from the runtime slots.
+    pub(super) fn enable_qed_order_weights(
+        &mut self,
+        alpha_s_slot: usize,
+        alpha_ew_slot: usize,
+    ) -> RusticolResult<()> {
+        let qed_index =
+            crate::recurrence::template_qed_order_index(&self.templates)?.ok_or_else(|| {
+                RusticolError::artifact(
+                    "a QED-order-weighted on-the-fly lane needs a QED coupling order",
+                )
+            })?;
+        if !self.families.is_empty()
+            || self.pending_family.is_some()
+            || self.contracted_family.is_some()
+            || self.pending_contracted_family.is_some()
+        {
+            return Err(RusticolError::internal(
+                "QED-order weights must be enabled before any on-the-fly family is built",
+            ));
+        }
+        self.qed_order_weights = Some((alpha_s_slot, alpha_ew_slot, qed_index));
+        self.executor.set_qed_order_index(Some(qed_index));
+        let runtime_values = self.runtime_parameter_values.clone();
+        self.apply_qed_order_weight(&runtime_values)
+    }
+
+    fn qed_order_index(&self) -> Option<usize> {
+        self.qed_order_weights.map(|(_, _, index)| index)
+    }
+
+    fn apply_qed_order_weight(&mut self, runtime_values: &[f64]) -> RusticolResult<()> {
+        let Some((alpha_s_slot, alpha_ew_slot, _)) = self.qed_order_weights else {
+            return Ok(());
+        };
+        let value = |slot: usize| {
+            runtime_values.get(slot).copied().ok_or_else(|| {
+                RusticolError::integrity("on-the-fly normalization input slot is absent")
+            })
+        };
+        let rho = super::qed_order_weight_at(value(alpha_s_slot)?, value(alpha_ew_slot)?)?;
+        self.executor.set_qed_order_weight(Some(rho))
     }
 
     fn ensure_point_capacity(&mut self, point_count: u32) -> RusticolResult<()> {
