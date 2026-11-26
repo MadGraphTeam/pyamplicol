@@ -99,16 +99,15 @@ loop_sm's other restrictions (`default`, `no_masses`, `no_tau_mass`,
 `lepton_masses`) load the same way. A W line that joins a massive and a
 massless quark (the top and a massless b at `no_b_mass`, a massive and a
 massless quark through the CKM matrix at `zeromass_ckm`, `ckm` and `c_mass`)
-generates at one loop: the Born closes at a vertex. Tree-level requests
-refuse such a line (tree lanes install no Dirac-Weyl closure contraction)
-with `dirac-weyl-closure`: the eager and recurrence lanes at generation,
-the on-the-fly lane at the first query whose anchor closes on the line (an
-`EvaluationError`; queries anchored elsewhere evaluate). Some processes meet
-an older recurrence refusal first (`b u > d t` and `b u > t d`: "no exact
-closure for physical LC sector"). A request whose coupling-order limits keep
-the W off the line builds (`t t~ > b b~` at QED 0). Otherwise keep the light
-quark massive in the tree model, with its mass fixed to zero in the default
-restriction. The one-loop engine is
+generates at one loop and at tree level: the W has a single chiral
+projector, so the massless quark's current that passed the massive one is a
+Weyl state again at its massless end. Some tree requests meet a separate
+recurrence refusal at leading colour (two quark lines joined only by a W,
+`u b > d t`, `u d~ > t b~`: "no exact closure for physical LC sector"; the
+eager and on-the-fly lanes build them). Only a vertex with both chiral
+projections (left- and right-handed couplings) between a massive and a
+massless fermion, which the shipped models do not have, is still refused at
+tree level with `dirac-weyl-closure`. The one-loop engine is
 real on-shell: a
 coloured particle with a width in a tree current (the top at every shipped
 restriction but `no_widths`) is refused with `coloured-width`, whose message
