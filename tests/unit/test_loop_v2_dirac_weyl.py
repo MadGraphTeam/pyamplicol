@@ -7,8 +7,12 @@ state, and models install no Dirac-Weyl closure contraction. Where a chiral
 vertex takes a line between massive and massless fermions (the top and a
 massless b through a W on loop_sm-no_b_mass, the top and a light quark
 through a non-diagonal CKM element, a massive charm and a strange quark on
-c_mass), the tree DAG would close a Dirac current on a Weyl sink: the tree
-lanes refuse it.
+c_mass), the tree DAG closed a Dirac current on a Weyl sink: the tree lanes
+refused it. Those vertices (the W) have a single chiral projector, and the
+model now gives their massless result of a Dirac input as the Weyl state of
+that chirality, so the line closes as a Weyl line in the tree lanes and in
+the loop Born DAG alike; only a vertex with both chiral projections keeps
+the Dirac current (``test_tree_weyl_projection.py``).
 
 The loop engine needs no such contraction. It reads its Born DAG's colour
 plan and, per amplitude root, the coupling orders, colour sector and
@@ -17,7 +21,7 @@ model vertex holding leg 1, whose kernels embed Weyl currents in the Dirac
 basis. ``test_loop_slices_never_read_the_root_contraction`` records that
 decision: a slice whose Born DAG carries the marker contraction on every
 direct root is byte-identical. The loop Born DAG (``loop_born``) therefore
-records a Dirac-Weyl closure as a root with the marker
+records a remaining Dirac-Weyl closure as a root with the marker
 ``dag_ordering.DIRAC_WEYL_CLOSURE``, which no tree evaluator lowers.
 
 The class then generates on loop_sm's own restrictions, and its values equal
@@ -240,10 +244,12 @@ def test_loop_slices_never_read_the_root_contraction(
 
 
 @pytest.mark.loop_fast
-def test_the_loop_born_dag_records_a_dirac_weyl_root(restricted):
-    """b b~ > w+ w- with a massless b: the top t channel closes a Dirac
-    current on a Weyl b. The tree DAG refuses it; the loop Born DAG records
-    the root with the marker contraction at the Born's order."""
+def test_the_w_projects_the_massless_b_line_of_the_loop_born(restricted):
+    """b b~ > w+ w- with a massless b: the top t channel brings the line
+    through the top, and the W projects it back to a Weyl b. The tree DAG
+    and the loop Born DAG build alike: the same roots at the Born's order, no
+    marker root (the class's former Dirac-Weyl closure is an ordinary Weyl
+    closure)."""
 
     from pyamplicol.generation.dag_compiler import compile_generic_dag
     from pyamplicol.loops.v2.blocks import _born_roots
@@ -254,27 +260,25 @@ def test_the_loop_born_dag_records_a_dirac_weyl_root(restricted):
     model = CompiledUFOModel(compiled)
     process = build_model_process_ir("b b~ > w+ w-", compiled.ir, color_accuracy="full")
     bounds = {"QCD": 0, "QED": 2}
-    with pytest.raises(
-        ValueError, match="dirac-weyl-closure: a Dirac \\(chirality-0\\) current cannot"
-    ):
-        compile_generic_dag(process, model=model, max_coupling_orders=bounds)
-    dag = compile_generic_dag(
+    tree = compile_generic_dag(process, model=model, max_coupling_orders=bounds)
+    born = compile_generic_dag(
         process, model=model, max_coupling_orders=bounds, loop_born=True
     )
-    marked = [
-        root
-        for root in dag.amplitude_roots
-        if root.contraction_ir == DIRAC_WEYL_CLOSURE
-    ]
-    assert marked
-    assert {root.coupling_orders for root in _born_roots(dag, model)} == {(("QED", 2),)}
+    assert not any(
+        root.contraction_ir == DIRAC_WEYL_CLOSURE for root in born.amplitude_roots
+    )
+    assert len(born.amplitude_roots) == len(tree.amplitude_roots)
+    assert {root.coupling_orders for root in _born_roots(born, model)} == {
+        (("QED", 2),)
+    }
 
 
 @pytest.mark.loop_fast
 def test_the_born_order_preflight_admits_the_class(restricted):
     """``artifact.born_amplitude_orders`` (the public route's preflight)
     reads the Born orders from a loop Born DAG: g b > t w- with a massless b,
-    whose every root closes a Dirac current on a Weyl sink, has its Born."""
+    whose every root closed a Dirac current on a Weyl sink before the W
+    projected the line, has its Born."""
 
     from pyamplicol.loops.v2.artifact import born_amplitude_orders
 
