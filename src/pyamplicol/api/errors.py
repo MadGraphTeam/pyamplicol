@@ -17,6 +17,31 @@ class GenerationError(PyAmpliColError):
     """Planning or artifact generation failed."""
 
 
+class NoTreeDiagramError(GenerationError):
+    """A tree-level request has no Feynman diagram at its coupling orders.
+
+    Raised before any execution lane is built, the same for every lane and
+    model source. ``processes`` holds the request expressions without a
+    diagram; ``coupling_orders`` describes the requested coupling-order
+    limits (empty: none). Such a process may be loop-induced: it is then
+    served at one loop (``process.loop_coupling_orders`` with
+    ``process.loop_induced``, MG5_aMC syntax ``[noborn=QCD]``).
+    ``key`` is ``"no-tree-diagram"``."""
+
+    key = "no-tree-diagram"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        processes: tuple[str, ...] = (),
+        coupling_orders: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.processes = processes
+        self.coupling_orders = coupling_orders
+
+
 class ArtifactError(PyAmpliColError):
     """An artifact is malformed, incomplete, or unavailable."""
 
@@ -101,6 +126,7 @@ __all__ = [
     "GenerationError",
     "ModelError",
     "NativePlatformError",
+    "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
 ]

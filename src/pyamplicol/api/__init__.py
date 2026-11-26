@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         GenerationError,
         ModelError,
         NativePlatformError,
+        NoTreeDiagramError,
         PyAmpliColError,
         ReductionUnavailable,
     )
@@ -146,6 +147,7 @@ __all__ = [
     "ModelSourceKind",
     "Momenta",
     "NativePlatformError",
+    "NoTreeDiagramError",
     "NumericalAccuracyWarning",
     "PhysicsReduction",
     "PoleSelection",
@@ -199,6 +201,7 @@ _ERROR_EXPORTS = (
     "GenerationError",
     "ModelError",
     "NativePlatformError",
+    "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
 )

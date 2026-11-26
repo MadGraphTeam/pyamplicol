@@ -84,7 +84,14 @@ def _resolved(runtime: Runtime, points: list) -> dict:
     }
 
 
-def _check_lanes(model: ModelSource, process: str, reference: dict, root: Path) -> None:
+def _check_lanes(
+    model: ModelSource,
+    process: str,
+    reference: dict,
+    root: Path,
+    *,
+    massless: bool,
+) -> None:
     points = reference["points"]
     by_lane = {}
     for lane in LANES:
@@ -118,9 +125,11 @@ def _check_lanes(model: ModelSource, process: str, reference: dict, root: Path) 
         for key in nonzero:
             for value, expected in zip(resolved[key], reference_lane[key], strict=True):
                 assert abs(value - expected) <= 1e-13 * scale, (lane, key)
-    # Each flow carries one pairing of the quark lines: both flows together
-    # give the six helicities of the two pairings.
-    assert len({helicity for helicity, _flow in expected_nonzero}) == 6
+    if massless:
+        # Each flow carries one pairing of the massless quark lines (helicity
+        # conserved along each line): both flows together give the six
+        # helicities of the two pairings.
+        assert len({helicity for helicity, _flow in expected_nonzero}) == 6
 
 
 @pytest.mark.parametrize("process", ("b b > b b QCD=0", "b~ b~ > b~ b~ QCD=0"))
@@ -130,6 +139,7 @@ def test_built_in_sm(process: str, tmp_path: Path) -> None:
         process,
         _reference("sm-no_masses", process),
         tmp_path,
+        massless=True,
     )
 
 
@@ -149,4 +159,10 @@ def sm_model(
 
 @pytest.mark.parametrize("process", ("b~ b~ > b~ b~ QCD=0", "u u > u u QCD=0"))
 def test_ufo_sm(process: str, sm_model: ModelSource, tmp_path: Path) -> None:
-    _check_lanes(sm_model, process, _reference("sm", process), tmp_path)
+    _check_lanes(
+        sm_model,
+        process,
+        _reference("sm", process),
+        tmp_path,
+        massless=not process.startswith("b"),
+    )

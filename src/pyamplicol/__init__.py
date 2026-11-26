@@ -100,6 +100,7 @@ if TYPE_CHECKING:
         ModelParameter,
         ModelSource,
         NativePlatformError,
+        NoTreeDiagramError,
         PhysicsReduction,
         ProcessAlias,
         ProcessPhysics,
@@ -207,6 +208,7 @@ __all__ = [
     "ModelParameter",
     "ModelSource",
     "NativePlatformError",
+    "NoTreeDiagramError",
     "NumericalAccuracyWarning",
     "PhysicsReduction",
     "ProcessAlias",
@@ -256,6 +258,7 @@ _ERROR_EXPORTS = (
     "GenerationError",
     "ModelError",
     "NativePlatformError",
+    "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
 )

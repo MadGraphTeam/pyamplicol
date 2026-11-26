@@ -2068,6 +2068,18 @@ except EvaluationError as error:
 Useful subclasses include configuration, model, generation, artifact,
 compatibility, dependency, and evaluation errors. Catch the narrowest type you
 can handle; catch `PyAmpliColError` at an application boundary.
+`NoTreeDiagramError`, a `GenerationError` with key `"no-tree-diagram"`, refuses
+a tree-level request that has no Feynman diagram at its coupling orders (no
+Born amplitude within `process.max_coupling_orders`, or a request violating a
+conserved charge). It is raised after process expansion and before any
+execution lane is built, so it reads the same in every execution mode and for
+the built-in SM and UFO models; its `processes` attribute lists the request
+expressions without a diagram and `coupling_orders` the requested limits
+(empty: none). Its message says that such a process may be loop-induced, which
+a one-loop request serves (`[noborn=QCD]`, `process.loop_coupling_orders`),
+except for a charge-violating request. Inside a multiparticle request, members
+without a diagram are skipped with a warning as before; the request is refused
+only when no member has one.
 `NativePlatformError`, a `DependencyError`, means that this platform cannot
 load a native library at all (for example a glibc that lacks a version the
 library needs; see

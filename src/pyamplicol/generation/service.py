@@ -31,6 +31,7 @@ from pyamplicol.api.errors import (
     ArtifactError,
     GenerationError,
     ModelError,
+    NoTreeDiagramError,
     PyAmpliColError,
 )
 from pyamplicol.api.models import CompiledModel, _compiled_model_payload
@@ -2710,6 +2711,20 @@ class _NoModelSupportedAmplitudes(GenerationError):
     """A concrete tree-level subprocess has no amplitude in the active model."""
 
 
+class _RequestWithoutTreeDiagram(Exception):
+    """A tree-level request without a diagram, collected for the one
+    ``NoTreeDiagramError`` of the call (``reason``: why, when known;
+    ``loop_hint``: whether a loop could serve it)."""
+
+    def __init__(
+        self, expression: str, reason: str | None = None, *, loop_hint: bool = True
+    ) -> None:
+        super().__init__(expression)
+        self.expression = expression
+        self.reason = reason
+        self.loop_hint = loop_hint
+
+
 @dataclass(frozen=True, slots=True)
 class _UnsupportedProcess:
     expanded: _ExpandedProcess
@@ -3420,6 +3435,7 @@ class GenerationBackend:
                 processes,
                 resolved_model,
                 PhaseHandle(task_id, self._progress, len(processes.requests)),
+                tree_refusal=True,
             )
             self._apply_symbolica_resource_policy(
                 license_state,
@@ -3612,7 +3628,9 @@ class GenerationBackend:
                 "Expanding concrete processes",
                 total=len(processes.requests),
             ) as phase:
-                expanded = self._expand_process_set(processes, resolved_model, phase)
+                expanded = self._expand_process_set(
+                    processes, resolved_model, phase, tree_refusal=True
+                )
                 phase.summary = f"{len(expanded):,} concrete " + (
                     "process" if len(expanded) == 1 else "processes"
                 )
@@ -4565,14 +4583,28 @@ class GenerationBackend:
         processes: ProcessSet,
         resolved: _ResolvedModel,
         phase: PhaseHandle,
+        *,
+        tree_refusal: bool = False,
     ) -> tuple[_ExpandedProcess, ...]:
+        """Expand every request. ``tree_refusal=True`` (tree generation and
+        planning) refuses, before any lane is built and in one
+        ``NoTreeDiagramError``, every request without a tree-level diagram
+        (``_refuse_requests_without_tree_diagrams``)."""
+
+        without_diagram: list[_RequestWithoutTreeDiagram] = []
         aliases_by_target: dict[str, list[ProcessAlias]] = {}
         for alias in processes.aliases:
             aliases_by_target.setdefault(alias.process_name, []).append(alias)
         result: list[_ExpandedProcess] = []
         names: set[str] = set()
         for request_index, request in enumerate(processes.requests, start=1):
-            expanded = self._expand_request(request, resolved)
+            try:
+                expanded = self._expand_request(
+                    request, resolved, tree_refusal=tree_refusal
+                )
+            except _RequestWithoutTreeDiagram as refusal:
+                without_diagram.append(refusal)
+                continue
             request_aliases = aliases_by_target.get(request.name, [])
             if request_aliases and len(expanded) != 1:
                 raise GenerationError(
@@ -4645,6 +4677,15 @@ class GenerationBackend:
                 table,
                 consider_charge_conjugation=self._consider_charge_conjugation,
                 relation_warning=self._flavor_blind_relation_warning(resolved, table),
+            )
+        if tree_refusal:
+            self._refuse_requests_without_tree_diagrams(
+                result,
+                resolved.model,
+                without_diagram,
+                request_order=tuple(
+                    request.expression for request in processes.requests
+                ),
             )
         return tuple(result)
 
@@ -5477,6 +5518,111 @@ class GenerationBackend:
             recurrence_process_remap=shared.remap,
             recurrence_process_executor_pack=process_executor_pack,
         )
+
+    def _coupling_order_request_text(self) -> str:
+        run = self._run_config
+        if run is None:
+            limits = dict(self._coupling_order_limits)
+            squared: tuple[str, ...] = ()
+        else:
+            limits = dict(run.process.max_coupling_orders)
+            squared = tuple(run.process.squared_coupling_orders)
+        parts = [f"{name}<={value}" for name, value in sorted(limits.items())]
+        parts.extend(squared)
+        return " ".join(parts)
+
+    def _no_tree_diagram_error(
+        self,
+        refusals: Sequence[_RequestWithoutTreeDiagram],
+    ) -> NoTreeDiagramError:
+        """The one refusal of tree-level requests without a diagram."""
+
+        orders = self._coupling_order_request_text()
+        where = (
+            f"at the requested coupling orders ({orders})"
+            if orders
+            else "at any coupling order"
+        )
+        quoted = ", ".join(
+            repr(refusal.expression)
+            + (f" ({refusal.reason})" if refusal.reason else "")
+            for refusal in refusals
+        )
+        single = len(refusals) == 1
+        message = (
+            f"no tree-level diagram: {'process' if single else 'processes'} "
+            f"{quoted} {'has' if single else 'have'} no tree-level Feynman "
+            f"diagram {where}, so there is nothing to generate."
+        )
+        if any(refusal.loop_hint for refusal in refusals):
+            message += (
+                " A process without a tree-level diagram may be loop-induced: "
+                "it is generated at one loop (MG5_aMC syntax '<process> "
+                "[noborn=QCD]', or process.loop_coupling_orders with "
+                "process.loop_induced)."
+            )
+        return NoTreeDiagramError(
+            message,
+            processes=tuple(refusal.expression for refusal in refusals),
+            coupling_orders=orders,
+        )
+
+    def _refuse_requests_without_tree_diagrams(
+        self,
+        expanded: Sequence[_ExpandedProcess],
+        model: Model | None,
+        without_concrete_process: Sequence[_RequestWithoutTreeDiagram] = (),
+        *,
+        request_order: Sequence[str] = (),
+    ) -> None:
+        """Refuse, before any lane is built, the requests none of whose
+        concrete processes has a tree-level closure within the coupling-order
+        limits (``has_model_supported_amplitudes``: it never rejects a process
+        with amplitudes), with those that expanded to no concrete process.
+        Members without one inside a multiparticle request that has others
+        stay the lanes' business (skipped with a warning)."""
+
+        requests: dict[str, ProcessRequest] = {}
+        supported: set[str] = set()
+        limits = self._coupling_order_limits or None
+        for entry in expanded:
+            source = _source_request(entry)
+            requests.setdefault(source.name, source)
+            if source.name in supported or model is None:
+                supported.add(source.name)
+                continue
+            process = entry.process_ir
+            if has_model_supported_amplitudes(
+                process,
+                model=model,
+                color_plan=build_color_plan(
+                    process,
+                    color_accuracy=self._color_accuracy,
+                    fold_trace_reflections=(
+                        model.lc_trace_reflection_equivalence_is_proven(process)
+                    ),
+                ),
+                max_coupling_orders=limits,
+            ):
+                supported.add(source.name)
+        refused = {refusal.expression: refusal for refusal in without_concrete_process}
+        for name, request in requests.items():
+            if name not in supported:
+                refused.setdefault(
+                    request.expression,
+                    _RequestWithoutTreeDiagram(request.expression),
+                )
+        if refused:
+            # In request order.
+            order = {
+                expression: index for index, expression in enumerate(request_order)
+            }
+            raise self._no_tree_diagram_error(
+                sorted(
+                    refused.values(),
+                    key=lambda refusal: order.get(refusal.expression, -1),
+                )
+            )
 
     def _drop_processes_without_amplitudes(
         self,
@@ -8264,7 +8410,13 @@ class GenerationBackend:
         self,
         request: ProcessRequest,
         resolved_model: _ResolvedModel,
+        *,
+        tree_refusal: bool = False,
     ) -> tuple[CanonicalProcessIR, ...]:
+        """The concrete processes of one request. ``tree_refusal=True`` (tree
+        generation and planning) reports a request without a concrete process
+        as ``_RequestWithoutTreeDiagram`` for the one tree-level refusal."""
+
         if (
             resolved_model.compiled is None
             or not resolved_model.use_compiled_process_catalog
@@ -8272,6 +8424,7 @@ class GenerationBackend:
             from ..models.builtin.process_catalog import PDGS
             from ..models.builtin.process_ir import build_process_ir
             from ..models.builtin.process_selection import (
+                build_generic_process_selection_report,
                 enumerate_generic_process_set,
             )
             from ..processes.core_syntax import expand_process_variants
@@ -8286,11 +8439,28 @@ class GenerationBackend:
                 )
             )
 
-            enumeration = enumerate_generic_process_set(
-                expanded_request,
-                self._builtin_process_options,
-                max_quark_pairs=self._max_quark_pairs,
-            )
+            try:
+                enumeration = enumerate_generic_process_set(
+                    expanded_request,
+                    self._builtin_process_options,
+                    max_quark_pairs=self._max_quark_pairs,
+                )
+            except ValueError as exc:
+                # The enumeration finds no concrete process the built-in model
+                # connects (and says so with a ValueError).
+                if not tree_refusal or (
+                    build_generic_process_selection_report(
+                        expanded_request,
+                        self._builtin_process_options,
+                        max_quark_pairs=self._max_quark_pairs,
+                    ).entries
+                ):
+                    raise
+                raise _RequestWithoutTreeDiagram(
+                    request.expression,
+                    "the built-in model connects none of its concrete processes",
+                    loop_hint=True,
+                ) from exc
             return tuple(
                 build_process_ir(
                     entry.process,
@@ -8328,6 +8498,13 @@ class GenerationBackend:
             )
         )
         if not candidates:
+            if tree_refusal:
+                raise _RequestWithoutTreeDiagram(
+                    request.expression,
+                    "no concrete process conserves the additive charges of the "
+                    "model vertices",
+                    loop_hint=False,
+                )
             raise GenerationError(
                 f"process request {request.expression!r} has no concrete process "
                 "conserving the additive charges of the model vertices"
