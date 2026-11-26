@@ -406,6 +406,52 @@ pub struct ContactOrbitStepRow {
     pub semantic_digest_id: u32,
 }
 
+/// Where a template transition runs (Weyl projection at chiral vertices).
+///
+/// A vertex with a single chiral projector that takes full (chirality-0)
+/// inputs to a massless fermion has two transitions: the projection, whose
+/// result is the Weyl state of that chirality (the only nonzero half of the
+/// full result), and its full-state counterpart, whose result is the full
+/// state. The model marks them in the transition's output projection
+/// (`...;execution=weyl-states`, `...;execution=full-states`). Strategies
+/// whose currents carry Weyl states run the projection; the all-flow union,
+/// which runs every source family through its full state, runs the
+/// counterpart. Each sees one of the two, so neither counts the vertex twice.
+/// Unmarked transitions run everywhere.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum TransitionExecution {
+    Everywhere,
+    WeylStates,
+    FullStates,
+}
+
+impl TransitionExecution {
+    const WEYL_STATES_SUFFIX: &'static str = ";execution=weyl-states";
+    const FULL_STATES_SUFFIX: &'static str = ";execution=full-states";
+
+    /// The execution a transition's output projection string declares.
+    pub(crate) fn of_output_projection(output_projection: &str) -> Self {
+        if output_projection.ends_with(Self::WEYL_STATES_SUFFIX) {
+            Self::WeylStates
+        } else if output_projection.ends_with(Self::FULL_STATES_SUFFIX) {
+            Self::FullStates
+        } else {
+            Self::Everywhere
+        }
+    }
+
+    /// Whether a strategy whose currents carry Weyl states runs it.
+    pub(crate) fn runs_with_weyl_states(self) -> bool {
+        self != Self::FullStates
+    }
+
+    /// Whether a strategy that runs every source through its full state runs
+    /// it.
+    pub(crate) fn runs_with_full_states(self) -> bool {
+        self != Self::WeylStates
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct TransitionRow {
     pub id: u32,
@@ -4439,5 +4485,26 @@ mod tests {
             error.contains("parameter dependency graph contains a cycle"),
             "unexpected validation error: {error}"
         );
+    }
+}
+
+#[cfg(test)]
+mod transition_execution_tests {
+    use super::TransitionExecution;
+
+    #[test]
+    fn the_output_projection_marks_where_a_transition_runs() {
+        let projected = TransitionExecution::of_output_projection(
+            "weyl-chiral:chirality=-1;execution=weyl-states",
+        );
+        let counterpart =
+            TransitionExecution::of_output_projection("dirac:chirality=0;execution=full-states");
+        let plain = TransitionExecution::of_output_projection("dirac:chirality=0");
+        assert_eq!(projected, TransitionExecution::WeylStates);
+        assert_eq!(counterpart, TransitionExecution::FullStates);
+        assert_eq!(plain, TransitionExecution::Everywhere);
+        assert!(projected.runs_with_weyl_states() && !projected.runs_with_full_states());
+        assert!(!counterpart.runs_with_weyl_states() && counterpart.runs_with_full_states());
+        assert!(plain.runs_with_weyl_states() && plain.runs_with_full_states());
     }
 }
