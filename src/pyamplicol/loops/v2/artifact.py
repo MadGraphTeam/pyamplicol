@@ -1815,6 +1815,10 @@ class V2VirtualRuntime:
             for record in compiled.ir.parameters
             if record.nature == "external"
         }
+        # The model's specialisation guards: a binding under which what its
+        # compile specialised (a coupling restriction simplification removed)
+        # no longer holds is refused (``_checked_parameters``).
+        self._specialization_guards = compiled.specialization_guards
         del model_payload
         if execution["point_inputs"] != LOOP_V2_NATIVE_POINT_INPUTS:
             # The native admission refuses every other declaration first.
@@ -3557,13 +3561,25 @@ class V2VirtualRuntime:
 
         if isinstance(mapping, Mapping) and all(isinstance(n, str) for n in mapping):
             mapping = {name: mapping[name] for name in sorted(mapping)}
-        return check_model_parameters(
+        checked = check_model_parameters(
             _real_parameters(mapping),
             self._externals,
             self._scale_parameter,
             self._fixed,
             self._prepared_fixed,
         )
+        if self._specialization_guards:
+            from pyamplicol.models.specialization_guards import binding_refusal
+
+            current = getattr(self, "_parameters", {})
+            refusal = binding_refusal(
+                self._specialization_guards,
+                {name: complex(float(value)) for name, value in checked.items()},
+                {name: complex(float(value)) for name, value in current.items()},
+            )
+            if refusal is not None:
+                raise ValueError(refusal)
+        return checked
 
     def set_model_parameters(self, mapping: ModelParameters) -> None:
         parameters = self._checked_parameters(mapping)

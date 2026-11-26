@@ -42,8 +42,13 @@ from .contracts import (
     ModelGauge,
     TreeKernelVariant,
 )
+from .specialization_guards import SpecializationGuard
 
 COMPILED_MODEL_KIND = "pyamplicol-compiled-model"
+#: The schema of a compiled model that records specialisation guards: released
+#: readers accept only ``COMPILED_MODEL_SCHEMA_VERSION`` and so refuse it,
+#: instead of generating from it while ignoring its guards.
+GUARDED_COMPILED_MODEL_SCHEMA_VERSION = COMPILED_MODEL_SCHEMA_VERSION + 1
 MODEL_COMPILER_VERSION = 17
 BUILTIN_SM_ALIASES = frozenset(("builtin_sm", "built-in-sm"))
 DEFAULT_MODEL_RESTRICTION = "default"
@@ -259,6 +264,9 @@ class CompiledModel:
     phase_timings: Mapping[str, float]
     conversion_seconds: float
     raw_loop_model: RawLoopModel | None = None
+    #: The model's specialisation guards (``specialization_guards``): every
+    #: artifact generated from it evaluates them at each runtime binding.
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
     _serialized_path: Path | None = field(default=None, compare=False, repr=False)
     _prepared_bundle: PreparedModelBundle | None = field(
         default=None,
@@ -272,7 +280,11 @@ class CompiledModel:
 
     @property
     def schema_version(self) -> int:
-        return COMPILED_MODEL_SCHEMA_VERSION
+        return (
+            GUARDED_COMPILED_MODEL_SCHEMA_VERSION
+            if self.specialization_guards
+            else COMPILED_MODEL_SCHEMA_VERSION
+        )
 
     @property
     def model_compiler_version(self) -> int:
@@ -293,7 +305,7 @@ class CompiledModel:
     def to_dict(self) -> dict[str, object]:
         payload: dict[str, object] = {
             "kind": COMPILED_MODEL_KIND,
-            "schema_version": COMPILED_MODEL_SCHEMA_VERSION,
+            "schema_version": self.schema_version,
             "model_compiler_version": MODEL_COMPILER_VERSION,
             "source": dict(self.source),
             "producer": dict(self.producer),
@@ -308,6 +320,10 @@ class CompiledModel:
         }
         if self.raw_loop_model is not None:
             payload["raw_loop_model"] = self.raw_loop_model.to_dict()
+        if self.specialization_guards:
+            payload["specialization_guards"] = [
+                guard.to_dict() for guard in self.specialization_guards
+            ]
         return payload
 
     def write(self, path: Path) -> Path:
@@ -337,7 +353,12 @@ class CompiledModel:
     ) -> CompiledModel:
         if payload.get("kind") != COMPILED_MODEL_KIND:
             raise ValueError("file is not a pyAmpliCol compiled model")
-        if int(payload.get("schema_version", -1)) != COMPILED_MODEL_SCHEMA_VERSION:
+        schema_version = int(payload.get("schema_version", -1))
+        raw_guards = payload.get("specialization_guards")
+        if schema_version == GUARDED_COMPILED_MODEL_SCHEMA_VERSION:
+            if not isinstance(raw_guards, list) or not raw_guards:
+                raise ValueError("guarded compiled model has no specialisation guards")
+        elif schema_version != COMPILED_MODEL_SCHEMA_VERSION or raw_guards is not None:
             raise ValueError("compiled model schema mismatch; regenerate the model")
         if int(payload.get("model_compiler_version", -1)) != MODEL_COMPILER_VERSION:
             raise ValueError("compiled model compiler mismatch; regenerate the model")
@@ -378,6 +399,10 @@ class CompiledModel:
             phase_timings={},
             conversion_seconds=0.0,
             raw_loop_model=raw_loop_model,
+            specialization_guards=tuple(
+                SpecializationGuard.from_dict(_mapping(record, "specialisation guard"))
+                for record in raw_guards or ()
+            ),
             _serialized_path=(
                 None if serialized_path is None else Path(serialized_path).resolve()
             ),
@@ -534,6 +559,7 @@ def _compile_model_source(
     phase_started = time.perf_counter()
     raw_loop_model = None
     raw_loop_import_error = None
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
     if source_kind == "built-in-sm":
         from .builtin.adapters import build_model_payload
 
@@ -556,6 +582,12 @@ def _compile_model_source(
                 _mapping(worker_payload["raw_loop_model"], "raw_loop_model")
             )
         raw_loop_import_error = worker_payload.get("raw_loop_import_error")
+        specialization_guards = tuple(
+            SpecializationGuard.from_dict(_mapping(record, "specialisation guard"))
+            for record in _sequence_or_empty(
+                worker_payload.get("specialization_guards")
+            )
+        )
     phase_timings["model_loading"] = time.perf_counter() - phase_started
     phase_started = time.perf_counter()
     issues, capabilities = preflight_model(model_payload)
@@ -650,6 +682,7 @@ def _compile_model_source(
         phase_timings=phase_timings,
         conversion_seconds=conversion_seconds,
         raw_loop_model=raw_loop_model,
+        specialization_guards=specialization_guards,
     )
     if use_cache:
         compiled.write(cache_path)
@@ -997,21 +1030,25 @@ def _load_external_model(
         from ufo_model_loader.common import JSONLook
 
         from .._internal.symbolica_log import ufo_source_warnings
+        from .specialization_guards import load_ufo_model_with_guards
 
         restriction = _loader_restriction_name(source, options.restriction)
         try:
             # The model's own compile-time warnings (an invalid escape in a
             # TeX name) are returned as data, never printed.
             with ufo_source_warnings(source):
-                model, parameter_card = load_model(
-                    str(source),
-                    restriction,
-                    options.simplify,
-                    wrap_indices_in_lorentz_structures=False,
-                    # Loop counterterms belong to the exact source program. A
-                    # tree projection need not parse or evaluate their finite
-                    # coefficients.
-                    include_counterterm_finite_parts=not source.is_dir(),
+                model, parameter_card, specialization_guards = (
+                    load_ufo_model_with_guards(
+                        load_model,
+                        str(source),
+                        restriction,
+                        options.simplify,
+                        wrap_indices_in_lorentz_structures=False,
+                        # Loop counterterms belong to the exact source program.
+                        # A tree projection need not parse or evaluate their
+                        # finite coefficients.
+                        include_counterterm_finite_parts=not source.is_dir(),
+                    )
                 )
         except Exception as error:
             from .source_refusals import refuse_python2_ufo
@@ -1058,6 +1095,11 @@ def _load_external_model(
             result["raw_loop_model"] = raw_loop_model.to_dict()
         if raw_loop_import_error is not None:
             result["raw_loop_import_error"] = raw_loop_import_error
+        if specialization_guards:
+            # Written only when there is one, so other models are unchanged.
+            result["specialization_guards"] = [
+                guard.to_dict() for guard in specialization_guards
+            ]
         return result
 
 
@@ -1288,6 +1330,10 @@ def _compilation_cache_identity(
         fingerprint,
         active_cache / f"{cache_key}.pyAmplicol-model.json",
     )
+
+
+def _sequence_or_empty(value: object) -> tuple[object, ...]:
+    return tuple(value) if isinstance(value, list | tuple) else ()
 
 
 def _model_compiler_digest() -> str:

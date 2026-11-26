@@ -98,6 +98,13 @@ from ..models.prepared import (
     PREPARED_KERNEL_PACK_IDENTITY_ABI,
     prepared_kernel_pack_manifest_identity_sha256,
 )
+from ..models.specialization_guards import (
+    GUARD_FILE_PATH,
+    GUARD_PAYLOAD_ROLE,
+    SpecializationGuard,
+    guard_file_payload,
+    guards_from_file_payload,
+)
 from .contracts import RuntimeExpressionSchema
 from .eager_columnar import EAGER_LOWERING_INPUT_ABI
 from .eager_lowering import EAGER_RUNTIME_KIND
@@ -263,6 +270,10 @@ class CompiledProcessArtifact:
     # ``lc_zero_color_sector_ids``); nonzero requires
     # ``rusticol.compiled.zero-color-flows.v1``.
     zero_color_flow_count: int = 0
+    #: Guards a generation-time producer recorded for this process
+    #: (``models.specialization_guards``); the model's own are added to every
+    #: process by the writer.
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,6 +303,10 @@ class EagerPlanV3ProcessArtifact:
     umami_physics: Mapping[str, object] | None = None
     umami_color_sectors: tuple[Mapping[str, object], ...] = ()
     umami_structural_keys: Mapping[str, str] | None = None
+    #: Guards a generation-time producer recorded for this process
+    #: (``models.specialization_guards``); the model's own are added to every
+    #: process by the writer.
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -334,6 +349,10 @@ class RecurrenceProcessArtifact:
     umami_physics: Mapping[str, object] | None = None
     umami_color_sectors: tuple[Mapping[str, object], ...] = ()
     umami_structural_keys: Mapping[str, str] | None = None
+    #: Guards a generation-time producer recorded for this process
+    #: (``models.specialization_guards``); the model's own are added to every
+    #: process by the writer.
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -396,6 +415,10 @@ class OnTheFlyProcessArtifact:
     umami_physics: Mapping[str, object] | None = None
     umami_color_sectors: tuple[Mapping[str, object], ...] = ()
     umami_structural_keys: Mapping[str, str] | None = None
+    #: Guards a generation-time producer recorded for this process
+    #: (``models.specialization_guards``); the model's own are added to every
+    #: process by the writer.
+    specialization_guards: tuple[SpecializationGuard, ...] = ()
 
 
 ProcessArtifact = (
@@ -1146,6 +1169,12 @@ def write_schema_v3_artifact(
             )
         else:
             _require_stored_bound_parameters(output, _bound_parameters(loop_processes))
+        _write_specialization_guards(
+            builder,
+            compiled_model=compiled_model,
+            processes=processes,
+            appending=existing is not None,
+        )
         retain_recurrence_templates = (
             RECURRENCE_DIRECT_ARENA_RUNTIME_CAPABILITY in required_runtime_capabilities
             or ON_THE_FLY_RUNTIME_CAPABILITY in required_runtime_capabilities
@@ -1514,6 +1543,47 @@ def _write_global_payloads(
             },
         },
         role="model-parameters",
+    )
+
+
+def _write_specialization_guards(
+    builder: ArtifactBuilder,
+    *,
+    compiled_model: CompiledModel,
+    processes: Sequence[ProcessArtifact],
+    appending: bool,
+) -> None:
+    """The artifact's specialisation guards (``GUARD_FILE_PATH``): the
+    model's (for every process) and each process's own, with those an
+    appended-to artifact already records. Written only when there is one, so
+    every other artifact is unchanged; its payload role is the gate that makes
+    a reader without guard evaluation refuse the artifact."""
+
+    guards: list[SpecializationGuard] = []
+    if appending:
+        staged = builder.staged_path(GUARD_FILE_PATH)
+        if staged.is_file():
+            guards.extend(
+                guards_from_file_payload(json.loads(staged.read_text(encoding="utf-8")))
+            )
+            builder.discard_payloads(GUARD_FILE_PATH)
+    guards.extend(compiled_model.specialization_guards)
+    for process in processes:
+        guards.extend(
+            guard.for_processes((process.process_id,))
+            for guard in getattr(process, "specialization_guards", ())
+        )
+    unique: dict[str, SpecializationGuard] = {}
+    for guard in guards:
+        unique.setdefault(
+            json.dumps(guard.to_dict(), sort_keys=True, allow_nan=False), guard
+        )
+    if not unique:
+        return
+    builder.add_json(
+        GUARD_FILE_PATH,
+        guard_file_payload([unique[key] for key in sorted(unique)]),
+        role=GUARD_PAYLOAD_ROLE,
     )
 
 

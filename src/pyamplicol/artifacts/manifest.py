@@ -72,6 +72,9 @@ _PAYLOAD_ROLES = {
     "api-build-file",
     "sdk-metadata",
     "process-groups",
+    # Specialisation guards (models.specialization_guards). Released readers
+    # refuse this role, so they cannot run a guarded artifact unguarded.
+    "specialization-guards",
 }
 _RUNTIME_IDENTITY_PAYLOAD_ROLES = frozenset(
     {
