@@ -2139,6 +2139,7 @@ mod tests {
                 "rusticol.compiled.helicity-primary-recurrence.v1".to_string(),
                 "rusticol.compiled.helicity-selector-union.v1".to_string(),
                 "rusticol.compiled.runtime-selectors.v1".to_string(),
+                "rusticol.compiled.zero-color-flows.v1".to_string(),
                 "rusticol.eager-runtime-layout.complex-f64.v1".to_string(),
                 "rusticol.on-the-fly.complex-f64.v1".to_string(),
                 "rusticol.on-the-fly.contracted-color.v1".to_string(),

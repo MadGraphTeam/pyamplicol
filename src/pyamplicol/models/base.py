@@ -111,6 +111,18 @@ class QuantumFlow:
     coupling: tuple[float, float]
 
 
+#: Execution markers of recurrence-template transitions (the suffix of their
+#: ``output_projection``; ``Model.recurrence_quantum_flows``). A transition
+#: that takes full (chirality-0) inputs to the Weyl state of a massless
+#: fermion, the projection of a vertex with a single chiral projector, runs
+#: where currents carry Weyl states (topology replay, contracted-colour
+#: union, the on-the-fly lane); its full-state counterpart, the same flow with
+#: the full result, runs only where every source family executes through its
+#: full state (the all-flow union). Unmarked transitions run everywhere.
+WEYL_STATE_EXECUTION = "weyl-states"
+FULL_STATE_EXECUTION = "full-states"
+
+
 @dataclass(frozen=True)
 class RecurrenceQuantumFlowContract:
     """Declarative dynamic-flow contract consumed by recurrence generation."""
@@ -1268,6 +1280,43 @@ class Model:
             )
         return tuple(flows)
 
+    def recurrence_quantum_flows(
+        self,
+        vertex: Vertex,
+        left_index: Any,
+        right_index: Any,
+    ) -> tuple[QuantumFlow, ...]:
+        """The quantum flows of the recurrence template: ``allowed_quantum_flows``
+        and, for each flow that takes full (chirality-0) inputs to a Weyl state
+        of a fermion (the model's projection at a vertex with a single chiral
+        projector), its full-state counterpart (the same flow, result
+        chirality 0). Strategies that run every source through its full state
+        execute the counterpart instead of the projection
+        (``FULL_STATE_EXECUTION``); every other consumer of the model's flows
+        (the eager DAG, the loop engine) reads ``allowed_quantum_flows``."""
+
+        flows = tuple(self.allowed_quantum_flows(vertex, left_index, right_index))
+        if not weyl_projection_of_full_inputs(
+            self,
+            int(getattr(left_index, "chirality", 0)),
+            int(getattr(right_index, "chirality", 0)),
+            int(vertex.particles[2]),
+            tuple(int(flow.chirality) for flow in flows),
+        ):
+            return flows
+        counterparts = {
+            QuantumFlow(
+                chirality=0,
+                spin_state=self.result_spin_state(int(vertex.particles[2]), 0),
+                flavour_flow=flow.flavour_flow,
+                quantum_number_flow=flow.quantum_number_flow,
+                coupling=flow.coupling,
+            ): None
+            for flow in flows
+            if int(flow.chirality) != 0
+        }
+        return (*flows, *(flow for flow in counterparts if flow not in flows))
+
     def combine_flavour_flow(
         self,
         result_particle: int,
@@ -1566,6 +1615,25 @@ def _propagator_formula_metadata(
     return (None, None)
 
 
+def weyl_projection_of_full_inputs(
+    model: Model,
+    left_chirality: int,
+    right_chirality: int,
+    result_particle: int,
+    result_chiralities: tuple[int, ...],
+) -> bool:
+    """Whether a vertex input pair's flows (their result chiralities) are the
+    model's Weyl projection of full inputs: both inputs full (chirality 0) and
+    a fermion result in a Weyl (nonzero chirality) state."""
+
+    return (
+        left_chirality == 0
+        and right_chirality == 0
+        and bool(model.is_fermion(result_particle))
+        and any(chirality != 0 for chirality in result_chiralities)
+    )
+
+
 from .expressions import (  # noqa: E402
     _append_flavour_transition,
     _index_coupling_orders,
@@ -1575,6 +1643,8 @@ from .expressions import (  # noqa: E402
 )
 
 __all__ = [
+    "FULL_STATE_EXECUTION",
+    "WEYL_STATE_EXECUTION",
     "ContractionIR",
     "CouplingOrders",
     "Model",
@@ -1598,4 +1668,5 @@ __all__ = [
     "Vertex",
     "VertexEvaluationEquivalence",
     "VertexLoweringRule",
+    "weyl_projection_of_full_inputs",
 ]

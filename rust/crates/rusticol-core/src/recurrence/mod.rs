@@ -149,6 +149,11 @@ pub use symmetric_group_fft::{
 };
 /// Semantic prepared-model companion ABI.
 pub const RECURRENCE_TEMPLATE_ABI: &str = "pyamplicol-recurrence-template-v1";
+/// The companion ABI of a template whose transitions carry execution markers
+/// (`template::TransitionExecution`): a reader that ignored them would run a
+/// Weyl projection and its full-state counterpart together, so such templates
+/// carry an ABI that readers without the markers refuse.
+pub const RECURRENCE_TEMPLATE_EXECUTION_ABI: &str = "pyamplicol-recurrence-template-v2";
 /// Python-to-Rust recurrence builder input ABI.
 pub const RECURRENCE_BUILDER_INPUT_ABI: &str = "pyamplicol-recurrence-builder-input-v2";
 /// Bounded Rust-to-Python recurrence builder result ABI.

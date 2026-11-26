@@ -20,6 +20,7 @@ from pyamplicol._internal.versions import (
     COMPILED_HELICITY_SELECTOR_UNION_CAPABILITY,
     COMPILED_PLANE_ARENA_RUNTIME_CAPABILITY,
     COMPILED_RUNTIME_SELECTORS_CAPABILITY,
+    COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
     EVALUATOR_RUNTIME_CAPABILITIES,
     SYMBOLICA_LEGACY_JIT_RUNTIME_CAPABILITY,
     SYMJIT_APPLICATION_ABI,
@@ -488,6 +489,10 @@ def test_all_flow_union_artifact_omits_duplicate_execution_lanes(
 
 def test_color_topology_lane_capability_is_publicly_supported() -> None:
     assert COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY in EVALUATOR_RUNTIME_CAPABILITIES
+
+
+def test_zero_color_flows_capability_is_publicly_supported() -> None:
+    assert COMPILED_ZERO_COLOR_FLOWS_CAPABILITY in EVALUATOR_RUNTIME_CAPABILITIES
 
 
 def test_walsh_color_contraction_capability_is_publicly_supported() -> None:

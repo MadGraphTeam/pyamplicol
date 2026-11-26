@@ -132,6 +132,53 @@ restriction = "default"
 UFO modules are Python code and execute during loading. See
 [Models and Processes](models-and-processes.md) before using an external model.
 
+### What restriction simplification specialises
+
+`simplify = true` (the default for UFO and JSON sources) turns every external
+parameter that is zero on the restriction card into the constant `ZERO` and
+removes every coupling whose value is zero at the card's values, with the
+vertices left without a coupling. The compile records what it removed.
+
+- **Safe:** evaluating at the card's values, and at any runtime binding that
+  leaves every removed coupling zero. A coupling that vanishes identically
+  once the remaining parameters are written in the external ones is gone for
+  every binding.
+- **Refused at a binding:** a removed coupling that is zero only at the card's
+  value of a runtime parameter (for example a factor `MT - 173` at `MT = 173`).
+  The artifact refuses any binding that changes that parameter, including a
+  `[loop.preparation] fixed_parameters` value.
+- **Refused at admission:** a transform that changes parameter values without
+  a binding. The complex-mass scheme sets `CMSParam = 1`, ties the Yukawa
+  inputs to the masses and turns masses with a width into complex pole masses.
+  Every removed coupling is decided again, exactly, under those substitutions.
+  It stays removed only if it is provably zero for every value of the runtime
+  parameters:
+  - its expression is written in the runtime parameters through the
+    transformed definitions;
+  - every number is read both as its shortest decimal and as the exact
+    binary64;
+  - it must expand to exactly 0, with no floating-point arithmetic.
+
+  Any other removed coupling makes generation and `--dry-run` refuse the
+  request with `cms-revived-coupling`, naming the couplings. That covers a
+  coupling that is non-zero after the transform, one that is zero only at the
+  current values of runtime parameters, and one that is zero only in binary64
+  or cannot be reduced (for example the square root of a non-square, or a
+  model function the expansion cannot evaluate).
+- **Scope (a behaviour change):** the refusal covers the whole model in that
+  scheme, including processes that never meet those couplings. On the shipped
+  models this is only `loop_sm` with the card `test`, which zeroes the Yukawa
+  inputs while the b and t masses are not zero. Every complex-mass process on
+  that card is now refused, including `u u~ > e+ e-`, which worked before
+  because it meets none of the 8 revived couplings. With `simplify = false` it
+  gives identical values. No shipped default card is affected.
+- **Remedy:** `simplify = false` for that model, or a restriction card under
+  which the couplings vanish in that scheme too.
+- **Older compiled and prepared models:** a model compiled or prepared from a
+  simplified UFO or JSON source by a pyAmpliCol that did not record every
+  removed coupling is refused for new generation. Compile or prepare it again
+  from its source. Artifacts already generated still load and evaluate.
+
 ## Model caches and the one-loop preparation cache
 
 `[model] cache = true` (the default; `--no-model-cache` turns it off) reuses
@@ -2110,9 +2157,12 @@ scheme refuses, with listed keys: an external
 particle with a width (`cms-external-width`: external states are stable), a
 width-carrying particle whose mass is not an external parameter
 (`cms-internal-mass`, e.g. loop_sm's W), a fixed Yukawa input
-(`cms-yukawa-input`), a value of `mass_scheme` other than `"real-on-shell"` and
-`"complex-mass"` (`mass-scheme`), and a complex fixed parameter in either
-scheme (`complex-fixed-parameter`). Stored artifacts take the complex pole
+(`cms-yukawa-input`), a coupling that restriction simplification removed and
+the transform revives (`cms-revived-coupling`, see
+[What restriction simplification specialises](#what-restriction-simplification-specialises)), a value
+of `mass_scheme` other than `"real-on-shell"` and `"complex-mass"`
+(`mass-scheme`), and a complex fixed parameter in either scheme
+(`complex-fixed-parameter`). Stored artifacts take the complex pole
 masses in their native point inputs (the loop propagators read M^2 - i M W; the
 binary64 fast-engine threshold reads |re| + |im| of it), so they keep native
 point inputs and relocate as any other artifact. A width changed at run time

@@ -1886,10 +1886,12 @@ def test_ufo_sm_recurrence_refreshes_real_and_complex_derived_couplings(
         parameter["parameter_index"]
         for parameter in execution["runtime_metadata"]["runtime_parameters"]
         if parameter["kind"] == "derived_parameter_component"
-        and parameter["runtime_name"] is None
+        and parameter.get("complex_component", "real") == "real"
         and parameter["default"] == pytest.approx(-math.sqrt(4 * math.pi * alpha_s))
     ]
-    # The SM contains distinct derived coupling names for the same real -G.
+    # The SM contains distinct derived coupling names for the same -G (real at
+    # every physical aS; complex in the template, which proves no coupling
+    # with a square root of a parameter real: its real component is the slot).
     assert len(negative_g_slots) >= 2
     changed_alpha_s = 0.125
     expected = tuple(value * (changed_alpha_s / alpha_s) ** 2 for value in original)

@@ -68,12 +68,14 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
 - Concrete charged-current requests such as `u d~ > c s~` are served;
   inclusive `p`/`j` requests keep a quark-flavour-changing jet subprocess only
   when the request implies a W.
+- A massive top on a fermion line that ends in a massless b (single top,
+  `b b~ > w+ w-`, `t~ > b~ w-`) is served in every tree mode: the W has a
+  single chiral projector, so the b current that passed the top is a Weyl
+  state again at its massless end.
 - Still refused, with typed errors, as for the UFO `sm`: in the recurrence
-  execution mode, four-quark processes without a gluon exchange (four quark
-  flavours, or `QCD = 0`); in every tree mode, a massive top on a fermion
-  line that ends in a massless b (`dirac-weyl-closure`: single top,
-  `b b~ > w+ w-`, `t~ > b~ w-`), reported by the on-the-fly mode when it
-  evaluates.
+  execution mode at full colour, four-quark processes at `QCD = 0`, whose W
+  exchange exists for some helicities only (leading colour and the other
+  modes build them; four quark flavours build at both accuracies).
 
 ## Built-in scalar HEFT model
 
@@ -569,6 +571,12 @@ than creating a zero or broken artifact. In the primary SM example,
 
 This is distinct from an unsupported model feature: model preflight rejects
 unsupported theory structures with an actionable diagnostic.
+
+At a finite width of a coloured particle the tree amplitude is not gauge
+invariant. pyAmpliCol uses the conserved-current form of the triple-gluon
+vertex, so its value can differ at second order in the width from a code that
+uses the complete vertex, and can depend on the order of the legs at that
+order; at zero width they agree to rounding.
 
 ## Current generic UFO support
 

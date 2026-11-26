@@ -37,6 +37,7 @@ from .expressions import (
     _flat_index,
     _gluon_tensor_to_gluon_data,
     _imaginary_inverse_sqrt_two,
+    _project_dirac_current_to_weyl,
     _quark_vector_weyl_data,
     _tensor_gluon_to_gluon_data,
     _two_gluon_to_tensor_data,
@@ -701,12 +702,15 @@ class BuiltinSMLoweringMixin:
             )
             input_chirality = left_chirality if kind == 10 else right_chirality
             if len(fermion) == 4:
-                return _expr_fermion_vector_dirac(
+                current = _expr_fermion_vector_dirac(
                     fermion,
                     vector,
                     antifermion=False,
                     coupling=coupling,
                 )
+                if self.current_dimension(result_particle_id, result_chirality) == 2:
+                    return _project_dirac_current_to_weyl(current, result_chirality)
+                return current
             current = _expr_fermion_vector_weyl(
                 fermion,
                 vector,
@@ -725,12 +729,15 @@ class BuiltinSMLoweringMixin:
             )
             input_chirality = left_chirality if kind == 11 else right_chirality
             if len(antifermion) == 4:
-                return _expr_fermion_vector_dirac(
+                current = _expr_fermion_vector_dirac(
                     antifermion,
                     vector,
                     antifermion=True,
                     coupling=coupling,
                 )
+                if self.current_dimension(result_particle_id, result_chirality) == 2:
+                    return _project_dirac_current_to_weyl(current, result_chirality)
+                return current
             current = _expr_fermion_vector_weyl(
                 antifermion,
                 vector,

@@ -23,6 +23,17 @@ use std::io::Write;
 
 const MAGIC: &[u8; 8] = b"PACRDAP2";
 const VERSION: u32 = 3;
+/// Header flag of a plan with zero colour-flow destinations (destinations
+/// without closure rows, `RecurrenceAmplitudeDestination::zero_flow`). Set only
+/// for such a plan, so every other plan is unchanged; a reader that predates
+/// zero colour flows refuses the nonzero flags instead of reading them.
+const HEADER_FLAG_ZERO_FLOW_DESTINATIONS: u32 = 1;
+
+fn has_zero_flow_destinations(plan: &DirectRecurrencePlan) -> bool {
+    plan.amplitude_destinations()
+        .iter()
+        .any(|destination| destination.closure_row_count == 0)
+}
 const MAX_ROWS: u64 = u32::MAX as u64;
 
 fn invalid(message: impl Into<String>) -> RusticolError {
@@ -281,7 +292,11 @@ pub(crate) fn encode_recurrence_direct_plan_v2_to_writer<W: Write>(
     let mut writer = Writer::new(destination);
     writer.raw(MAGIC)?;
     writer.u32(VERSION)?;
-    writer.u32(0)?;
+    writer.u32(if has_zero_flow_destinations(plan) {
+        HEADER_FLAG_ZERO_FLOW_DESTINATIONS
+    } else {
+        0
+    })?;
     writer.u32(plan.strategy().as_u32())?;
     writer.u32(plan.point_tile_size())?;
     writer.u32(plan.workspace_mib())?;
@@ -677,7 +692,8 @@ pub fn decode_recurrence_direct_plan_v2(bytes: &[u8]) -> RusticolResult<DirectRe
             "unsupported recurrence version; regenerate with direct-plan v2",
         ));
     }
-    if reader.u32("header flags")? != 0 {
+    let header_flags = reader.u32("header flags")?;
+    if header_flags & !HEADER_FLAG_ZERO_FLOW_DESTINATIONS != 0 {
         return Err(invalid("unsupported nonzero header flags"));
     }
     let strategy = RecurrenceStrategy::try_from(reader.u32("strategy")?)
@@ -1172,6 +1188,12 @@ pub fn decode_recurrence_direct_plan_v2(bytes: &[u8]) -> RusticolResult<DirectRe
     })?;
     if plan.runtime_layout_digest() != expected_runtime_layout_digest {
         return Err(invalid("runtime-layout digest mismatch"));
+    }
+    if (header_flags & HEADER_FLAG_ZERO_FLOW_DESTINATIONS != 0) != has_zero_flow_destinations(&plan)
+    {
+        return Err(invalid(
+            "zero colour-flow header flags disagree with the plan's destinations",
+        ));
     }
     Ok(plan)
 }

@@ -30,7 +30,7 @@ use super::template::{
     ClosureRow, ColorContractionRow, CurrentOrientation, EvaluatorCallableKind,
     EvaluatorContractKind, LCColorTransitionWitnessRow, OutputFactorSource,
     OwnedRecurrenceTemplateInput, ParticleStatistics, QuantumFlowRow, RuntimeHelicityContractRow,
-    RuntimeHelicityVariantRow, SourceRow, TransitionRow,
+    RuntimeHelicityVariantRow, SourceRow, TransitionExecution, TransitionRow,
 };
 use super::{
     AuthenticatedRecurrenceBuilderInput, CanonicalMomentumLinearForm, CheckedTableRange,
@@ -1870,9 +1870,34 @@ struct PreparedTransitionCatalog {
 }
 
 impl PreparedTransitionCatalog {
+    #[cfg(test)]
     fn new(
         template: &OwnedRecurrenceTemplateInput,
         catalog: &TemplateCatalog<'_>,
+    ) -> RusticolResult<Self> {
+        Self::with_executions(template, catalog, |_| true)
+    }
+
+    /// The transitions `strategy` runs (`TransitionExecution`): the Weyl
+    /// projections of full inputs where currents carry Weyl states, their
+    /// full-state counterparts in the all-flow union.
+    fn for_strategy(
+        template: &OwnedRecurrenceTemplateInput,
+        catalog: &TemplateCatalog<'_>,
+        strategy: RecurrenceStrategy,
+    ) -> RusticolResult<Self> {
+        Self::with_executions(template, catalog, |execution| match strategy {
+            RecurrenceStrategy::AllFlowUnion => execution.runs_with_full_states(),
+            RecurrenceStrategy::TopologyReplay | RecurrenceStrategy::ContractedColorUnion => {
+                execution.runs_with_weyl_states()
+            }
+        })
+    }
+
+    fn with_executions(
+        template: &OwnedRecurrenceTemplateInput,
+        catalog: &TemplateCatalog<'_>,
+        runs: impl Fn(TransitionExecution) -> bool,
     ) -> RusticolResult<Self> {
         let mut rows_by_state_pair = BTreeMap::<(u32, u32), Vec<PreparedTransition>>::new();
         let mut transition_locations = Vec::new();
@@ -1884,6 +1909,13 @@ impl PreparedTransitionCatalog {
         let mut decoded_transition_count = 0usize;
         let mut decoded_witness_count = 0usize;
         for row in template.transitions.iter().copied() {
+            let execution = TransitionExecution::of_output_projection(catalog.string(
+                row.output_projection_string_id,
+                "transition output projection",
+            )?);
+            if !runs(execution) {
+                continue;
+            }
             let prepared = PreparedTransition::new(row, template, catalog)?;
             decoded_transition_count += 1;
             decoded_witness_count += prepared.witnesses.len();
@@ -1925,7 +1957,11 @@ impl PreparedTransitionCatalog {
         };
         debug_assert_eq!(
             result.decoded_transition_count(),
-            template.transitions.len()
+            result
+                .rows_by_state_pair
+                .values()
+                .map(Vec::len)
+                .sum::<usize>()
         );
         debug_assert_eq!(
             result.decoded_witness_count(),
@@ -4391,12 +4427,15 @@ impl StructuralFeasibilityIndex {
 /// Fail-closed guard for the Dirac-Weyl closure class (m-qcd MQ-5F; HANDOFF
 /// §9.1). A fermion current whose line passed a massive fermion is a Dirac
 /// (chirality-0) current, while a massless external fermion is a Weyl
-/// (chirality +-1) source. Where a chiral vertex takes a line between massive
-/// and massless fermions (a massless b and the top through a W), the
-/// complement of a Weyl closure anchor can be a Dirac current of a particle
-/// pair that closes in other chirality states. Templates carry no Dirac-Weyl
-/// closure, so that complement would close on nothing and its diagrams (the
-/// top t channel of b b~ > w+ w-) would be dropped without an error: the
+/// (chirality +-1) source. A vertex with a single chiral projector (every W
+/// vertex) that takes such a line to a massless fermion has a Weyl result in
+/// the template (the model's quantum flows), so the line is Weyl again at its
+/// massless end. Where a vertex with both chiral projections (left- and
+/// right-handed couplings) takes a line between massive and massless
+/// fermions, the complement of a Weyl closure anchor can be a Dirac current
+/// of a particle pair that closes in other chirality states. Templates carry
+/// no Dirac-Weyl closure, so that complement would close on nothing and its
+/// diagrams would be dropped without an error: the
 /// recurrence (here, in its structural-demand pass, at each LC sector's
 /// closure anchor, for a complement reached within the request's
 /// coupling-order limits, `StructuralOrderReachability`) and the on-the-fly
@@ -4526,12 +4565,13 @@ impl DiracWeylClosureGuard {
             "dirac-weyl-closure: {context} would close a Dirac (chirality-0) \
              current of particle {} on a Weyl (chirality {}) current of \
              particle {}; a fermion line that joins massive and massless \
-             fermions through a chiral vertex (a massive internal or external \
-             fermion on a line with a massless sink) has no Dirac-Weyl closure \
-             contraction in the tree recurrence, which would drop that line's \
-             diagrams. Keep the light fermion massive in the tree model (the \
-             default restriction with its mass fixed to zero) or use the loop \
-             engine, whose Born closes at a vertex",
+             fermions through a vertex with both chiral projections (left- and \
+             right-handed couplings; a single chiral projector makes the line a \
+             Weyl state again) has no Dirac-Weyl closure contraction in the \
+             tree recurrence, which would drop that line's diagrams. Keep the \
+             light fermion massive in the tree model (the default restriction \
+             with its mass fixed to zero) or use the loop engine, whose Born \
+             closes at a vertex",
             dirac.particle_id, weyl.chirality, weyl.particle_id,
         )))
     }
@@ -5175,7 +5215,8 @@ fn build_recurrence_program_impl(
         0,
     ))?;
     let transition_catalog_started = telemetry_timer(collect_telemetry);
-    let prepared_transitions = PreparedTransitionCatalog::new(template_input, &template_catalog)?;
+    let prepared_transitions =
+        PreparedTransitionCatalog::for_strategy(template_input, &template_catalog, strategy)?;
     let prepared_closures = PreparedClosureCatalog::new(template_input, &template_catalog)?;
     let prepared_closure_sectors = PreparedClosureSectorCatalog::new(
         strategy,
@@ -5435,6 +5476,11 @@ fn build_recurrence_program_impl(
             closure_processing_started,
         );
         stage_diagnostics.extend(lane_stage_diagnostics);
+    }
+    if isolate_replay_lanes && closures.is_empty() {
+        return Err(invalid(
+            "recurrence builder found no exact closure for any physical LC sector of the isolated replay lanes",
+        ));
     }
     if pending_contribution_entry_count(&currents)? != resident_contribution_count {
         return Err(invalid(
@@ -8476,10 +8522,8 @@ fn build_bulk_color_union_closures(
             .keys()
             .map(|key| key.target_sector_id)
             .collect::<BTreeSet<_>>();
-        if let Some(sector_id) = materialized_sectors
-            .iter()
-            .copied()
-            .find(|sector_id| !covered_sector_ids.contains(sector_id))
+        if let Some(sector_id) =
+            uncovered_nonzero_sector(prepared_sectors, materialized_sectors, &covered_sector_ids)?
         {
             return Err(invalid(format!(
                 "recurrence builder found no exact closure for physical LC sector {sector_id} after bulk all-flow closure routing"
@@ -8677,7 +8721,8 @@ fn build_closures_per_sector(
             }
         }
         if result.len() == sector_result_start && strategy != RecurrenceStrategy::AllFlowUnion {
-            if strategy == RecurrenceStrategy::ContractedColorUnion {
+            if strategy == RecurrenceStrategy::ContractedColorUnion || closes_to_zero_flow(sector)?
+            {
                 continue;
             }
             let closure_color_attempts = collect_closure_color_attempts(
@@ -8723,12 +8768,23 @@ fn build_closures_per_sector(
     // before its partner; only the authenticated certificate establishes that
     // relationship.  Coverage is recorded exclusively after the corresponding
     // exact row (and optional phase-bearing partner row) was inserted above.
-    if strategy == RecurrenceStrategy::AllFlowUnion
-        && let Some(sector_id) = materialized_sectors
-            .iter()
-            .copied()
-            .find(|sector_id| !covered_sector_ids.contains(sector_id))
-    {
+    // Zero colour flows (`closes_to_zero_flow`) are skipped above; a process
+    // none of whose sectors closes is refused with its first sector's
+    // diagnostics.
+    let refused_sector_id = match strategy {
+        RecurrenceStrategy::AllFlowUnion => {
+            uncovered_nonzero_sector(prepared_sectors, materialized_sectors, &covered_sector_ids)?
+        }
+        // Isolated topology-replay lanes each build one sector group; the
+        // caller refuses a process none of whose lanes closes.
+        RecurrenceStrategy::TopologyReplay
+            if result.is_empty() && construction_domain.is_none() =>
+        {
+            materialized_sectors.first().copied()
+        }
+        RecurrenceStrategy::TopologyReplay | RecurrenceStrategy::ContractedColorUnion => None,
+    };
+    if let Some(sector_id) = refused_sector_id {
         let sector = prepared_sectors.get(sector_id)?;
         let anchor_ids = support_index
             .current_ids(&sector.anchor_support)
@@ -8812,6 +8868,41 @@ fn build_closures_per_sector(
         materialized_sectors,
         closure_domain_sector_owners(strategy, prepared_sectors, materialized_sectors)?,
     )
+}
+
+/// Whether a physical sector whose closure enumeration closed nothing is a
+/// zero colour flow rather than a construction failure. An open-lines sector
+/// is covered only by its own closures (reflection certificates relate
+/// single-trace sectors, `closure_reflection_projection`), and the enumeration
+/// over every anchor current, complement current and closure row of the sector
+/// is exhaustive: no tree diagram has that colour flow at the requested
+/// orders. Pure electroweak four-quark amplitudes are the case, where only the
+/// pairing of the lines a W joins has diagrams (c d > u s, u d~ > t b~). The
+/// Dirac-Weyl closures the enumeration cannot build are refused before, by the
+/// structural-demand pass (`DiracWeylClosureGuard`). A process none of whose
+/// sectors closes stays refused.
+fn closes_to_zero_flow(sector: &PreparedClosureSector) -> RusticolResult<bool> {
+    Ok(sector.row.kind()? == ProcessLCSectorKind::OpenLines)
+}
+
+/// The first materialized sector an all-flow union left uncovered that is not
+/// a zero colour flow (`closes_to_zero_flow`): every sector when none is
+/// covered.
+fn uncovered_nonzero_sector(
+    prepared_sectors: &PreparedClosureSectorCatalog,
+    materialized_sectors: &BTreeSet<u32>,
+    covered_sector_ids: &BTreeSet<u32>,
+) -> RusticolResult<Option<u32>> {
+    for sector_id in materialized_sectors.iter().copied() {
+        if covered_sector_ids.contains(&sector_id) {
+            continue;
+        }
+        if covered_sector_ids.is_empty() || !closes_to_zero_flow(prepared_sectors.get(sector_id)?)?
+        {
+            return Ok(Some(sector_id));
+        }
+    }
+    Ok(None)
 }
 
 fn collect_closure_color_attempts(
@@ -10534,6 +10625,74 @@ fn complete_closure_target_domain_certificate(
     .map(Some)
 }
 
+/// The structural-zero physical-sector certificate of a topology-replay or
+/// all-flow program with zero colour flows (`closes_to_zero_flow`): the
+/// physical sectors that no amplitude destination with closure terms targets,
+/// through their replay representative. `None` when every sector has a destination, so a
+/// program without a zero flow is unchanged; contracted programs certify
+/// their complete domain in `complete_closure_target_domain_certificate`.
+fn zero_flow_sector_certificate(
+    strategy: RecurrenceStrategy,
+    sector_count: usize,
+    replay_targets: &[RecurrenceReplayTarget],
+    amplitude_destinations: &[RecurrenceAmplitudeDestination],
+    resolved_helicity_count: usize,
+) -> RusticolResult<Option<ClosureTargetDomainCertificateV1>> {
+    if strategy == RecurrenceStrategy::ContractedColorUnion {
+        return Ok(None);
+    }
+    let physical_sector_count = u32::try_from(sector_count)
+        .map_err(|_| invalid("zero-flow certificate physical-sector count exceeds u32"))?;
+    let resolved_helicity_count = u32::try_from(resolved_helicity_count)
+        .map_err(|_| invalid("zero-flow certificate resolved-helicity count exceeds u32"))?;
+    let mut destination_counts = BTreeMap::<u32, u64>::new();
+    for destination in amplitude_destinations
+        .iter()
+        .filter(|destination| destination.closure_range().count != 0)
+    {
+        *destination_counts
+            .entry(destination.target_sector_id())
+            .or_default() += 1;
+    }
+    let mut hash = Sha256::new();
+    hash.update(b"pyamplicol-recurrence-zero-flow-sector-domain-v1\0");
+    hash.update(strategy.as_u32().to_le_bytes());
+    hash.update(physical_sector_count.to_le_bytes());
+    hash.update(resolved_helicity_count.to_le_bytes());
+    let mut zero_sector_ids = Vec::new();
+    for sector_id in 0..physical_sector_count {
+        let source_sector_id = if replay_targets.is_empty() {
+            sector_id
+        } else {
+            replay_targets
+                .get(sector_id as usize)
+                .filter(|target| target.id() == sector_id && target.target_sector_id() == sector_id)
+                .ok_or_else(|| invalid("zero-flow certificate replay targets are not canonical"))?
+                .materialized_sector_id()
+        };
+        let destination_count = destination_counts
+            .get(&source_sector_id)
+            .copied()
+            .unwrap_or(0);
+        hash.update(sector_id.to_le_bytes());
+        hash.update(source_sector_id.to_le_bytes());
+        hash.update(destination_count.to_le_bytes());
+        if destination_count == 0 {
+            zero_sector_ids.push(sector_id);
+        }
+    }
+    if zero_sector_ids.is_empty() {
+        return Ok(None);
+    }
+    ClosureTargetDomainCertificateV1::new_zero_flow(
+        physical_sector_count,
+        resolved_helicity_count,
+        zero_sector_ids,
+        SemanticDigest::new(hash.finalize().into())?,
+    )
+    .map(Some)
+}
+
 #[allow(clippy::too_many_arguments)]
 fn finish_program(
     strategy: RecurrenceStrategy,
@@ -10648,11 +10807,50 @@ fn finish_program(
         finalizations,
     } = materialized;
 
-    let destination_keys = pending_closures
+    let mut destination_keys = pending_closures
         .iter()
         .filter(|(_, group)| !group.exact_factor.is_zero())
         .map(|(key, _)| (key.target_sector_id, key.complete_source_states.clone()))
         .collect::<BTreeSet<_>>();
+    // A topology-replay or all-flow sector that closes to a zero colour flow
+    // (`closes_to_zero_flow`) keeps one destination without closure terms
+    // (topology replay: at the first resolved helicity), so that its public
+    // flow and replay targets resolve at runtime and evaluate to an exact
+    // zero; the zero-flow certificate names it. Programs without a zero flow
+    // are unchanged.
+    let zero_flow_destination_keys = if strategy == RecurrenceStrategy::ContractedColorUnion {
+        BTreeSet::new()
+    } else {
+        let destination_sector_ids = destination_keys
+            .iter()
+            .map(|(sector_id, _)| *sector_id)
+            .collect::<BTreeSet<_>>();
+        let zero_flow_sector_ids = exhaustive_closure_sector_ids
+            .iter()
+            .copied()
+            .filter(|sector_id| !destination_sector_ids.contains(sector_id))
+            .collect::<Vec<_>>();
+        if zero_flow_sector_ids.is_empty() {
+            BTreeSet::new()
+        } else {
+            let source_states: Box<[SourceStateAssignment]> =
+                if strategy == RecurrenceStrategy::TopologyReplay {
+                    helicity_ids
+                        .iter()
+                        .find(|(_, helicity_id)| **helicity_id == 0)
+                        .map(|(source_states, _)| source_states.clone())
+                        .ok_or_else(|| invalid("a zero colour flow needs a resolved helicity"))?
+                } else {
+                    // All-flow destinations select source helicities at runtime.
+                    Box::default()
+                };
+            zero_flow_sector_ids
+                .into_iter()
+                .map(|sector_id| (sector_id, source_states.clone()))
+                .collect::<BTreeSet<_>>()
+        }
+    };
+    destination_keys.extend(zero_flow_destination_keys.iter().cloned());
     let mut closure_terms = Vec::new();
     let mut closure_proof_contributions = Vec::new();
     let mut closure_proof_groups = Vec::new();
@@ -10864,6 +11062,20 @@ fn finish_program(
                 },
             )?;
         }
+        if zero_flow_destination_keys.contains(&(sector_id, source_states.clone())) {
+            if closure_terms.len() as u64 != start {
+                return Err(invalid(
+                    "a zero colour-flow destination received closure terms",
+                ));
+            }
+            amplitude_destinations.push(RecurrenceAmplitudeDestination::zero_flow(
+                destination_id,
+                sector_id,
+                target_helicity_id,
+                start,
+            ));
+            continue;
+        }
         amplitude_destinations.push(RecurrenceAmplitudeDestination::new(
             destination_id,
             sector_id,
@@ -10910,7 +11122,14 @@ fn finish_program(
             materialize_three_line_certificates(&three_line_certificate_ids)?,
             candidate_domain_certificate,
         )?;
-    let mut program = RecurrenceProgram::new_with_closure_proofs(
+    let zero_flow_certificate = zero_flow_sector_certificate(
+        strategy,
+        sector_count,
+        &replay_targets,
+        &amplitude_destinations,
+        resolved_helicities.len(),
+    )?;
+    let mut program = RecurrenceProgram::new_with_closure_proofs_and_zero_flows(
         strategy,
         u32::try_from(sector_count).map_err(|_| invalid("physical sector count exceeds u32"))?,
         retained_helicity_count,
@@ -10923,6 +11142,7 @@ fn finish_program(
         amplitude_destinations,
         closure_terms,
         closure_proofs,
+        zero_flow_certificate,
     )?;
     if let Some(certificate) = closure_target_domain_certificate {
         program = program.with_closure_target_domain_certificate(certificate)?;

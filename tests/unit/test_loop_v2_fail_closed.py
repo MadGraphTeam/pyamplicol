@@ -154,6 +154,8 @@ def test_refusals_are_listed_typed_and_name_their_rule():
         "cms-internal-mass",
         "cms-yukawa-input",
         "cms-external-width",
+        # The removed-coupling record (``test_loop_cms_revived_couplings.py``).
+        "cms-revived-coupling",
         "complex-fixed-parameter",
         "lorentz-slot-arity",
         "majorana-fermion",

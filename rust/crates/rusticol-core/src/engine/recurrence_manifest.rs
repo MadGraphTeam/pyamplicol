@@ -1122,10 +1122,23 @@ impl RecurrenceHelicitySelectorCompanionManifest {
         let primary_inspection = &primary.plan.inspection_summary;
         let inspection = &self.plan.inspection_summary;
         let schedule = inspection.schedule;
+        // A certified zero colour flow keeps one selector destination without
+        // closure rows. The primary contracted plan, over the block-order
+        // replicas of these owner sectors, certifies zero flows exactly when
+        // this plan does and leaves them out of its local colour groups.
+        let zero_flow_count = |summary: &RecurrenceInspectionSummary| {
+            summary
+                .structural_zero_physical_sector_certificate
+                .as_ref()
+                .map_or(0, |certificate| {
+                    certificate.certified_structural_zero_sector_count
+                })
+        };
         if inspection.lc_flow_layout != RecurrenceLcFlowLayout::AllFlowUnion
             || schedule.replay_target_count != 0
             || schedule.amplitude_destination_count == 0
             || schedule.amplitude_destination_count != inspection.sector_count
+            || (zero_flow_count(inspection) == 0) != (zero_flow_count(primary_inspection) == 0)
             || self.plan.process_binding.remap.physical_sector_ids.len() as u64
                 != inspection.sector_count
         {
@@ -1253,7 +1266,17 @@ impl RecurrenceHelicitySelectorColorView {
             || (primary.storage == "expanded" && primary.component_count != 1)
             || primary.component_count == 0
             || !primary.group_count.is_multiple_of(primary.component_count)
-            || primary.group_count / primary.component_count != selector_inspection.sector_count
+            // One local group per physical owner sector but the certified
+            // zero colour flows.
+            || Some(primary.group_count / primary.component_count)
+                != selector_inspection.sector_count.checked_sub(
+                    selector_inspection
+                        .structural_zero_physical_sector_certificate
+                        .as_ref()
+                        .map_or(0, |certificate| {
+                            certificate.certified_structural_zero_sector_count
+                        }),
+                )
         {
             return Err(RusticolError::integrity(
                 "recurrence helicity-selector primary local-color group shape or reducer mode is incompatible",
@@ -1560,9 +1583,23 @@ impl RecurrenceInspectionSummary {
                     "contracted recurrence inspection omitted its structural-zero physical-sector certificate",
                 ));
             }
+            // Topology-replay and all-flow plans carry one only to certify
+            // their zero colour flows.
+            (Some(certificate), layout)
+                if certificate.certified_structural_zero_sector_count > 0 =>
+            {
+                // An all-flow program selects source helicities at runtime and
+                // resolves none.
+                let resolved_helicity_count = if layout == RecurrenceLcFlowLayout::AllFlowUnion {
+                    0
+                } else {
+                    self.schedule.resolved_helicity_count
+                };
+                certificate.validate(self.sector_count, resolved_helicity_count)?;
+            }
             (Some(_), _) => {
                 return Err(RusticolError::integrity(
-                    "structural-zero physical-sector certificate is restricted to contracted recurrence",
+                    "a non-contracted structural-zero physical-sector certificate certifies no zero colour flow",
                 ));
             }
             (None, _) => {}
