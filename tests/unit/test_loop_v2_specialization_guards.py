@@ -15,6 +15,12 @@ value reaches it.
 - A card's ``[loop.preparation] fixed_parameters`` that fix MT at another
   value are refused at generation (admission), and fixing it at 173 is
   accepted.
+- A loop that dresses the removed vertex (d d~ > e+ e-) is refused by the
+  loop generation itself (``loop-vertex-outside-tree-model``).
+
+The guard is the model's: every plan generated from the model holds MT,
+also one whose diagrams never meet the removed vertex (u u~ > e+ e-): a
+conservative scope that refuses, never accepts, a binding.
 """
 
 from __future__ import annotations
@@ -44,7 +50,9 @@ def _custom_loop_sm(destination: Path) -> Path:
     return destination
 
 
-def _generate(root: Path, model: Path, fixed: dict[str, str]) -> Path:
+def _generate(
+    root: Path, model: Path, fixed: dict[str, str], process: str = "u u~ > e+ e-"
+) -> Path:
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
 
@@ -59,7 +67,7 @@ def _generate(root: Path, model: Path, fixed: dict[str, str]) -> Path:
 source = "{model}"
 cache_dir = "{root / "cache"}"
 [process]
-entries = [{{expression = "d d~ > e+ e-", name = "p"}}]
+entries = [{{expression = {json.dumps(process)}, name = "p"}}]
 loop_coupling_orders = ["QCD"]
 [loop]
 external_widths = "zero"
@@ -86,7 +94,7 @@ emit_api_bundle = false
     config = resolve_config(card)
     output = Path(config.effective.generation.output)
     Generator(config).generate(
-        ProcessSet((ProcessRequest.parse("d d~ > e+ e-", name="p"),)), output
+        ProcessSet((ProcessRequest.parse(process, name="p"),)), output
     )
     return output
 
@@ -113,6 +121,16 @@ def test_a_loop_plan_holds_the_parameter_its_born_specialised(
         runtime.set_model_parameters({"MT": "173.00000000000000000001"})
     with pytest.raises(Exception, match="specialisation-guard: binding MT"):
         Runtime.load(artifact, model_parameters={"MT": "174"})
+
+
+@pytest.mark.loop_physics
+def test_a_loop_that_needs_the_removed_vertex_is_refused(
+    custom_model, tmp_path
+) -> None:
+    # The QCD loops of d d~ > e+ e- dress the photon-down vertex the tree
+    # model dropped: the loop generation's own check refuses it.
+    with pytest.raises(Exception, match="loop-vertex-outside-tree-model"):
+        _generate(tmp_path / "d", custom_model, {}, "d d~ > e+ e-")
 
 
 @pytest.mark.loop_physics

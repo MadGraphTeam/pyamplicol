@@ -270,7 +270,10 @@ def test_generation_refuses_a_simplified_model_without_its_record(tmp_path) -> N
 
 
 def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
-    from pyamplicol.generation.contracts import runtime_coupling_component_guards
+    from pyamplicol.generation.contracts import (
+        runtime_coupling_component_guards,
+        zero_coupling_decisions,
+    )
     from pyamplicol.models.builtin.model import BuiltinSMModel
 
     model = BuiltinSMModel()
@@ -281,7 +284,7 @@ def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
     assert massive.coupling[1] == 0.0
     # A Dirac top keeps both chiralities while any component is nonzero: the
     # zero right-handed component dropped nothing.
-    assert model.zero_coupling_decisions(massive) == frozenset()
+    assert zero_coupling_decisions(model, massive) == frozenset()
     leptonic_vertices = [
         v
         for (kind, particles), v in vertices.items()
@@ -290,7 +293,7 @@ def test_chiral_guards_follow_the_selection_that_dropped_a_current() -> None:
         and 0.0 in v.coupling
     ]
     assert leptonic_vertices
-    assert all(model.zero_coupling_decisions(v) for v in leptonic_vertices)
+    assert all(zero_coupling_decisions(model, v) for v in leptonic_vertices)
 
     def record(vertex, component: int) -> dict[str, object]:
         particles = "_".join(str(p) for p in vertex.particles)

@@ -7,6 +7,7 @@ import marshal
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 from ..models.base import Model
 from ..models.specialization_guards import SpecializationGuard
@@ -150,14 +151,58 @@ _RUNTIME_COUPLING_NAME = re.compile(
 )
 
 
+def zero_coupling_decisions(model: Model, vertex: Any) -> frozenset[int]:
+    """The components of ``vertex.coupling`` that are zero and on whose zero
+    the model's chirality selection (``model._vertex_result_chiralities``)
+    depends: for some input state the model can produce (a chiral-eligible
+    fermion as a Weyl state of either chirality or as a full current, any
+    other particle as a full state), making the component nonzero changes the
+    selected result chiralities. Only these zeros dropped a current at
+    generation; a zero no selection reads (a Dirac input keeps every
+    transition as soon as any component is nonzero) dropped nothing."""
+
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    select = model._vertex_result_chiralities  # type: ignore[attr-defined]
+    zeros = [index for index, value in enumerate(vertex.coupling) if value == 0.0]
+    if not zeros:
+        return frozenset()
+
+    def states(pdg: int) -> tuple[Any, ...]:
+        chiral = model.is_fermion(pdg) and model.is_chiral_eligible(pdg)
+        return tuple(
+            SimpleNamespace(
+                particle_id=pdg,
+                pdg=pdg,
+                chirality=chirality,
+                flavour_flow=(pdg,),
+                coupling_orders=(),
+            )
+            for chirality in ((-1, 0, 1) if chiral else (0,))
+        )
+
+    decided: set[int] = set()
+    for left in states(int(vertex.particles[0])):
+        for right in states(int(vertex.particles[1])):
+            selected = select(vertex, left, right)
+            for index in zeros:
+                coupling = list(vertex.coupling)
+                coupling[index] = 1.0
+                revived = replace(vertex, coupling=tuple(coupling))
+                if select(revived, left, right) != selected:
+                    decided.add(index)
+    return frozenset(decided)
+
+
 def runtime_coupling_component_guards(
     model: Model, records: Iterable[Mapping[str, object]]
 ) -> tuple[SpecializationGuard, ...]:
     """The specialisation guards of the coupling components a process exposes
     as runtime parameters (``runtime_coupling_parameter_names``) whose zero at
     generation the model's chirality selection read
-    (``Model.zero_coupling_decisions``: the built-in model drops the Weyl
-    currents of a chirality whose component is zero).
+    (``zero_coupling_decisions``: the built-in model drops the Weyl currents
+    of a chirality whose component is zero).
 
     Such a component holds at zero: a binding that makes it nonzero would need
     the currents generation dropped. A component whose zero no selection read
@@ -166,9 +211,13 @@ def runtime_coupling_component_guards(
     process's runtime model-parameter records (``name``, ``default``,
     ``runtime_name`` for the components of a complex parameter)."""
 
-    decisions = getattr(model, "zero_coupling_decisions", None)
-    if not callable(decisions):
+    select = getattr(model, "_vertex_result_chiralities", None)
+    if not callable(select) or not callable(getattr(model, "is_chiral_eligible", None)):
         return ()
+
+    def decisions(vertex: Any) -> frozenset[int]:
+        return zero_coupling_decisions(model, vertex)
+
     defaults: dict[str, list[float]] = {}
     for record in records:
         name = str(record.get("runtime_name") or record["name"])
@@ -216,4 +265,5 @@ __all__ = [
     "StageCompilationInput",
     "runtime_coupling_component_guards",
     "runtime_coupling_parameter_names",
+    "zero_coupling_decisions",
 ]
