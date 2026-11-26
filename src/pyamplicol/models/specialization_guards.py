@@ -834,9 +834,10 @@ _CAPTURE_LOCK = threading.Lock()
 
 def load_ufo_model_with_guards(
     load_model: Callable[..., tuple[Any, Any]], *args: Any, **kwargs: Any
-) -> tuple[Any, Any, tuple[SpecializationGuard, ...]]:
-    """``load_model(*args, **kwargs)`` of ``ufo_model_loader`` and the guards
-    of the couplings its restriction simplification removed.
+) -> tuple[Any, Any, tuple[SpecializationGuard, ...], tuple[dict[str, Any], ...]]:
+    """``load_model(*args, **kwargs)`` of ``ufo_model_loader``, the guards of
+    the couplings its restriction simplification removed, and the record of
+    every coupling it removed (``removed_coupling_record``).
 
     The simplification (``Model.remove_zero_couplings``) removes every
     coupling whose value at the restriction card is zero. A removed coupling
@@ -844,11 +845,17 @@ def load_ufo_model_with_guards(
     internal parameters are written in the external (mutable) ones, the
     externals the card set to zero being the constant ``ZERO``; otherwise it
     is zero only at the card's values, and its guard ("vanishing") refuses a
-    binding that revives it."""
+    binding that revives it. A structural zero is structural only for the
+    model's own parameter definitions: a transform that redefines parameters
+    afterwards (the complex-mass scheme sets ``CMSParam`` to 1 and the Yukawa
+    inputs to the masses) can revive it, so every removed coupling is
+    recorded, guarded or not, for such a transform to evaluate again
+    (``revived_removed_couplings``)."""
 
     from ufo_model_loader import model as ufo_model
 
     captured: list[SpecializationGuard] = []
+    removed_records: list[dict[str, Any]] = []
     # The original method is read and restored under the lock, so overlapping
     # loads in one process can never leave a wrapper installed.
     with _CAPTURE_LOCK:
@@ -857,6 +864,9 @@ def load_ufo_model_with_guards(
         def remove_zero_couplings(self: Any) -> Any:
             removed = original(self)
             captured.extend(_removed_coupling_guards(self, removed[0]))
+            removed_records.extend(
+                removed_coupling_record(coupling) for coupling in removed[0]
+            )
             return removed
 
         ufo_model.Model.remove_zero_couplings = remove_zero_couplings
@@ -865,7 +875,131 @@ def load_ufo_model_with_guards(
         finally:
             ufo_model.Model.remove_zero_couplings = original
     unique = {guard.subject: guard for guard in captured}
-    return model, card, tuple(unique[subject] for subject in sorted(unique))
+    records = {record["name"]: record for record in removed_records}
+    return (
+        model,
+        card,
+        tuple(unique[subject] for subject in sorted(unique)),
+        tuple(records[name] for name in sorted(records)),
+    )
+
+
+# -- removed couplings and the transforms that redefine parameters ----------------
+
+
+def removed_coupling_record(coupling: Any) -> dict[str, Any]:
+    """A coupling restriction simplification removed, in the loader's own
+    serialised form (the ``couplings`` entries of a compiled model's
+    ``model`` payload: name, expression, orders, value at the card), so that
+    a transform can put it back into that payload and evaluate it with the
+    code that evaluates the couplings it kept."""
+
+    from ufo_model_loader.model import SerializableCoupling
+
+    serial = SerializableCoupling.from_coupling(coupling)
+    return {
+        "name": str(serial.name),
+        "expression": str(serial.expression),
+        "orders": [[str(order), int(power)] for order, power in serial.orders],
+        "value": None if serial.value is None else list(serial.value),
+    }
+
+
+def removed_coupling_records_from_payload(
+    value: object,
+) -> tuple[dict[str, Any], ...]:
+    """The removed-coupling records of a compiled-model payload (validated)."""
+
+    records = []
+    for item in _sequence(value):
+        record = _mapping(item)
+        name, expression, orders = (
+            record.get("name"),
+            record.get("expression"),
+            record.get("orders"),
+        )
+        if not isinstance(name, str) or not name or not isinstance(expression, str):
+            raise ValueError("a removed coupling needs a name and an expression")
+        records.append(
+            {
+                "name": name,
+                "expression": expression,
+                "orders": [
+                    [str(_sequence(pair)[0]), int(_sequence(pair)[1])]
+                    for pair in _sequence(orders)
+                ],
+                "value": (
+                    None
+                    if record.get("value") is None
+                    else [float(component) for component in _sequence(record["value"])]
+                ),
+            }
+        )
+    names = [record["name"] for record in records]
+    if names != sorted(set(names)):
+        raise ValueError("removed couplings must be sorted and unique")
+    return tuple(records)
+
+
+@dataclass(frozen=True)
+class RevivedCoupling:
+    """A removed coupling a transform does not leave zero: ``value`` in the
+    transform's own arithmetic, ``revived`` when that value is nonzero, else
+    zero only at the transformed values of the parameters ``parameters`` it
+    depends on (a binding of them would revive it, and no guard of the
+    transformed model holds them)."""
+
+    name: str
+    value: complex
+    parameters: tuple[str, ...] = ()
+
+    @property
+    def revived(self) -> bool:
+        return self.value != 0
+
+    def describe(self) -> str:
+        if self.revived:
+            return f"{self.name} = {_format_complex(self.value)}"
+        return (
+            f"{self.name} (zero here only at the values of "
+            f"{', '.join(self.parameters)})"
+        )
+
+
+def revived_removed_couplings(
+    model: Any, removed: Iterable[Any]
+) -> tuple[RevivedCoupling, ...]:
+    """The couplings of ``removed`` that a parameter transform revives.
+
+    ``model`` is the ``ufo_model_loader`` model of a compiled model's tree
+    payload after the transform (its parameters redefined and its values
+    evaluated again); ``removed`` are the couplings restriction
+    simplification removed (``removed_coupling_record``), as loader
+    ``Coupling`` objects that went through the same transform and evaluation
+    as the kept couplings (their ``value`` set by it). A removed coupling is
+    left zero by the transform only when its value there is exactly zero and
+    it either reads no external (mutable) parameter or vanishes identically
+    once the transformed internal parameters are written in the externals;
+    any other is returned, in ``removed``'s order."""
+
+    environment: GuardEnvironment | None = None
+    found = []
+    for coupling in removed:
+        value = complex(coupling.value if coupling.value is not None else math.nan)
+        if value != 0:
+            found.append(RevivedCoupling(str(coupling.name), value))
+            continue
+        if environment is None:
+            environment = GuardEnvironment.from_ufo_model(model)
+        try:
+            resolved = environment.resolve(coupling.expression)
+            parameters = environment.mutable_dependencies(resolved)
+            structural = not parameters or _is_identically_zero(resolved)
+        except (TypeError, ValueError):
+            parameters, structural = ("(unresolved)",), False
+        if not structural:
+            found.append(RevivedCoupling(str(coupling.name), value, parameters))
+    return tuple(found)
 
 
 def _removed_coupling_guards(
