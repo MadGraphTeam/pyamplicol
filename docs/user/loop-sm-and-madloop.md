@@ -102,9 +102,10 @@ massless quark through the CKM matrix at `zeromass_ckm`, `ckm` and `c_mass`)
 generates at one loop and at tree level: the W has a single chiral
 projector, so the massless quark's current that passed the massive one is a
 Weyl state again at its massless end. Some tree requests meet a separate
-recurrence refusal at leading colour (two quark lines joined only by a W,
-`u b > d t`, `u d~ > t b~`: "no exact closure for physical LC sector"; the
-eager and on-the-fly lanes build them). Only a vertex with both chiral
+refusal (two quark lines joined only by a W, `u b > d t`, `u d~ > t b~`: "no
+exact closure for physical LC sector" in the recurrence lane, also at full
+colour, and the compiled lane at leading colour; the eager and on-the-fly
+lanes build them). Only a vertex with both chiral
 projections (left- and right-handed couplings) between a massive and a
 massless fermion, which the shipped models do not have, is still refused at
 tree level with `dirac-weyl-closure`. The one-loop engine is
