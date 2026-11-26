@@ -39,6 +39,11 @@ A guard is
     The mutable (external) parameters it holds, sorted.
 ``generation_values``
     Their binary64 values at generation (real, imaginary).
+``generation_exact``
+    The same values as the exact decimals the producer used (real,
+    imaginary text), written once by the producer (``exact_decimal_text``):
+    exact readers parse this text and compare with it; nobody formats a float
+    to obtain it, so two printers never need to agree.
 ``expression``
     The specialised expression as Symbolica text, for people.
 
@@ -85,12 +90,21 @@ class InexactSpecialization(ValueError):
     evaluate a term the specialisation dropped."""
 
 
+def exact_decimal_text(component: float) -> str:
+    """The exact decimal a producer records for a binary64 generation value:
+    the shortest decimal that rounds to it (Python's ``repr``). Written once,
+    by the producer, into the guard record (and by the same function into a
+    loop plan's defaults); readers parse it, never recompute it."""
+
+    return repr(float(component))
+
+
 def exact_generation_value(component: float) -> Fraction:
     """The exact value of a recorded binary64 generation value for an exact
     carrier: the shortest decimal that rounds to it (``repr``), as a card,
     the loop plan's defaults and the tree lanes' extended precision read it."""
 
-    return Fraction(Decimal(repr(float(component))))
+    return Fraction(Decimal(exact_decimal_text(component)))
 
 
 @dataclass(frozen=True)
@@ -100,6 +114,7 @@ class SpecializationGuard:
     producer: str
     parameters: tuple[str, ...]
     generation_values: Mapping[str, tuple[float, float]]
+    generation_exact: Mapping[str, tuple[str, str]]
     expression: str
     message: str
     process_ids: tuple[str, ...] | None = field(default=None)
@@ -121,6 +136,24 @@ class SpecializationGuard:
             if not all(math.isfinite(component) for component in value):
                 raise ValueError(
                     f"specialisation-guard generation value of {name!r} is not finite"
+                )
+        if set(self.generation_exact) != set(self.parameters):
+            raise ValueError(
+                "specialisation-guard exact values must name its parameters"
+            )
+        for name, texts in self.generation_exact.items():
+            # The exact decimal must round to the recorded binary64 (the
+            # binary64 nearest it, by a correctly rounded parse).
+            try:
+                parsed = tuple(float(Decimal(text)) for text in texts)
+            except (ArithmeticError, ValueError) as error:
+                raise ValueError(
+                    f"specialisation-guard exact value of {name!r} is not a decimal"
+                ) from error
+            if parsed != tuple(self.generation_values[name]):
+                raise ValueError(
+                    f"specialisation-guard exact value of {name!r} does not round "
+                    "to its binary64 generation value"
                 )
 
     # -- construction -----------------------------------------------------------
@@ -193,6 +226,13 @@ class SpecializationGuard:
                 name: (float(complex(value).real), float(complex(value).imag))
                 for name, value in generation_values.items()
             },
+            generation_exact={
+                name: (
+                    exact_decimal_text(complex(value).real),
+                    exact_decimal_text(complex(value).imag),
+                )
+                for name, value in generation_values.items()
+            },
             expression=expression,
             message=message,
         )
@@ -236,6 +276,13 @@ class SpecializationGuard:
             generation_values={
                 name: environment.generation_value(name) for name in parameters
             },
+            generation_exact={
+                name: tuple(
+                    exact_decimal_text(component)
+                    for component in environment.generation_value(name)
+                )
+                for name in parameters
+            },
             expression=resolved.to_canonical_string(),
             message=message,
         )
@@ -247,6 +294,7 @@ class SpecializationGuard:
             producer=self.producer,
             parameters=self.parameters,
             generation_values=self.generation_values,
+            generation_exact=self.generation_exact,
             expression=self.expression,
             message=self.message,
             process_ids=tuple(sorted(set(process_ids))),
@@ -289,6 +337,10 @@ class SpecializationGuard:
                 name: [float(value[0]), float(value[1])]
                 for name, value in sorted(self.generation_values.items())
             },
+            "generation_exact": {
+                name: [str(texts[0]), str(texts[1])]
+                for name, texts in sorted(self.generation_exact.items())
+            },
             "expression": self.expression,
             "message": self.message,
         }
@@ -301,6 +353,9 @@ class SpecializationGuard:
         values = payload.get("generation_values")
         if not isinstance(values, Mapping):
             raise ValueError("specialisation-guard generation_values must be an object")
+        exact = payload.get("generation_exact")
+        if not isinstance(exact, Mapping):
+            raise ValueError("specialisation-guard generation_exact must be an object")
         process_ids = payload.get("process_ids")
         return SpecializationGuard(
             kind=str(payload["kind"]),
@@ -310,6 +365,10 @@ class SpecializationGuard:
             generation_values={
                 str(name): (float(value[0]), float(value[1]))
                 for name, value in values.items()
+            },
+            generation_exact={
+                str(name): (str(texts[0]), str(texts[1]))
+                for name, texts in exact.items()
             },
             expression=str(payload["expression"]),
             message=str(payload["message"]),
@@ -391,12 +450,20 @@ def exact_decimal_binding_refusal(
             if name not in binding:
                 continue
             real, imaginary = guard.generation_values[name]
-            value = _exact_value(binding[name])
-            if (
-                imaginary != 0.0
-                or value is None
-                or value != exact_generation_value(real)
-            ):
+            bound = binding[name]
+            if isinstance(bound, float):
+                # A binary64 binding matches iff it is the binary64 nearest
+                # the stored decimal (the recorded binary64): no printing.
+                unchanged = imaginary == 0.0 and bound == real
+            else:
+                value = _exact_value(bound)
+                exact_re, exact_im = guard.generation_exact[name]
+                unchanged = (
+                    value is not None
+                    and Decimal(exact_im) == 0
+                    and value == Fraction(Decimal(exact_re))
+                )
+            if not unchanged:
                 changed.append(
                     f"{name} = {binding[name]} (generated at "
                     f"{_format_complex(complex(real, imaginary))})"
@@ -414,16 +481,12 @@ def exact_decimal_binding_refusal(
 
 
 def _exact_value(value: object) -> Fraction | None:
-    """``value`` as an exact rational: a float as its shortest decimal, an
-    int, ``Fraction`` or ``Decimal`` exactly, text as a decimal or a
-    fraction."""
+    """``value`` as an exact rational: an int, ``Fraction`` or ``Decimal``
+    exactly, text as a decimal or a fraction (a float is compared as a
+    binary64 by the caller, never printed)."""
 
-    if isinstance(value, bool):
+    if isinstance(value, bool | float):
         return None
-    if isinstance(value, float):
-        # A float binding is read as its shortest decimal, as the runtime
-        # reads it.
-        return exact_generation_value(value) if math.isfinite(value) else None
     if isinstance(value, int | Fraction | Decimal):
         try:
             return Fraction(value)
@@ -528,20 +591,47 @@ def _product_factors(expression: Any) -> list[Any]:
 def _exactly_zero_at_generation(
     environment: GuardEnvironment, factor: Any, dependencies: Sequence[str]
 ) -> bool:
-    """Whether ``factor`` is exactly zero (in exact rational arithmetic) with
-    its parameters at their binary64 generation values."""
+    """Whether ``factor`` is exactly zero (exact rational arithmetic) at the
+    generation values under EVERY exact reading a supported runtime can give
+    them: each parameter in ``dependencies`` as its recorded decimal (the
+    one-loop runtime, the Python extended-precision paths) and as the exact
+    value of its binary64 (the native tree runtime promotes the binary64), and
+    every binary64 literal of the expression read either way. A term that is
+    zero under one reading only is not zero for the runtimes that use the
+    other."""
 
+    return all(
+        _exactly_zero_under(environment, factor, dependencies, parameters, literals)
+        for parameters in ("decimal", "binary64")
+        for literals in ("decimal", "binary64")
+    )
+
+
+def _exactly_zero_under(
+    environment: GuardEnvironment,
+    factor: Any,
+    dependencies: Sequence[str],
+    parameters: str,
+    literals: str,
+) -> bool:
     from symbolica import E, Expression
 
-    substituted = _rational_literals(_with_imaginary_unit(factor))
+    def exact(component: float) -> Fraction:
+        return (
+            exact_generation_value(component)
+            if parameters == "decimal"
+            else Fraction(component)
+        )
+
+    substituted = _rational_literals(_with_imaginary_unit(factor), literals)
     for symbol in factor.get_all_symbols(False):
         name = _short_name(symbol.get_name())
         if name not in dependencies:
             continue
         real, imaginary = environment.generation_value(name)
-        value = E(_exact_text(real))
+        value = E(_fraction_text(exact(real)))
         if imaginary != 0.0:
-            value = value + E(_exact_text(imaginary)) * Expression.I
+            value = value + E(_fraction_text(exact(imaginary))) * Expression.I
         substituted = substituted.replace(symbol, value)
     try:
         expanded = substituted.expand()
@@ -550,9 +640,14 @@ def _exactly_zero_at_generation(
         return False
 
 
-def _rational_literals(expression: Any) -> Any:
+def _fraction_text(value: Fraction) -> str:
+    return f"({value.numerator}/{value.denominator})"
+
+
+def _rational_literals(expression: Any, reading: str = "decimal") -> Any:
     """``expression`` with every binary64 literal (a UFO ``91.188``) read as
-    its shortest decimal, as exact carriers read numbers."""
+    its shortest decimal (``reading="decimal"``) or as the exact value of the
+    binary64 (``"binary64"``)."""
 
     from symbolica import AtomType, E
 
@@ -576,16 +671,11 @@ def _rational_literals(expression: Any) -> Any:
 
     collect(expression)
     for atom, value in found.values():
-        exact = exact_generation_value(value)
-        expression = expression.replace(
-            atom, E(f"({exact.numerator}/{exact.denominator})")
+        exact = (
+            exact_generation_value(value) if reading == "decimal" else Fraction(value)
         )
+        expression = expression.replace(atom, E(_fraction_text(exact)))
     return expression
-
-
-def _exact_text(value: float) -> str:
-    exact = exact_generation_value(value)
-    return f"({exact.numerator}/{exact.denominator})"
 
 
 # -- the parameter environment ---------------------------------------------------
@@ -849,13 +939,27 @@ def load_ufo_model_with_guards(
     from ufo_model_loader import model as ufo_model
 
     captured: list[SpecializationGuard] = []
+    kept: list[str] = []
     # The original method is read and restored under the lock, so overlapping
     # loads in one process can never leave a wrapper installed.
     with _CAPTURE_LOCK:
         original = ufo_model.Model.remove_zero_couplings
 
         def remove_zero_couplings(self: Any) -> Any:
-            removed = original(self)
+            # A coupling is removed by value only if it is exactly zero under
+            # every exact reading of the generation values: one that is zero
+            # only in binary64 (an order-one cancellation, or a term zero at
+            # the decimal but not at the promoted binary64) is kept.
+            unproven = _couplings_not_exactly_zero(self)
+            saved = {id(coupling): coupling.value for coupling in unproven}
+            for coupling in unproven:
+                coupling.value = _KEPT_SENTINEL
+            try:
+                removed = original(self)
+            finally:
+                for coupling in unproven:
+                    coupling.value = saved[id(coupling)]
+            kept.extend(str(coupling.name) for coupling in unproven)
             captured.extend(_removed_coupling_guards(self, removed[0]))
             return removed
 
@@ -866,6 +970,29 @@ def load_ufo_model_with_guards(
             ufo_model.Model.remove_zero_couplings = original
     unique = {guard.subject: guard for guard in captured}
     return model, card, tuple(unique[subject] for subject in sorted(unique))
+
+
+#: A nonzero stand-in that makes ``remove_zero_couplings`` keep a coupling
+#: (restored right after it ran).
+_KEPT_SENTINEL = complex(0.0, 5e-324)
+
+
+def _couplings_not_exactly_zero(model: Any) -> list[Any]:
+    """The couplings of ``model`` whose binary64 value is zero but which are
+    not exactly zero under every exact reading of the generation values."""
+
+    zero = [coupling for coupling in model.couplings if coupling.value == 0.0]
+    if not zero:
+        return []
+    environment = GuardEnvironment.from_ufo_model(model)
+    unproven = []
+    for coupling in zero:
+        resolved = environment.resolve(coupling.expression)
+        if not _exactly_zero_at_generation(
+            environment, resolved, environment.mutable_dependencies(resolved)
+        ):
+            unproven.append(coupling)
+    return unproven
 
 
 def _removed_coupling_guards(

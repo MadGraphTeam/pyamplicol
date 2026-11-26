@@ -3583,8 +3583,15 @@ class V2VirtualRuntime:
 
             # Exact: the decimal value as bound against the exact value of
             # the recorded binary64 (no narrowing of the binding).
+            # A float binding is compared as a binary64 (the value it is),
+            # any other as the exact decimal the checks read.
+            raw = mapping if isinstance(mapping, Mapping) else {}
             refusal = exact_decimal_binding_refusal(
-                self._specialization_guards, checked
+                self._specialization_guards,
+                {
+                    name: raw[name] if isinstance(raw.get(name), float) else value
+                    for name, value in checked.items()
+                },
             )
             if refusal is not None:
                 raise ValueError(refusal)

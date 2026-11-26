@@ -2088,8 +2088,13 @@ def _parameter_program(
 
     records = trees._records
     names = [str(r["name"]) for r in records if r["kind"] == "external_parameter"]
+    # The plan's defaults are written by the function that writes a
+    # specialisation guard's exact generation values, so an exact reader
+    # compares one text with itself.
+    from pyamplicol.models.specialization_guards import exact_generation_value
+
     defaults = [
-        _fraction_text(Fraction(repr(r["default"])))
+        _fraction_text(exact_generation_value(r["default"]))
         for r in records
         if r["kind"] == "external_parameter"
     ]
@@ -2529,7 +2534,7 @@ def _parameter_program(
                 index[name] = len(names)
                 names.append(name)
                 defaults.append(
-                    _fraction_text(Fraction(str(compiled.parameter_defaults[name][0])))
+                    _fraction_text(exact_generation_value(compiled.parameter_defaults[name][0]))
                 )
                 symbol = symbols.qualified(f"pyamplicol_v2_parameters::e{len(inputs)}")
                 inputs.append(symbol)

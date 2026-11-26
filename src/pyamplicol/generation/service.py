@@ -5219,6 +5219,26 @@ class GenerationBackend:
             raise GenerationError(
                 "recurrence generation has no recurrence-template-v1 catalog"
             )
+        if resolved_model.model is not None:
+            from ..models.recurrence_catalog_builder import (
+                stale_template_parameter_types,
+            )
+
+            stale = stale_template_parameter_types(
+                resolved_model.model, catalog, bundle.kernel_pack.provenance
+            )
+            if stale:
+                # A pack typed by an older rule holds these derived
+                # parameters real; the template lanes would drop their
+                # imaginary part at a binding that makes them complex.
+                raise GenerationError(
+                    "the prepared model's recurrence template was typed by an "
+                    "older rule: it holds the derived parameters "
+                    + ", ".join(stale[:8])
+                    + (" ..." if len(stale) > 8 else "")
+                    + " real although they are not proven real for every "
+                    "binding; prepare the model again with this version"
+                )
         direct_catalog = bundle.kernel_pack.recurrence_direct_template_catalog
         if direct_catalog is None:  # pragma: no cover - preflighted during loading
             raise GenerationError(
