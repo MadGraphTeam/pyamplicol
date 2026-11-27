@@ -32,7 +32,6 @@ from pathlib import Path
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime
-from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
     EvaluatorConfig,
@@ -44,6 +43,7 @@ from pyamplicol.config import (
     ProcessConfig,
     RunConfig,
 )
+from pyamplicol.generation.singlet_exchange import SingletExchangeColourError
 
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/tree"
 _MODES = ("recurrence", "compiled", "eager", "on-the-fly")
@@ -197,7 +197,9 @@ def test_singlet_exchange_with_a_closed_gluon_trace_is_refused(
     """Every mode and accuracy refuses the request before lowering and names
     the order that removes these trees."""
 
-    with pytest.raises(GenerationError, match="closed gluon trace") as refused:
+    with pytest.raises(
+        SingletExchangeColourError, match="closed gluon trace"
+    ) as refused:
         generate("g g > t t~", mode, accuracy, {"QCD": 2, "QED": 1, "HIG": 1})
     assert "HIG = 0" in str(refused.value)
 
@@ -213,7 +215,7 @@ def test_singlet_exchange_with_a_closed_gluon_trace_is_refused(
 def test_the_refused_class_reaches_through_z_bosons_and_effective_vertices(
     generate, process: str, orders
 ) -> None:
-    with pytest.raises(GenerationError, match="closed gluon trace"):
+    with pytest.raises(SingletExchangeColourError, match="closed gluon trace"):
         generate(process, "compiled", "full", orders)
 
 
@@ -269,7 +271,7 @@ def test_the_correlated_lane_refuses_the_same_born(tmp_path: Path) -> None:
         color_correlations=(ColorCorrelator.dipole("T1_2", 1, 2),)
     )
     config = _config("compiled", "full", {"QCD": 2, "QED": 1, "HIG": 1})
-    with pytest.raises(GenerationError, match="closed gluon trace"):
+    with pytest.raises(SingletExchangeColourError, match="closed gluon trace"):
         Generator(config).generate(
             "g g > t t~",
             tmp_path / "refused",
@@ -295,7 +297,9 @@ def test_a_singlet_between_two_quark_lines_through_the_effective_vertex(
 
     process, orders = "d~ d > t~ t g", {"QCD": 99, "QED": 99, "HIG": 1}
     if mode in ("compiled", "eager"):
-        with pytest.raises(GenerationError, match="recurrence or on-the-fly"):
+        with pytest.raises(
+            SingletExchangeColourError, match="recurrence or on-the-fly"
+        ):
             generate(process, mode, "full", orders)
         return
     payload = json.loads(
@@ -323,7 +327,7 @@ def test_a_singlet_between_two_gluon_groups_is_refused(generate, mode: str) -> N
     """``g g > g g`` through two effective vertices: the colour is a product of
     two closed traces, which no sector carries."""
 
-    with pytest.raises(GenerationError, match="closed gluon trace"):
+    with pytest.raises(SingletExchangeColourError, match="closed gluon trace"):
         generate("g g > g g", mode, "full", {"QCD": 2, "QED": 1, "HIG": 2})
 
 
@@ -335,7 +339,7 @@ def test_virtual_gluons_into_the_effective_vertex_refuse_in_the_dag_modes(
     one of the d line fuse into the Higgs that the top line absorbs. The
     compiled and eager modes gave half the value; they refuse."""
 
-    with pytest.raises(GenerationError, match="recurrence or on-the-fly"):
+    with pytest.raises(SingletExchangeColourError, match="recurrence or on-the-fly"):
         generate("u u~ > d d~ t t~", mode, "full", {"QCD": 2, "QED": 1, "HIG": 1})
 
 

@@ -240,7 +240,10 @@ from .runtime_schema import (
     build_runtime_expression_schema,
     build_runtime_schema_layout,
 )
-from .singlet_exchange import require_representable_singlet_exchange
+from .singlet_exchange import (
+    SingletExchangeColourError,
+    require_representable_singlet_exchange,
+)
 from .stage_compiler import (
     build_and_write_generic_stage_evaluator_artifacts,
     write_model_parameter_evaluator_artifact,
@@ -3263,6 +3266,17 @@ def _shutdown_process_executor(
     executor.shutdown(wait=not interrupted, cancel_futures=True)
 
 
+def _process_phase_error(
+    phase_name: str, process_name: str, exc: Exception
+) -> GenerationError:
+    """The error of a failed process phase; a typed refusal keeps its type."""
+
+    message = f"{phase_name} failed for process {process_name!r}: {exc}"
+    if isinstance(exc, SingletExchangeColourError):
+        return SingletExchangeColourError(message)
+    return GenerationError(message)
+
+
 def _map_process_phase(
     items: Sequence[_ProcessInput],
     operation: Callable[[_ProcessInput], _ProcessOutput],
@@ -3282,9 +3296,7 @@ def _map_process_phase(
             try:
                 results.append(operation(item))
             except Exception as exc:
-                raise GenerationError(
-                    f"{phase_name} failed for process {item_name(item)!r}: {exc}"
-                ) from exc
+                raise _process_phase_error(phase_name, item_name(item), exc) from exc
         return tuple(results)
 
     ordered: list[_ProcessOutput | object] = [_MISSING_PROCESS_RESULT for _ in items]
@@ -3325,9 +3337,7 @@ def _map_process_phase(
                 wait(tuple(active))
             index, exc = min(failures, key=lambda failure: failure[0])
             item = items[index]
-            raise GenerationError(
-                f"{phase_name} failed for process {item_name(item)!r}: {exc}"
-            ) from exc
+            raise _process_phase_error(phase_name, item_name(item), exc) from exc
         while next_index < len(items) and len(active) < max_in_flight:
             submit_one(next_index)
             next_index += 1
