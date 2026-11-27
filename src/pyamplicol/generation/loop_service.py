@@ -52,7 +52,7 @@ from pyamplicol.reporting.logging import notice
 
 from .dag_algorithms import (
     infer_minimal_coupling_order_limits,
-    minimal_policy_coupling_limits,
+    request_coupling_order_limits,
 )
 from .loop_artifact import (
     LoopV2ExecutionMetadata,
@@ -208,8 +208,8 @@ class _LoopContext:
     preparation: LoopPreparation
     color_declaration: Any = None
     limits: tuple[dict[str, int], ...] = ()
-    # ``process.max_coupling_orders`` by the declared names: the bounds of a
-    # loop-induced request's loop amplitudes (``loop_induced_orders``).
+    # ``process.max_coupling_orders`` by the declared names, the explicit part
+    # of every request's limits (``_request_limits``).
     explicit: dict[str, int] = field(default_factory=dict)
     # Per entry the loop orders of a loop-induced request that are exact
     # colour zeros (``_loop_induced_request``), None for a Born member.
@@ -340,13 +340,16 @@ def _prepare(
     entry_limits = []
     explicit = _resolve_limits(names, run.process.max_coupling_orders)
     for entry in expanded:
-        limits = explicit
-        if run.process.coupling_order_policy == "minimal":
-            # The same model hierarchy, reachable Born closures and inclusive
-            # envelope as the tree service, before adding virtual corrections.
-            limits = _minimal_born_limits(
-                entry.process_ir, resolved.model, limits, names
-            )
+        # The same model hierarchy, reachable Born closures and inclusive
+        # envelope as the tree service, before adding virtual corrections.
+        limits = _request_limits(
+            entry.process_ir,
+            resolved.model,
+            explicit,
+            names,
+            str(run.process.coupling_order_policy),
+            born=True,
+        )
         # The Born of a virtual request has the colour of its tree.
         require_representable_singlet_exchange(
             entry.process_ir, model=resolved.model, max_coupling_orders=limits or None
@@ -414,21 +417,40 @@ def _resolve_orders(names, values, what: str) -> tuple[str, ...]:
         raise GenerationError(str(error)) from error
 
 
-def _minimal_born_limits(process_ir, model, explicit: Mapping[str, int], names):
-    """The Born limits of the minimal policy, keyed by the declared names:
-    the inferred envelope within the explicit limits and the model's expansion
-    orders, or those capped limits when nothing is inferred (no Born within
-    them), never the uncapped ones."""
+def _request_limits(
+    process_ir,
+    model,
+    explicit: Mapping[str, int],
+    names,
+    policy: str,
+    *,
+    born: bool,
+) -> dict[str, int]:
+    """A loop request's coupling-order limits keyed by the declared names
+    (``dag_algorithms.request_coupling_order_limits``: explicit, else the
+    capped default): the Born limits (``born``: the minimal envelope within
+    the bounds, or the bounds when no Born is within them) or the bounds
+    alone (a loop-induced request, whose loop orders are inferred within
+    them)."""
 
-    capped = minimal_policy_coupling_limits(explicit, model)
-    inferred = infer_minimal_coupling_order_limits(
-        process_ir, model=model, max_coupling_orders=capped
+    limits = request_coupling_order_limits(
+        explicit,
+        model,
+        policy=policy,
+        infer=(
+            (
+                lambda bounds: infer_minimal_coupling_order_limits(
+                    process_ir, model=model, max_coupling_orders=bounds or None
+                )
+            )
+            if born
+            else None
+        ),
     )
-    if inferred:
-        return names.mapping(inferred)
-    if capped:
-        return names.mapping(capped)
-    return explicit
+    if policy == "minimal":
+        return names.mapping(limits)
+    # The explicit limits as requested (their order kept).
+    return {names.declared_name(name): value for name, value in limits.items()}
 
 
 def _resolve_limits(names, limits: Mapping[str, int]) -> dict[str, int]:
@@ -1117,7 +1139,9 @@ def _loop_induced_request(backend, context, index, member, memo):
 
     Full colour only (``loop-induced-colour-accuracy``, Q8). The loop orders
     are inferred (``loop_induced_orders``) from the field-level loop family
-    recursion within ``process.max_coupling_orders``
+    recursion within the request's bounds (``_request_limits``: the
+    explicit limits, else the model's expansion orders under the minimal
+    policy)
     (``assemble.reachable_loop_orders``): the orders with a loop amplitude
     and those every loop of which has a single coloured attachment (an
     exact colour zero, Tr T^a = 0: ``h > g a``; the request is one when all
@@ -1153,9 +1177,18 @@ def _loop_induced_request(backend, context, index, member, memo):
             f"limits {dict(sorted(member.limits.items()))} and requests "
             f"color.accuracy = {accuracy!r}",
         )
-    bounds = dict(context.explicit)
     # The request before its loop orders are known: bounded by the explicit
-    # limits only, its preparation keeps every vertex the bounds admit.
+    # limits, else the capped default (the model's expansion orders under the
+    # minimal policy, as its Born limits), its preparation keeps every vertex
+    # the bounds admit.
+    bounds = _request_limits(
+        context.expanded[index].process_ir,
+        context.resolved.model,
+        context.explicit,
+        _order_names(compiled),
+        str(run.process.coupling_order_policy),
+        born=False,
+    )
     base = _slice_request(
         backend,
         context,

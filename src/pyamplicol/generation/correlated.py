@@ -49,7 +49,7 @@ from .artifact_writer import ApiBundleHook, ArtifactWriteResult
 from .contracts import RuntimeExpressionSchema
 from .dag_algorithms import (
     _infer_minimal_coupling_order_limits_from_color_plan,
-    minimal_policy_coupling_limits,
+    request_coupling_order_limits,
 )
 from .dag_compiler import compile_generic_dag
 from .dag_types import GenericDAG
@@ -267,22 +267,19 @@ class CorrelatedGenerationBackend(GenerationBackend):
             raise GenerationError(
                 f"process {process.process!r} has no complete colour plan"
             )
-        limits = self._coupling_order_limits
-        run = self._run_config
-        if run is not None and run.process.coupling_order_policy == "minimal":
-            # Within the model's expansion orders, also when nothing is
-            # inferred (no tree within them: the request then has no Born).
-            capped = minimal_policy_coupling_limits(limits, model)
-            limits = (
-                _infer_minimal_coupling_order_limits_from_color_plan(
-                    process,
-                    model=model,
-                    color_plan=plan,
-                    max_coupling_orders=capped,
-                )
-                or capped
-                or limits
-            )
+        # Within the model's expansion orders, also when nothing is inferred
+        # (no tree within them: the request then has no Born).
+        limits = request_coupling_order_limits(
+            self._coupling_order_limits,
+            model,
+            policy=self._coupling_order_policy,
+            infer=lambda bounds: _infer_minimal_coupling_order_limits_from_color_plan(
+                process,
+                model=model,
+                color_plan=plan,
+                max_coupling_orders=bounds or None,
+            ),
+        )
         require_representable_singlet_exchange(
             process, model=model, max_coupling_orders=limits or None
         )

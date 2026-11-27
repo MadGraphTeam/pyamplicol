@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections import deque
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from itertools import pairwise
 from typing import cast
@@ -993,6 +993,37 @@ def minimal_policy_coupling_limits(
     for name, cap in (expansion() if callable(expansion) else {}).items():
         merged.setdefault(str(name).upper(), int(cap))
     return merged or None
+
+
+def request_coupling_order_limits(
+    max_coupling_orders: Mapping[str, int] | None,
+    model: Model,
+    *,
+    policy: str,
+    infer: Callable[[dict[str, int]], Mapping[str, int] | None] | None = None,
+) -> dict[str, int]:
+    """The coupling-order limits of one request, for every path that builds
+    them (tree, on-the-fly, correlated, loop Born, loop-induced bounds,
+    relation warnings): explicit, else the capped default.
+
+    Every explicit limit stays as requested. Under the ``minimal`` policy an
+    order the request leaves open is bounded by the model's expansion order
+    (``minimal_policy_coupling_limits``), and ``infer`` (when given) narrows
+    these bounds to the minimal envelope within them; when it finds none (no
+    Born within the bounds) the bounds stay, never the uncapped limits. Under
+    the ``explicit`` policy the explicit limits are the request's limits."""
+
+    explicit = {
+        str(name).upper(): int(value)
+        for name, value in (max_coupling_orders or {}).items()
+    }
+    if policy != "minimal":
+        return explicit
+    bounds = minimal_policy_coupling_limits(explicit, model) or {}
+    if infer is None:
+        return bounds
+    inferred = infer(bounds)
+    return dict(inferred) if inferred else bounds
 
 
 def _minimal_coupling_order_limits_from_totals(
