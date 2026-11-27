@@ -60,6 +60,13 @@ CALIBRATION = (
 # estimate and per Laurent coefficient.
 ESTIMATE_MARGIN = 10
 CALIBRATION_ROWS = ("li_gg_hh", "li_gg_z")
+# The derivation of the loop-induced floor's first-order unit count
+# (``stability.BILINEAR_FLOOR_UNITS``): campaign binary64 points of the
+# loop-induced rows, estimated with a rotation and the rescaled reduction
+# check (TIRust) against their double-double references.
+FLOOR_UNITS_DERIVATION = (
+    ROOT / "tests" / "fixtures" / "loop" / "v2" / "floor_units_li.json"
+)
 TRUTH_DIGITS = 57
 # The relative estimate of a numerical zero is its absolute estimate against
 # rounding: far above any target (here: above 1e5 = 1 / 1e-5).
@@ -608,6 +615,49 @@ def test_calibration_points_are_exact(name):
         for mu in range(4):
             assert point[0][mu] + point[1][mu] == sum(p[mu] for p in point[2:])
 
+
+@pytest.mark.loop_fast
+def test_the_floor_units_are_the_smallest_power_of_4_keeping_every_covered_point():
+    """BILINEAR_FLOOR_UNITS is a measured count, not a proven bound: the
+    smallest power of 4 under which, on the fixture's points (each point the
+    previous floor FLOOR_UNITS u S covered, with its true error, its checks'
+    sampled budget, the floor's first- and second-order terms at the
+    measuring build's count and the previous estimate), (a) no point is a
+    miss and (b) at each row's worst point E / error is at least
+    min(the previous estimate's E / error there, ESTIMATE_MARGIN). No
+    further margin is required: on rows whose worst points are dominated by
+    the checks no count gives one (g g > z z g g: E / error 11.34 at 2^18
+    against the previous 12.14 at a point whose floor share is 0.02). The first-order term scales with the count, the second-order term
+    (FLOOR_UNITS u)^2 S does not. Lowering the count makes a covered point
+    a miss and fails here."""
+
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS
+
+    data = json.loads(FLOOR_UNITS_DERIVATION.read_text())
+    measured = data["units_measured"]
+
+    def passes(units):
+        for name, row in data["rows"].items():
+            estimates = [
+                (sampled + first * units / measured + second, error, previous)
+                for error, sampled, first, second, previous in row["kept"]
+            ]
+            if not estimates:
+                continue
+            if any(estimate < error for estimate, error, _ in estimates):
+                return False
+            estimate, error, previous = min(estimates, key=lambda x: x[0] / x[1])
+            if estimate / error < min(previous / error, ESTIMATE_MARGIN):
+                return False
+        return True
+
+    passing = [units for units in data["grid"] if passes(units)]
+    assert passing and passing[0] == BILINEAR_FLOOR_UNITS
+    assert BILINEAR_FLOOR_UNITS // 4 in data["grid"]
+    assert not passes(BILINEAR_FLOOR_UNITS // 4)
+    for row in data["rows"].values():
+        assert row["covered"] + row["previous_misses"] == row["points"]
+        assert len(row["kept"]) <= row["covered"]
 
 # ------------------------------------------------------- the floor's form
 

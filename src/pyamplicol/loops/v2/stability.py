@@ -68,8 +68,9 @@ as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound.
 Its unit count is the smallest power of 4 under which, on the measured
 binary64 loop-induced points (``tools/loop_v2_floor_units.py``, the
 derivation fixture in the tests), no point that FLOOR_UNITS u S covered is
-a miss, and at every row's worst covered point E / error is at least what
-FLOOR_UNITS u S gave there. No margin beyond that is claimed: on rows whose
+a miss, and at every row's worst covered point E / error is at least the
+smaller of what FLOOR_UNITS u S gave there and the calibration tests'
+x10 margin. No margin beyond that is claimed: on rows whose
 worst points are dominated by the checks (their budgets under-measure the
 error) no unit count gives one, with either floor. The
 second-order term keeps a vanishing value "zero within the estimate". The
@@ -147,8 +148,9 @@ FLOOR_UNITS = 16
 # points of tests/fixtures/loop/v2/floor_units_li.json (estimates with the
 # rescaled check against double-double), (a) no point the previous floor
 # FLOOR_UNITS u S covered is a miss and (b) at each row's worst covered point
-# E / error is at least the previous estimate's there. Its second-order term
-# keeps FLOOR_UNITS.
+# E / error is at least min(the previous estimate's there, 10), 10 the
+# calibration tests' ESTIMATE_MARGIN. Its second-order term keeps
+# FLOOR_UNITS.
 BILINEAR_FLOOR_UNITS = 2**18
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
