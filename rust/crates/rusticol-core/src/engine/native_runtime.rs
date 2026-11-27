@@ -5955,25 +5955,6 @@ fn recurrence_parity_pending(feature: &str) -> RusticolError {
     )
 }
 
-#[cfg(test)]
-mod runtime_capability_cutover_tests {
-    use super::*;
-
-    #[test]
-    fn retired_eager_v2_capabilities_fail_with_regeneration_guidance() {
-        for capability in [
-            EAGER_DAG_RUNTIME_CAPABILITY,
-            EAGER_LC_TOPOLOGY_REPLAY_RUNTIME_CAPABILITY,
-        ] {
-            let error = ensure_selected_runtime_capabilities_supported(&[capability.to_string()])
-                .expect_err("retired eager capability must fail before generic preflight");
-            assert_eq!(error.kind(), crate::RusticolErrorKind::Compatibility);
-            assert!(error.to_string().contains("legacy eager plan-v2"));
-            assert!(error.to_string().contains("regenerate"));
-        }
-    }
-}
-
 /// The run-time invariant of squared coupling-order partials: per point their
 /// sum is the total within a rounding bound (`1e-9` of the larger of the
 /// total and the sum of the partials' magnitudes). A violation is a typed
@@ -6005,4 +5986,23 @@ pub(super) fn check_partials_sum_to_totals(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod runtime_capability_cutover_tests {
+    use super::*;
+
+    #[test]
+    fn retired_eager_v2_capabilities_fail_with_regeneration_guidance() {
+        for capability in [
+            EAGER_DAG_RUNTIME_CAPABILITY,
+            EAGER_LC_TOPOLOGY_REPLAY_RUNTIME_CAPABILITY,
+        ] {
+            let error = ensure_selected_runtime_capabilities_supported(&[capability.to_string()])
+                .expect_err("retired eager capability must fail before generic preflight");
+            assert_eq!(error.kind(), crate::RusticolErrorKind::Compatibility);
+            assert!(error.to_string().contains("legacy eager plan-v2"));
+            assert!(error.to_string().contains("regenerate"));
+        }
+    }
 }
