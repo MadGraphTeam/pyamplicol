@@ -57,10 +57,25 @@ class VertexOrientationUnavailable(GenerationError, ValueError):
     recurrence and on-the-fly lanes pair parents in both orders and are not
     affected. Merges of a fermion with an antifermion are exempt: their
     vertices are listed in the fermion-flow order, and the reversed order is
-    another colour term, not this one. A ``ValueError`` as the untyped
-    refusal its callers handle. The message starts with ``key``."""
+    another colour term, not this one. So are vertices with an auxiliary
+    particle (a contact vertex split into two merges, whose orders are
+    decided together) and the loop-block DAG, whose colour engine keeps one
+    order of a merge by its own rules for exactly the vertices the loop model
+    lists (``ColorEngine._loop_block_trace_orientation_allowed``). A
+    ``ValueError`` as the untyped refusal its callers handle. The message
+    starts with ``key``."""
 
     key = "vertex-orientation-unavailable"
+
+
+def _has_auxiliary_role(model: Model, particle_id: int) -> bool:
+    """Whether the model marks the particle auxiliary (a contact or
+    projection line of the DAG, not an external state); unknown is not."""
+
+    try:
+        return model.auxiliary_kind(int(particle_id)) is not None
+    except (KeyError, NotImplementedError, TypeError, ValueError):
+        return False
 
 
 def _refuse_unavailable_vertex_orientation(
@@ -82,7 +97,9 @@ def _refuse_unavailable_vertex_orientation(
     """
 
     first, second, result = vertex.particles
-    if first == second:
+    if first == second or color_engine.builds_loop_blocks:
+        return
+    if any(_has_auxiliary_role(model, particle) for particle in vertex.particles):
         return
     if any(
         candidate.particles[2] == result
