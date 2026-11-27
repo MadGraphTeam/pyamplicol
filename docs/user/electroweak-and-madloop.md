@@ -83,9 +83,14 @@ output = "artifacts/dy"
 - **Gauge.** Born, loops and counterterms of an electroweak request take the
   't Hooft-Feynman gauge of the models' counterterms, with explicit
   Goldstones and ghosts.
-- **Colour.** Full colour by default, as MadLoop. Leading and next-to-leading
-  colour are refused for these models (`colour-declaration-coverage`: no
-  shipped N_c declaration covers their scheme).
+- **Colour.** Full colour by default, as MadLoop, and full colour serves
+  every request on these models. Leading and next-to-leading colour are not
+  implemented yet for QED and mixed QCD+QED corrections, nor on these models
+  at all (`lc-electroweak-corrections`): the projection grades every
+  counterterm by its N_c dependence, and these models' counterterms have no
+  formal-N_c declaration in pyAmpliCol (their electroweak counterterms are
+  sums of an N_c-free part and a closed-quark-loop part proportional to
+  N_c). A colour declaration of your own does not lift this refusal.
 - **Tree level.** The same models serve tree requests (Born and real
   emission from one UFO).
 - **Python 2.** A Python-2 UFO (the raw G_mu download) is refused with
@@ -171,6 +176,7 @@ key with its remedy:
 | `feynman-gauge` | a model that cannot be taken in 't Hooft-Feynman gauge |
 | `veto-unlabelled-counterterms` | a veto of a loop species of a requested correction on these models |
 | `anomalous-veto` | a veto that breaks an anomaly-free multiplet (`generation.allow_anomalous_veto` overrides) |
+| `lc-electroweak-corrections` | LC or NLC with QED or QCD+QED corrections, or any LC or NLC request on these models (not implemented yet) |
 | `colour-declaration-coverage` | LC or NLC without a covering colour declaration |
 | `loop-induced` | no Born amplitude within the limits, for a process the request does not serve loop-induced (`process.loop_induced`) |
 | `coloured-width` | a real on-shell request with a coloured particle of a width in a tree current |

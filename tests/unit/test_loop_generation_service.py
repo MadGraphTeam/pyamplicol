@@ -143,7 +143,10 @@ def _colour_backend(monkeypatch, accuracy, declaration):
     scheme = LoopSchemeDeclaration(
         "HV", "4d", "source", "source", "real-on-shell", "source", "fixture"
     )
-    loop = LoopModelDeclaration(scheme, ("QCD", "QED"), True, True)
+    # A QCD model: LC/NLC on a model declaring QED corrections is refused
+    # earlier, for its own reason (``lc-electroweak-corrections``,
+    # ``test_loop_v2_lc_electroweak_refusal.py``).
+    loop = LoopModelDeclaration(scheme, ("QCD",), True, True)
     backend = GenerationBackend(
         loop_config(color={"accuracy": accuracy, "contraction": "direct"}), None
     )
