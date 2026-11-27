@@ -631,6 +631,14 @@ _MODEL_ROWS: dict[
 _MODEL_ROWS_KEPT = 4
 
 
+def release_model_rows() -> None:
+    """Drop every cached model vertex row (``_model_rows``): the end of a
+    generation (``generation.loop_service._generate_v2``), with the lowered
+    models whose tree models key most of them."""
+
+    _MODEL_ROWS.clear()
+
+
 def _model_rows(model: Any) -> dict[tuple[int, tuple[int, ...]], Any]:
     compiled = getattr(model, "compiled", None)
     if compiled is None:

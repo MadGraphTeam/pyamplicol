@@ -1032,8 +1032,18 @@ def program_propagated_currents(dag: Any) -> tuple[int, ...]:
 
 # The lowered models of the most recent (model, fixed parameters, veto,
 # declaration, request scope) keys; a request of another key evicts the oldest.
+# The subprocesses of one generation share them (consecutive like-flavour
+# subprocesses mostly reuse an entry); a generation releases them when it
+# ends (``release_lowered_models``).
 _LOWERED: OrderedDict[tuple[object, ...], tuple[Any, Any]] = OrderedDict()
 _LOWERED_KEPT = 4
+
+
+def release_lowered_models() -> None:
+    """Drop every cached lowered model (``lowered_counterterm_model``): the
+    end of a generation (``generation.loop_service._generate_v2``)."""
+
+    _LOWERED.clear()
 
 
 def program_order_limits(
