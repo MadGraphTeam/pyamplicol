@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from dataclasses import replace
 from itertools import permutations
 
 from ..processes.ir import CanonicalProcessIR, ProcessLegIR
@@ -22,6 +23,139 @@ def build_color_plan(
     reference_color_order: Sequence[int] | None = None,
     fold_trace_reflections: bool = False,
     basis: str = "trace",
+) -> GenericColorPlan:
+    """``reference_color_order`` relabels the trace-basis plan, nothing more:
+    the sector whose colour tensor the order spells (any cyclic rotation of
+    a trace, and its reflection where reflections are folded, is that same
+    sector) comes first, the others keep their order, and the set of
+    sectors is the plan's without a reference. ``max_sectors`` applies after
+    it, so a cap keeps the reference sector."""
+
+    if not isinstance(process, CanonicalProcessIR):
+        raise TypeError("color planning requires a model-resolved CanonicalProcessIR")
+    if reference_color_order is None or basis != "trace":
+        return _build_color_plan(
+            process,
+            color_accuracy=color_accuracy,
+            max_sectors=max_sectors,
+            reference_color_order=reference_color_order,
+            fold_trace_reflections=fold_trace_reflections,
+            basis=basis,
+        )
+
+    def canonical(cap: int | None) -> GenericColorPlan:
+        return _build_color_plan(
+            process,
+            color_accuracy=color_accuracy,
+            max_sectors=cap,
+            reference_color_order=None,
+            fold_trace_reflections=fold_trace_reflections,
+            basis=basis,
+        )
+
+    plan = canonical(max_sectors)
+    named = _reference_lc_color_sectors(process, reference_color_order)
+    if not named or not plan.sectors:
+        return plan
+    word = tuple(int(label) for label in reference_color_order)
+    index = _reference_sector_index(plan, named[0], word)
+    complete = plan
+    if index is None and plan.truncated:
+        complete = canonical(None)
+        index = _reference_sector_index(complete, named[0], word)
+    if index is None:
+        return plan
+    sectors = complete.sectors
+    ordered = (sectors[index], *sectors[:index], *sectors[index + 1 :])
+    cap = _normalize_sector_cap(max_sectors)
+    kept = ordered if cap is None else ordered[:cap]
+    renumbered = tuple(
+        replace(sector, id=position) for position, sector in enumerate(kept)
+    )
+    if complete is plan:
+        return replace(plan, sectors=renumbered)
+    return replace(
+        plan,
+        sectors=renumbered,
+        truncated=len(ordered) > len(kept),
+    )
+
+
+def _reference_sector_index(
+    plan: GenericColorPlan, named: LCColorSector, word: tuple[int, ...]
+) -> int | None:
+    """The position of the plan's sector with the colour tensor of ``named``
+    (a reference's spelling), preferring the one spelled ``word``."""
+
+    folded = plan.trace_reflections_folded
+    key = _sector_tensor_key(named, folded=folded)
+    matches = [
+        position
+        for position, sector in enumerate(plan.sectors)
+        if _sector_tensor_key(sector, folded=folded) == key
+    ]
+    if not matches:
+        return None
+    coloured = set(key_labels for key_labels in word)
+    for position in matches:
+        sector = plan.sectors[position]
+        spelled = tuple(
+            label
+            for label in (sector.word_labels or sector.trace_labels)
+            if label in coloured
+        )
+        if spelled == tuple(label for label in word if label in spelled):
+            return position
+    return matches[0]
+
+
+def _canonical_cycle(labels: Sequence[int], *, folded: bool) -> tuple[int, ...]:
+    """A trace's labels from its smallest one; with folded reflections the
+    smaller of the two orientations."""
+
+    word = tuple(int(label) for label in labels)
+    if not word:
+        return word
+    start = word.index(min(word))
+    rotated = word[start:] + word[:start]
+    if not folded or len(rotated) < 3:
+        return rotated
+    return min(rotated, (rotated[0], *reversed(rotated[1:])))
+
+
+def _sector_tensor_key(sector: LCColorSector, *, folded: bool) -> tuple[object, ...]:
+    """The colour tensor a sector stands for: its open lines (fundamental,
+    ordered adjoints, antifundamental) as a set, its single trace or closed
+    traces as cycles (reflections identified where folded), its singlets."""
+
+    lines = frozenset(
+        (
+            int(line.fundamental_label),
+            tuple(int(label) for label in line.adjoint_labels),
+            int(line.antifundamental_label),
+        )
+        for line in sector.open_color_lines
+    )
+    traces: tuple[tuple[int, ...], ...]
+    if sector.kind == "single-trace":
+        traces = (_canonical_cycle(sector.trace_labels, folded=folded),)
+    else:
+        traces = tuple(
+            sorted(
+                _canonical_cycle(trace, folded=False) for trace in sector.closed_traces
+            )
+        )
+    return (sector.kind, lines, traces, tuple(sorted(sector.singlet_labels)))
+
+
+def _build_color_plan(
+    process: CanonicalProcessIR,
+    *,
+    color_accuracy: str,
+    max_sectors: int | None,
+    reference_color_order: Sequence[int] | None,
+    fold_trace_reflections: bool,
+    basis: str,
 ) -> GenericColorPlan:
     if not isinstance(process, CanonicalProcessIR):
         raise TypeError("color planning requires a model-resolved CanonicalProcessIR")

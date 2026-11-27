@@ -69,6 +69,7 @@ from ..color.plan import (
     build_color_topology_replay_certificate,
     build_lc_topology_replay_plan,
 )
+from ..color.plan_build import _canonical_cycle
 from ..models.adjoint_color_certificate import adjoint_tree_color_basis_is_proven
 from ..models.base import CouplingOrders, Model
 from ..models.loading import CompiledModel as _CompiledModelPayload
@@ -2712,6 +2713,43 @@ class _ExpandedProcess:
     group_members: tuple[GroupMember, ...] = ()
 
 
+def _canonical_reference_word(
+    process: CanonicalProcessIR,
+    reference: Sequence[int] | None,
+    *,
+    folded: bool,
+) -> tuple[int, ...] | None:
+    """A reference colour order in the spelling of the sector it names: its
+    coloured labels, and without a quark line the trace from its smallest
+    label (the smaller orientation where reflections are folded). A cyclic
+    respelling or a reflection names the same sector, never another."""
+
+    if reference is None:
+        return None
+    coloured = {
+        *process.fundamental_labels,
+        *process.antifundamental_labels,
+        *process.adjoint_labels,
+    }
+    word = tuple(int(label) for label in reference if int(label) in coloured)
+    if process.fundamental_labels or process.antifundamental_labels:
+        return word
+    return _canonical_cycle(word, folded=folded)
+
+
+class _NoModelSupportedAmplitudes(GenerationError):
+    """A concrete tree-level subprocess has no amplitude in the active model."""
+
+
+@dataclass(frozen=True, slots=True)
+class _UnsupportedProcess:
+    expanded: _ExpandedProcess
+    reason: str
+
+
+_SupportedT = TypeVar("_SupportedT", "_DagProcess", _ExpandedProcess)
+
+
 class _NoModelSupportedAmplitudes(GenerationError):
     """A concrete tree-level subprocess has no amplitude in the active model."""
 
@@ -4160,7 +4198,11 @@ class GenerationBackend:
                 coupling_policy,
             ),
             coupling_order_limits=explicit_limits,
-            reference_color_order=self._process_selection.reference_color_order,
+            reference_color_order=_canonical_reference_word(
+                expanded.process_ir,
+                self._process_selection.reference_color_order,
+                folded=False,
+            ),
             color_basis=self._fft_color_basis(expanded.process_ir, model),
         )
         return _ProjectedOnTheFlyProcess(
@@ -4384,7 +4426,14 @@ class GenerationBackend:
                         projection.color_plan.sectors[0].trace_labels
                         if projection.color_plan is not None
                         and projection.color_plan.basis == "adjoint"
-                        else selection.reference_color_order
+                        else _canonical_reference_word(
+                            expanded.process_ir,
+                            selection.reference_color_order,
+                            folded=contracted_color is None
+                            and model.lc_trace_reflection_equivalence_is_proven(
+                                expanded.process_ir
+                            ),
+                        )
                     )
                 ),
                 "trace_reflections_folded": bool(
@@ -8616,7 +8665,8 @@ class GenerationBackend:
             model=model,
             color_plan=complete_color_plan,
             max_color_sectors=selection.max_color_sectors,
-            reference_color_order=selection.reference_color_order,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=materialized_sector_ids,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,
@@ -8647,7 +8697,8 @@ class GenerationBackend:
                     model=model,
                     color_plan=complete_color_plan,
                     max_color_sectors=selection.max_color_sectors,
-                    reference_color_order=selection.reference_color_order,
+                    # The plan already starts with the reference sector.
+                    reference_color_order=None,
                     selected_color_sector_ids=None,
                     max_coupling_orders=limits or None,
                     max_quark_pairs=self._max_quark_pairs,
@@ -8922,13 +8973,13 @@ class GenerationBackend:
         if not isinstance(limits_payload, Mapping):
             raise GenerationError("process coupling-order coverage is not a mapping")
         limits = {str(name): int(value) for name, value in limits_payload.items()}
-        selection = self._process_selection
         union = compile_generic_dag(
             process.expanded.process_ir,
             model=model,
             color_plan=parent.color_plan,
             max_color_sectors=None,
-            reference_color_order=selection.reference_color_order,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=None,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,
