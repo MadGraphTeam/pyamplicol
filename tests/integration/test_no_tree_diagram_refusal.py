@@ -250,7 +250,7 @@ def test_two_settings_that_each_empty_the_request(tmp_path: Path) -> None:
     assert message.startswith(
         "request filter: no valid processes found for 'b g > b g': "
         "process.max_quark_lines = 0 removes every concrete process of the "
-        "request (they have 1 quark line), and they have no tree-level diagram "
+        "request (they have 1 quark line), and without the cut none has one "
         "within process.max_coupling_orders (QCD<=0) either"
     )
     assert message.endswith(
@@ -402,7 +402,7 @@ def test_two_filters_that_each_remove_part_of_a_label(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ("x", "request", "error_type", "start"),
+    ("x", "expression", "error_type", "start"),
     [
         (
             ("a", "t", "t~"),
@@ -435,22 +435,22 @@ def test_two_filters_that_each_remove_part_of_a_label(tmp_path: Path) -> None:
 )
 def test_labels_through_every_filter_kind(
     x: tuple[str, ...],
-    request: str,
+    expression: str,
     error_type: type[GenerationError],
     start: str,
     tmp_path: Path,
 ) -> None:
-    settings = {"max_quark_lines": 0} if request == "x x > h h" else {}
+    settings = {"max_quark_lines": 0} if expression == "x x > h h" else {}
     error = _refusal(
         ModelSource.built_in_sm(),
-        request,
+        expression,
         "compiled",
         tmp_path,
         error=error_type,
         process=_label(x, **settings),
     )
     assert str(error).startswith(start)
-    assert (LOOP in str(error)) is (request == "x x > a a")
+    assert (LOOP in str(error)) is (expression == "x x > a a")
 
 
 def test_one_call_with_a_filtered_and_a_missing_request(tmp_path: Path) -> None:
