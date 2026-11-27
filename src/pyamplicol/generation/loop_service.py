@@ -335,7 +335,10 @@ def _prepare(
     from pyamplicol.models.external import CompiledUFOModel
 
     resolved = replace(resolved, compiled=compiled, model=CompiledUFOModel(compiled))
-    expanded = backend._expand_process_set(processes, resolved, phase)
+    expanded = _quark_line_cut(
+        run.process.max_quark_lines,
+        backend._expand_process_set(processes, resolved, phase),
+    )
     backend._apply_symbolica_resource_policy(license_state, process_count=len(expanded))
     entry_limits = []
     explicit = _resolve_limits(names, run.process.max_coupling_orders)
@@ -367,6 +370,78 @@ def _prepare(
     )
 
 
+class _RequestFilterError(GenerationError):
+    """A setting of a one-loop request removes every concrete process of
+    one of its requests (``key`` ``"request-filter"``; ``processes``: the
+    request expressions so emptied, ``settings``: the settings)."""
+
+    key = "request-filter"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        processes: tuple[str, ...] = (),
+        settings: tuple[str, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.processes = processes
+        self.settings = settings
+
+
+def quark_lines(process_ir) -> int:
+    """The external quark lines of a concrete process as
+    ``process.max_quark_lines`` counts them, on every route: its colour
+    triplet-antitriplet pairs with every leg outgoing
+    (``color_endpoints.pair_count``, the tree DAG compiler's cut)."""
+
+    return int(process_ir.color_endpoints.pair_count)
+
+
+def _quark_line_cut(limit: int | None, expanded: tuple) -> tuple:
+    """``process.max_quark_lines`` on the one-loop route, as on the tree
+    route: the concrete processes with more external quark lines
+    (``quark_lines``) than ``limit`` are dropped, the others keep their
+    names; a request every concrete process of which it drops is refused
+    (``_RequestFilterError``), before anything is generated."""
+
+    if limit is None:
+        return expanded
+    kept = tuple(entry for entry in expanded if quark_lines(entry.process_ir) <= limit)
+    if len(kept) == len(expanded):
+        return expanded
+    requests: dict[str, Any] = {}
+    for entry in expanded:
+        source = entry.source_request or entry.request
+        requests.setdefault(source.name, source)
+    survivors = {(entry.source_request or entry.request).name for entry in kept}
+    emptied = [request for name, request in requests.items() if name not in survivors]
+    if emptied:
+        request = emptied[0]
+        fewest = min(
+            quark_lines(entry.process_ir)
+            for entry in expanded
+            if (entry.source_request or entry.request).name == request.name
+        )
+        raise _RequestFilterError(
+            f"request filter: process.max_quark_lines = {limit} removes every "
+            f"concrete process of {request.expression!r} (each has at least "
+            f"{fewest} quark lines), so there is nothing to generate; "
+            f"process.max_quark_lines >= {fewest} keeps them",
+            processes=tuple(request.expression for request in emptied),
+            settings=("process.max_quark_lines",),
+        )
+    notice(
+        _LOGGER,
+        "processes",
+        "process.max_quark_lines = %d drops %d of %d concrete processes",
+        limit,
+        len(expanded) - len(kept),
+        len(expanded),
+    )
+    return kept
+
+
 def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     """``preparation`` with the width parameters of every external particle
     of ``processes`` fixed to zero (``loops.external_widths``), logged."""
@@ -374,8 +449,11 @@ def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     from pyamplicol.loops.external_widths import stable_external_widths
 
     pdgs: set[int] = set()
+    limit = backend._run_config.process.max_quark_lines
     for request in processes.requests:
         for process_ir in backend._expand_request(request, resolved):
+            if limit is not None and quark_lines(process_ir) > limit:
+                continue
             pdgs.update(int(pdg) for pdg in process_ir.initial_pdgs)
             pdgs.update(int(pdg) for pdg in process_ir.final_pdgs)
     widths = stable_external_widths(compiled, pdgs, preparation.fixed_parameters)

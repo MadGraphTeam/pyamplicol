@@ -580,8 +580,10 @@ them (quark numbers reduce to baryon number with a non-diagonal CKM matrix).
 With the shipped serialized Standard Model (`sm.json`, default
 restriction) this leaves exactly the 385 tree-level subprocesses of
 `p p > j j j j`. `model processes` applies the same filter, but not the
-colour and amplitude checks. The built-in SM keeps its catalogue prefilters (`flavor_scheme`,
-`max_quark_lines`). See
+colour and amplitude checks. `max_quark_lines` bounds the external quark lines
+of every concrete process on every model, at tree level and at one loop (and in
+`model processes`); the built-in SM also keeps its catalogue prefilter
+`flavor_scheme`. See
 [Conserved charges in UFO expansion](process-grouping.md#conserved-charges-in-ufo-expansion).
 
 ## Permutation-equivalent processes
