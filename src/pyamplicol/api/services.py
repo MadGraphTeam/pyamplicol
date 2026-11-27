@@ -665,7 +665,7 @@ class Runtime:
             if threads is None:
                 threads = given.get("threads")
             calls = {name: given[name] for name in CALL_OPTIONS if name in given}
-            card = calls.get("stability_checks")
+            card = cast(VirtualStabilityChecks | None, calls.get("stability_checks"))
             if stability is not None and card is not None:
                 if card.enabled:
                     raise ConfigurationError(
