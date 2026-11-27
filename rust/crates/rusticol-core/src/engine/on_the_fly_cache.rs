@@ -11,6 +11,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 const MAGIC: [u8; 8] = *b"PACOTFC1";
 const VERSION: u32 = 1;
+/// The version of a cache of a QED-order-weighted lane: version-1 contents
+/// followed by the family's weighted closure factors (released readers,
+/// which know version 1 only, refuse it).
+const QED_ORDER_WEIGHTED_VERSION: u32 = 2;
 static TEMP_ID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(bincode::Encode, bincode::Decode, Debug, PartialEq)]
@@ -24,9 +28,17 @@ struct Header {
 
 impl Header {
     fn for_runtime(runtime: &NativeRuntime) -> Self {
+        let weighted = matches!(
+            &runtime.execution_lane,
+            NativeExecutionLane::OnTheFly(lane) if lane.lane.is_qed_order_weighted()
+        );
         Self {
             magic: MAGIC,
-            version: VERSION,
+            version: if weighted {
+                QED_ORDER_WEIGHTED_VERSION
+            } else {
+                VERSION
+            },
             artifact_id: runtime.artifact_id.clone(),
             process_key: runtime.process_key.clone(),
             external_permutation: runtime.external_permutation.clone(),
@@ -165,17 +177,24 @@ pub(super) fn save(
         .first()
         .map(|selected| &selected.identity);
     let lane = runtime.lane.snapshot()?;
+    let qed_closure_factors = runtime.lane.qed_closure_factors_snapshot();
     write_snapshot(path, |writer| {
         encode(Header::for_runtime(owner), writer)?;
         encode(selection, writer)?;
-        encode(lane, writer)
+        encode(lane, writer)?;
+        match qed_closure_factors {
+            Some(factors) => encode(factors, writer),
+            None => Ok(()),
+        }
     })
 }
 
 pub(super) fn load(owner: &mut NativeRuntime, path: &Path) -> RusticolResult<()> {
     let mut reader = open_snapshot(path)?;
     let header: Header = decode(&mut reader)?;
-    if header.magic != MAGIC || header.version != VERSION {
+    if header.magic != MAGIC
+        || (header.version != VERSION && header.version != QED_ORDER_WEIGHTED_VERSION)
+    {
         return Err(RusticolError::compatibility(
             "unsupported OTF cache format; save it with this version",
         ));
@@ -187,6 +206,11 @@ pub(super) fn load(owner: &mut NativeRuntime, path: &Path) -> RusticolResult<()>
     }
     let identity: Option<OnTheFlySelectionIdentityV1> = decode(&mut reader)?;
     let lane: OnTheFlyLaneSnapshotV1 = decode(&mut reader)?;
+    let qed_closure_factors: Vec<(u32, i32)> = if header.version == QED_ORDER_WEIGHTED_VERSION {
+        decode(&mut reader)?
+    } else {
+        Vec::new()
+    };
     if reader.limit() != 0 {
         return Err(RusticolError::serialization("OTF cache has trailing data"));
     }
@@ -200,7 +224,7 @@ pub(super) fn load(owner: &mut NativeRuntime, path: &Path) -> RusticolResult<()>
             "load_cache() requires an on-the-fly runtime",
         ));
     };
-    runtime.restore_saved_selection(identity, lane)
+    runtime.restore_saved_selection(identity, lane, qed_closure_factors)
 }
 
 impl OnTheFlyExecutionRuntime {
@@ -208,6 +232,7 @@ impl OnTheFlyExecutionRuntime {
         &mut self,
         identity: Option<OnTheFlySelectionIdentityV1>,
         lane: OnTheFlyLaneSnapshotV1,
+        qed_closure_factors: Vec<(u32, i32)>,
     ) -> RusticolResult<()> {
         let mut restored = Vec::new();
         let mut requests = None;
@@ -263,7 +288,8 @@ impl OnTheFlyExecutionRuntime {
         }
         let contracted =
             contracted_count.map(|count| (restored[0].helicity_indices.as_ref(), count));
-        self.lane.restore_snapshot(lane, requests, contracted)?;
+        self.lane
+            .restore_snapshot(lane, requests, contracted, qed_closure_factors)?;
         self.last_prepared_selection = (!restored.is_empty()).then_some(0);
         self.prepared_selections = restored;
         self.pending_prepared_selection = None;

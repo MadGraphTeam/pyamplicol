@@ -49,7 +49,18 @@ impl OnTheFlyFamilySnapshotV1 {
         self.amplitude_destination_count as usize
     }
 
-    fn into_family(self) -> RusticolResult<(RecurrenceStrategy, OnTheFlyBuiltQueryFamilyV1)> {
+    fn into_family(
+        self,
+        qed_closure_factors: Box<[(u32, i32)]>,
+    ) -> RusticolResult<(RecurrenceStrategy, OnTheFlyBuiltQueryFamilyV1)> {
+        if qed_closure_factors
+            .iter()
+            .any(|&(id, qed)| id as usize >= self.exact_factors.len() || qed <= 0)
+        {
+            return Err(integrity(
+                "saved OTF QED-order-weighted closure factors are out of range",
+            ));
+        }
         let strategy = match self.strategy {
             0 => RecurrenceStrategy::TopologyReplay,
             2 => RecurrenceStrategy::ContractedColorUnion,
@@ -64,6 +75,7 @@ impl OnTheFlyFamilySnapshotV1 {
             amplitude_destination_count: self.amplitude_destination_count,
             momentum_forms: self.momentum_forms,
             exact_factors: self.exact_factors,
+            qed_closure_factors,
             row_groups: self.row_groups,
             #[cfg(any(test, feature = "on-the-fly-test-support"))]
             observed_currents: Box::new([]),
@@ -107,12 +119,21 @@ impl<R: OnTheFlyPreparedExecutorResolver> OnTheFlyQueryFamilyExecutorV1<R> {
 
     /// All fallible allocation and binding happens before replacing the old
     /// committed owner. No execution or numeric input is required to restore it.
+    /// QED-order-weighted closure factors of the retained family (saved
+    /// outside the version-1 family rows, `engine::on_the_fly_cache`).
+    pub(crate) fn qed_closure_factors(&self) -> &[(u32, i32)] {
+        self.families
+            .first()
+            .map_or(&[], |bound| &bound.family.qed_closure_factors)
+    }
+
     pub(crate) fn restore_snapshot(
         &mut self,
         snapshot: OnTheFlyFamilySnapshotV1,
         logical_point_capacity: u32,
+        qed_closure_factors: Box<[(u32, i32)]>,
     ) -> RusticolResult<OnTheFlyQueryFamilyHandleV1> {
-        let (strategy, family) = snapshot.into_family()?;
+        let (strategy, family) = snapshot.into_family(qed_closure_factors)?;
         if family.parameter_count as usize != self.parameter_state.len() {
             return Err(integrity(
                 "saved OTF parameter layout differs from the loaded model",

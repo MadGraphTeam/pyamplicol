@@ -11,6 +11,7 @@ use crate::eager_layout::{
     EAGER_RUNTIME_CAPABILITY, EAGER_RUNTIME_CONTAINER_KIND, EAGER_RUNTIME_CONTAINER_SCHEMA,
     EAGER_RUNTIME_LAYOUT_ABI, EagerSectionHeader, EagerSectionKind,
 };
+use crate::engine::QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY;
 use crate::pacbin::{PacbinMemberKind, PacbinReader};
 use crate::{ArtifactProcess, PROCESS_ARTIFACT_SCHEMA_VERSION, RusticolError, RusticolResult};
 use serde::Deserialize;
@@ -584,12 +585,19 @@ fn validate_direct_capabilities(capabilities: &[String], context: &str) -> Rusti
              artifact with the current `pyamplicol generate` before loading it"
         )));
     }
-    if capabilities
-        != [
-            EAGER_DIRECT_ARENA_RUNTIME_CAPABILITY,
-            EAGER_RUNTIME_CAPABILITY,
-        ]
-    {
+    // A QED-order-weighted process adds its normalization capability; the
+    // runtime checks it against the decoded normalization
+    // (`eager_v3_common`).
+    let base = [
+        EAGER_DIRECT_ARENA_RUNTIME_CAPABILITY,
+        EAGER_RUNTIME_CAPABILITY,
+    ];
+    let weighted = [
+        EAGER_DIRECT_ARENA_RUNTIME_CAPABILITY,
+        EAGER_RUNTIME_CAPABILITY,
+        QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
+    ];
+    if capabilities != base && capabilities != weighted {
         return Err(RusticolError::compatibility(format!(
             "{context} must require exactly {:?}",
             [

@@ -62,9 +62,33 @@ Changes in November 2026 (the built-in SM now matches the UFO `sm` with its
   contacts.
 - A request whose Born amplitudes carry several coupling orders (for example
   `u u~ > d d~` with `{ QCD = 2, QED = 2 }`, where gluon and electroweak
-  exchange interfere) is refused with a `GenerationError`: restrict
-  `max_coupling_orders` to one Born order or use a UFO model. The default
+  exchange interfere) is served in every execution mode and at every colour
+  accuracy, with the interference between the orders, as with the UFO `sm`.
+  The global factor is then `(4 pi alpha_s)^N`, `N` the common total order of
+  the Born amplitudes, and every QED order of an amplitude is weighted by
+  `sqrt(8 pi alpha_ew / (4 pi alpha_s))` from the current
+  `normalization.alpha_s_me_check` and `normalization.alpha_ew`: a run-time
+  change of either rescales each squared coupling order by its own powers.
+  The recurrence mode splits the result by squared coupling order
+  (`evaluate_orders`, in Python and the native SDKs). Such an artifact
+  requires the runtime capability `rusticol.normalization.qed-order-weights.v1`
+  (older runtimes refuse it), and its electroweak coupling components
+  (`coupling.<kind>.<particles>.component_<i>`) stay the local couplings: a
+  binding of one is weighted the same way. It takes
+  `normalization.alpha_s_me_check >= 2 normalization.alpha_ew * 2^-52`
+  (about `1.5e-18` at the default `alpha_ew`). A smaller value, zero
+  included, is refused with a typed error and leaves the runtime unchanged:
+  the binary64 weights would overflow. For that limit, generate the purely
+  electroweak orders (`QCD = 0`) instead. The leading-colour recurrence
+  export (`export_recurrence`) embeds the weighted factors at the current
+  inputs, so export again after changing either input. Its `alpha_s` entry
+  names no single power, because the orders scale differently. The default
   minimal policy keeps one order (QCD only for `u u~ > d d~`).
+- In the compiled mode at leading colour, a coupling component that one of
+  the colour-flow runtimes does not use cannot be bound. The update is
+  refused (`model-parameter override ... is not used by process ...`), for
+  artifacts of one coupling order too, and leaves the runtime unchanged.
+  Bind it in the eager mode.
 - Concrete charged-current requests such as `u d~ > c s~` are served;
   inclusive `p`/`j` requests keep a quark-flavour-changing jet subprocess only
   when the request implies a W.

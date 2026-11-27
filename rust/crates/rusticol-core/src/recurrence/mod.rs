@@ -75,9 +75,10 @@ pub use direct_helicity_dispatch::{
 pub(crate) use direct_lowering::validated_template_fixture;
 pub use direct_lowering::{
     DirectRecurrenceRuntimeOptions, PreparedDirectExecutorBinding, PreparedDirectExecutorCatalog,
-    PreparedDirectExecutorKey, lower_recurrence_direct_plan_v2,
-    lower_recurrence_direct_plan_v2_with_helicity_dispatch,
+    PreparedDirectExecutorKey, QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION,
+    lower_recurrence_direct_plan_v2, lower_recurrence_direct_plan_v2_with_helicity_dispatch,
     lower_recurrence_direct_plan_v2_with_relation_discovery, lower_recurrence_direct_v2,
+    template_qed_order_index,
 };
 pub(crate) use direct_pacbin::validate_recurrence_color_projection_certificate;
 pub use direct_pacbin::{

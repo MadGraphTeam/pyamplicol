@@ -12,8 +12,8 @@ use super::recurrence_manifest::{
 };
 use super::{
     ON_THE_FLY_CONTRACTED_COLOR_RUNTIME_CAPABILITY, ON_THE_FLY_LC_COLOR_RUNTIME_CAPABILITY,
-    ON_THE_FLY_RUNTIME_CAPABILITY, SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY,
-    confined_internal_path,
+    ON_THE_FLY_RUNTIME_CAPABILITY, QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
+    SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY, confined_internal_path,
 };
 use crate::recurrence::RECURRENCE_COLOR_CONTRACTION_CODEC_ABI;
 use crate::recurrence::on_the_fly::{
@@ -247,6 +247,11 @@ impl OnTheFlyExecutionManifest {
         let mut expected = BTreeSet::from([ON_THE_FLY_RUNTIME_CAPABILITY, color_capability]);
         if uses_symmetric_group_fft {
             expected.insert(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY);
+        }
+        if super::is_qed_order_weighted_policy(Some(
+            self.runtime_metadata.normalization.coupling_policy.as_str(),
+        )) {
+            expected.insert(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY);
         }
         if actual.len() != self.required_runtime_capabilities.len() || actual != expected {
             return Err(RusticolError::integrity(format!(

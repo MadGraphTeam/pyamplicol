@@ -15,6 +15,11 @@ from itertools import product
 from types import SimpleNamespace
 from typing import Any
 
+from .._internal.qed_order_weights import (
+    DEFAULT_NORMALIZATION_CONVENTION,
+    QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION,
+    is_qed_order_weighted,
+)
 from .._internal.versions import (
     RECURRENCE_BUILDER_INPUT_ABI,
     RECURRENCE_DIRECT_TEMPLATE_ABI,
@@ -33,7 +38,7 @@ from ..color.plan_types import _canonical_open_string_product_key
 from ..models.base import CouplingOrders, Model, _runtime_particle_parameter_name
 from ..models.recurrence_template import RecurrenceTemplateCatalog
 from ..processes.ir import CanonicalProcessIR
-from .born_orders import RuntimeNormalizationRequest
+from .born_orders import RuntimeNormalizationRequest, runtime_normalization_payload
 from .recurrence_columnar import (
     ExactComplexRationalV1,
     RecurrenceBuilderLogicalInputV1,
@@ -70,8 +75,8 @@ def build_recurrence_normalization(
     """
 
     payload = dict(
-        model.runtime_normalization_payload(
-            RuntimeNormalizationRequest(process, born_amplitude_orders)
+        runtime_normalization_payload(
+            model, RuntimeNormalizationRequest(process, born_amplitude_orders)
         )
     )
     encoded = json.dumps(
@@ -84,7 +89,14 @@ def build_recurrence_normalization(
     return (
         RecurrenceNormalizationV1(
             factor=ExactComplexRationalV1(1),
-            convention="runtime-normalization-extension-v1",
+            # A QED-order-weighted normalization weighs the closures of each
+            # QED order at run time; its plans intern closure factors per
+            # QED order (``direct_lowering``).
+            convention=(
+                QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION
+                if is_qed_order_weighted(payload)
+                else DEFAULT_NORMALIZATION_CONVENTION
+            ),
             semantic_digest=hashlib.sha256(encoded).hexdigest(),
         ),
         payload,
