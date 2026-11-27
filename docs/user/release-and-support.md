@@ -148,8 +148,9 @@ the 512-bit tier served as a success; #23: the small-momentum C0 series at
 extreme mass ratios); NinjaRS and TIRust change only their oneloop pin. No
 value, diagnostic or executor counter moves in the regression suite (at 1
 and 8 threads) or on 7,100 evaluations of recorded stability points, and the
-one-core cost of a TIRust call is unchanged (within 0.3 %): the fixed box
-needs kinematics none of these points reach.
+instructions a one-core TIRust call retires are unchanged (within 0.3 % per
+16-point call on `g g > g g g`, `g g > t t~ g` and `u u~ > e+ e- g g`): the
+fixed box needs kinematics none of these points reach.
 
 Dependencies: TIRust `c9c4d126` (main: `c20d0be2` with oneloopmaster
 `a4b16f70`), NinjaRS `41e21234` (main: `1f3d9d0e` with oneloopmaster
