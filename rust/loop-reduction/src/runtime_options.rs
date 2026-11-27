@@ -334,7 +334,7 @@ impl StabilityChecksOptions {
     /// API's `VirtualStabilityChecks`; no cross-backend check: the run card
     /// has none).
     pub fn checks(&self) -> rusticol_core::RusticolResult<crate::v2_stability::StabilityChecks> {
-        use crate::v2_stability::{DEFAULT_FLOOR_WEIGHT, Rotation, StabilityChecks};
+        use crate::v2_stability::{Rotation, StabilityChecks};
         let checks = if self.rotations.is_empty() {
             StabilityChecks::with_default_rotations(
                 self.rotation_count,
@@ -350,7 +350,7 @@ impl StabilityChecksOptions {
                 .collect::<rusticol_core::RusticolResult<Vec<_>>>()?;
             StabilityChecks::new(rotations, self.reduction_direction, self.rescaled, false)
         }?;
-        checks.with_floor_weight(self.floor_weight.unwrap_or(DEFAULT_FLOOR_WEIGHT))
+        checks.with_floor_weight(self.floor_weight)
     }
 }
 

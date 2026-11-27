@@ -35,9 +35,19 @@ pub const FLOOR_UNITS: f64 = 16.0;
 /// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
 /// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
 pub const BILINEAR_FLOOR_UNITS: f64 = 16384.0;
-/// `stability.DEFAULT_FLOOR_WEIGHT`: the default weight of the first-order
-/// floor term (`StabilityChecks.floor_weight`; 1 the calibrated coverage).
-pub const DEFAULT_FLOOR_WEIGHT: f64 = 1.0 / 4096.0;
+/// `stability.default_floor_weight`: the default weight of the first-order
+/// floor term of a process whose highest-point loop has `largest_loop` legs
+/// (`StabilityChecks.floor_weight` unset), in whole floor units: 2^14 (w =
+/// 1, the calibrated coverage) up to pentagons, 2^8 for hexagons, 4 for
+/// heptagons and above.
+pub fn default_floor_weight(largest_loop: usize) -> f64 {
+    let units: f64 = match largest_loop {
+        0..=5 => 16384.0,
+        6 => 256.0,
+        _ => 4.0,
+    };
+    units / BILINEAR_FLOOR_UNITS
+}
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
@@ -511,7 +521,7 @@ pub struct StabilityChecks {
     reduction_direction: bool,
     rescaled: bool,
     cross_backend: bool,
-    floor_weight: f64,
+    floor_weight: Option<f64>,
 }
 
 impl Default for StabilityChecks {
@@ -522,7 +532,7 @@ impl Default for StabilityChecks {
             reduction_direction: false,
             rescaled: false,
             cross_backend: false,
-            floor_weight: DEFAULT_FLOOR_WEIGHT,
+            floor_weight: None,
         }
     }
 }
@@ -535,7 +545,7 @@ impl PartialEq for StabilityChecks {
             && self.reduction_direction == other.reduction_direction
             && self.rescaled == other.rescaled
             && self.cross_backend == other.cross_backend
-            && self.floor_weight.to_bits() == other.floor_weight.to_bits()
+            && self.floor_weight.map(f64::to_bits) == other.floor_weight.map(f64::to_bits)
     }
 }
 
@@ -569,19 +579,22 @@ impl StabilityChecks {
             reduction_direction,
             rescaled,
             cross_backend,
-            floor_weight: DEFAULT_FLOOR_WEIGHT,
+            floor_weight: None,
         })
     }
 
     /// These checks with the weight `weight` of the loop-induced floor's
     /// first-order term (`StabilityChecks.floor_weight`): a finite
-    /// non-negative number.
-    pub fn with_floor_weight(self, weight: f64) -> RusticolResult<Self> {
-        if !weight.is_finite() || weight < 0.0 {
+    /// non-negative number, or None for the process's default
+    /// ([`default_floor_weight`]).
+    pub fn with_floor_weight(self, weight: Option<f64>) -> RusticolResult<Self> {
+        if let Some(weight) = weight
+            && (!weight.is_finite() || weight < 0.0)
+        {
             return Err(invalid("floor_weight must be a finite non-negative number"));
         }
         Ok(Self {
-            floor_weight: weight + 0.0,
+            floor_weight: weight.map(|weight| weight + 0.0),
             ..self
         })
     }
@@ -612,9 +625,16 @@ impl StabilityChecks {
     pub fn cross_backend(&self) -> bool {
         self.cross_backend
     }
-    /// The weight of the loop-induced floor's first-order term.
-    pub fn floor_weight(&self) -> f64 {
+    /// The weight of the loop-induced floor's first-order term the caller
+    /// set (None: the process's default).
+    pub fn floor_weight(&self) -> Option<f64> {
         self.floor_weight
+    }
+    /// The weight an estimate of a process whose highest-point loop has
+    /// `largest_loop` legs uses: the one set, else [`default_floor_weight`].
+    pub fn resolved_floor_weight(&self, largest_loop: usize) -> f64 {
+        self.floor_weight
+            .unwrap_or_else(|| default_floor_weight(largest_loop))
     }
     /// These checks without the cross-backend check (the evaluations of a
     /// per-point fallback, whose cross-backend check is not run: m-lit R6).
@@ -877,6 +897,9 @@ pub struct Estimate {
     /// loop-induced output, in place of FLOOR_UNITS u S
     /// (`StabilityEstimate.floor`).
     pub floor: Option<Budget>,
+    /// The first-order weight `floor` was formed with
+    /// (`StabilityEstimate.floor_weight`).
+    pub floor_weight: Option<f64>,
 }
 
 impl Estimate {
@@ -960,6 +983,7 @@ impl Estimate {
             roundoff,
             not_run,
             floor,
+            floor_weight: None,
         })
     }
 }
@@ -1574,14 +1598,16 @@ pub fn induced_estimate(
         Some(CrossRun::NotRun(why)) => not_run.push((CROSS.to_string(), why.clone())),
         None => {}
     }
-    Estimate::from_checks_floor(
+    let mut estimate = Estimate::from_checks_floor(
         reference,
         budgets,
         shape.scale(direct)?,
         Some(shape.floor(direct, roundoff, floor_weight)?),
         roundoff,
         not_run,
-    )
+    )?;
+    estimate.floor_weight = Some(floor_weight);
+    Ok(estimate)
 }
 
 /// The floor's bilinear kernel on (value, floor) pairs of the two sides

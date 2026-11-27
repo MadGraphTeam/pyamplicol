@@ -1929,7 +1929,13 @@ def point_estimate(
     cross-backend check's budget (``stability.cross_check``), the term
     scale of the floor and the per-family deviations."""
 
-    from .stability import ROTATION, StabilityEstimate, cross_check, native_estimate
+    from .stability import (
+        ROTATION,
+        StabilityEstimate,
+        cross_check,
+        native_estimate,
+        resolved_floor_weight,
+    )
 
     # Binary64 Born-interfered points: the Rust implementation the native
     # SDKs share (bitwise this assembly, the oracle).
@@ -1943,13 +1949,14 @@ def point_estimate(
         budgets[stability.reduction] = reference.retest_budget
     not_run = cross_check(reference, budgets) if stability.cross_backend else {}
     components = reference.result.components
+    weight = resolved_floor_weight(stability, reference.largest_loop)
     return StabilityEstimate.from_checks(
         components["virtual"] if "virtual" in components else components["bare"],
         budgets,
         scale=reference.stability_scale(),
         roundoff=roundoff,
-        floor=reference.stability_floor(stability.floor_weight),
-        floor_weight=stability.floor_weight,
+        floor=reference.stability_floor(weight),
+        floor_weight=weight,
         families=reference.family_deviations,
         not_run=not_run,
     )

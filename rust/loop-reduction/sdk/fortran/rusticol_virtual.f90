@@ -875,8 +875,9 @@ contains
       error_message=error_message)
   end subroutine
   ! Weight of a loop-induced estimate's first-order floor term (the Python
-  ! API's VirtualStabilityChecks(floor_weight=); default 2^-12, 1 the
-  ! calibrated coverage, 0 the checks alone); kept by set_stability_checks.
+  ! API's VirtualStabilityChecks(floor_weight=); 1 the calibrated coverage,
+  ! 0 the checks alone, NaN the process's default by its highest-point loop);
+  ! kept by set_stability_checks.
   subroutine set_stability_floor_weight(self,weight,ierr,error_message)
     class(virtual_runtime), intent(inout) :: self
     real(c_double), intent(in) :: weight

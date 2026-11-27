@@ -363,8 +363,9 @@ public:
             reduction_direction ? 1u : 0u, rescaled ? 1u : 0u, cross_backend ? 1u : 0u));
     }
     // Weight of a loop-induced estimate's first-order floor term (the Python
-    // API's VirtualStabilityChecks(floor_weight=); default 2^-12, 1 the
-    // calibrated coverage, 0 the checks alone); kept by set_stability_checks.
+    // API's VirtualStabilityChecks(floor_weight=); 1 the calibrated coverage,
+    // 0 the checks alone, NaN the process's default by its highest-point
+    // loop); kept by set_stability_checks.
     void set_stability_floor_weight(double weight) {
         virtual_detail::check(rusticol_virtual_set_stability_floor_weight(handle_.get(), weight));
     }

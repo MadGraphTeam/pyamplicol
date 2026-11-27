@@ -617,9 +617,11 @@ pub unsafe extern "C" fn rusticol_virtual_set_stability_checks(
 /// The weight of a loop-induced estimate's first-order floor term in the
 /// handle's later evaluations, the Python API's
 /// `VirtualStabilityChecks(floor_weight=)` (additive, ABI version 2 kept):
-/// default 2^-12, 1 the calibrated coverage, 0 the checks and the
-/// second-order term alone; kept by `rusticol_virtual_set_stability_checks`.
-/// A value that is not a finite non-negative number is
+/// 1 the calibrated coverage, 0 the checks and the second-order term alone,
+/// NaN the process's default (by its highest-point loop: 2^14 floor units up
+/// to pentagons, 2^8 for hexagons, 4 from heptagons on, the default before
+/// any call); kept by `rusticol_virtual_set_stability_checks`. Another value
+/// that is not a finite non-negative number is
 /// `RUSTICOL_VIRTUAL_INVALID_ARGUMENT` and nothing changes.
 ///
 /// # Safety
@@ -632,6 +634,8 @@ pub unsafe extern "C" fn rusticol_virtual_set_stability_floor_weight(
     weight: f64,
 ) -> c_int {
     guard(|| unsafe {
+        // NaN sets no weight: the process's default again.
+        let weight = (!weight.is_nan()).then_some(weight);
         mutable(handle)?.0.set_stability_floor_weight(weight)?;
         Ok(())
     })

@@ -792,7 +792,8 @@ def _add_evaluation_options(
         help=(
             "v2 virtual loop-induced estimates: the weight of the rounding "
             "floor's first-order term (1: calibrated coverage, 0: the checks "
-            "alone); default 2^-12"
+            "alone); default by the highest-point loop: 1 up to pentagons, "
+            "2^-6 hexagons, 2^-12 heptagons and above"
         ),
     )
     parser.add_argument(

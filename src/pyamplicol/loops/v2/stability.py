@@ -145,17 +145,6 @@ FLOOR_UNITS = 16
 # (ESTIMATE_MARGIN) and fewer than 1 in 10^4 of them exceed E. Its
 # second-order term keeps FLOOR_UNITS.
 BILINEAR_FLOOR_UNITS = 2**14
-# The default weight w of that first-order term (``StabilityChecks.
-# floor_weight``, the runtime setting ``stability_checks.floor_weight``):
-# the owner's choice, a typical one-digit overestimate of the true error on
-# the hard loop-induced g g > z z g g g (NinjaRS, binary64, 18 campaign points
-# with a double-double value: true digits 9.62 / 10.71 / 11.95 min / median /
-# max; the floor at w = 1 is 5.4e4 times the true error at the median, and
-# the weight that makes it 10 times the true error has median 1.97e-4 =
-# 2^-12.3, quartiles 3.6e-5 .. 3.5e-4). At w = 2^-12 the estimate there is
-# 8.56 digits at the median; even w = 0 leaves 2 x checks, 212 times the
-# true error. w = 1 restores the calibrated coverage of BILINEAR_FLOOR_UNITS.
-DEFAULT_FLOOR_WEIGHT = 2.0**-12
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"
@@ -459,6 +448,41 @@ def _determinant(m) -> Fraction:
     )
 
 
+def default_floor_weight(largest_loop: int) -> float:
+    """The default weight w of a loop-induced estimate's first-order floor
+    term (``StabilityChecks.floor_weight`` unset) for a process whose
+    highest-point loop has ``largest_loop`` legs, in whole floor units
+    (w x BILINEAR_FLOOR_UNITS): 2^14 (w = 1, the calibrated coverage) up to
+    pentagons, 2^8 (w = 2^-6) for hexagons, 4 (w = 2^-12) for heptagons and
+    above; six powers of two per loop leg above the pentagon, not
+    extrapolated beyond the data (the owner's rule: the reductions differ
+    with the highest-point loop, whole units, not tuned). The data
+    (binary64 against double-double; a new miss is a true error above E
+    that FLOOR_UNITS u S covered): boxes and pentagons have new misses below
+    2^14 units (at 2^14: 3 and 1 of 74,000 and 19,195 points, within 3.1 E;
+    their one-digit weights, 15 and 200 units at the median, would leave
+    2,352 and 783), hexagons none from 32 units (2,662 points, a small
+    sample), heptagons none at 4 units (693 points, projected from the
+    campaign's stored estimates). 4 units is the owner's one-digit choice
+    on g g > z z g g g (NinjaRS: true digits 9.62 / 10.71 / 11.95, the
+    weight making the floor ten times the true error 1.97e-4 = 2^-12.3 at
+    the median; the estimate is then 8.56 digits at the median, and even
+    w = 0 leaves 2 x checks, 212 times the true error). Native twin:
+    ``v2_stability::default_floor_weight``."""
+
+    units = 2**14 if largest_loop <= 5 else 2**8 if largest_loop == 6 else 2**2
+    return units / BILINEAR_FLOOR_UNITS
+
+
+def resolved_floor_weight(checks: Any, largest_loop: int) -> float:
+    """The floor weight an estimate of ``checks`` uses for a process whose
+    highest-point loop has ``largest_loop`` legs: the one the checks set,
+    else ``default_floor_weight``."""
+
+    weight = checks.floor_weight
+    return default_floor_weight(largest_loop) if weight is None else weight
+
+
 def checked_floor_weight(value: object) -> float:
     """``value`` as a floor weight (``StabilityChecks.floor_weight``): a
     finite non-negative number, as a float (-0 is 0)."""
@@ -482,15 +506,16 @@ class StabilityChecks:
     reduction_direction: bool = False
     rescaled: bool = False
     cross_backend: bool = False
-    # The weight of a loop-induced estimate's first-order floor term
-    # (``DEFAULT_FLOOR_WEIGHT``; 1: the calibrated coverage, 0: the checks
-    # and the second-order term alone).
-    floor_weight: float = DEFAULT_FLOOR_WEIGHT
+    # The weight of a loop-induced estimate's first-order floor term (1: the
+    # calibrated coverage, 0: the checks and the second-order term alone;
+    # None: the process's default, ``default_floor_weight``).
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "floor_weight", checked_floor_weight(self.floor_weight)
-        )
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         rotations = tuple(self.rotations)
         if any(not isinstance(r, Rotation) for r in rotations):
             raise TypeError("rotation checks take Rotation records")
@@ -1078,6 +1103,7 @@ def _native_induced_estimate(
             reason = why
         else:
             cross = point(run)
+    weight = resolved_floor_weight(checks, reference.largest_loop)
     found = load_loop_native().stability_loop_induced(
         shape,
         roundoff,
@@ -1087,7 +1113,7 @@ def _native_induced_estimate(
         checks.reduction,
         cross,
         reason,
-        floor_weight=checks.floor_weight,
+        floor_weight=weight,
     )
     relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
     names = [sector for sector, _pairs in sectors]
@@ -1109,7 +1135,7 @@ def _native_induced_estimate(
         _deviations(reference),
         dict(not_run),
         None if floor is None else budget(floor),
-        None if floor is None else checks.floor_weight,
+        None if floor is None else weight,
     )
 
 
@@ -1123,7 +1149,6 @@ __all__ = [
     "ADDITIVE",
     "BILINEAR_FLOOR_UNITS",
     "CROSS",
-    "DEFAULT_FLOOR_WEIGHT",
     "DEFAULT_RESCUE",
     "FLOOR_UNITS",
     "FRAMES",
@@ -1142,6 +1167,7 @@ __all__ = [
     "StabilityChecks",
     "StabilityEstimate",
     "cross_check",
+    "default_floor_weight",
     "default_rescue",
     "default_rotation",
     "deviation",
@@ -1150,4 +1176,5 @@ __all__ = [
     "per_coefficient",
     "relative",
     "relative_text",
+    "resolved_floor_weight",
 ]

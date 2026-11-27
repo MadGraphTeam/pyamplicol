@@ -859,11 +859,12 @@ impl Runtime {
         self.checks = checks;
     }
     /// The weight of a loop-induced estimate's first-order floor term in
-    /// later evaluations (`VirtualStabilityChecks.floor_weight`; default
-    /// 2^-12, 1 the calibrated coverage, 0 the checks alone): a finite
-    /// non-negative number, else an invalid-argument error and nothing
-    /// changes.
-    pub fn set_stability_floor_weight(&mut self, weight: f64) -> RusticolResult<()> {
+    /// later evaluations (`VirtualStabilityChecks.floor_weight`; 1 the
+    /// calibrated coverage, 0 the checks alone; None: the process's default,
+    /// by its highest-point loop, `v2_stability::default_floor_weight`): a
+    /// finite non-negative number, else an invalid-argument error and
+    /// nothing changes.
+    pub fn set_stability_floor_weight(&mut self, weight: Option<f64>) -> RusticolResult<()> {
         self.checks = self.checks.clone().with_floor_weight(weight)?;
         Ok(())
     }
@@ -3239,6 +3240,7 @@ fn public_estimate(estimate: &Estimate, with_poles: bool, native: &V2Runtime) ->
             .iter()
             .map(|(name, reason)| serde_json::json!([name, reason]))
             .collect::<Vec<_>>(),
+        "floor_weight": estimate.floor_weight,
     })
 }
 

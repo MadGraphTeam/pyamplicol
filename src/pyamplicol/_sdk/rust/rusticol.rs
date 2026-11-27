@@ -459,10 +459,11 @@ pub mod virtual_amplitudes {
         }
         /// Weight of a loop-induced estimate's first-order floor term in
         /// later evaluations, the Python API's
-        /// `VirtualStabilityChecks(floor_weight=)` (default 2^-12, 1 the
-        /// calibrated coverage, 0 the checks alone); kept by
-        /// `set_stability_checks`. A value that is not finite and
-        /// non-negative is an invalid-argument error.
+        /// `VirtualStabilityChecks(floor_weight=)` (1 the calibrated
+        /// coverage, 0 the checks alone, NaN the process's default by its
+        /// highest-point loop); kept by `set_stability_checks`. Another
+        /// value that is not finite and non-negative is an invalid-argument
+        /// error.
         pub fn set_stability_floor_weight(&mut self, weight: f64) -> Result<()> {
             // SAFETY: exclusive live handle.
             check(unsafe {

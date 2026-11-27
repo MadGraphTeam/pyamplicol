@@ -151,6 +151,14 @@ fn fields(estimate: Estimate) -> PyEstimate {
     )
 }
 
+/// The default floor weight of a process whose highest-point loop has
+/// `largest_loop` legs (`stability.default_floor_weight`'s native twin,
+/// `v2_stability::default_floor_weight`).
+#[pyfunction]
+fn default_floor_weight(largest_loop: usize) -> f64 {
+    stability::default_floor_weight(largest_loop)
+}
+
 /// The binary64 stability estimate of one loop-induced point
 /// (`plan_export.point_estimate` of an amplitude-mode point): `shape` (basis
 /// size, Laurent width, the colour metric's cells row-major, the plan's row
@@ -216,6 +224,7 @@ fn stability_loop_induced(
 
 pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(stability_loop_induced, module)?)?;
+    module.add_function(wrap_pyfunction!(default_floor_weight, module)?)?;
     module.add_function(wrap_pyfunction!(stability_default_rotation, module)?)?;
     module.add_function(wrap_pyfunction!(stability_rotation, module)?)?;
     module.add_function(wrap_pyfunction!(stability_born_interfered, module)?)?;

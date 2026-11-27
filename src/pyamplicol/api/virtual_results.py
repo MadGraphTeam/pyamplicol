@@ -22,7 +22,6 @@ from pyamplicol.loops.orders import VirtualOrderSector, canonical_order
 from pyamplicol.loops.strategy import R2Selection
 from pyamplicol.loops.v2.poles import ORIGINS
 from pyamplicol.loops.v2.stability import (
-    DEFAULT_FLOOR_WEIGHT,
     RESCUE_ROTATION,
     Rotation,
     StabilityChecks,
@@ -193,10 +192,13 @@ class VirtualStabilityChecks:
     size, S the size of what cancelled, per side): w = 1 is the calibrated
     coverage (every point the previous floor covered within ten times E,
     fewer than 1 in 10^4 above E), w = 0 leaves the checks and the
-    second-order term (16 u)^2 S S'. The default 2^-12
-    (``loops.v2.stability.DEFAULT_FLOOR_WEIGHT``) makes the estimate a
-    typical one-digit overestimate on strongly cancelling loop-induced
-    processes (g g > z z g g g). It changes no value and no other estimate.
+    second-order term (16 u)^2 S S'. None (the default) takes the process's
+    default by the highest-point loop it reduces
+    (``loops.v2.stability.default_floor_weight``): 2^14 floor units (w = 1)
+    up to pentagons, 2^8 for hexagons, 4 for heptagons and above, a typical
+    one-digit overestimate on strongly cancelling processes such as
+    g g > z z g g g. It changes no value and no other estimate; each
+    estimate reports the weight it used.
 
     ``cross_backend`` evaluates every point a
     second time on the other reduction backend (NinjaRS for a call reduced
@@ -216,12 +218,13 @@ class VirtualStabilityChecks:
     reduction_direction: bool = False
     rescaled: bool = False
     cross_backend: bool = False
-    floor_weight: float = DEFAULT_FLOOR_WEIGHT
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "floor_weight", checked_floor_weight(self.floor_weight)
-        )
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         given = self.rotations
         if isinstance(given, bool):
             raise TypeError("rotations take a count or rotation records")
@@ -680,12 +683,13 @@ class VirtualRescueLevel:
     target: float = field(default_factory=_default_target)
     metric: Literal["relative", "finite", "scale"] = "relative"
     reduction: Literal["auto", "ninjars", "tirust"] = "auto"
-    floor_weight: float = DEFAULT_FLOOR_WEIGHT
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "floor_weight", checked_floor_weight(self.floor_weight)
-        )
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         spec = VirtualArithmeticSpec(self.arithmetic, self.precision)
         # Arbitrary precision without digits: the default (500).
         object.__setattr__(self, "precision", spec.precision)

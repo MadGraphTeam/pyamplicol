@@ -237,18 +237,18 @@ def test_both_readers_read_the_same_values(text):
 def test_the_floor_weight_reads_alike_in_python_and_natively():
     """``[evaluation.stability_checks] floor_weight`` (the weight of a
     loop-induced estimate's first-order floor term): read by both readers,
-    the default 2^-12 where absent, refused alike when negative."""
+    unset where absent (the process's default), refused alike when
+    negative."""
 
     from pyamplicol.config import ConfigurationError
     from pyamplicol.config.runtime_options import read_runtime_options
-    from pyamplicol.loops.v2.stability import DEFAULT_FLOOR_WEIGHT
 
     text = "[evaluation.stability_checks]\nrotation_count = 1\nfloor_weight = 0.25"
     assert read_runtime_options(text)["stability_checks"].floor_weight == 0.25
     assert _native_options(text)["stability_checks"]["floor_weight"] == 0.25
     text = "[evaluation.stability_checks]\nrotation_count = 1"
     found = read_runtime_options(text)["stability_checks"]
-    assert found.floor_weight == DEFAULT_FLOOR_WEIGHT
+    assert found.floor_weight is None
     assert _native_options(text)["stability_checks"]["floor_weight"] is None
     bad = "[evaluation.stability_checks]\nrotation_count = 1\nfloor_weight = -1"
     message = (
@@ -354,7 +354,7 @@ def test_the_sdk_applies_every_key_of_a_toml_and_reads_it_back(ggtt):  # noqa: F
                 "reduction_direction": True,
                 "rescaled": True,
                 "cross_backend": False,
-                "floor_weight": 2.0**-12,
+                "floor_weight": None,
             },
             "threads": 2,
             "threads_requested": None,
@@ -466,18 +466,22 @@ def test_the_sdk_sets_every_key_on_its_own(ggtt):  # noqa: F811
             ctypes.c_void_p,
             ctypes.c_double,
         ]
-        assert checks["floor_weight"] == 2.0**-12
+        assert checks["floor_weight"] is None
         assert sdk.rusticol_virtual_set_stability_floor_weight(handle, 0.5) == 0
         assert _state(sdk, handle)["stability_checks"]["floor_weight"] == 0.5
         assert sdk.rusticol_virtual_set_stability_checks(handle, 1, None, 0, 0, 0) == 0
         assert _state(sdk, handle)["stability_checks"]["floor_weight"] == 0.5
-        for bad in (-1.0, float("inf"), float("nan")):
+        for bad in (-1.0, float("inf")):
             assert (
                 sdk.rusticol_virtual_set_stability_floor_weight(handle, bad)
                 == STATUS_INVALID_ARGUMENT
             )
             assert _error(sdk) == "floor_weight must be a finite non-negative number"
         assert _state(sdk, handle)["stability_checks"]["floor_weight"] == 0.5
+        # NaN sets no weight: the process's default again.
+        nan = float("nan")
+        assert sdk.rusticol_virtual_set_stability_floor_weight(handle, nan) == 0
+        assert _state(sdk, handle)["stability_checks"]["floor_weight"] is None
     finally:
         sdk.rusticol_virtual_free(handle)
 

@@ -1235,7 +1235,7 @@ class InducedColumns:
             merged_rescue,
             point_estimate,
         )
-        from .stability import StabilityChecks
+        from .stability import StabilityChecks, resolved_floor_weight
 
         if ward is not None:
             raise NotImplementedError(
@@ -1369,7 +1369,9 @@ class InducedColumns:
                         precision.estimate_roundoff,
                         other,
                         skipped,
-                        floor_weight=stability.floor_weight,
+                        floor_weight=resolved_floor_weight(
+                            stability, reference.largest_loop
+                        ),
                     )
                 value = point_result(
                     reference, outputs[g].value(output), estimate, output.rows

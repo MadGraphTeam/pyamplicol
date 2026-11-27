@@ -659,28 +659,67 @@ def test_the_floor_units_keep_covered_points_in_the_margin():
 
 
 @pytest.mark.loop_fast
+def test_the_default_floor_units_per_highest_point_loop():
+    """The default weight by the highest-point loop a process reduces
+    (``default_floor_weight``, whole floor units), on the fixture's binary64
+    points of both backends (true error above E where FLOOR_UNITS u S
+    covered: a new miss): boxes keep 2^14 units (3 new misses of 74,000
+    points, g g > e+e-mu+mu- TIRust, within 3.1 x E; at 2^12 units 26),
+    pentagons 2^14 (1 of 19,195, g g > z z g TIRust, 2.65 x E; at 2^12 30),
+    hexagons 2^8 (none of 2,662: a small sample, its g g > z z g g points
+    enriched in flagged ones), heptagons 4 units (none of 693 g g > z z g g g
+    and g g > h h g g g points, projected from the campaign's stored
+    estimates, not in the fixture). Their one-digit weights (the floor ten
+    times the true error at the median) are 15, 206, 625 and 184 units: on
+    boxes and pentagons that would leave 2,352 and 783 new misses, which is
+    why they keep the calibrated count."""
+
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS, default_floor_weight
+
+    data = json.loads(FLOOR_UNITS_DERIVATION.read_text())
+    measured = data["units_measured"]
+
+    def new_misses(loop, units):
+        ratios = [
+            error / (sampled + first * units / measured + second)
+            for row in data["rows"].values()
+            if row["largest_loop"] == loop
+            for error, sampled, first, second, _previous in row["kept"]
+        ]
+        return sum(ratio > 1 for ratio in ratios), max(ratios, default=0.0)
+
+    expected = {4: (3, 3.1), 5: (1, 2.7), 6: (0, 1.0)}
+    for loop, (count, worst) in expected.items():
+        units = default_floor_weight(loop) * BILINEAR_FLOOR_UNITS
+        found, largest = new_misses(loop, units)
+        assert found == count and largest <= worst, (loop, found, largest)
+    # A quarter of the box and pentagon counts misses many more.
+    assert new_misses(4, 2**12)[0] > 20 and new_misses(5, 2**12)[0] > 20
+
+
+@pytest.mark.loop_fast
 def test_a_cancelling_point_is_estimated_at_its_checks_not_at_16_u_s():
     """Why the floor is first order: on a strongly cancelling binary64
     g g > z z g g point (the fixture's, S / |v| = 1.7e13, its value right to
     6e-10) the estimate is twice its checks plus the first-order floor (the
     second-order term adds under 1 %), above the true error, and more than
     a thousand times below the previous floor FLOOR_UNITS u S, at the
-    calibrated weight w = 1 and at the default."""
+    calibrated weight w = 1 and at its class default (a hexagon: 2^-6)."""
 
     from pyamplicol.loops.v2.assemble import Laurent
     from pyamplicol.loops.v2.stability import (
         BILINEAR_FLOOR_UNITS,
-        DEFAULT_FLOOR_WEIGHT,
         FLOOR_UNITS,
         SAFETY,
         Budget,
         StabilityEstimate,
+        default_floor_weight,
     )
 
     point = json.loads(FLOOR_UNITS_DERIVATION.read_text())["cancelling"]
     measured = json.loads(FLOOR_UNITS_DERIVATION.read_text())["units_measured"]
     ratio = point["scale_over_value"]
-    for weight in (1.0, DEFAULT_FLOOR_WEIGHT):
+    for weight in (1.0, default_floor_weight(6)):
         first = weight * point["first"] * BILINEAR_FLOOR_UNITS / measured
         floor = first + (FLOOR_UNITS * _U) ** 2 * ratio
         estimate = StabilityEstimate.from_checks(
@@ -798,11 +837,11 @@ def test_a_vanishing_loop_induced_amplitude_keeps_its_floor():
     floor also bounds every such rounding of the form)."""
 
     from pyamplicol.loops.v2 import induced
-    from pyamplicol.loops.v2.stability import DEFAULT_FLOOR_WEIGHT, FLOOR_UNITS
+    from pyamplicol.loops.v2.stability import FLOOR_UNITS
 
     epsilon = FLOOR_UNITS * _U
     terms = (1.0, 3.0)
-    for weight in (0.0, DEFAULT_FLOOR_WEIGHT, 1.0):
+    for weight in (0.0, 2.0**-12, 1.0):
         zero = _constructed((0.0, 0.0), terms)
         (floor,) = induced.floor(zero, weight)[_SECTOR].coefficients
         assert floor == epsilon * (epsilon * 4.0 * 4.0) > 0
@@ -818,19 +857,15 @@ def test_a_vanishing_loop_induced_amplitude_keeps_its_floor():
 
 
 @pytest.mark.loop_fast
-def test_the_floor_weight_scales_the_first_order_term_alone():
+def test_the_floor_weight_scales_the_first_order_term_alone(loop_native):
     """The runtime setting ``floor_weight`` (``VirtualStabilityChecks``)
     multiplies the floor's first-order term only: w = 0 leaves twice the
     checks plus the second-order term (FLOOR_UNITS u)^2 S S', w = 1 the
     calibrated floor, and the estimate reports the weight it was formed
-    with; the guard's subset (``floor=False``) does not depend on it. The
-    default 2^-12 is the owner's choice: on the 18 binary64 NinjaRS points
-    of g g > z z g g g with a double-double value (true digits 9.62 / 10.71
-    / 11.95) the floor at w = 1 is 5.4e4 times the true error at the median
-    and the weight that makes it ten times the true error has median 1.97e-4
-    = 2^-12.3 (quartiles 3.6e-5 .. 3.5e-4); there the default estimate is
-    8.56 digits at the median, and even w = 0 leaves 2 x checks, 212 times
-    the true error (the points are too heavy for the test suite: quoted)."""
+    with; the guard's subset (``floor=False``) does not depend on it. Unset
+    (the default), the weight is the process's, by the highest-point loop it
+    reduces (``default_floor_weight``, the same function natively), and a
+    weight the caller sets overrides it for every class."""
 
     from pyamplicol.api.virtual_results import (
         VirtualRescueLevel,
@@ -840,19 +875,34 @@ def test_the_floor_weight_scales_the_first_order_term_alone():
     from pyamplicol.loops.v2.assemble import Laurent
     from pyamplicol.loops.v2.stability import (
         BILINEAR_FLOOR_UNITS,
-        DEFAULT_FLOOR_WEIGHT,
         FLOOR_UNITS,
         RECOMMENDED_CHECKS,
         SAFETY,
         Budget,
         StabilityEstimate,
+        default_floor_weight,
+        resolved_floor_weight,
     )
 
-    assert DEFAULT_FLOOR_WEIGHT == 2.0**-12
-    assert VirtualStabilityChecks(1).floor_weight == DEFAULT_FLOOR_WEIGHT
-    assert RECOMMENDED_CHECKS.floor_weight == DEFAULT_FLOOR_WEIGHT
-    assert VirtualRescueLevel("double").checks.floor_weight == DEFAULT_FLOOR_WEIGHT
-    assert VirtualStabilityChecks(1, floor_weight=1).to_checks().floor_weight == 1.0
+    units = {
+        loop: default_floor_weight(loop) * BILINEAR_FLOOR_UNITS for loop in range(12)
+    }
+    assert units == {
+        loop: 2**14 if loop <= 5 else 2**8 if loop == 6 else 4 for loop in range(12)
+    }
+    for loop in range(12):
+        assert loop_native.default_floor_weight(loop) == default_floor_weight(loop)
+    assert VirtualStabilityChecks(1).floor_weight is None
+    assert RECOMMENDED_CHECKS.floor_weight is None
+    assert VirtualRescueLevel("double").checks.floor_weight is None
+    for loop in range(12):
+        default = VirtualStabilityChecks(1).to_checks()
+        assert resolved_floor_weight(default, loop) == default_floor_weight(loop)
+        for weight in (0.0, 0.3, 1.0, 7.0):
+            given = VirtualStabilityChecks(1, floor_weight=weight).to_checks()
+            assert resolved_floor_weight(given, loop) == weight
+            level = VirtualRescueLevel("double", floor_weight=weight)
+            assert resolved_floor_weight(level.checks.to_checks(), loop) == weight
     for bad in (-1.0, math.inf, math.nan, True, "1"):
         with pytest.raises((TypeError, ValueError)):
             VirtualStabilityChecks(1, floor_weight=bad)
@@ -862,7 +912,7 @@ def test_the_floor_weight_scales_the_first_order_term_alone():
     first, second = BILINEAR_FLOOR_UNITS * _U, FLOOR_UNITS * _U
     (scale,) = induced.scale(point)[_SECTOR].coefficients
     rotation = 2e-14
-    for weight in (0.0, DEFAULT_FLOOR_WEIGHT, 1.0):
+    for weight in (0.0, 2.0**-12, 1.0):
         (floor,) = induced.floor(point, weight)[_SECTOR].coefficients
         assert floor == weight * first * (size * term + term * size) + second * (
             second * term * term
@@ -956,12 +1006,7 @@ def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import Laurent
-    from pyamplicol.loops.v2.stability import (
-        DEFAULT_FLOOR_WEIGHT,
-        RESCALED,
-        Budget,
-        StabilityEstimate,
-    )
+    from pyamplicol.loops.v2.stability import RESCALED, Budget, StabilityEstimate
 
     for (amplitude, terms), reduction, weight in itertools.product(
         (
@@ -970,7 +1015,7 @@ def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
             ((0.7, -0.2 + 0.1j), (0.9, 0.4)),
         ),
         (None, RESCALED),
-        (1.0, DEFAULT_FLOOR_WEIGHT, 0.3),
+        (1.0, 2.0**-6, 0.3),
     ):
         point = _constructed(amplitude, terms)
         cells = [((0, 0), [[(complex(a).real, complex(a).imag)] for a in amplitude])]
