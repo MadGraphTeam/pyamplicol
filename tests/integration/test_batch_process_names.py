@@ -199,3 +199,21 @@ def test_one_call_keeps_an_unnamed_process_off_an_alias(tmp_path: Path) -> None:
     )
     assert _ids(artifact) == [NEGATIVE.name, _digest_process_name(CROSSED.expression)]
     assert Runtime.load(artifact, process=CROSSED_ALIAS.name) is not None
+
+
+def test_a_second_alias_follows_its_renamed_target(tmp_path: Path) -> None:
+    # The first alias takes the readable name of the second request, which
+    # takes its digest; an alias of the second request by its original name
+    # follows it.
+    batch = ProcessSet(
+        (NEGATIVE, CROSSED),
+        (CROSSED_ALIAS, ProcessAlias("positive_crossed", CROSSED.name, (1, 0, 2, 3))),
+    )
+    renamed = _digest_process_name(CROSSED.expression)
+    assert [alias.process_name for alias in batch.aliases] == [NEGATIVE.name, renamed]
+    artifact = tmp_path / "artifact"
+    _generator().generate(batch, artifact, model=ModelSource.built_in_sm())
+    swapped = [POINT[1], POINT[0], *POINT[2:]]
+    target = complex(Runtime.load(artifact, process=renamed).evaluate([POINT])[0])
+    alias = Runtime.load(artifact, process="positive_crossed").evaluate([swapped])[0]
+    assert complex(alias) == target

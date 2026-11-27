@@ -578,13 +578,31 @@ class ProcessSet:
         if not all(isinstance(alias, ProcessAlias) for alias in aliases):
             raise TypeError("ProcessSet.aliases must contain ProcessAlias objects")
         # Automatic names of distinct expressions are made unique however the
-        # requests were built (``ProcessRequest.automatic_name``).
+        # requests were built (``ProcessRequest.automatic_name``); an alias
+        # that targets a renamed request by its unique original name follows it.
+        original_names = tuple(request.name for request in requests)
         requests = _with_unique_default_names(
             requests,
             tuple(request.automatic_name for request in requests),
             blocked=(alias.name for alias in aliases),
         )
         request_names = tuple(request.name for request in requests)
+        renamed = {
+            old: new
+            for old, new in zip(original_names, request_names, strict=True)
+            if old != new
+            and original_names.count(old) == 1
+            and old not in request_names
+        }
+        if renamed:
+            aliases = tuple(
+                ProcessAlias(
+                    alias.name,
+                    renamed.get(alias.process_name, alias.process_name),
+                    alias.particle_permutation,
+                )
+                for alias in aliases
+            )
         if len(set(request_names)) != len(request_names):
             repeated = sorted(
                 {name for name in request_names if request_names.count(name) > 1}
