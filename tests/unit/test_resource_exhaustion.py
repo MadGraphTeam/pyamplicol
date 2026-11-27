@@ -201,3 +201,31 @@ def test_backend_discovery_chains_the_failed_import(
     with pytest.raises(DependencyError) as caught:
         services._discover("create_generator_backend", ("a.backend",))
     assert isinstance(caught.value.__cause__, ImportError)
+
+
+def test_a_failure_inside_the_handler_of_an_allocation_failure_keeps_its_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """The reviewer's case: a fallback load of a missing artifact inside the
+    handler of an earlier real allocation failure, at the map limit, raises
+    exactly what the same load raises outside the handler (the earlier
+    failure is only its implicit ``__context__``)."""
+
+    missing = tmp_path / "no-such-fallback"
+    _counts(monkeypatch, AT_LIMIT)
+    with pytest.raises(BaseException) as outside:
+        Runtime.load(missing)
+    try:
+        raise OSError(errno.ENOMEM, "Cannot allocate memory")
+    except OSError:
+        with pytest.raises(BaseException) as inside:
+            Runtime.load(missing)
+    assert not isinstance(inside.value, ResourceExhaustedError)
+    assert type(inside.value) is type(outside.value)
+    assert str(inside.value) == str(outside.value)
+    # An explicit cause is the failing call's own: still diagnosed.
+    allocation = OSError(errno.ENOMEM, "Cannot allocate memory")
+    explicit = CompatibilityError("could not map the kernel")
+    explicit.__cause__ = allocation
+    with pytest.raises(ResourceExhaustedError, match="memory maps exhausted"):
+        _load_raising(explicit)()

@@ -61,13 +61,18 @@ def memory_maps() -> tuple[int, int] | None:
 
 
 def _chain(exc: BaseException) -> list[BaseException]:
+    """``exc`` and its explicit causes (``raise ... from``): what the failing
+    call itself raised. Never the implicit ``__context__``: an error raised
+    while another one was being handled (a fallback load inside the handler
+    of an earlier allocation failure) is not caused by it."""
+
     seen: set[int] = set()
     chain = []
     current: BaseException | None = exc
     while current is not None and id(current) not in seen:
         seen.add(id(current))
         chain.append(current)
-        current = current.__cause__ or current.__context__
+        current = current.__cause__
     return chain
 
 

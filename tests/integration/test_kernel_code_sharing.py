@@ -227,7 +227,28 @@ _EXHAUSTED = textwrap.dedent(
             outcomes.append((name, "typed", exc.resource, str(exc)[:80]))
         except BaseException as exc:
             outcomes.append((name, "untyped", type(exc).__name__, str(exc)[:200]))
+    # The reviewer's recovery case: a little room again, a load that fails
+    # for lack of maps, and inside its handler a fallback to a missing
+    # artifact, which must raise what it raises outside the handler.
+    libc.munmap.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    libc.munmap(base, 32 * page)
+    missing = output.parent / "no-such-fallback"
+
+    def fallback():
+        try:
+            Runtime.load(missing, process=process)
+        except BaseException as exc:
+            return (type(exc).__name__, str(exc))
+        return ("served", "")
+
+    try:
+        Runtime.load(artifact, process=process)
+        inside = ("load served", "")
+    except ResourceExhaustedError:
+        inside = fallback()
+    outside = fallback()
     print(repr(outcomes), flush=True)
+    print(repr(("fallback", inside, outside)), flush=True)
     """
 )
 
@@ -256,3 +277,9 @@ def test_exhausted_memory_maps_raise_a_typed_error(
         assert outcome[1] == "typed", outcomes
         assert outcome[2] == "memory maps"
         assert "memory maps exhausted in this process" in outcome[3]
+    fallbacks = [
+        line for line in result.stdout.splitlines() if line.startswith("('fallback'")
+    ]
+    _, inside, outside = ast.literal_eval(fallbacks[-1])
+    assert inside == outside, (inside, outside)
+    assert inside[0] not in ("ResourceExhaustedError", "served", "load served")
