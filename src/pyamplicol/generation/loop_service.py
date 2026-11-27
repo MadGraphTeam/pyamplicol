@@ -391,7 +391,7 @@ class _RequestFilterError(GenerationError):
         self.settings = settings
 
 
-def quark_lines(process_ir) -> int:
+def quark_lines(process_ir: Any) -> int:
     """The external quark lines of a concrete process as
     ``process.max_quark_lines`` counts them, on every route: its colour
     triplet-antitriplet pairs with every leg outgoing
@@ -400,7 +400,7 @@ def quark_lines(process_ir) -> int:
     return int(process_ir.color_endpoints.pair_count)
 
 
-def _quark_line_cut(limit: int | None, expanded: tuple) -> tuple:
+def _quark_line_cut(limit: int | None, expanded: tuple[Any, ...]) -> tuple[Any, ...]:
     """``process.max_quark_lines`` on the one-loop route, as on the tree
     route: the concrete processes with more external quark lines
     (``quark_lines``) than ``limit`` are dropped, the others keep their
@@ -1454,7 +1454,12 @@ def _born_members(backend, context, memo=None):
     )
 
 
-def _check_requests(context, requests, dags=None, memo=None) -> None:
+def _check_requests(
+    context: _LoopContext,
+    requests: Sequence[Any],
+    dags: Sequence[Any] | None = None,
+    memo: Any = None,
+) -> None:
     """The refusals of every slice request of ``context`` that need only the
     model and the Born DAG, before any process is generated: its model
     preparation (``prepare_request_model``, ``memo`` shares it with the
