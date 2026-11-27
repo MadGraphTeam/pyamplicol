@@ -126,7 +126,10 @@ expression as written.
 An amplitude- or squared-order constraint also sets
 `process.coupling_order_policy = "explicit"`, as MG5_aMC drops its WEIGHTED
 minimisation when coupling orders are named: every Born amplitude order within
-the limits is generated. The NLO bracket comes last; a trailing bracket is
+the limits is generated. Without named orders the minimal policy keeps the
+lowest orders by the model's coupling hierarchy, within each order's UFO
+`expansion_order` (the HEFT order `HIG` at most 1 per amplitude), as MG5_aMC
+does. The NLO bracket comes last; a trailing bracket is
 MG5_aMC's when it holds `=` or names coupling orders in MG5_aMC's upper-case
 spelling, otherwise it is an anonymous multiparticle (`u u~ > d [d g]`).
 Refused with the typed `madloop-syntax` error: `[real=QCD]` and

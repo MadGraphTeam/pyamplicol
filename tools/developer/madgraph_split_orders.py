@@ -18,8 +18,12 @@ Example::
 
 ``points.json`` maps each process to a list of points, each a list of
 ``[E, px, py, pz]`` momenta in MadGraph's leg order; ``--work`` receives one
-MadGraph standalone output per process. T-channel widths are kept
-(``zerowidth_tchannel False``) so propagators match a fixed-width recursion.
+MadGraph standalone output per process. ``--orders`` names the coupling orders
+to split by (default ``QCD,QED``; ``QCD,QED,HIG`` for the ``heft`` model), and
+``--set-param BLOCK:ID=VALUE`` overrides an entry of the generated
+``param_card.dat`` before the evaluation (to match another model's inputs).
+T-channel widths are kept (``zerowidth_tchannel False``) so propagators match
+a fixed-width recursion.
 
 Colour-flow amplitudes ``JAMP`` are zeroed before MadGraph assigns them:
 MadGraph 3.7 leaves the entries no diagram feeds unset (u u~ > d d~ s s~).
@@ -107,6 +111,36 @@ def _generate(
     _run(["python3", str(madgraph / "bin" / "mg5_aMC"), str(card)], output.parent)
     (subprocess_dir,) = sorted((output / "SubProcesses").glob("P*_*"))
     return subprocess_dir
+
+
+def _set_parameters(card: Path, settings: list[str]) -> None:
+    """Override ``BLOCK:ID=VALUE`` entries (``DECAY:ID=VALUE`` for a width)."""
+
+    if not settings:
+        return
+    lines = card.read_text().splitlines()
+    for setting in settings:
+        key, value = setting.split("=", 1)
+        block, ident = key.split(":", 1)
+        block = block.strip().upper()
+        found = False
+        current = None
+        for index, line in enumerate(lines):
+            words = line.split()
+            if not words or line.lstrip().startswith("#"):
+                continue
+            if words[0].upper() == "BLOCK":
+                current = words[1].upper()
+                continue
+            if block == "DECAY" and words[0].upper() == "DECAY" and words[1] == ident:
+                lines[index] = f"DECAY {ident} {float(value):.10e}"
+                found = True
+            elif current == block and words[0] == ident:
+                lines[index] = f"    {ident} {float(value):.10e} # {block}:{ident}"
+                found = True
+        if not found:
+            raise SystemExit(f"param_card entry {setting!r} not found")
+    card.write_text("\n".join(lines) + "\n")
 
 
 def _split_order_names(matrix: str) -> tuple[str, ...] | None:
@@ -230,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
         help="comma-separated coupling-order names of the model, in the order of "
         "MadGraph's split-order table columns (default: QCD,QED)",
     )
+    parser.add_argument("--set-param", action="append", default=[])
     options = parser.parse_args(argv)
     names = tuple(name.strip() for name in options.orders.split(",") if name.strip())
     points = json.loads(options.points.read_text())
@@ -242,6 +277,10 @@ def main(argv: list[str] | None = None) -> int:
             process,
             options.work.resolve() / f"process-{index}",
             names,
+        )
+        _set_parameters(
+            options.work.resolve() / f"process-{index}" / "Cards" / "param_card.dat",
+            options.set_param,
         )
         matrix = subprocess_dir / "matrix.f"
         source = matrix.read_text()
@@ -268,6 +307,7 @@ def main(argv: list[str] | None = None) -> int:
                 "kind": "pyamplicol-madgraph-split-orders-v1",
                 "madgraph": options.madgraph.name,
                 "model": options.model,
+                "parameters": options.set_param,
                 "colour": options.colour,
                 "zerowidth_tchannel": False,
                 "processes": references,
