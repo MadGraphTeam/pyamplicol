@@ -141,11 +141,19 @@ revision TIRust pins), and NinjaRS with it: NinjaRS-reduced values (the
 default for Born-interfered processes) are unchanged bit for bit except
 where that series acts (one `g g > t t~ g` point of the regression suite,
 its resolved entries by at most 9e-14 relative and its checked stability
-estimate by 1e-7 of itself).
+estimate by 1e-7 of itself). All three then move to oneloopmaster `a4b16f70`
+(#25: a scalar box with a massless line soft between two on-shell massive
+lines at a vanishing channel returned NaN or an unrelated value, one of which
+the 512-bit tier served as a success; #23: the small-momentum C0 series at
+extreme mass ratios); NinjaRS and TIRust change only their oneloop pin. No
+value, diagnostic or executor counter moves in the regression suite (at 1
+and 8 threads) or on 7,100 evaluations of recorded stability points, and the
+one-core cost of a TIRust call is unchanged (within 0.3 %): the fixed box
+needs kinematics none of these points reach.
 
-Dependencies: TIRust `c20d0be2` (main), NinjaRS `1f3d9d0e` (main:
-`e1d94412` with oneloopmaster `cdbc912`), oneloopmaster `cdbc912`; the
-other pins are unchanged.
+Dependencies: TIRust `c9c4d126` (main: `c20d0be2` with oneloopmaster
+`a4b16f70`), NinjaRS `41e21234` (main: `1f3d9d0e` with oneloopmaster
+`a4b16f70`), oneloopmaster `a4b16f70`; the other pins are unchanged.
 
 **Check verdicts: one rule, R < K P, for every check row.** Every verdict of
 `pyamplicol check` and of the generation-time loop-induced probes is one
