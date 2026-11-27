@@ -303,13 +303,14 @@ def run_config(execution_mode: str, orders: dict[str, int] | None = None):
 def refusal(exc: BaseException) -> str | None:
     """``"refused: <key>"`` for a ``GenerationError`` caused by a typed engine
     refusal (an exception with a ``key``) of a process with a tree amplitude,
-    ``None`` for one without a tree amplitude."""
+    ``None`` for one without a tree amplitude (untyped, or the typed
+    ``NoTreeDiagramError``, key ``"no-tree-diagram"``)."""
 
     cause: BaseException | None = exc
     while cause is not None:
         key = getattr(cause, "key", None)
         if isinstance(key, str):
-            return f"refused: {key}"
+            return None if key == "no-tree-diagram" else f"refused: {key}"
         cause = cause.__cause__ or cause.__context__
     return None
 
