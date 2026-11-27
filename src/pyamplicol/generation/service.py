@@ -3447,6 +3447,7 @@ class GenerationBackend:
         try:
             self._validate_recurrence_request()
             self._validate_on_the_fly_process_selection()
+            self._validate_eager_process_selection()
             license_state = self._detect_symbolica_license()
             self._apply_symbolica_resource_policy(license_state)
             resolved_model = self._resolve_model_for_plan(source)
@@ -3644,6 +3645,7 @@ class GenerationBackend:
         try:
             self._validate_recurrence_request()
             self._validate_on_the_fly_process_selection()
+            self._validate_eager_process_selection()
             license_state = self._detect_symbolica_license()
             self._apply_symbolica_resource_policy(license_state)
             source = model or self._configured_model_source()
@@ -4206,6 +4208,28 @@ class GenerationBackend:
             expanded=expanded,
             projection=projection,
             coupling_order_limits=explicit_limits,
+        )
+
+    def _validate_eager_process_selection(self) -> None:
+        """The eager mode lowers a fixed colour-sector selection only when it
+        is the leading run of the colour plan (sectors 0, 1, ..., k-1): its
+        colour tables are indexed by the plan's sector ids. Any other fixed
+        selection is a limitation of the mode, refused before generation."""
+
+        if not self._eager_execution_enabled or self._color_accuracy != "lc":
+            # A fixed colour selection needs leading colour in every mode: that
+            # check answers first, with its own reason.
+            return
+        selected = self._process_selection.selected_color_sector_ids
+        if selected is None or sorted(selected) == list(range(len(selected))):
+            return
+        raise GenerationError(
+            "the eager mode does not generate a fixed colour-sector selection "
+            "other than the leading sectors 0, ..., k-1 of the colour plan "
+            f"(process.selected_color_sector_ids={sorted(selected)}); generate the "
+            "selection in the compiled or recurrence mode, or select the sectors at "
+            "run time on a complete artifact (eager, compiled, recurrence or "
+            "on-the-fly)"
         )
 
     def _validate_on_the_fly_process_selection(self) -> None:
