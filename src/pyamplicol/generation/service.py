@@ -5583,7 +5583,10 @@ class GenerationBackend:
         limits (``has_model_supported_amplitudes``: it never rejects a process
         with amplitudes), with those that expanded to no concrete process.
         Members without one inside a multiparticle request that has others
-        stay the lanes' business (skipped with a warning)."""
+        stay the lanes' business (skipped with a warning). The on-the-fly
+        lane builds no colour plan before its seeds: there the check is the
+        colour-blind closure sweep its Born coupling orders come from
+        (``process_born_amplitude_orders``), which over-estimates no less."""
 
         requests: dict[str, ProcessRequest] = {}
         supported: set[str] = set()
@@ -5595,6 +5598,12 @@ class GenerationBackend:
                 supported.add(source.name)
                 continue
             process = entry.process_ir
+            if self._on_the_fly_execution_enabled:
+                if process_born_amplitude_orders(
+                    process, model=model, max_coupling_orders=limits
+                ):
+                    supported.add(source.name)
+                continue
             if has_model_supported_amplitudes(
                 process,
                 model=model,
