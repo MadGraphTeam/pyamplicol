@@ -56,45 +56,16 @@ def _served(reference: dict[str, list[float] | str | None]) -> dict[str, list[fl
     }
 
 
-_QUARKS = frozenset({"d", "u", "s", "c", "b", "t"})
-_RECURRENCE_REFUSAL = "local-color view requires a direct"
-
-
-def _recurrence_refuses(entry: str) -> bool:
-    """Four quarks at QCD = 0: the recurrence lane refuses them at full colour.
-
-    The W exchange between their lines exists for some helicities only, so
-    the primary colour reducer has incomplete per-sector helicity blocks, which
-    the helicity-selector companion refuses (a ``GenerationError`` for UFO
-    models too). Four quarks of four flavours, whose other quark-antiquark
-    pairing is an identically zero colour flow, build
-    (``test_tree_zero_colour_flows``). The other lanes serve all of them.
-    """
-
-    process, orders = split_entry(entry)
-    quarks = [name.rstrip("~") for name in process.replace(">", " ").split()]
-    quarks = [name for name in quarks if name in _QUARKS]
-    return len(quarks) == 4 and orders is not None and orders.get("QCD") == 0
-
-
 def _lane_values(
     entries: list[str], execution_mode: str, root: Path
 ) -> dict[str, list[float]]:
     """The built-in values of ``entries`` (all served), one artifact per set
-    of coupling orders; in the recurrence lane, the entries it refuses
-    (``_recurrence_refuses``) must raise its typed refusal instead."""
+    of coupling orders. Every lane serves every entry: four quarks at
+    QCD = 0, whose W exchange exists for some helicities only, build in the
+    recurrence lane at full colour too (``test_tree_full_colour_helicity_zeros``)."""
 
     groups: dict[str, list[str]] = defaultdict(list)
-    for index, entry in enumerate(entries):
-        if execution_mode == "recurrence" and _recurrence_refuses(entry):
-            process, orders = split_entry(entry)
-            with pytest.raises(GenerationError, match=_RECURRENCE_REFUSAL):
-                Generator(run_config(execution_mode, orders)).generate(
-                    [process],
-                    root / f"refused-{index}",
-                    model=ModelSource.built_in_sm(),
-                )
-            continue
+    for entry in entries:
         process, orders = split_entry(entry)
         groups[json.dumps(orders, sort_keys=True)].append(entry)
     values = {}

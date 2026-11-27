@@ -12,6 +12,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any, cast
 
+from pyamplicol._internal.versions import CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION
 from pyamplicol.api.errors import ArtifactError, CompatibilityError, EvaluationError
 from pyamplicol.api.protocols import Momenta
 from pyamplicol.artifacts import load_manifest
@@ -68,6 +69,9 @@ class CorrelatorCatalogue:
     coherent_groups: Sequence[Mapping[str, object]]
     # Exact factor of a process-group member evaluated by its representative.
     factor: Fraction = Fraction(1)
+    # (helicities, colour sector) amplitudes certified exactly zero at
+    # generation (correlator payload schema 2).
+    zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset()
 
 
 def _exact_integer(value: object) -> int:
@@ -216,32 +220,61 @@ class _ContractionPlan:
             )
 
 
+def _check_coverage(
+    present: Mapping[str, set[int]],
+    helicities: Mapping[str, tuple[int, ...]],
+    matrix: _Matrix,
+    zero_groups: frozenset[tuple[tuple[int, ...], int]],
+) -> None:
+    """Every helicity's groups and certified zeros partition the matrix's
+    sectors: a gap that generation did not certify is refused."""
+
+    expected = set(matrix.sectors)
+    for helicity_id, sectors in present.items():
+        values = helicities[helicity_id]
+        zeros = {sector for key, sector in zero_groups if key == values}
+        if sectors & zeros or sectors | zeros != expected:
+            raise ArtifactError("correlated amplitudes do not cover the colour matrix")
+
+
 def _prepare_contraction(
     amplitude_groups: tuple[CoherentAmplitudeGroup, ...],
     matrix: _Matrix,
     *,
     precision: int,
     scalar: type[Decimal] = Decimal,
+    zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset(),
 ) -> _ContractionPlan:
     """Prepare exact weights and indices once, without numerical amplitude state.
 
     A graded matrix (strict or graded colour) contracts every N_c grade of
     each sector's amplitude: its term of power p between groups of grades
     g_l and g_r enters the degree p + g_l + g_r, if the matrix reports it.
+    A certified zero group (``zero_groups``) is an exact zero amplitude: the
+    terms that read it are omitted.
     """
     if matrix.degrees is not None:
         return _prepare_graded_contraction(
-            amplitude_groups, matrix, precision=precision, scalar=scalar
+            amplitude_groups,
+            matrix,
+            precision=precision,
+            scalar=scalar,
+            zero_groups=zero_groups,
         )
     groups: dict[str, dict[int, int]] = {}
+    helicities: dict[str, tuple[int, ...]] = {}
     for index, group in enumerate(amplitude_groups):
         sectors = groups.setdefault(group.helicity_id, {})
+        helicities[group.helicity_id] = group.helicities
         if group.color_sector_id in sectors or group.nc_grade != 0:
             raise ArtifactError("repeated coherent helicity/colour group")
         sectors[group.color_sector_id] = index
-    expected = set(matrix.sectors)
-    if any(set(indices) != expected for indices in groups.values()):
-        raise ArtifactError("correlated amplitudes do not cover the colour matrix")
+    _check_coverage(
+        {key: set(value) for key, value in groups.items()},
+        helicities,
+        matrix,
+        zero_groups,
+    )
     with localcontext() as context:
         context.prec = _working_precision(precision)
         context.rounding = ROUND_HALF_EVEN
@@ -262,6 +295,7 @@ def _prepare_contraction(
             (indices[left], indices[right], weight)
             for indices in groups.values()
             for left, right, weight in entries
+            if left in indices and right in indices
         ),
     )
 
@@ -272,20 +306,26 @@ def _prepare_graded_contraction(
     *,
     precision: int,
     scalar: type[Decimal],
+    zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset(),
 ) -> _ContractionPlan:
     degrees = matrix.degrees
     assert degrees is not None
     slot_by_degree = {degree: slot for slot, degree in enumerate(degrees)}
     groups: dict[str, dict[int, list[tuple[int, int]]]] = {}
+    helicities: dict[str, tuple[int, ...]] = {}
     for index, group in enumerate(amplitude_groups):
         sectors = groups.setdefault(group.helicity_id, {})
+        helicities[group.helicity_id] = group.helicities
         graded = sectors.setdefault(group.color_sector_id, [])
         if any(grade == group.nc_grade for grade, _ in graded):
             raise ArtifactError("repeated coherent helicity/colour group")
         graded.append((group.nc_grade, index))
-    expected = set(matrix.sectors)
-    if any(set(indices) != expected for indices in groups.values()):
-        raise ArtifactError("correlated amplitudes do not cover the colour matrix")
+    _check_coverage(
+        {key: set(value) for key, value in groups.items()},
+        helicities,
+        matrix,
+        zero_groups,
+    )
     terms: list[tuple[int, int, tuple[Decimal, Decimal]]] = []
     slots: list[int] = []
     with localcontext() as context:
@@ -297,8 +337,9 @@ def _prepare_graded_contraction(
                     scalar(entry.real.numerator) / scalar(entry.real.denominator),
                     scalar(entry.imag.numerator) / scalar(entry.imag.denominator),
                 )
-                for left_grade, left in sectors[entry.left]:
-                    for right_grade, right in sectors[entry.right]:
+                # A certified zero group has no grades: its terms vanish.
+                for left_grade, left in sectors.get(entry.left, ()):
+                    for right_grade, right in sectors.get(entry.right, ()):
                         slot = slot_by_degree.get(
                             int(cast(int, entry.nc_power)) + left_grade + right_grade
                         )
@@ -310,7 +351,11 @@ def _prepare_graded_contraction(
 
 
 def _contract(
-    batch: CoherentAmplitudeBatch, matrix: _Matrix, *, precision: int
+    batch: CoherentAmplitudeBatch,
+    matrix: _Matrix,
+    *,
+    precision: int,
+    zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset(),
 ) -> tuple[CorrelatedValue, ...]:
     """Sum spectator helicities incoherently, but retain all colour phases."""
     return _prepare_contraction(
@@ -318,7 +363,64 @@ def _contract(
         matrix,
         precision=precision,
         scalar=type(batch.normalization_factor),
+        zero_groups=zero_groups,
     ).evaluate(batch, precision=precision)
+
+
+def _zero_groups(
+    process: Mapping[str, object],
+    coherent_groups: Sequence[Mapping[str, object]],
+    version: int,
+) -> frozenset[tuple[tuple[int, ...], int]]:
+    """The certified zero groups of a schema-2 process record: each names a
+    retained helicity and a colour sector without a coherent group there."""
+
+    if "zero_coherent_groups" not in process:
+        return frozenset()
+    if version < CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION:
+        raise ValueError("zero coherent groups need correlator schema 2")
+    present = {
+        (
+            tuple(cast(Sequence[int], group["helicities"])),
+            cast(int, group["color_sector_id"]),
+        )
+        for group in coherent_groups
+    }
+    retained = {helicities for helicities, _ in present}
+    zeros: set[tuple[tuple[int, ...], int]] = set()
+    for item in cast(Sequence[Mapping[str, object]], process["zero_coherent_groups"]):
+        helicities = item["helicities"]
+        sector = item["color_sector_id"]
+        if (
+            not isinstance(helicities, Sequence)
+            or isinstance(helicities, (str, bytes))
+            or any(type(value) is not int for value in helicities)
+            or type(sector) is not int
+        ):
+            raise ValueError("invalid zero coherent group")
+        key = (tuple(cast(Sequence[int], helicities)), sector)
+        if key in zeros or key in present or key[0] not in retained:
+            raise ValueError("invalid or repeated zero coherent group")
+        zeros.add(key)
+    if not zeros:
+        raise ValueError("empty zero coherent groups")
+    # A replaced spin leg evaluates one placeholder helicity per spectator
+    # configuration: its helicity must not decide which sectors vanish.
+    declarations = cast(Mapping[str, object], process["declarations"])
+    for legs in cast(Sequence[Sequence[int]], declarations["spin_correlations"]):
+        patterns: dict[tuple[int, ...], frozenset[int]] = {}
+        for helicities in retained:
+            spectator = tuple(
+                value for leg, value in enumerate(helicities, 1) if leg not in legs
+            )
+            pattern = frozenset(
+                sector for values, sector in zeros if values == helicities
+            )
+            if patterns.setdefault(spectator, pattern) != pattern:
+                raise ValueError(
+                    "a spin-correlated leg decides which colour sectors vanish"
+                )
+    return frozenset(zeros)
 
 
 def load_correlator_catalogue(backend: Any) -> CorrelatorCatalogue:
@@ -334,10 +436,9 @@ def load_correlator_catalogue(backend: Any) -> CorrelatorCatalogue:
             "correlations must be declared at generation with CorrelatorConfig"
         )
     try:
-        if (
-            type(extension["schema_version"]) is not int
-            or extension["schema_version"] != 1
-        ):
+        if type(extension["schema_version"]) is not int or extension[
+            "schema_version"
+        ] not in (1, CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION):
             raise ValueError("unsupported correlator schema version")
         path = extension["path"]
         if not isinstance(path, str):
@@ -345,7 +446,7 @@ def load_correlator_catalogue(backend: Any) -> CorrelatorCatalogue:
         payload = json.loads(confined_path(artifact, path).read_text())
         if (
             type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 1
+            or payload["schema_version"] != extension["schema_version"]
             or payload["complete_source_basis"] is not True
         ):
             raise ValueError("correlations require a complete source basis")
@@ -385,6 +486,7 @@ def load_correlator_catalogue(backend: Any) -> CorrelatorCatalogue:
         coherent_groups = cast(
             Sequence[Mapping[str, object]], process["coherent_groups"]
         )
+        zero_groups = _zero_groups(process, coherent_groups, payload["schema_version"])
     except (KeyError, TypeError, ValueError, OSError) as exc:
         raise ArtifactError(f"invalid correlator catalogue: {exc}") from exc
     return CorrelatorCatalogue(
@@ -395,6 +497,7 @@ def load_correlator_catalogue(backend: Any) -> CorrelatorCatalogue:
         matrices,
         coherent_groups,
         Fraction(1) if relation is None else relation.factor,
+        zero_groups,
     )
 
 
@@ -417,6 +520,7 @@ class CorrelatorEvaluator:
             catalogue.native_runtime,
             spin_correlated_legs=catalogue.declarations.spin_legs,
             coherent_groups=catalogue.coherent_groups,
+            zero_groups=catalogue.zero_groups,
         )
 
     def _select_executor(self, arithmetic: str) -> CorrelatedExactExecutor:
@@ -430,6 +534,7 @@ class CorrelatorEvaluator:
                 catalogue.native_runtime,
                 spin_correlated_legs=catalogue.declarations.spin_legs,
                 coherent_groups=catalogue.coherent_groups,
+                zero_groups=catalogue.zero_groups,
             )
         return self._double_double_executor
 
@@ -481,7 +586,12 @@ class CorrelatorEvaluator:
             precision=amplitude_precision,
         )
         return self._scaled(
-            _contract(batch, self._matrices[color_correlation], precision=precision),
+            _contract(
+                batch,
+                self._matrices[color_correlation],
+                precision=precision,
+                zero_groups=self._catalogue.zero_groups,
+            ),
             precision,
         )
 
@@ -527,6 +637,7 @@ class CorrelatorEvaluator:
             matrix,
             precision=precision,
             scalar=type(batch.normalization_factor),
+            zero_groups=self._catalogue.zero_groups,
         ).evaluate_graded(batch, precision=precision)
         columns = [
             self._scaled(tuple(point[index] for point in points), precision)
@@ -654,6 +765,7 @@ class CorrelatorEvaluator:
                         self._matrices[identifier],
                         precision=precision,
                         scalar=type(batch.normalization_factor),
+                        zero_groups=self._catalogue.zero_groups,
                     )
                 value = plans[plan_key].evaluate(batch, precision=precision)[0]
                 for label in labels:

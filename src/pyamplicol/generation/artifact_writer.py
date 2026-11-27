@@ -2675,6 +2675,11 @@ def _on_the_fly_execution_summary(
         ) from exc
 
 
+# The helicity-selector companion's view of a primary colour reducer whose
+# per-sector helicity blocks are incomplete; released readers refuse it.
+_RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW = "primary-sparse-local-color-view-v1"
+
+
 def _recurrence_helicity_selector_companion_v2_manifest(
     process: RecurrenceProcessArtifact,
     companion: RecurrenceHelicitySelectorPlanArtifact,
@@ -2761,8 +2766,19 @@ def _recurrence_helicity_selector_companion_v2_manifest(
         "recurrence primary color-contraction component count",
         minimum=1,
     )
+    # A primary that keeps only the (sector, helicity) groups with diagrams (a
+    # colour flow that vanishes for some helicities) is stored expanded with
+    # several helicity components; its local colour view is sparse: one local
+    # group per active owner sector, the colour matrix the union of the
+    # per-component entries (the runtime checks that they agree).
+    sparse_primary_view = (
+        storage == "expanded" and factorization_raw is None and component_count > 1
+    )
     supported_primary_view = (
-        (storage == "expanded" and factorization_raw is None and component_count == 1)
+        sparse_primary_view
+        or (
+            storage == "expanded" and factorization_raw is None and component_count == 1
+        )
         or (
             storage == "repeated"
             and factorization_kind
@@ -2776,23 +2792,33 @@ def _recurrence_helicity_selector_companion_v2_manifest(
     if not supported_primary_view:
         raise ValueError(
             "recurrence helicity-selector primary local-color view requires a "
-            "direct, Walsh, or symmetric-group Fourier reducer; the primary "
-            f"reducer is stored {storage!r} with {component_count} components "
-            f"and {primary_color.get('group_count')!r} groups (a colour sector "
-            "whose helicity block is incomplete, as when a flow vanishes for "
-            "some helicities only, has no local-color view)"
+            "direct, sparse, Walsh, or symmetric-group Fourier reducer; the "
+            f"primary reducer is stored {storage!r} with {component_count} "
+            f"components and {primary_color.get('group_count')!r} groups"
         )
     group_count = _nonnegative_integer(
         primary_color.get("group_count"),
         "recurrence primary color-contraction group count",
         minimum=1,
     )
-    if group_count % component_count:
-        raise ValueError(
-            "recurrence primary color-contraction groups do not form complete "
-            "local component blocks"
+    if sparse_primary_view:
+        local_group_count = _nonnegative_integer(
+            primary_color.get("active_sector_count"),
+            "recurrence primary color-contraction active sector count",
+            minimum=1,
         )
-    local_group_count = group_count // component_count
+        if group_count < local_group_count:
+            raise ValueError(
+                "recurrence primary color-contraction has fewer groups than "
+                "active sectors"
+            )
+    else:
+        if group_count % component_count:
+            raise ValueError(
+                "recurrence primary color-contraction groups do not form complete "
+                "local component blocks"
+            )
+        local_group_count = group_count // component_count
     physical_destination_count = _nonnegative_integer(
         companion.physical_destination_count,
         "recurrence helicity-selector physical destination count",
@@ -2906,7 +2932,11 @@ def _recurrence_helicity_selector_companion_v2_manifest(
         "plan": plan,
         "color_contraction": {
             "source": "primary",
-            "view": "primary-local-color-view-v1",
+            "view": (
+                _RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW
+                if sparse_primary_view
+                else "primary-local-color-view-v1"
+            ),
         },
     }
 
@@ -2914,10 +2944,11 @@ def _recurrence_helicity_selector_companion_v2_manifest(
 def _eager_execution_summary(
     process: EagerPlanV3ProcessArtifact,
 ) -> bytes:
+    manifest = _eager_plan_v3_execution_manifest(process)
     try:
         content = (
             json.dumps(
-                _eager_plan_v3_execution_manifest(process),
+                manifest,
                 ensure_ascii=True,
                 allow_nan=False,
                 separators=(",", ":"),
@@ -3013,16 +3044,19 @@ def _bounded_recurrence_execution_summary(
     color_contraction_record: PayloadRecord | None,
     companion_binding: Mapping[str, object] | None = None,
 ) -> bytes:
+    # A refusal of the manifest itself surfaces with its own message; only the
+    # JSON encoding is reported as such.
+    manifest = _recurrence_execution_manifest(
+        process,
+        schedule_path=schedule_path,
+        binding=binding,
+        color_contraction_record=color_contraction_record,
+        companion_binding=companion_binding,
+    )
     try:
         content = (
             json.dumps(
-                _recurrence_execution_manifest(
-                    process,
-                    schedule_path=schedule_path,
-                    binding=binding,
-                    color_contraction_record=color_contraction_record,
-                    companion_binding=companion_binding,
-                ),
+                manifest,
                 ensure_ascii=True,
                 allow_nan=False,
                 separators=(",", ":"),

@@ -1464,6 +1464,67 @@ impl RecurrenceColorContraction {
         }
     }
 
+    /// Two sectors and four helicity components; sector 1 has a group in
+    /// component 0 only (a flow that vanishes for three helicities). The
+    /// cross entry of component 0 is stored with its groups swapped;
+    /// `conflicting_diagonal` gives component 2 a different diagonal entry.
+    #[cfg(test)]
+    pub(crate) fn expanded_incomplete_helicity_blocks_for_runtime_test(
+        conflicting_diagonal: bool,
+    ) -> Self {
+        let entry =
+            |left_group_id, right_group_id, weight_re: f64, weight_im: f64, symmetry_factor| {
+                RawColorContractionEntry {
+                    left_group_id,
+                    right_group_id,
+                    weight_re,
+                    weight_im,
+                    symmetry_factor,
+                    exact_factor_id: 0,
+                }
+            };
+        let mut entries = vec![
+            entry(0, 0, 9.0, 0.0, 1.0),
+            entry(4, 0, 3.0, 0.5, 2.0),
+            entry(4, 4, 9.0, 0.0, 1.0),
+        ];
+        for group in 1..4 {
+            entries.push(entry(
+                group,
+                group,
+                if conflicting_diagonal && group == 2 {
+                    8.0
+                } else {
+                    9.0
+                },
+                0.0,
+                1.0,
+            ));
+        }
+        Self {
+            accuracy: RecurrenceColorAccuracy::Full,
+            storage: RecurrenceColorStorage::Expanded,
+            includes_color_factor: true,
+            group_count: 5,
+            sector_count: 2,
+            component_count: 4,
+            local_group_count: 5,
+            destination_count: 5,
+            stored_entry_count: entries.len(),
+            stored_logical_entry_count: entries.len(),
+            entries,
+            exact_factors: vec![ExactComplexRational::ONE],
+            ordered_group_ids: vec![0, 1, 2, 3, 4],
+            destination_by_group: vec![0, 1, 2, 3, 4],
+            sector_by_group: vec![0, 0, 0, 0, 1],
+            component_by_group: vec![0, 1, 2, 3, 0],
+            owner_by_sector: vec![0, 1],
+            ordered_destination_ids: vec![0, 1, 2, 3, 4],
+            factorization: None,
+            runtime_reducer: None,
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn symmetric_group_s3_for_runtime_test(
         destination_by_group: Vec<u32>,
