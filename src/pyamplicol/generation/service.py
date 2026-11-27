@@ -5727,12 +5727,10 @@ class GenerationBackend:
     def _builtin_partly_cut_request(
         self,
         request: ProcessRequest,
-        kept: Sequence[CanonicalProcessIR],
     ) -> _RequestWithoutTreeDiagram | None:
-        """For a built-in request whose kept members have no Born: the members
-        the quark-line cut removed, with the kept ones, as the candidates of
-        the decision (``_filter_refusal``); None without a cut or when it
-        removed none."""
+        """For a built-in request whose kept members have no Born: every
+        member without the quark-line cut, as the candidates of the decision
+        (``_filter_refusal``); None without a cut or when it removed none."""
 
         limit = self._max_quark_pairs
         if limit is None:
@@ -5740,12 +5738,10 @@ class GenerationBackend:
         uncut, lines = self._builtin_uncut_processes(
             self._builtin_expanded_request(request)
         )
-        kept_processes = {process.process for process in kept}
-        removed = [
-            count
-            for process, count in zip(uncut, lines, strict=True)
-            if process.process not in kept_processes
-        ]
+        # The cut removes the members with more quark lines than it allows
+        # (by their enumerated counts, not by the members missing from those
+        # kept: one may be a side permutation of a kept member).
+        removed = [count for count in lines if count > limit]
         if not removed:
             return None
         counted = " or ".join(str(count) for count in sorted(set(removed)))
@@ -5842,7 +5838,30 @@ class GenerationBackend:
             if name not in explicit
         }
 
-        color_plans: dict[int, GenericColorPlan] = {}
+        # Caches of this call, keyed by the identity of a process and holding
+        # the process itself: an entry keeps its key's object alive, so no
+        # other process of the call (the members a cut removed are built for
+        # one request and dropped after it) can reuse that identity.
+        color_plans: dict[int, tuple[CanonicalProcessIR, GenericColorPlan]] = {}
+        all_totals: dict[
+            int, tuple[CanonicalProcessIR, tuple[dict[str, int], ...]]
+        ] = {}
+
+        def color_plan(process: CanonicalProcessIR) -> GenericColorPlan:
+            assert model is not None
+            found = color_plans.get(id(process))
+            if found is None or found[0] is not process:
+                found = color_plans[id(process)] = (
+                    process,
+                    build_color_plan(
+                        process,
+                        color_accuracy=self._color_accuracy,
+                        fold_trace_reflections=(
+                            model.lc_trace_reflection_equivalence_is_proven(process)
+                        ),
+                    ),
+                )
+            return found[1]
 
         def has_diagram(
             process: CanonicalProcessIR, limits: Mapping[str, int] | None
@@ -5854,17 +5873,11 @@ class GenerationBackend:
                         process, model=model, max_coupling_orders=limits
                     )
                 )
-            plan = color_plans.get(id(process))
-            if plan is None:
-                plan = color_plans[id(process)] = build_color_plan(
-                    process,
-                    color_accuracy=self._color_accuracy,
-                    fold_trace_reflections=(
-                        model.lc_trace_reflection_equivalence_is_proven(process)
-                    ),
-                )
             return has_model_supported_amplitudes(
-                process, model=model, color_plan=plan, max_coupling_orders=limits
+                process,
+                model=model,
+                color_plan=color_plan(process),
+                max_coupling_orders=limits,
             )
 
         requests: dict[str, ProcessRequest] = {}
@@ -5880,37 +5893,40 @@ class GenerationBackend:
                 supported.add(source.name)
             else:
                 members.setdefault(source.name, []).append(entry.process_ir)
-        all_totals: dict[int, tuple[dict[str, int], ...]] = {}
 
         def totals(process: CanonicalProcessIR) -> tuple[dict[str, int], ...]:
             """The total coupling orders of every tree-level closure, without
             limits (the sweep ``has_diagram`` runs within them)."""
 
             assert model is not None
-            cached = all_totals.get(id(process))
-            if cached is None:
+            found = all_totals.get(id(process))
+            if found is None or found[0] is not process:
                 if self._on_the_fly_execution_enabled:
                     raw: Iterable[CouplingOrders] = process_born_amplitude_orders(
                         process, model=model, max_coupling_orders=None
                     )
                 else:
-                    plan = color_plans.get(id(process))
-                    if plan is None:
-                        plan = color_plans[id(process)] = build_color_plan(
-                            process,
-                            color_accuracy=self._color_accuracy,
-                            fold_trace_reflections=(
-                                model.lc_trace_reflection_equivalence_is_proven(process)
-                            ),
-                        )
                     raw = _closure_totals_from_color_plan(
-                        process, model=model, color_plan=plan
+                        process, model=model, color_plan=color_plan(process)
                     )
-                cached = all_totals[id(process)] = tuple(
-                    {str(name).upper(): int(value) for name, value in total}
-                    for total in raw
+                found = all_totals[id(process)] = (
+                    process,
+                    tuple(
+                        {str(name).upper(): int(value) for name, value in total}
+                        for total in raw
+                    ),
                 )
-            return cached
+            return found[1]
+
+        def limits_for(changes: Mapping[str, int]) -> dict[str, int]:
+            """The limits of the same request with the explicit limits
+            ``changes`` stated in addition (as a user states them: an
+            explicit limit replaces the expansion-order cap of its order)."""
+
+            assert model is not None
+            return request_coupling_order_limits(
+                {**explicit, **changes}, model, policy=self._coupling_order_policy
+            )
 
         def decide(
             expression: str,
@@ -5926,6 +5942,7 @@ class GenerationBackend:
                 explicit=explicit,
                 caps=caps,
                 bounds=bounds,
+                limits_for=limits_for,
             )
 
         refused: dict[str, _RequestWithoutTreeDiagram] = {}
@@ -5940,7 +5957,7 @@ class GenerationBackend:
                 kept = members.get(name, ())
                 # The members the built-in quark-line cut removed count too.
                 partly_cut = (
-                    self._builtin_partly_cut_request(request, kept)
+                    self._builtin_partly_cut_request(request)
                     if builtin_selection and model is not None
                     else None
                 )
@@ -5970,6 +5987,7 @@ class GenerationBackend:
         explicit: Mapping[str, int],
         caps: Mapping[str, int],
         bounds: Mapping[str, int],
+        limits_for: Callable[[Mapping[str, int]], Mapping[str, int]],
     ) -> _RequestWithoutTreeDiagram:
         """Which settings leave a request without a Born, from the total
         coupling orders of its tree-level closures (``totals``, the sweep that
@@ -5977,10 +5995,12 @@ class GenerationBackend:
         quark-line cut (``cut``: its removal and every concrete process of
         the request without it), of all its members. Without any closure,
         none (``NoTreeDiagramError``; the cut is mentioned as also excluding
-        it). Else the fewest changes that admit a closure: relaxing the cut
-        and raising named bounds (explicit limits or expansion-order caps) to
-        the orders of that closure, each change confirmed by the same check
-        on the changed limits before it is named."""
+        it). Else every active bound is named and so are the fewest changes
+        that admit a closure: relaxing the cut and stating higher limits for
+        named orders (raising an explicit limit, or replacing an
+        expansion-order cap), each change confirmed by the same check on the
+        limits the request has with that change stated as a user states it
+        (``limits_for``) before it is named."""
 
         uncut = tuple(cut.uncut) if cut is not None else ()
         options: dict[tuple[bool, tuple[tuple[str, int], ...]], int] = {}
@@ -6003,7 +6023,7 @@ class GenerationBackend:
 
         def confirmed(option: tuple[bool, tuple[tuple[str, int], ...]]) -> bool:
             with_cut, raised = option
-            limits = {**bounds, **dict(raised)}
+            limits = limits_for(dict(raised))
             processes = uncut if with_cut else tuple(kept)
             return any(has_diagram(process, limits or None) for process in processes)
 
@@ -6014,7 +6034,11 @@ class GenerationBackend:
                 for option, changes in options.items()
                 if changes == fewest and changes > 0 and confirmed(option)
             ),
-            key=lambda option: (option[0], [value for _, value in option[1]]),
+            key=lambda option: (
+                option[0],
+                [value for _, value in option[1]],
+                [name for name, _ in option[1]],
+            ),
         )
         # One raise per set of orders: the lowest.
         unique: dict[
@@ -6027,64 +6051,71 @@ class GenerationBackend:
         def listed(limits: Mapping[str, int]) -> str:
             return " ".join(f"{name}<={value}" for name, value in limits.items())
 
-        if not chosen:
-            # No checked change serves it: say what removes it, promise nothing.
-            within = []
-            if explicit:
-                within.append(f"process.max_coupling_orders ({listed(explicit)})")
-            if caps:
-                within.append(f"the model's expansion orders ({listed(caps)})")
-            return _RequestWithoutTreeDiagram(
-                expression,
-                f"process {expression!r} has tree-level diagrams, but none within "
-                + " and ".join(within or ["its settings"])
-                + ", so there is nothing to generate; no checked change of these "
-                "settings serves it.",
-                settings=tuple(
-                    name
-                    for name, present in (
-                        ("process.max_quark_lines", cut is not None),
-                        ("process.max_coupling_orders", bool(explicit or caps)),
-                    )
-                    if present
-                ),
-            )
-        with_cut, raised_orders = chosen[0]
-        orders = [name for name, _ in raised_orders]
+        # Every active bound: a closure needs all of them to admit it.
         within = []
-        named_explicit = {name: explicit[name] for name in orders if name in explicit}
-        named_caps = {name: caps[name] for name in orders if name in caps}
-        if named_explicit:
-            within.append(f"process.max_coupling_orders ({listed(named_explicit)})")
-        if named_caps:
+        if explicit:
             within.append(
-                f"the model's expansion orders ({listed(named_caps)}), which the "
+                f"the coupling-order limits {listed(dict(sorted(explicit.items())))}"
+            )
+        if caps:
+            within.append(
+                f"the model's expansion orders ({listed(caps)}), which the "
                 "minimal coupling-order policy applies to the orders the request "
                 "leaves open"
             )
-        if with_cut:
-            assert cut is not None
+        within_text = " and ".join(within)
+        settings_named = tuple(
+            name
+            for name, present in (
+                ("process.max_quark_lines", cut is not None),
+                ("process.max_coupling_orders", bool(explicit or caps)),
+            )
+            if present
+        )
+        if cut is not None and any(option[0] for option in chosen):
+            # Relaxing the cut is part of the remedy: say what it removes.
             text = str(cut.reason)
-            if within:
+            if within and (True, ()) not in options:
                 text += (
                     ", and without the cut none has one within "
-                    + " and ".join(within)
+                    + within_text
                     + " either"
                 )
         else:
             text = (
                 f"process {expression!r} has tree-level diagrams, but none within "
-                + " and ".join(within)
+                + (within_text or "its settings")
+            )
+            if cut is not None and not chosen:
+                text += f" with {cut.cut}"
+        if not chosen:
+            # No checked change serves it: say what removes it, promise nothing.
+            return _RequestWithoutTreeDiagram(
+                expression,
+                text + ", so there is nothing to generate; no checked change of "
+                "these settings serves it.",
+                settings=settings_named,
             )
 
         def remedy(option: tuple[bool, tuple[tuple[str, int], ...]]) -> str:
             changes = []
             if option[0]:
                 changes.append("relaxing process.max_quark_lines")
-            if option[1]:
+            raised_explicit = {
+                name: value for name, value in option[1] if name in explicit
+            }
+            raised_caps = {name: value for name, value in option[1] if name in caps}
+            if raised_explicit:
                 changes.append(
-                    f"an explicit limit {listed(dict(option[1]))} in "
-                    "process.max_coupling_orders"
+                    "raising the limit "
+                    + listed({name: explicit[name] for name in raised_explicit})
+                    + f" to {listed(raised_explicit)}"
+                )
+            if raised_caps:
+                changes.append(
+                    f"stating the limit {listed(raised_caps)}, which replaces "
+                    "the expansion order "
+                    + listed({name: caps[name] for name in raised_caps})
                 )
             return " together with ".join(changes)
 
@@ -6092,8 +6123,15 @@ class GenerationBackend:
             remedy(option) for option in chosen
         )
         text += " serves the request"
-        if fewest > 1:
-            text += " (any smaller change does not)"
+        example = next((option[1][0] for option in chosen if option[1]), None)
+        if example is not None:
+            # A limit is stated once: in the run card (or the option, the
+            # Python configuration) or as an annotation of the process.
+            text += (
+                "; a limit is stated in process.max_coupling_orders or as the "
+                f"MG5_aMC annotation of the process ({example[0]}={example[1]}), "
+                "not in both: change a stated limit where it is stated"
+            )
         settings = []
         if any(option[0] for option in chosen):
             settings.append("process.max_quark_lines")

@@ -85,6 +85,12 @@ def _refusal(
 
 
 ANY = "has no tree-level Feynman diagram at any coupling order"
+# Where a raised coupling-order limit goes (the refusal's last sentence).
+WHERE = (
+    "; a limit is stated in process.max_coupling_orders or as the MG5_aMC "
+    "annotation of the process ({}), not in both: change a stated limit where it "
+    "is stated."
+)
 # (request, process, reason in the message or None, loop hint)
 BUILT_IN = (
     ("a a > a a", "a a > a a", None, True),
@@ -207,7 +213,7 @@ def test_a_coupling_order_limit_is_named_not_a_missing_diagram(
     message = str(error)
     assert message.startswith(
         f"request filter: process {process!r} has tree-level diagrams, but none "
-        f"within process.max_coupling_orders ({limit})"
+        f"within the coupling-order limits {limit}"
     )
     assert LOOP not in message
     assert error.settings == ("process.max_coupling_orders",)
@@ -222,7 +228,7 @@ def test_a_coupling_order_limit_relaxed_serves_the_request(tmp_path: Path) -> No
         error=RequestFilterError,
     )
     assert str(error).endswith(
-        "an explicit limit QCD<=2 in process.max_coupling_orders serves the request."
+        "raising the limit QCD<=0 to QCD<=2 serves the request" + WHERE.format("QCD=2")
     )
     _generator("recurrence").generate(
         ["b g > b g QCD=2"], tmp_path / "relaxed", model=ModelSource.built_in_sm()
@@ -251,12 +257,11 @@ def test_two_settings_that_each_empty_the_request(tmp_path: Path) -> None:
         "request filter: no valid processes found for 'b g > b g': "
         "process.max_quark_lines = 0 removes every concrete process of the "
         "request (they have 1 quark line), and without the cut none has one "
-        "within process.max_coupling_orders (QCD<=0) either"
+        "within the coupling-order limits QCD<=0 either"
     )
     assert message.endswith(
-        "relaxing process.max_quark_lines together with an explicit limit "
-        "QCD<=2 in process.max_coupling_orders serves the request (any smaller "
-        "change does not)."
+        "relaxing process.max_quark_lines together with raising the limit QCD<=0 "
+        "to QCD<=2 serves the request" + WHERE.format("QCD=2")
     )
     assert LOOP not in message
     assert error.settings == ("process.max_quark_lines", "process.max_coupling_orders")
@@ -374,9 +379,9 @@ def test_two_filters_that_each_remove_part_of_a_label(tmp_path: Path) -> None:
     )
     message = (
         "request filter: process 'x x > w+ w-' has tree-level diagrams, but none "
-        "within process.max_coupling_orders (QED<=1), so there is nothing to "
-        "generate; an explicit limit QED<=2 in process.max_coupling_orders serves "
-        "the request."
+        "within the coupling-order limits QED<=1, so there is nothing to "
+        "generate; raising the limit QED<=1 to QED<=2 serves the request"
+        + WHERE.format("QED=2")
     )
     error = _refusal(
         model,
@@ -415,7 +420,7 @@ def test_two_filters_that_each_remove_part_of_a_label(tmp_path: Path) -> None:
             "x x > b g QCD=0",
             RequestFilterError,
             "request filter: process 'x x > b g' has tree-level diagrams, but none "
-            "within process.max_coupling_orders (QCD<=0)",
+            "within the coupling-order limits QCD<=0",
         ),
         (
             ("u", "u~"),
@@ -496,13 +501,13 @@ UFO = (
         "a a > b~ b QED=1",
         RequestFilterError,
         "request filter: process 'a a > b~ b' has tree-level diagrams, but none "
-        "within process.max_coupling_orders (QED<=1)",
+        "within the coupling-order limits QED<=1",
     ),
     (
         "b g > b g QCD=0",
         RequestFilterError,
         "request filter: process 'b g > b g' has tree-level diagrams, but none "
-        "within process.max_coupling_orders (QCD<=0)",
+        "within the coupling-order limits QCD<=0",
     ),
 )
 _UFO_LOOP_HINT = {"a a > a a", "a a > z h"}
@@ -534,3 +539,148 @@ def test_ufo_compiled_lane_names_the_quark_line_cut(
     message = str(caught.value)
     assert "process.max_quark_lines = 1 removes it (it has 2 quark lines)" in message
     assert LOOP not in message
+
+
+# Every change a refusal states, applied as the message says: a raised limit
+# where the limit is stated (the MG5_aMC annotation of the process, or
+# process.max_coupling_orders), the other limits kept. The message names every
+# active bound, not only those a remedy raises.
+def _stated_changes(message: str) -> list[dict[str, int]]:
+    """The coupling-order changes of each remedy of a refusal message."""
+
+    remedies = message.split(", so there is nothing to generate; ", 1)[1]
+    remedies = remedies.split(" serves the request", 1)[0]
+    changes = []
+    for remedy in remedies.split(" or "):
+        raised: dict[str, int] = {}
+        for change in remedy.split(" together with "):
+            assert change.startswith("raising the limit "), change
+            for limit in change.split(" to ", 1)[1].split():
+                name, value = limit.split("<=")
+                raised[name] = int(value)
+        changes.append(raised)
+    return changes
+
+
+def _stated(
+    process: str, limits: dict[str, int], inline: tuple[str, ...]
+) -> tuple[str, ProcessConfig]:
+    """The request with the orders ``inline`` as annotations of the process
+    and the other limits in process.max_coupling_orders."""
+
+    annotations = " ".join(f"{name}={limits[name]}" for name in inline)
+    card = {name: value for name, value in limits.items() if name not in inline}
+    return (
+        f"{process} {annotations}".strip(),
+        ProcessConfig(coupling_order_policy="explicit", max_coupling_orders=card),
+    )
+
+
+@pytest.mark.parametrize(
+    ("process", "limits", "inline", "remedies"),
+    [
+        ("b g > b g", {"QCD": 0}, ("QCD",), [{"QCD": 2}]),
+        ("b g > b g", {"QCD": 0}, (), [{"QCD": 2}]),
+        ("u u~ > d d~", {"QCD": 0, "QED": 0}, ("QCD", "QED"), [{"QCD": 2}, {"QED": 2}]),
+        ("u u~ > d d~", {"QCD": 0, "QED": 0}, (), [{"QCD": 2}, {"QED": 2}]),
+        ("u u~ > d d~", {"QCD": 0, "QED": 0}, ("QCD",), [{"QCD": 2}, {"QED": 2}]),
+    ],
+    ids=["annotation", "card", "two annotations", "two card limits", "one of each"],
+)
+def test_each_stated_remedy_applied_where_the_limit_is_stated_generates(
+    process: str,
+    limits: dict[str, int],
+    inline: tuple[str, ...],
+    remedies: list[dict[str, int]],
+    tmp_path: Path,
+) -> None:
+    model = ModelSource.built_in_sm()
+    request, config = _stated(process, limits, inline)
+    error = _refusal(
+        model, request, "compiled", tmp_path, error=RequestFilterError, process=config
+    )
+    message = str(error)
+    bounds = " ".join(f"{name}<={value}" for name, value in sorted(limits.items()))
+    assert message.startswith(
+        f"request filter: process {process!r} has tree-level diagrams, but none "
+        f"within the coupling-order limits {bounds}, so there is nothing to generate"
+    )
+    assert "smaller change" not in message
+    assert _stated_changes(message) == remedies
+    for index, change in enumerate(remedies):
+        request, config = _stated(process, {**limits, **change}, inline)
+        _generator("compiled", process=config).generate(
+            [request], tmp_path / f"remedy-{index}", model=model
+        )
+
+
+# A batch is refused as each of its requests alone: the diagnosis of one
+# request never depends on the others of the call (their processes, built for
+# the diagnosis and dropped after it, included).
+BATCH = tuple(
+    f"x x > {final}"
+    for final in ("z z", "h h", "a z", "a a", "z h", "h a", "g g", "g a", "g z", "g h")
+)
+
+
+def _classified(
+    generator: Generator, requests: list[str]
+) -> tuple[dict[str, str], str]:
+    """Each request's refusal kind (``filter`` or ``no diagram``) in one plan
+    of ``requests``, and the refusal message."""
+
+    with pytest.raises((RequestFilterError, NoTreeDiagramError)) as caught:
+        generator.plan(requests, model=ModelSource.built_in_sm())
+    error = caught.value
+    filtered = set(error.processes) if isinstance(error, RequestFilterError) else set()
+    return (
+        {
+            request: "filter" if request in filtered else "no diagram"
+            for request in requests
+        },
+        str(error),
+    )
+
+
+@pytest.mark.parametrize("lane", LANES)
+def test_a_batch_is_refused_as_its_requests_alone(lane: str) -> None:
+    import random
+
+    generator = _generator(lane, process=_label(("a", "u", "u~"), max_quark_lines=0))
+    alone: dict[str, str] = {}
+    messages: dict[str, str] = {}
+    for request in BATCH:
+        kind, message = _classified(generator, [request])
+        alone.update(kind)
+        messages[request] = message
+    assert alone["x x > z z"] == "filter" and alone["x x > h h"] == "no diagram"
+    order = list(BATCH)
+    for seed in range(3):
+        random.Random(seed).shuffle(order)
+        batch, message = _classified(generator, order)
+        assert batch == alone, order
+        for request in order:
+            if alone[request] == "filter":
+                # Its own diagnosis, word for word.
+                assert messages[request].removeprefix("request filter: ") in message
+
+
+@pytest.mark.parametrize("lane", ("on-the-fly", "compiled"))
+def test_a_batch_of_26_labels_is_refused_as_each_alone(lane: str) -> None:
+    # 26 labels [a, u, u~] alternating x x > z z (filtered: the cut removes the
+    # quark members with a Born) and x x > h h (no Born at any order).
+    import string
+
+    labels = {f"lab{letter}": ("a", "u", "u~") for letter in string.ascii_lowercase}
+    generator = _generator(
+        lane, process=ProcessConfig(max_quark_lines=0, multiparticles=labels)
+    )
+    for shift in range(2):
+        requests = [
+            f"{label} {label} > " + ("z z" if (index + shift) % 2 else "h h")
+            for index, label in enumerate(labels)
+        ]
+        kind, _ = _classified(generator, requests)
+        assert {request for request, value in kind.items() if value == "filter"} == {
+            request for request in requests if request.endswith("> z z")
+        }

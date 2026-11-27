@@ -101,6 +101,17 @@ def _config(orders: dict[str, int] | None) -> RunConfig:
     )
 
 
+_WHERE = (
+    "; a limit is stated in process.max_coupling_orders or as the MG5_aMC "
+    "annotation of the process ({}), not in both: change a stated limit where it "
+    "is stated."
+)
+_NP2 = (
+    "stating the limit NP<=2, which replaces the expansion order NP<=1 serves the "
+    "request" + _WHERE.format("NP=2")
+)
+
+
 _DIPOLE = CorrelatorConfig(color_correlations=(ColorCorrelator.dipole("T12", 1, 2),))
 
 
@@ -118,9 +129,7 @@ def test_the_default_policy_stays_within_the_expansion_order(
         "request filter: process 'd d~ > vm vm~' has tree-level diagrams, but none "
         "within the model's expansion orders (NP<=1)"
     )
-    assert message.endswith(
-        "an explicit limit NP<=2 in process.max_coupling_orders serves the request."
-    )
+    assert message.endswith(_NP2)
     assert "loop-induced" not in message
     assert caught.value.settings == ("process.max_coupling_orders",)
 
@@ -131,7 +140,7 @@ def test_a_named_limit_decides(
 ) -> None:
     extra = {"correlators": _DIPOLE} if correlated else {}
     with pytest.raises(
-        RequestFilterError, match=r"none within process\.max_coupling_orders \(NP<=1\)"
+        RequestFilterError, match=r"none within the coupling-order limits NP<=1,"
     ):
         Generator(_config({"NP": 1})).generate(
             "d d~ > vm vm~", tmp_path / "np1", model=np_model, **extra
@@ -154,13 +163,13 @@ def test_an_explicit_limit_and_an_expansion_order_that_each_empty_it(
     with pytest.raises(RequestFilterError) as caught:
         Generator(minimal).generate("d d~ > vm vm~", tmp_path / "both", model=np_model)
     message = str(caught.value)
-    assert "none within process.max_coupling_orders (QED<=1) and the model's " in (
-        message
-    )
+    assert "none within the coupling-order limits QED<=1 and the model's " in message
     assert message.endswith(
-        "an explicit limit NP<=2 QED<=2 in process.max_coupling_orders serves the "
-        "request (any smaller change does not)."
+        "raising the limit QED<=1 to QED<=2 together with stating the limit NP<=2, "
+        "which replaces the expansion order NP<=1 serves the request"
+        + _WHERE.format("NP=2")
     )
+    assert "smaller change" not in message
     assert caught.value.settings == ("process.max_coupling_orders",)
     # Relaxing the expansion order alone (explicit policy, QED <= 1 kept).
     with pytest.raises(RequestFilterError) as caught:
@@ -192,9 +201,9 @@ def test_an_explicit_limit_at_the_expansion_order_is_named_with_its_remedy(
         Generator(minimal).generate("d d~ > vm vm~", tmp_path / "np1", model=np_model)
     assert str(caught.value) == (
         "request filter: process 'd d~ > vm vm~' has tree-level diagrams, but none "
-        "within process.max_coupling_orders (NP<=1), so there is nothing to "
-        "generate; an explicit limit NP<=2 in process.max_coupling_orders serves "
-        "the request."
+        "within the coupling-order limits NP<=1 QCD<=0 QED<=2, so there is nothing "
+        "to generate; raising the limit NP<=1 to NP<=2 serves the request"
+        + _WHERE.format("NP=2")
     )
     remedy = replace(
         _config(None), process=ProcessConfig(max_coupling_orders={**limits, "NP": 2})
@@ -210,9 +219,7 @@ def test_an_expansion_order_on_a_label(np_model: ModelSource, tmp_path: Path) ->
     with pytest.raises(RequestFilterError) as caught:
         Generator(down).generate("x x > vm vm~", tmp_path / "down", model=np_model)
     assert "none within the model's expansion orders (NP<=1)" in str(caught.value)
-    assert str(caught.value).endswith(
-        "an explicit limit NP<=2 in process.max_coupling_orders serves the request."
-    )
+    assert str(caught.value).endswith(_NP2)
     # With an up-type member whose Z coupling carries no NP, it is served.
     mixed = replace(
         _config(None),
@@ -370,3 +377,26 @@ def test_a_loop_induced_request_stays_within_the_expansion_order(
     ]
     value = Runtime.load(artifact, process="gg_aa").evaluate(momenta, mu_r2=[8315.0])
     assert value.values[0][0].finite > 0.0
+
+
+@pytest.mark.parametrize("stated", ("card", "annotation"))
+def test_the_limit_stated_for_an_expansion_order_generates_where_stated(
+    np_model: ModelSource, tmp_path: Path, stated: str
+) -> None:
+    # The refusal asks for an NP limit, which replaces the expansion order:
+    # stated in process.max_coupling_orders or as the annotation NP=2.
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(_config(None)).generate(
+            "d d~ > vm vm~", tmp_path / "refused", model=np_model
+        )
+    assert str(caught.value).endswith(_NP2)
+    if stated == "card":
+        config = replace(
+            _config(None), process=ProcessConfig(max_coupling_orders={"NP": 2})
+        )
+        request = "d d~ > vm vm~"
+    else:
+        config, request = _config(None), "d d~ > vm vm~ NP=2"
+    Generator(config).generate(request, tmp_path / stated, model=np_model)
+    value = complex(Runtime.load(tmp_path / stated).evaluate(_POINTS)[0])
+    assert value.real > 0.0
