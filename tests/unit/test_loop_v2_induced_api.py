@@ -741,10 +741,7 @@ def test_reduction_finiteness_and_estimates_on_the_public_route(shipped):
         assert abs(sector.single_pole) <= 10 * error.single_pole
         assert abs(sector.double_pole) <= 10 * error.double_pole
         assert estimate.single_pole == error.single_pole / size.single_pole
-        # E / S: the checks and the floor, whose first-order term is at most
-        # 2 BILINEAR_FLOOR_UNITS u of S where nothing cancels (5.8e-11; the
-        # bound was 1e-13 under the floor 16 u S).
-        assert estimate.scale <= 1e-10 and size.finite >= abs(sector.finite)
+        assert estimate.scale <= 1e-13 and size.finite >= abs(sector.finite)
     finite_only = shipped.evaluate(
         points, mu_r2=scales, poles="none", stability_checks=checks
     )

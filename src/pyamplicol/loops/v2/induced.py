@@ -1451,10 +1451,9 @@ def floor(evaluation: Any) -> dict:
     against the computed amplitude's sizes N_{l,h} (``row_values``),
     sum_pairs kappa sum_h sum_{i+j=k} (eps1 (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
     N_{l',h,j}) + eps2^2 S_{l,h,i} S_{l',h,j}) / avg, eps1 =
-    BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u (``floor_kernel``); the
-    estimate uses it only when the rescaled reduction check ran
-    (``StabilityEstimate.from_checks``). An amplitude whose terms cancel by a factor r gets
-    a floor linear in r, as its roundings are (the product of the two
+    BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u (``floor_kernel``). An
+    amplitude whose terms cancel by a factor r gets a floor linear in r, as
+    its roundings are (the product of the two
     sides' term floors, ``scale``, grows like r^2); a numerical zero (N ~ u
     S) keeps the second-order term. A key with a value and no term floor
     (or the reverse) counts with a zero for the missing part."""

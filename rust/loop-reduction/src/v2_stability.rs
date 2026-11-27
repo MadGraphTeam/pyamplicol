@@ -34,7 +34,7 @@ pub const SAFETY: f64 = 2.0;
 pub const FLOOR_UNITS: f64 = 16.0;
 /// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
 /// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
-pub const BILINEAR_FLOOR_UNITS: f64 = 262144.0;
+pub const BILINEAR_FLOOR_UNITS: f64 = 16384.0;
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
@@ -825,8 +825,8 @@ pub struct Estimate {
     /// Each requested check that did not run, with its reason.
     pub not_run: Vec<(String, String)>,
     /// The absolute floor per sector and Laurent coefficient of a
-    /// loop-induced output, in place of FLOOR_UNITS u S when the rescaled
-    /// reduction check is among the budgets (`StabilityEstimate.floor`).
+    /// loop-induced output, in place of FLOOR_UNITS u S
+    /// (`StabilityEstimate.floor`).
     pub floor: Option<Budget>,
 }
 
@@ -846,10 +846,7 @@ impl Estimate {
 
     /// [`Estimate::from_checks`] with the absolute floor `floor` per sector
     /// and Laurent coefficient of a loop-induced output, used in place of
-    /// FLOOR_UNITS u S when the rescaled reduction check is among `budgets`
-    /// (`StabilityEstimate.from_checks`' `floor`: a rotation cannot see an
-    /// error in a rotation-invariant quantity, so without the rescaled
-    /// check the conservative FLOOR_UNITS u S stays).
+    /// FLOOR_UNITS u S (`StabilityEstimate.from_checks`' `floor`).
     pub fn from_checks_floor(
         reference: &Budget,
         budgets: Vec<(String, Budget)>,
@@ -870,11 +867,6 @@ impl Estimate {
             return Err(invalid(format!("unknown stability checks {unknown:?}")));
         }
         let additive = |name: &str| ADDITIVE.contains(&name);
-        let linear = if budgets.iter().any(|(name, _)| name == RESCALED) {
-            floor.as_ref()
-        } else {
-            None
-        };
         let at = |budget: &Budget, sector: usize, k: usize| -> RusticolResult<f64> {
             budget
                 .get(sector)
@@ -897,7 +889,7 @@ impl Estimate {
                     }
                 }
                 let sampled = rotated.unwrap_or(0.0) + reductions;
-                let bottom = match linear {
+                let bottom = match &floor {
                     None => FLOOR_UNITS * roundoff * at(&scale, sector, k)?,
                     Some(floor) => at(floor, sector, k)?,
                 };
@@ -1542,36 +1534,6 @@ pub fn floor_kernel(roundoff: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
     move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| {
         first * (x * t + s * y) + second * (second * s * t)
     }
-}
-
-/// The floor of one loop-induced output (`induced_observables.
-/// PointOutputs.floor`): eps1 (F^T|M||b| + |b|^T|M|F) + eps2 (eps2 F^T|M|F)
-/// per record sector and Laurent coefficient ([`floor_kernel`]'s units;
-/// `InducedShape::magnitude_form` of the term floors F and the output's
-/// absolute vectors b).
-pub fn output_floor(
-    shape: &InducedShape,
-    magnitude: &[f64],
-    floors: &Keyed<ErrorCells>,
-    values: &Keyed<ErrorCells>,
-    roundoff: f64,
-) -> Budget {
-    let (one, two) = (BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff);
-    let first = shape.magnitude_form(magnitude, floors, values);
-    let second = shape.magnitude_form(magnitude, values, floors);
-    let third = shape.magnitude_form(magnitude, floors, floors);
-    first
-        .iter()
-        .zip(&second)
-        .zip(&third)
-        .map(|((a, b), c)| {
-            a.iter()
-                .zip(b)
-                .zip(c)
-                .map(|((a, b), c)| one * (a + b) + two * (two * c))
-                .collect()
-        })
-        .collect()
 }
 
 #[cfg(test)]

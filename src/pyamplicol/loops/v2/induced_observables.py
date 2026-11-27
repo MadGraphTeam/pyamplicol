@@ -1049,9 +1049,7 @@ class PointOutputs:
         ``floor``): the change bound of the form for errors eps F of its
         vectors b (``_perturbed``), eps1 (F^T|M||b| + |b|^T|M|F) + eps2^2
         F^T|M|F with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u:
-        first order in each side's floor (``induced.floor_kernel``); used
-        only when the rescaled reduction check ran
-        (``StabilityEstimate.from_checks``)."""
+        first order in each side's floor (``induced.floor_kernel``)."""
 
         from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS, Budget
 

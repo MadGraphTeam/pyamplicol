@@ -65,24 +65,19 @@ with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u
 the cancellation where the product is quadratic in it. Its first-order
 term models the first-order error of each amplitude that no check samples
 as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound.
-Its unit count is the smallest power of 4 under which, on the measured
-binary64 loop-induced points (``tools/loop_v2_floor_units.py``, the
-derivation fixture in the tests), no point that FLOOR_UNITS u S covered is
-a miss, and at every row's worst covered point E / error is at least the
-smaller of what FLOOR_UNITS u S gave there and the calibration tests'
-x10 margin. No margin beyond that is claimed: on rows whose
-worst points are dominated by the checks (their budgets under-measure the
-error) no unit count gives one, with either floor. The
-second-order term keeps a vanishing value "zero within the estimate". The
-model holds only where the checks sample the rotation-invariant parts of
-the evaluation, so the floor is used only by an estimate to which the
-rescaled reduction check contributed (it re-evaluates the master integrals
-at rescaled inputs). A rotation cannot
-see an error in a rotation-invariant quantity (a master integral, a
-reduction coefficient built from invariants), nor can the cached
-re-reduction see a master's; an estimate of rotations alone, or with the
-cached reduction-direction check, keeps FLOOR_UNITS u S at every carrier,
-the conservative bound.
+It covers what no check samples, including, for an estimate of rotations
+alone, the master integrals' own rounding (a rotation leaves every
+rotation-invariant quantity unchanged; that rounding enters A linearly,
+through the masters' error amplification). Its unit count is measured on
+binary64 loop-induced points of both backends against double-double
+(``tools/loop_v2_floor_units.py``, the derivation fixture in the tests):
+the smallest power of 4 under which every point that FLOOR_UNITS u S
+covered stays within the calibration tests' x10 margin and fewer than 1 in
+10^4 of them exceed E (on rows whose worst points are dominated by the
+checks, whose budgets under-measure the error, no unit count avoids every
+such point). The second-order term keeps a vanishing value "zero within
+the estimate". The fallback guard decides with FLOOR_UNITS u S, the floor
+it was calibrated with (``subset(..., floor=False)``).
 
 In arbitrary precision the sizes of an estimate (budgets, E, S, the unit
 roundoff) are exponent-safe ``loops.v2.wide.Wide`` magnitudes: at the default
@@ -142,16 +137,14 @@ SAFETY = 2
 FLOOR_UNITS = 16
 # The first-order term of a loop-induced output's floor, eps1 (|A| S' + S
 # |A'|) with eps1 = BILINEAR_FLOOR_UNITS u (``induced.floor_kernel``): the
-# unsampled error of an amplitude against its term floor S, where the checks
-# under-measure the reduction's own error. A measured count, not a proven
-# bound: the smallest power of 4 under which, on the binary64 loop-induced
-# points of tests/fixtures/loop/v2/floor_units_li.json (estimates with the
-# rescaled check against double-double), (a) no point the previous floor
-# FLOOR_UNITS u S covered is a miss and (b) at each row's worst covered point
-# E / error is at least min(the previous estimate's there, 10), 10 the
-# calibration tests' ESTIMATE_MARGIN. Its second-order term keeps
-# FLOOR_UNITS.
-BILINEAR_FLOOR_UNITS = 2**18
+# unsampled error of an amplitude against its term floor S. A measured
+# count, not a proven bound: the smallest power of 4 under which, on the
+# binary64 loop-induced points of tests/fixtures/loop/v2/floor_units_li.json
+# (both backends against double-double), every point the previous floor
+# FLOOR_UNITS u S covered stays within the calibration tests' x10 margin
+# (ESTIMATE_MARGIN) and fewer than 1 in 10^4 of them exceed E. Its
+# second-order term keeps FLOOR_UNITS.
+BILINEAR_FLOOR_UNITS = 2**14
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"
@@ -685,8 +678,8 @@ class StabilityEstimate:
     and Laurent coefficient. ``checks`` holds each check's own budget against
     the Laurent vector, without safety factor and floor. ``budgets``
     (absolute, per check and sector), ``scale`` (the absolute sums S) and
-    ``floor`` (a loop-induced output's floor, in place of FLOOR_UNITS u S
-    when the rescaled reduction check is among the budgets) let ``subset`` re-combine fewer checks;
+    ``floor`` (a loop-induced output's floor, in place of FLOOR_UNITS u S)
+    let ``subset`` re-combine fewer checks;
     ``families`` holds |Omega - Omega'| per reduction lane when the
     reduction check ran. ``not_run`` names each
     requested check that did not run at the point with its reason (the
@@ -732,8 +725,7 @@ class StabilityEstimate:
         carrier's unit roundoff; ``not_run`` the requested checks that did
         not run, with their reasons; ``floor`` the absolute floor per sector
         and Laurent coefficient of a loop-induced output, used in place of
-        FLOOR_UNITS u S when the rescaled reduction check is among
-        ``budgets`` (module docstring)."""
+        FLOOR_UNITS u S (module docstring)."""
 
         if not budgets:
             raise ValueError("a stability estimate needs at least one check")
@@ -746,8 +738,6 @@ class StabilityEstimate:
             raise ValueError(f"unknown stability checks {unknown}")
         rotations = [b for name, b in budgets.items() if name not in ADDITIVE]
         reductions = [b for name, b in budgets.items() if name in ADDITIVE]
-        # The first-order floor needs the rescaled check (module docstring).
-        linear = floor if RESCALED in budgets else None
         combined = {}
         for sector, laurent in reference.items():
             width = len(laurent.coefficients)
@@ -764,8 +754,8 @@ class StabilityEstimate:
                     SAFETY * sampled(k)
                     + (
                         FLOOR_UNITS * roundoff * _at(scale[sector], k)
-                        if linear is None
-                        else _at(linear[sector], k)
+                        if floor is None
+                        else _at(floor[sector], k)
                     )
                     for k in range(width)
                 )
@@ -784,8 +774,11 @@ class StabilityEstimate:
             None if floor is None else dict(floor),
         )
 
-    def subset(self, names: Iterable[str]) -> StabilityEstimate:
-        """The estimate an evaluation with only the checks ``names`` returns."""
+    def subset(self, names: Iterable[str], *, floor: bool = True) -> StabilityEstimate:
+        """The estimate an evaluation with only the checks ``names`` returns;
+        with ``floor=False`` combined with FLOOR_UNITS u S in place of a
+        loop-induced floor (the fallback guard's decision, module
+        docstring)."""
 
         names = tuple(names)
         missing = [name for name in names if name not in self.budgets]
@@ -798,7 +791,7 @@ class StabilityEstimate:
             roundoff=self.roundoff,
             families=self.families if set(names) & set(FRAMES) else None,
             not_run=self.not_run,
-            floor=self.floor,
+            floor=self.floor if floor else None,
         )
 
 
