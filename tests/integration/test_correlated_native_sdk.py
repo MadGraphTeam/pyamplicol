@@ -540,3 +540,55 @@ def test_native_directed_complex_insertion_and_reverse(
         assert measured[1, point] == pytest.approx(
             measured[0, point].conjugate(), rel=2e-10
         )
+
+
+_ORDINARY_PROBE = r"""
+    #include <rusticol.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    int main(int argc, char **argv) {
+        if (argc != 4) return 2;
+        size_t points = 2, legs = (size_t)atoi(argv[3]), length = 4 * points * legs;
+        double *momenta = calloc(length, sizeof(double));
+        for (size_t i = 0; i < length; ++i)
+            if (scanf("%lf", momenta + i) != 1) return 2;
+        RusticolRuntimeHandle *runtime = NULL;
+        if (rusticol_runtime_load(argv[1], argv[2], NULL, &runtime)) return 3;
+        double values[2];
+        if (rusticol_runtime_evaluate_f64(runtime, momenta, length, points, values, 2))
+            return 4;
+        for (size_t p = 0; p < points; ++p) printf("ORDINARY %zu %.17g\n", p, values[p]);
+        free(momenta);
+        return rusticol_runtime_free(runtime) ? 5 : 0;
+    }
+"""
+
+
+def test_the_sdk_ordinary_value_has_the_artifact_colour_accuracy(
+    native_sdk: _NativeSdk, correlated_output, tmp_path
+) -> None:
+    """The C SDK's ordinary evaluation of a correlated artifact is at the
+    artifact's colour accuracy: it equals the correlated Born at LC, NLC and
+    full colour (generated at LC or NLC it used to be the full-colour value)."""
+
+    artifact, oracle, _accuracy = correlated_output
+    binary = _compile_probe("c", _ORDINARY_PROBE, native_sdk, tmp_path)
+    result = subprocess.run(
+        [str(binary), str(artifact), "dd_ddg", str(len(_POINTS[0]))],
+        input=" ".join(
+            str(value) for point in _POINTS for leg in point for value in leg
+        ),
+        capture_output=True,
+        text=True,
+        env=_source_environment(),
+        timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    measured = [
+        float(line.split()[2])
+        for line in result.stdout.splitlines()
+        if line.startswith("ORDINARY ")
+    ]
+    assert len(measured) == 2
+    for value, born in zip(measured, oracle[0], strict=True):
+        assert value == pytest.approx(born.real, rel=2e-10)

@@ -73,7 +73,10 @@ def test_output_accuracy_is_retained_but_underlying_generation_stays_full(accura
         process,
         plan,
         SimpleNamespace(
-            to_mapping=lambda: {"amplitude_stage": {"coherent_groups": groups}}
+            to_mapping=lambda: {
+                "physics": {"color_accuracy": accuracy},
+                "amplitude_stage": {"coherent_groups": groups},
+            }
         ),
         (),
     )
@@ -162,7 +165,8 @@ def test_automatic_catalogues_expand_for_each_generated_process() -> None:
             plan,
             SimpleNamespace(
                 to_mapping=lambda groups=groups: {
-                    "amplitude_stage": {"coherent_groups": groups}
+                    "physics": {"color_accuracy": "full"},
+                    "amplitude_stage": {"coherent_groups": groups},
                 }
             ),
             (),
