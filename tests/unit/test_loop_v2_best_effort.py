@@ -1188,3 +1188,57 @@ def test_a_profile_with_only_a_floor_weight_weighs_its_default_checks(aag):
             if a is not None and b is not None
         ]
         assert pairs and all(a < b for a, b in pairs), (row_low, row_high)
+
+
+@pytest.mark.loop_physics
+def test_a_weight_alone_leaves_an_ordinary_evaluation_without_an_estimate(
+    aag, loop_native, monkeypatch
+):
+    """A floor weight on its own runs no check: an ordinary successful call
+    (NinjaRS serves every point here) with a runtime-options card setting
+    only ``floor_weight`` returns the plain call's values, no estimate, no
+    finiteness ratio and no other diagnostic, after the same number of
+    executor runs; the C ABI the same (no ``stability`` record)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.loops.v2 import plan_export
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import _evaluate, _open, _same
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none", reduction="ninjars")
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+    runs = []
+    original = plan_export.NativeExecutor._runs
+
+    def counted(self, *args, **kwargs):
+        runs.append(1)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(plan_export.NativeExecutor, "_runs", counted)
+    plain = Runtime.load(artifact, process="p").evaluate(points, **call)
+    plain_runs, runs[:] = len(runs), []
+    weighted = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, **call
+    )
+    assert plain.statuses == ("success",) * len(points)
+    assert weighted.statuses == plain.statuses and weighted.values == plain.values
+    assert plain.stability is None and weighted.stability is None
+    assert weighted.diagnostics == plain.diagnostics
+    assert len(runs) == plain_runs
+    sdk = _sdk()
+    floats = [[[float(c) for c in leg] for leg in point] for point in points]
+    mu = [float(Fraction(s)) for s in scales]
+    handle = _open(sdk, artifact)
+    try:
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"ninjars") == 0
+        before = _evaluate(sdk, handle, floats, mu)
+        assert sdk.rusticol_virtual_set_options(handle, card.encode()) == 0, _error(sdk)
+        after = _evaluate(sdk, handle, floats, mu)
+    finally:
+        sdk.rusticol_virtual_free(handle)
+    assert before["diagnostics"]["stability"] is None
+    assert after["diagnostics"]["stability"] is None
+    assert after["statuses"] == before["statuses"]
+    assert _same(after["virtual"], before["virtual"])
