@@ -137,3 +137,38 @@ def test_two_concurrent_callers_count_both_lines(capfd):
             counts.append(_count(sink))
     assert counts == [2] * 40
     assert "Created infinity" not in capfd.readouterr().out
+
+
+def test_a_failed_setup_leaves_no_stale_capture(monkeypatch, capfd):
+    """A MemoryError while the first caller installs the loader filter (a
+    process out of memory) propagates, and the next capture is a fresh one:
+    it counts its own line at once instead of joining a stale sink and
+    waiting for a setup that never comes."""
+
+    import logging
+
+    import pytest
+
+    from pyamplicol._internal import threads
+
+    monkeypatch.setattr(threads, "START_SECONDS", 10.0)
+    loader = logging.getLogger(symbolica_log.LOADER_LOGGER)
+    original = loader.addFilter
+    calls = []
+
+    def failing_once(flt):
+        calls.append(flt)
+        if len(calls) == 1:
+            raise MemoryError
+        original(flt)
+
+    monkeypatch.setattr(loader, "addFilter", failing_once)
+    with pytest.raises(MemoryError), symbolica_log.capture("failed setup"):
+        pass
+    began = time.monotonic()
+    with symbolica_log.capture("next caller") as sink:
+        os.write(1, KNOWN)
+    assert time.monotonic() - began < 5.0
+    assert sink.where == "next caller"
+    assert _count(sink) == 1
+    assert symbolica_log._FILTER not in loader.filters
