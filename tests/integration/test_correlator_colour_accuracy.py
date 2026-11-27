@@ -248,8 +248,14 @@ def test_a_correlated_lc_artifact_exposes_the_ordinary_colour_flows(
     Generator(config).generate(expression, ordinary_path, model=model)
     correlated = Runtime.load(correlated_path)
     ordinary = Runtime.load(ordinary_path)
+    recurrence_path = tmp_path / "recurrence"
+    Generator(
+        replace(config, evaluator=EvaluatorConfig(execution_mode="recurrence"))
+    ).generate(expression, recurrence_path, model=model)
+    recurrence = Runtime.load(recurrence_path)
     flows = [flow.id for flow in ordinary.physics.color_flows]
     assert sorted(flow.id for flow in correlated.physics.color_flows) == sorted(flows)
+    assert sorted(flow.id for flow in recurrence.physics.color_flows) == sorted(flows)
     total = complex(ordinary.evaluate((point,))[0]).real
     assert complex(correlated.evaluate((point,))[0]).real == pytest.approx(
         total, rel=1e-12
