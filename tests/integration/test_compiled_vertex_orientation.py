@@ -230,11 +230,6 @@ def test_madgraph_value_or_typed_refusal(
 
 @pytest.mark.parametrize("accuracy", _ACCURACIES)
 @pytest.mark.parametrize("mode", _MODES)
-@pytest.mark.xfail(
-    reason="evaluation at 32 digits of processes with an external massive "
-    "fermion is a separate defect",
-    strict=False,
-)
 def test_32_digits(artifacts, mode: str, accuracy: str) -> None:
     process, orders = _REQUESTS[0]
     reference = _reference(process, accuracy)
