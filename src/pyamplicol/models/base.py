@@ -1503,6 +1503,14 @@ class Model:
         del vertex
         return ()
 
+    def coupling_order_expansion_orders(self) -> dict[str, int]:
+        """Return the UFO ``expansion_order`` of every order that declares a
+        limit below 99: the largest power of that order an amplitude may
+        carry by default (MadGraph's semantics; the minimal coupling-order
+        policy applies it, an explicit request is honoured as requested)."""
+
+        return {}
+
     def coupling_order_hierarchies(self) -> dict[str, int]:
         """Return UFO-style priorities used by minimal-order generation.
 

@@ -681,10 +681,13 @@ def _lc_color_order_reachable_masks(
             return None
         if set(sector.singlet_labels) != singlet_labels:
             return None
-        if sector.kind == "open-lines":
-            for singlet_submask in _submasks_for_labels(sector.singlet_labels):
-                if singlet_submask:
-                    allowed.add(singlet_submask)
+        # A current of colour singlets alone: on open lines a boson exchanged
+        # between them, in a trace or singlet sector a singlet that a
+        # colour-identity vertex joins to two gluons (the HEFT H g g with an
+        # internal Higgs, g g > z z, g g > h h).
+        for singlet_submask in _submasks_for_labels(sector.singlet_labels):
+            if singlet_submask:
+                allowed.add(singlet_submask)
         for raw_word in sector.admissible_traversal_words:
             word = tuple(label for label in raw_word if label in colored_labels)
             for start in range(len(word)):
