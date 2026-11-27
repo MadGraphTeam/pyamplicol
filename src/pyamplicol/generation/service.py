@@ -4139,7 +4139,9 @@ class GenerationBackend:
         colour tables are indexed by the plan's sector ids. Any other fixed
         selection is a limitation of the mode, refused before generation."""
 
-        if not self._eager_execution_enabled:
+        if not self._eager_execution_enabled or self._color_accuracy != "lc":
+            # A fixed colour selection needs leading colour in every mode: that
+            # check answers first, with its own reason.
             return
         selected = self._process_selection.selected_color_sector_ids
         if selected is None or sorted(selected) == list(range(len(selected))):
