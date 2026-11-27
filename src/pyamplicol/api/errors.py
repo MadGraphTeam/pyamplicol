@@ -92,6 +92,35 @@ class NativePlatformError(DependencyError):
         self.missing = missing
 
 
+class ResourceExhaustedError(PyAmpliColError):
+    """The process ran out of an operating-system resource that native code
+    needs, so no generation or load can succeed in it any more: a new
+    process is needed.
+
+    Raised by ``Generator.generate`` and ``Runtime.load`` in place of the
+    failure that the exhausted resource caused (chained as ``__cause__``).
+    At present the resource is the process's memory maps
+    (``vm.max_map_count``): code compiled at run time is never released, so
+    a process that generates or loads many artifacts can reach the limit.
+
+    Attributes: ``resource`` (``"memory maps"``), ``in_use`` and ``limit``
+    (the counts when the platform reports them, else None).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        resource: str,
+        in_use: int | None = None,
+        limit: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.resource = resource
+        self.in_use = in_use
+        self.limit = limit
+
+
 __all__ = [
     "ArtifactError",
     "CompatibilityError",
@@ -103,4 +132,5 @@ __all__ = [
     "NativePlatformError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "ResourceExhaustedError",
 ]

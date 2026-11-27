@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pyamplicol as _pyamplicol
 from pyamplicol import _collector
+from pyamplicol._internal.process_limits import translates_resource_exhaustion
 from pyamplicol.config import (
     Action,
     BenchmarkConfig,
@@ -421,6 +422,7 @@ class Generator:
             )
         return result
 
+    @translates_resource_exhaustion
     def generate(
         self,
         processes: ProcessSet | ProcessRequest | str | Iterable[ProcessRequest | str],
@@ -570,6 +572,7 @@ class Runtime:
         self._call_defaults = MappingProxyType({})
 
     @classmethod
+    @translates_resource_exhaustion
     def load(
         cls,
         artifact: os.PathLike[str] | str,

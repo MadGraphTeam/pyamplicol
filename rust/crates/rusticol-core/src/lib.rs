@@ -211,6 +211,15 @@ pub mod __private {
         )
     }
 
+    /// Unstable diagnostic bridge: the distinct SymJIT P-kernel applications
+    /// compiled in this process (each is compiled once and shared by every
+    /// later load of the same bytes).
+    #[doc(hidden)]
+    #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+    pub fn symjit_plane_code_cache_len() -> usize {
+        crate::engine::plane_code_cache_len()
+    }
+
     /// Unstable cold-path bridge: evaluate a stored complex plane application
     /// through the production loader ((re, im) per value, row-major by point).
     #[doc(hidden)]

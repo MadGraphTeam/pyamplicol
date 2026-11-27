@@ -9,11 +9,14 @@
 //! references. Scalar/SIMD dispatch and descriptor rebinding allocate nothing.
 
 use crate::{RusticolError, RusticolResult};
+use sha2::{Digest, Sha256};
 use std::any::Any;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::ptr::NonNull;
+use std::sync::{Arc, Mutex, OnceLock};
 #[cfg(any(test, feature = "python-generation-bridge"))]
 use symjit::Compiler;
 use symjit::{
@@ -28,7 +31,7 @@ const MAX_OPTIMIZATION_LEVEL: u8 = 3;
 type PlaneKernelFn = CompiledPlaneFunc<f64>;
 
 /// Logical shape of a plane-oriented SymJIT application.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct SymjitPlaneLayout {
     input_count: usize,
     output_count: usize,
@@ -192,17 +195,59 @@ impl SymjitRawPlane<'static> {
     }
 }
 
-/// Loaded P-kernel code. The `Applet` owns the executable mappings referenced
-/// by the cached function pointers.
-pub(crate) struct SymjitPlaneKernel {
+/// The compiled code of one P-kernel. The `Applet` owns the executable
+/// mappings referenced by the cached function pointers; the code is
+/// read-only after sealing (the kernel reads `applet.params` and writes only
+/// the caller's planes), so one copy serves every loader in the process.
+pub(crate) struct SymjitPlaneCode {
     applet: Applet,
-    display_path: PathBuf,
-    layout: SymjitPlaneLayout,
     optimization_level: u8,
     compression: bool,
     scalar: PlaneKernelFn,
     simd: Option<PlaneKernelFn>,
     simd_lanes: usize,
+}
+
+/// Loaded P-kernel: the shared compiled code and this loader's view of it.
+pub(crate) struct SymjitPlaneKernel {
+    code: Arc<SymjitPlaneCode>,
+    display_path: PathBuf,
+    layout: SymjitPlaneLayout,
+}
+
+impl std::ops::Deref for SymjitPlaneKernel {
+    type Target = SymjitPlaneCode;
+
+    fn deref(&self) -> &SymjitPlaneCode {
+        &self.code
+    }
+}
+
+/// The compiled code of every P-kernel loaded in this process, by the SHA-256
+/// of its storage-v4 bytes and its plane layout.
+///
+/// SymJIT never releases the executable pages of compiled code (its
+/// `Memory` leaks them by design, and each kernel occupies its own pages:
+/// two memory maps), so compiling the same application again at every
+/// artifact load (an on-the-fly artifact loads its model's kernel library,
+/// about a thousand applications for the built-in SM) grew the process by
+/// those pages and maps at every load until it reached `vm.max_map_count`.
+/// The code is a function of these bytes alone: the loader configuration
+/// and the host CPU check are fixed for the process, the parameter values
+/// are inputs at evaluation. Entries are never evicted: the cache holds one
+/// copy per distinct application loaded, which SymJIT keeps anyway.
+type PlaneCodeKey = ([u8; 32], SymjitPlaneLayout);
+
+fn plane_code_cache() -> &'static Mutex<HashMap<PlaneCodeKey, Arc<SymjitPlaneCode>>> {
+    static CACHE: OnceLock<Mutex<HashMap<PlaneCodeKey, Arc<SymjitPlaneCode>>>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Distinct P-kernel applications compiled in this process so far.
+pub(crate) fn plane_code_cache_len() -> usize {
+    plane_code_cache()
+        .lock()
+        .map_or_else(|poisoned| poisoned.into_inner().len(), |cache| cache.len())
 }
 
 impl std::fmt::Debug for SymjitPlaneKernel {
@@ -229,6 +274,40 @@ impl SymjitPlaneKernel {
         authenticate_storage_v4(bytes, &display_path)?;
         require_symjit_host_cpu(&display_path)?;
 
+        let key: PlaneCodeKey = (Sha256::digest(bytes).into(), layout);
+        let cached = plane_code_cache()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(&key)
+            .cloned();
+        let code = match cached {
+            Some(code) => code,
+            None => {
+                // Compiled outside the lock (loads run in parallel); a
+                // concurrent compile of the same bytes keeps the first copy.
+                let code = Arc::new(Self::compile_code(bytes, &display_path, layout)?);
+                plane_code_cache()
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .entry(key)
+                    .or_insert(code)
+                    .clone()
+            }
+        };
+        Ok(Self {
+            code,
+            display_path,
+            layout,
+        })
+    }
+
+    /// Recompiles and seals an authenticated storage-v4 P-kernel.
+    fn compile_code(
+        bytes: &[u8],
+        display_path: &Path,
+        layout: SymjitPlaneLayout,
+    ) -> RusticolResult<SymjitPlaneCode> {
+        let display_path = display_path.to_path_buf();
         let mut loader_config = explicit_loader_config()?;
         loader_config.set_defuns(scalar_primitive_defuns()?);
         let mut input = bytes;
@@ -289,10 +368,8 @@ impl SymjitPlaneKernel {
         };
         validate_simd_lane_width(simd.is_some(), simd_lanes, &display_path)?;
 
-        Ok(Self {
+        Ok(SymjitPlaneCode {
             applet,
-            display_path,
-            layout,
             optimization_level,
             compression,
             scalar,
@@ -315,7 +392,7 @@ impl SymjitPlaneKernel {
 
     /// Points per SIMD call (1 without a SIMD kernel).
     #[cfg(any(test, feature = "loop-v2"))]
-    pub(crate) const fn simd_lanes(&self) -> usize {
+    pub(crate) fn simd_lanes(&self) -> usize {
         self.simd_lanes
     }
 
