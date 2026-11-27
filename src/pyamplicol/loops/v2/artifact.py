@@ -1430,7 +1430,9 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
             for record in records
             if _selector_text(str(record["expression"]), fold=fold) == wanted
         ]
-        if fold and len(matches) > 1:
+        # Two stored processes of one expression (overlapping requests) are
+        # ambiguous in every spelling, as in the tree artifacts' selector.
+        if len(matches) > 1:
             choices = ", ".join(sorted(str(record["id"]) for record in matches))
             raise EvaluationError(
                 f"process expression {process!r} is ambiguous; select one of "

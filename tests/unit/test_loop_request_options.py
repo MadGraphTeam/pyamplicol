@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from pyamplicol.api import Generator, ProcessRequest, ProcessSet, Runtime
-from pyamplicol.api.errors import GenerationError
+from pyamplicol.api.errors import EvaluationError, GenerationError
 from pyamplicol.cli import run_cli
 from pyamplicol.config import resolve_config
 
@@ -369,3 +369,27 @@ def test_one_loop_runtimes_name_external_particles_by_the_model(one_loop_artifac
         assert [particle.pdg_id for particle in particles][:2] == (
             [2, -2] if names[0] == "u" else [-2, 2]
         )
+
+
+# F5: overlapping requests ----------------------------------------------------
+
+
+def test_a_twice_stored_process_is_ambiguous_in_every_spelling(tmp_path, model_cache):
+    card = _card(tmp_path, model_cache, expression="u u~ > g g", name="uugg")
+    artifact = tmp_path / "artifact"
+    # Overlapping requests store the common process under each request's
+    # id, as the tree route does.
+    Generator(resolve_config(card)).generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("u u~ > g g", name="uugg"),
+                ProcessRequest.parse("u u~ > g g", name="again"),
+            )
+        ),
+        artifact,
+    )
+    for spelling in ("u u~ > g g", "u u~ > G G", "U U~ > G G", "u~ u > G G"):
+        with pytest.raises(EvaluationError, match="ambiguous") as error:
+            Runtime.load(artifact, process=spelling)
+        assert "again, uugg" in str(error.value)
+    assert _values(artifact, "again") == _values(artifact, "uugg")
