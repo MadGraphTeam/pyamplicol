@@ -44,8 +44,25 @@ class _BoundedEvent(threading.Event):
 
 class AuxiliaryThread(threading.Thread):
     """A daemon thread whose :meth:`start` returns within ``start_seconds``
-    or raises :class:`ThreadStartError` (module docstring). An abandoned
-    thread that runs later returns at once, without running its target."""
+    or raises :class:`ThreadStartError` (module docstring).
+
+    The decision is taken once, under a lock that the new thread's bootstrap
+    also takes: either the thread had started when the bound expired, or it
+    is abandoned. An abandoned thread whose bootstrap had not begun is
+    removed from the standard library's registry of starting threads (it
+    is no longer listed by ``threading.enumerate()``) and the references to
+    its target and arguments are dropped; if it bootstraps later it returns
+    at once, without registering or running anything.
+
+    What cannot be cleaned up: the operating-system thread, if one was
+    created, is not ours to stop (it exits on its own; a daemon thread never
+    blocks interpreter exit). A bootstrap that had already begun when the
+    bound expired and then fails (the process is out of memory) may leave its
+    entry in that registry: the standard library removes it only from the
+    thread itself, and nothing can be released safely from outside while
+    that thread may still run. In a process out of memory maps, new threads
+    fail until memory is released.
+    """
 
     def __init__(
         self,
@@ -60,17 +77,23 @@ class AuxiliaryThread(threading.Thread):
             start_seconds = START_SECONDS
         self._decision = threading.Lock()
         self._abandoned = False
-        self._ran = False
+        self._bootstrapping = False
         # Thread.start waits on this event (CPython 3.11 to 3.14); without
         # it the start is the standard, unbounded one.
         if isinstance(getattr(self, "_started", None), threading.Event):
             self._started = _BoundedEvent(start_seconds)
 
+    def _bootstrap(self) -> None:
+        with self._decision:
+            if self._abandoned:
+                return
+            self._bootstrapping = True
+        super()._bootstrap()  # type: ignore[misc]
+
     def run(self) -> None:
         with self._decision:
             if self._abandoned:
                 return
-            self._ran = True
         super().run()
 
     def start(self) -> None:
@@ -79,13 +102,33 @@ class AuxiliaryThread(threading.Thread):
         except RuntimeError as exc:  # "can't start new thread"
             raise ThreadStartError(f"{self.name}: {exc}") from exc
         with self._decision:
-            if self._ran or self._started.is_set():
+            if self._started.is_set():
                 return
             self._abandoned = True
+            bootstrapping = self._bootstrapping
+        if not bootstrapping:
+            self._forget()
+        # Drop the references to the target: an abandoned thread never runs
+        # it (run() returns first).
+        self._target = None
+        self._args = ()
+        self._kwargs = {}
         raise ThreadStartError(
             f"{self.name}: the new thread did not run within the start bound "
             "(the process may be out of memory or memory maps)"
         )
+
+    def _forget(self) -> None:
+        """Remove a thread whose bootstrap never began from the standard
+        library's starting-thread registry (``threading._limbo``, private:
+        skipped where it does not exist)."""
+
+        lock = getattr(threading, "_active_limbo_lock", None)
+        limbo = getattr(threading, "_limbo", None)
+        if lock is None or not isinstance(limbo, dict):
+            return
+        with lock:
+            limbo.pop(self, None)
 
 
 def start_auxiliary(

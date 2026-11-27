@@ -219,23 +219,32 @@ def capture(where: str) -> Iterator[Captured]:
             for stream in (sys.stdout, sys.stderr):
                 stream.flush()
             saved = os.dup(1)
-            read_fd, write_fd = os.pipe()
-            os.dup2(write_fd, 1)
-            os.close(write_fd)
+            try:
+                read_fd, write_fd = os.pipe()
+            except OSError:
+                os.close(saved)
+                raise
             done = threading.Event()
+            # The reader starts while the original standard output is still
+            # installed: when it cannot start, nothing was redirected (no
+            # writer's output is lost, and the warning about it goes to the
+            # real standard output, never into a pipe nobody reads).
             reader = start_auxiliary(
                 _forward,
                 name="pyamplicol-symbolica-log",
                 args=(read_fd, saved, sink, done),
             )
             if reader is None:
-                # No reader (the process cannot start a thread): standard
-                # output stays as it was, nothing is captured on it.
-                os.dup2(saved, 1)
-                for fd in (read_fd, saved):
+                for fd in (read_fd, write_fd, saved):
                     with suppress(OSError):
                         os.close(fd)
             else:
+                # From here the reader owns read_fd and saved (it closes them
+                # at the end of the pipe, which closing write_fd brings).
+                try:
+                    os.dup2(write_fd, 1)
+                finally:
+                    os.close(write_fd)
                 redirected = (saved, reader, done)
         except (OSError, ValueError, AttributeError):
             # No file-descriptor level standard output (an embedded
