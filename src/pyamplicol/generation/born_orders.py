@@ -52,7 +52,12 @@ def runtime_normalization_payload(
     model's own payload, unchanged.
     """
 
-    defaults = model.runtime_normalization_parameter_defaults()
+    # Models without the two run-time inputs keep their own payload; the Born
+    # orders (which need the process DAG) are read only for the others.
+    parameter_defaults = getattr(
+        model, "runtime_normalization_parameter_defaults", None
+    )
+    defaults = parameter_defaults() if callable(parameter_defaults) else {}
     if NORMALIZATION_ALPHA_S not in defaults or NORMALIZATION_ALPHA_EW not in defaults:
         return dict(model.runtime_normalization_payload(request))
     totals = request.born_amplitude_orders

@@ -19,6 +19,10 @@ from collections.abc import Mapping
 NORMALIZATION_ALPHA_S = "normalization.alpha_s_me_check"
 NORMALIZATION_ALPHA_EW = "normalization.alpha_ew"
 
+#: The largest rho^2 = 2 alpha_ew / alpha_s the runtimes accept (2^52): beyond
+#: it the binary64 weights and global factor leave the floating-point range.
+QED_ORDER_WEIGHT_MAX_SQUARED = 2**52
+
 #: ``coupling_policy`` of a QED-order-weighted normalization payload. Every
 #: electroweak vertex coupling slot carries rho (compiled and eager lanes);
 #: every closure of an amplitude component with QED order e carries rho^e
@@ -50,5 +54,6 @@ __all__ = [
     "NORMALIZATION_ALPHA_S",
     "QED_ORDER_WEIGHTED_COUPLING_POLICY",
     "QED_ORDER_WEIGHTED_NORMALIZATION_CONVENTION",
+    "QED_ORDER_WEIGHT_MAX_SQUARED",
     "is_qed_order_weighted",
 ]
