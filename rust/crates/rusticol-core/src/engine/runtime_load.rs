@@ -3265,7 +3265,7 @@ impl ExecutionRuntime {
             .unwrap_or_default();
         let mut model_parameters = manifest.runtime_schema.model_parameters.clone();
         model_parameters.sort_by_key(|parameter| parameter.parameter_index);
-        let model_parameter_values_f64 = model_parameters
+        let mut model_parameter_values_f64 = model_parameters
             .iter()
             .map(|parameter| parameter.default)
             .collect::<Vec<_>>();
@@ -3309,6 +3309,15 @@ impl ExecutionRuntime {
                 )
             })
             .unwrap_or((1.0, 1.0, 1.0, 1.0, 0, 0));
+        let qed_order_weights = QedOrderWeights::for_policy(
+            manifest
+                .runtime_schema
+                .normalization
+                .as_ref()
+                .and_then(|normalization| normalization.coupling_policy.as_deref()),
+            &model_parameters,
+            &mut model_parameter_values_f64,
+        )?;
         Ok(Self {
             process: manifest.process,
             key: manifest.key,
@@ -3384,6 +3393,7 @@ impl ExecutionRuntime {
             normalization_identical_factor,
             normalization_qcd_coupling_power,
             normalization_electroweak_coupling_power,
+            qed_order_weights,
             model_parameters,
             model_parameter_name_to_index,
             model_parameter_runtime_slots,
@@ -4255,6 +4265,27 @@ fn ensure_execution_capabilities_supported(manifest: &ExecutionManifest) -> Rust
             ));
         }
         execution_capabilities.insert(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY.to_string());
+    }
+    // A QED-order-weighted primary execution declares the capability; its
+    // nested selector executions inherit it from the primary.
+    if manifest
+        .required_runtime_capabilities
+        .iter()
+        .any(|capability| capability == QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
+    {
+        if !manifest
+            .runtime_schema
+            .normalization
+            .as_ref()
+            .is_some_and(|normalization| {
+                is_qed_order_weighted_policy(normalization.coupling_policy.as_deref())
+            })
+        {
+            return Err(RusticolError::integrity(
+                "an execution declaring QED-order weights has no QED-order-weighted normalization",
+            ));
+        }
+        execution_capabilities.insert(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY.to_string());
     }
     validate_declared_execution_capabilities(
         &manifest.required_runtime_capabilities,

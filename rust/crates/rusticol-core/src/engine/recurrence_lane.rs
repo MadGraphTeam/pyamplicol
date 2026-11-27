@@ -5,7 +5,9 @@
 use super::recurrence_backend::{
     NativeOnTheFlyPreparedExecutorResolver, NativeRecurrenceDirectExecutorOwners,
 };
-use super::recurrence_orders::{AmplitudeOrderCatalog, RecurrenceOrderState, order_component};
+use super::recurrence_orders::{
+    AmplitudeOrderCatalog, QedClosureFactorWeights, RecurrenceOrderState, order_component,
+};
 use super::*;
 use crate::direct_arena::DirectArenaTrafficCounters;
 use crate::recurrence::direct_backend::{
@@ -64,6 +66,9 @@ pub(super) struct RecurrenceNativeRuntime {
     helicity_selector_companion: Option<RecurrencePersistedHelicitySelectorRuntime>,
     order_catalog: AmplitudeOrderCatalog,
     order_state: Option<RecurrenceOrderState>,
+    /// Closure weights of a QED-order-weighted normalization, derived from
+    /// the plan at the first evaluation that needs them.
+    qed_closure_weights: Option<QedClosureFactorWeights>,
 }
 
 pub(super) struct RecurrencePersistedHelicitySelectorRuntime {
@@ -72,6 +77,7 @@ pub(super) struct RecurrencePersistedHelicitySelectorRuntime {
     executor: PersistedHelicityFamilyExecutorV1<NativeOnTheFlyPreparedExecutorResolver>,
     resolved_helicity_by_physics: Box<[u32]>,
     primary_color_view: Option<PrimaryLocalColorViewV1>,
+    qed_closure_weights: Option<QedClosureFactorWeights>,
 }
 
 struct PrimaryLocalColorViewV1 {
@@ -134,6 +140,7 @@ impl RecurrencePersistedHelicitySelectorRuntime {
             executor: PersistedHelicityFamilyExecutorV1::new(resolver),
             resolved_helicity_by_physics: resolved_helicity_by_physics.into_boxed_slice(),
             primary_color_view: None,
+            qed_closure_weights: None,
         })
     }
 
@@ -1063,6 +1070,7 @@ impl RecurrenceNativeRuntime {
             helicity_selector_companion,
             order_catalog,
             order_state: None,
+            qed_closure_weights: None,
         })
     }
 
@@ -1394,7 +1402,21 @@ impl RecurrenceNativeRuntime {
         let (parameters_re, parameters_im) = self.scheduler.parameters_mut();
         companion
             .executor
-            .set_parameter_planes(parameters_re, parameters_im)
+            .set_parameter_planes(parameters_re, parameters_im)?;
+        if let Some(rho) = common.qed_order_weight()? {
+            if companion.qed_closure_weights.is_none() {
+                companion.qed_closure_weights =
+                    Some(QedClosureFactorWeights::for_plan(&companion.plan)?);
+            }
+            let weights = companion
+                .qed_closure_weights
+                .as_ref()
+                .ok_or_else(|| RusticolError::internal("QED closure weights disappeared"))?;
+            companion
+                .executor
+                .set_factor_overrides(weights.weighted_factors(rho))?;
+        }
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -2826,7 +2848,22 @@ impl RecurrenceNativeRuntime {
             &common.model_parameter_values_f64,
             parameters_re,
             parameters_im,
-        )
+        )?;
+        // A QED-order-weighted normalization: every closure of QED order e
+        // carries rho^e at the current alpha_s and alpha_ew.
+        if let Some(rho) = common.qed_order_weight()? {
+            if self.qed_closure_weights.is_none() {
+                self.qed_closure_weights =
+                    Some(QedClosureFactorWeights::for_plan(self.scheduler.plan())?);
+            }
+            let weights = self
+                .qed_closure_weights
+                .as_ref()
+                .ok_or_else(|| RusticolError::internal("QED closure weights disappeared"))?;
+            let (factors_re, factors_im) = self.scheduler.factors_mut();
+            weights.apply(rho, factors_re, factors_im)?;
+        }
+        Ok(())
     }
 
     // The ordinary direct scheduler consumes contiguous source/component

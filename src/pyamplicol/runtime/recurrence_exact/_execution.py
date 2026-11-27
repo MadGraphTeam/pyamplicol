@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -57,6 +59,27 @@ _CurrentObserver = Callable[[int, tuple[_ComplexDecimal, ...]], None]
 # Mutable per-component amplitudes: [amplitude coupling-order component][destination].
 _OrderAmplitudes = Sequence[list[_ComplexDecimal]]
 _FactorCache = list[_ComplexDecimal | None]
+
+#: Exact factors one evaluation replaces at its working precision: the
+#: closures of a QED-order-weighted normalization, each times rho^QED
+#: (``_executor._qed_closure_factor_overrides``).
+_FACTOR_OVERRIDES: ContextVar[Mapping[int, _ComplexDecimal] | None] = ContextVar(
+    "recurrence_exact_factor_overrides", default=None
+)
+
+
+@contextmanager
+def factor_overrides(
+    overrides: Mapping[int, _ComplexDecimal] | None,
+) -> Iterator[None]:
+    """Replace the listed exact factors in every schedule executed inside."""
+
+    token = _FACTOR_OVERRIDES.set(overrides)
+    try:
+        yield
+    finally:
+        _FACTOR_OVERRIDES.reset(token)
+
 
 _INPUT_CURRENT = 0
 _INPUT_MOMENTUM = 1
@@ -254,6 +277,13 @@ def _execute_schedule(
     arena = [zero] * sections.current_arena_components
     amplitudes = [zero] * sections.amplitude_destination_count
     factor_cache: _FactorCache = [None] * len(sections.exact_factors)
+    for factor_id, value in (_FACTOR_OVERRIDES.get() or {}).items():
+        try:
+            factor_cache[factor_id] = value
+        except IndexError as exc:
+            raise ArtifactError(
+                "recurrence exact factor override is out of range"
+            ) from exc
     initialized_contribution_stage: int | None = None
     active_stage: int | None = None
 

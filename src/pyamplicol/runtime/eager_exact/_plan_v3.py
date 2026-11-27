@@ -12,6 +12,7 @@ from typing import Protocol, cast
 
 from pyamplicol._internal.versions import (
     EAGER_DIRECT_ARENA_RUNTIME_CAPABILITY,
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     verify_native_module,
 )
 from pyamplicol.api.errors import ArtifactError, CompatibilityError
@@ -466,6 +467,11 @@ def _validate_plan_v3_execution_header(execution: Mapping[str, object]) -> None:
     if execution.get("key") is None:
         raise ArtifactError("compact eager execution has no process key")
     expected = _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
+    # A QED-order-weighted normalization: the native runtime's coupling slots
+    # already carry its weights, which the exact executor reads.
+    weighted = sorted([*expected, QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY])
+    if execution.get("required_runtime_capabilities") == weighted:
+        expected = weighted
     if execution.get("required_runtime_capabilities") != expected:
         raise CompatibilityError(
             "unsupported compact eager runtime capability contract"

@@ -263,6 +263,13 @@ class BuiltinSMDefinitionMixin:
             coupling = self.mass(i) * wc / (self.mass(24) * 2.0)
             vertices.append(Vertex(16, (i, 25, i), (coupling, 0.0)))
             vertices.append(Vertex(16, (-i, 25, -i), (coupling, 0.0)))
+            # The fermion pair fusing into the Higgs current and its
+            # absorption with the Higgs as the left input (as kinds 21 and 23
+            # for the photon and Z): without them a Higgs exchanged between two
+            # fermion lines (t t~ > t t~) has no current to be built from.
+            vertices.append(Vertex(25, (i, -i, 25), (coupling, 0.0)))
+            vertices.append(Vertex(26, (25, i, i), (coupling, 0.0)))
+            vertices.append(Vertex(26, (25, -i, -i), (coupling, 0.0)))
         vertices.extend(
             [
                 Vertex(17, (24, -24, 25), (self.mass(24) * wc, 0.0)),

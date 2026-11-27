@@ -7,9 +7,180 @@ use symbolica::{atom::Atom, atom::AtomCore};
 /// The parameter through which the built-in normalization contract applies
 /// `(4 pi alpha_s)^p` (see `refresh_normalization_factor`).
 pub(super) const NORMALIZATION_ALPHA_S_PARAMETER: &str = "normalization.alpha_s_me_check";
+/// The parameter through which the built-in normalization contract applies
+/// `(8 pi alpha_ew)^p`.
+pub(super) const NORMALIZATION_ALPHA_EW_PARAMETER: &str = "normalization.alpha_ew";
+
+/// The `coupling_policy` of a global-coupling-factor normalization whose Born
+/// has amplitudes of several coupling orders
+/// (`generation.born_orders.QED_ORDER_WEIGHTED_COUPLING_POLICY`): the global
+/// factor is `(4 pi alpha_s)^N` and each QED order of an amplitude carries
+/// `rho = sqrt(8 pi alpha_ew / (4 pi alpha_s)) = sqrt(2 alpha_ew / alpha_s)`.
+pub(super) const QED_ORDER_WEIGHTED_COUPLING_POLICY: &str = "stage evaluators include local \
+vertex couplings; each QED order of an amplitude is weighted by sqrt(8 pi alpha_ew / (4 pi \
+alpha_s))";
+
+/// Whether a normalization's `coupling_policy` is the QED-order-weighted one.
+pub(super) fn is_qed_order_weighted_policy(policy: Option<&str>) -> bool {
+    policy == Some(QED_ORDER_WEIGHTED_COUPLING_POLICY)
+}
+
+/// The largest `rho^2 = 2 alpha_ew / alpha_s` a QED-order-weighted
+/// normalization accepts: `2^52`, so `alpha_s >= 2 alpha_ew * 2^-52`. Beyond it
+/// the QED weights `rho^e` and the global factor `(4 pi alpha_s)^N` leave the
+/// binary64 range for Born orders the runtimes serve (the product
+/// `(4 pi alpha_s)^(N-e) (8 pi alpha_ew)^e` stays finite, the factors do not),
+/// and the QCD part is below the rounding of the electroweak one.
+pub(super) const QED_ORDER_WEIGHT_MAX_SQUARED: f64 = 4_503_599_627_370_496.0;
+
+/// `rho = sqrt(2 alpha_ew / alpha_s)`, the weight of one QED order of a
+/// QED-order-weighted normalization.
+pub(super) fn qed_order_weight_at(alpha_s: f64, alpha_ew: f64) -> RusticolResult<f64> {
+    if !(alpha_s.is_finite() && alpha_s > 0.0 && alpha_ew.is_finite() && alpha_ew >= 0.0) {
+        return Err(RusticolError::invalid_argument(format!(
+            "a process whose Born has amplitudes of several coupling orders weighs them by \
+             sqrt(2 alpha_ew / alpha_s): it needs {NORMALIZATION_ALPHA_S_PARAMETER} > 0 and \
+             {NORMALIZATION_ALPHA_EW_PARAMETER} >= 0 (finite), got {alpha_s} and {alpha_ew}"
+        )));
+    }
+    let squared = 2.0 * alpha_ew / alpha_s;
+    // Finite and not NaN here (alpha_s > 0); an overflow to infinity is refused too.
+    if squared > QED_ORDER_WEIGHT_MAX_SQUARED {
+        return Err(RusticolError::invalid_argument(format!(
+            "a process whose Born has amplitudes of several coupling orders weighs them by \
+             sqrt(2 alpha_ew / alpha_s) in binary64: it needs \
+             {NORMALIZATION_ALPHA_S_PARAMETER} >= 2 {NORMALIZATION_ALPHA_EW_PARAMETER} * 2^-52 \
+             ({:e} at {NORMALIZATION_ALPHA_EW_PARAMETER} = {alpha_ew}), got {alpha_s}; \
+             generate the purely electroweak orders (QCD = 0) for that limit",
+            2.0 * alpha_ew / QED_ORDER_WEIGHT_MAX_SQUARED
+        )));
+    }
+    Ok(squared.sqrt())
+}
+
+/// The run-time QED-order weight of one execution runtime
+/// ([`QED_ORDER_WEIGHTED_COUPLING_POLICY`]).
+///
+/// Every coupling-component slot holds `local * rho`, with its local value
+/// (the artifact default or the caller's binding) kept here, so the slots the
+/// stage evaluators read follow every change of `alpha_s` or `alpha_ew`. The
+/// recurrence and on-the-fly lanes, whose couplings are exact row factors,
+/// read [`ExecutionRuntime::qed_order_weight`] for their closure weights.
+#[derive(Clone, Debug)]
+pub(super) struct QedOrderWeights {
+    alpha_s_slot: usize,
+    alpha_ew_slot: usize,
+    /// (real slot, local value) of every coupling component.
+    couplings: Vec<(usize, f64)>,
+}
+
+impl QedOrderWeights {
+    /// The weights of a runtime whose normalization names `policy`, applied
+    /// to `values`; `None` for every other policy.
+    pub(super) fn for_policy(
+        policy: Option<&str>,
+        parameters: &[GenericRuntimeModelParameterManifest],
+        values: &mut [f64],
+    ) -> RusticolResult<Option<Self>> {
+        if !is_qed_order_weighted_policy(policy) {
+            return Ok(None);
+        }
+        let slot = |name: &str| {
+            parameters
+                .iter()
+                .find(|parameter| parameter.name == name)
+                .map(|parameter| parameter.parameter_index)
+                .ok_or_else(|| {
+                    RusticolError::artifact(format!(
+                        "a QED-order-weighted normalization needs the run-time parameter {name:?}"
+                    ))
+                })
+        };
+        let alpha_s_slot = slot(NORMALIZATION_ALPHA_S_PARAMETER)?;
+        let alpha_ew_slot = slot(NORMALIZATION_ALPHA_EW_PARAMETER)?;
+        let mut couplings = Vec::new();
+        for parameter in parameters {
+            if parameter.kind != "coupling_component" {
+                continue;
+            }
+            if parameter
+                .complex_component
+                .as_deref()
+                .is_some_and(|part| part != "real")
+            {
+                return Err(RusticolError::artifact(format!(
+                    "QED-order-weighted coupling component {:?} must be real",
+                    parameter.name
+                )));
+            }
+            let local = *values.get(parameter.parameter_index).ok_or_else(|| {
+                RusticolError::integrity("coupling-component value slot is absent")
+            })?;
+            couplings.push((parameter.parameter_index, local));
+        }
+        let weights = Self {
+            alpha_s_slot,
+            alpha_ew_slot,
+            couplings,
+        };
+        weights.apply(values)?;
+        Ok(Some(weights))
+    }
+
+    /// `rho = sqrt(2 alpha_ew / alpha_s)` at the inputs in `values`.
+    pub(super) fn rho(&self, values: &[f64]) -> RusticolResult<f64> {
+        let value = |slot: usize| {
+            values
+                .get(slot)
+                .copied()
+                .ok_or_else(|| RusticolError::integrity("normalization input slot is absent"))
+        };
+        qed_order_weight_at(value(self.alpha_s_slot)?, value(self.alpha_ew_slot)?)
+    }
+
+    /// The runtime slots of `alpha_s` and `alpha_ew`.
+    pub(super) const fn input_slots(&self) -> (usize, usize) {
+        (self.alpha_s_slot, self.alpha_ew_slot)
+    }
+
+    /// Writes `local * rho` into every coupling slot of `values`.
+    fn apply(&self, values: &mut [f64]) -> RusticolResult<()> {
+        let rho = self.rho(values)?;
+        for (slot, local) in &self.couplings {
+            *values.get_mut(*slot).ok_or_else(|| {
+                RusticolError::integrity("coupling-component value slot is absent")
+            })? = local * rho;
+        }
+        Ok(())
+    }
+
+    /// The local value of the coupling component in `slot`, if it is one.
+    fn local_value(&self, slot: usize) -> Option<f64> {
+        self.couplings
+            .iter()
+            .find(|(coupling_slot, _)| *coupling_slot == slot)
+            .map(|(_, local)| *local)
+    }
+
+    /// The weights after `proposed` received a binding of the slots in
+    /// `bound` (local values from the caller), applied to `proposed`.
+    fn rebound(&self, proposed: &mut [f64], bound: &BTreeSet<usize>) -> RusticolResult<Self> {
+        let mut next = self.clone();
+        for (slot, local) in &mut next.couplings {
+            if bound.contains(slot) {
+                *local = *proposed.get(*slot).ok_or_else(|| {
+                    RusticolError::integrity("coupling-component value slot is absent")
+                })?;
+            }
+        }
+        next.apply(proposed)?;
+        Ok(next)
+    }
+}
 
 struct RuntimeParameterStateSnapshot {
     values: Vec<f64>,
+    qed_order_weights: Option<QedOrderWeights>,
     particle_masses: BTreeMap<i32, f64>,
     normalization_factor: f64,
     helicity_sum: Option<Box<RuntimeParameterStateSnapshot>>,
@@ -83,6 +254,12 @@ impl ExecutionRuntime {
                 .get(parameter.parameter_index)
                 .copied()
                 .ok_or_else(|| RusticolError::integrity("model-parameter value slot is absent"))?;
+            // A QED-order-weighted coupling reads back as its local value.
+            let value = self
+                .qed_order_weights
+                .as_ref()
+                .and_then(|weights| weights.local_value(parameter.parameter_index))
+                .unwrap_or(value);
             match parameter.complex_component.as_deref() {
                 Some("imag") => imaginary = value,
                 Some("real") | None => real = Some(value),
@@ -92,6 +269,15 @@ impl ExecutionRuntime {
         real.map(|value| (value, imaginary)).ok_or_else(|| {
             RusticolError::model_parameter(format!("model parameter {name:?} has no runtime value"))
         })
+    }
+
+    /// `rho = sqrt(2 alpha_ew / alpha_s)` at the current inputs when this
+    /// runtime's normalization is QED-order weighted.
+    pub(super) fn qed_order_weight(&self) -> RusticolResult<Option<f64>> {
+        self.qed_order_weights
+            .as_ref()
+            .map(|weights| weights.rho(&self.model_parameter_values_f64))
+            .transpose()
     }
 
     pub(super) fn apply_model_parameter_overrides(
@@ -126,6 +312,7 @@ impl ExecutionRuntime {
     fn parameter_state_snapshot(&self) -> RuntimeParameterStateSnapshot {
         RuntimeParameterStateSnapshot {
             values: self.model_parameter_values_f64.clone(),
+            qed_order_weights: self.qed_order_weights.clone(),
             particle_masses: self.particle_masses.clone(),
             normalization_factor: self.normalization_factor,
             helicity_sum: self
@@ -148,6 +335,7 @@ impl ExecutionRuntime {
 
     fn restore_parameter_state(&mut self, snapshot: RuntimeParameterStateSnapshot) {
         self.model_parameter_values_f64 = snapshot.values;
+        self.qed_order_weights = snapshot.qed_order_weights;
         self.particle_masses = snapshot.particle_masses;
         self.normalization_factor = snapshot.normalization_factor;
         if let (Some(runtime), Some(snapshot)) =
@@ -174,6 +362,7 @@ impl ExecutionRuntime {
         overrides: &BTreeMap<String, (f64, f64)>,
     ) -> RusticolResult<()> {
         let mut proposed = self.model_parameter_values_f64.clone();
+        let mut bound_slots = BTreeSet::new();
         for (name, (real, imaginary)) in overrides {
             if self.model_parameters.iter().any(|parameter| {
                 parameter.kind == "derived_parameter_component"
@@ -198,6 +387,7 @@ impl ExecutionRuntime {
                 )));
             }
             proposed[slots.real] = *real;
+            bound_slots.insert(slots.real);
             if let Some(index) = slots.imaginary {
                 if index >= self.model_parameter_values_f64.len() {
                     return Err(RusticolError::invalid_argument(format!(
@@ -215,8 +405,14 @@ impl ExecutionRuntime {
             self.model_parameter_evaluator.as_mut(),
             &mut proposed,
         )?;
+        let proposed_weights = self
+            .qed_order_weights
+            .as_ref()
+            .map(|weights| weights.rebound(&mut proposed, &bound_slots))
+            .transpose()?;
         let proposed_masses = self.particle_mass_parameters_for(&proposed);
         validate_particle_mass_class_stability(&self.particle_masses, &proposed_masses)?;
+        self.qed_order_weights = proposed_weights;
         self.model_parameter_values_f64 = proposed;
         self.particle_masses = proposed_masses;
         self.refresh_normalization_factor();

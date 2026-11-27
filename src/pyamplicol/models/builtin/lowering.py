@@ -24,6 +24,7 @@ from ..expressions import (
 from .expressions import (
     _embed_weyl_current_in_dirac,
     _exact_imaginary_inverse_sqrt_two,
+    _expr_fermion_antifermion_to_scalar,
     _expr_fermion_antifermion_to_vector_dirac,
     _expr_fermion_antifermion_to_vector_weyl,
     _expr_fermion_scalar_to_fermion,
@@ -357,6 +358,30 @@ class BuiltinSMLoweringMixin:
                 output_role="fermion",
                 coupling_mode="vertex",
             )
+        if kind == 26:
+            return VertexLoweringRule(
+                kind=kind,
+                backend="symbolica",
+                expression_head="scalar_fermion_to_fermion",
+                description="massive Dirac scalar-fermion Yukawa current",
+                full_tensor_network_ready=True,
+                kernel="scalar_fermion_to_fermion",
+                input_roles=("scalar", "fermion"),
+                output_role="fermion",
+                coupling_mode="vertex",
+            )
+        if kind == 25:
+            return VertexLoweringRule(
+                kind=kind,
+                backend="symbolica",
+                expression_head="fermion_pair_to_scalar",
+                description="massive Dirac fermion-antifermion Yukawa scalar current",
+                full_tensor_network_ready=True,
+                kernel="fermion_pair_to_scalar",
+                input_roles=("fermion", "antifermion"),
+                output_role="scalar",
+                coupling_mode="vertex",
+            )
         if kind in {17, 18, 19, 20}:
             scalar_role_map: dict[int, tuple[str, tuple[str, str], str, str]] = {
                 17: (
@@ -468,6 +493,20 @@ class BuiltinSMLoweringMixin:
         if input_order is not None:
             return VertexEvaluationEquivalence(
                 class_id="builtin-sm:fermion-pair-to-vector",
+                input_order=input_order,
+            )
+
+        # The Yukawa current with the scalar as the right (16) or the left
+        # (26) input: one vertex, which a recurrence parent pair must receive
+        # once.
+        fermion_scalar_orientations = {
+            16: (0, 1),
+            26: (1, 0),
+        }
+        input_order = fermion_scalar_orientations.get(kind)
+        if input_order is not None:
+            return VertexEvaluationEquivalence(
+                class_id="builtin-sm:fermion-scalar-to-fermion",
                 input_order=input_order,
             )
 
@@ -779,6 +818,18 @@ class BuiltinSMLoweringMixin:
                 coupling=coupling,
                 fermion_chirality=right_chirality,
                 antifermion_chirality=left_chirality,
+            )
+        if kind == 26:
+            return _expr_fermion_scalar_to_fermion(
+                tuple(right),
+                tuple(left),
+                coupling,
+            )
+        if kind == 25:
+            return _expr_fermion_antifermion_to_scalar(
+                fermion=_as_dirac_current(tuple(left), left_chirality),
+                antifermion=_as_dirac_current(tuple(right), right_chirality),
+                coupling=coupling,
             )
         raise ValueError(f"vertex kind {kind} has no component expression lowering")
 
