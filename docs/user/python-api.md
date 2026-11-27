@@ -409,9 +409,11 @@ Stability checks are off by default (no estimate is returned then); the
 reduction backends' own acceptance and refusal checks stay on unless
 `reduction_unchecked=True`. `VirtualStabilityChecks(..., floor_weight=)`
 (and `VirtualRescueLevel(..., floor_weight=)`) weighs the first-order term
-of a loop-induced estimate's rounding floor: default 2^-12, a typical
-one-digit overestimate on strongly cancelling loop-induced processes; 1 the
-calibrated coverage; 0 the checks alone
+of a loop-induced estimate's rounding floor: unset, the process's default
+by the highest-point loop it reduces (1 up to pentagons, 2^-6 for
+hexagons, 2^-12 from heptagons, a typical one-digit overestimate on
+strongly cancelling processes); 1 the calibrated coverage; 0 the checks
+alone; each estimate reports the weight it used
 ([configuration](configuration.md#runtime-options)). How these checks, the lane rescue and the
 rescue stack fit together, and how to turn each one off:
 [The stability machinery, end to end](#the-stability-machinery-end-to-end).

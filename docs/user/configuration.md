@@ -996,18 +996,23 @@ The keys read, every one also settable on its own:
 | `threads` | `set_threads` | `Runtime.load(threads=)` | `--threads` |
 
 The **floor weight** (`stability_checks.floor_weight`, a finite
-non-negative number, default 2^-12) weighs the first-order term of a
-loop-induced estimate's rounding floor, w x 2^14 u (N S' + S N'), with N
-the size of the computed amplitude and S the size of what cancelled in it,
-per side of |A|^2. The floor stands for the roundings no stability check
-samples. With w = 1 it has its calibrated coverage: on 95,857 binary64
-reference points of both backends, every point the previous floor covered
-stays within ten times E and fewer than 1 in 10^4 exceed E. The default
-2^-12 trades that coverage for a typical one-digit overestimate of the true
-error on strongly cancelling loop-induced processes (g g > z z g g g),
-where the full floor overestimates the error by about four digits; w = 0
-leaves twice the checks plus the second-order term (16 u)^2 S S', which
-keeps an exact zero "zero within its estimate". The weight changes no value
+non-negative number) weighs the first-order term of a loop-induced
+estimate's rounding floor, w x 2^14 u (N S' + S N'), with N the size of the
+computed amplitude and S the size of what cancelled in it, per side of
+|A|^2. The floor stands for the roundings no stability check samples. With
+w = 1 it has its calibrated coverage: on 95,857 binary64 reference points
+of both backends, every point the previous floor covered stays within ten
+times E and fewer than 1 in 10^4 exceed E. Unset, the default depends on
+the highest-point loop the process reduces, in whole floor units (w x
+2^14): 2^14 units (w = 1) up to pentagons, 2^8 (w = 2^-6) for hexagons, 4
+(w = 2^-12) for heptagons and above, not extrapolated beyond. Box and
+pentagon processes have misses below the calibrated count; the hexagon
+value rests on a small sample (2,662 reference points), and the heptagon
+value on projections of stored estimates (693 points), where the full floor
+overestimates the error by about four digits and 4 units leave a typical
+one-digit overestimate (g g > z z g g g). w = 0 leaves twice the checks
+plus the second-order term (16 u)^2 S S', which keeps an exact zero "zero
+within its estimate". A weight that is set applies to every process. The weight changes no value
 and no other estimate (the fallback guard keeps deciding with 16 u S), and
 every estimate reports the weight it was formed with
 (`VirtualStabilityEstimate.floor_weight`).
