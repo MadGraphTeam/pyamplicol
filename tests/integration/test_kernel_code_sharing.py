@@ -138,6 +138,61 @@ def test_shared_kernels_give_the_values_of_a_fresh_process(artifact: Path) -> No
     assert json.loads(fresh.stdout.strip().splitlines()[-1]) == [plain, changed]
 
 
+_COLD_LOADS = textwrap.dedent(
+    """
+    import json, sys, threading
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import Path
+    from pyamplicol import Runtime
+    from pyamplicol._rusticol import _symjit_plane_code_builds
+
+    artifact, process, count = sys.argv[1], sys.argv[2], int(sys.argv[3])
+
+    def executable_maps():
+        return sum(
+            1
+            for line in Path("/proc/self/maps").read_text().splitlines()
+            if line.split()[1] == "r-xp" and "/" not in line and "[" not in line
+        )
+
+    barrier = threading.Barrier(count)
+
+    def load(_):
+        barrier.wait()
+        Runtime.load(artifact, process=process)
+
+    before = (_symjit_plane_code_builds(), executable_maps())
+    with ThreadPoolExecutor(count) as pool:
+        list(pool.map(load, range(count)))
+    after = (_symjit_plane_code_builds(), executable_maps())
+    print(json.dumps([after[0] - before[0], after[1] - before[1]]))
+    """
+)
+
+
+@pytest.mark.skipif(not LINUX, reason="executable mappings are read from /proc")
+def test_concurrent_cold_loads_compile_each_kernel_once(artifact: Path) -> None:
+    """1, 2 and 8 threads load one artifact at the same moment in a fresh
+    process (8 three times: the race is timing dependent): the kernel builds
+    and the anonymous executable mappings they leave equal one load's."""
+
+    def run(count: int) -> list[int]:
+        done = subprocess.run(
+            [sys.executable, "-c", _COLD_LOADS, str(artifact), PROCESS, str(count)],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            env=_environment(),
+            check=True,
+        )
+        return json.loads(done.stdout.strip().splitlines()[-1])
+
+    single = run(1)
+    assert single[0] > 0
+    for count in (2, 8, 8, 8):
+        assert run(count) == single, count
+
+
 _EXHAUSTED = textwrap.dedent(
     """
     import ctypes, mmap, sys
