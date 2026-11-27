@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         NoTreeDiagramError,
         PyAmpliColError,
         ReductionUnavailable,
+        RequestFilterError,
     )
     from .models import (
         CompiledModel,
@@ -158,6 +159,7 @@ __all__ = [
     "PyAmpliColError",
     "ReductionGroup",
     "ReductionUnavailable",
+    "RequestFilterError",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
     "ResultWarning",
@@ -204,6 +206,7 @@ _ERROR_EXPORTS = (
     "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "RequestFilterError",
 )
 _PROTOCOL_EXPORTS = (
     "BenchmarkBackend",

@@ -33,6 +33,7 @@ from pyamplicol.api.errors import (
     ModelError,
     NoTreeDiagramError,
     PyAmpliColError,
+    RequestFilterError,
 )
 from pyamplicol.api.models import CompiledModel, _compiled_model_payload
 from pyamplicol.api.requests import (
@@ -263,6 +264,7 @@ from .validation import (
 
 if TYPE_CHECKING:
     from ..licensing import SymbolicaLicenseState
+    from ..models.builtin.process_types import BuiltinProcessSelectionReport
     from .artifact_writer import ApiBundleHook, ProcessArtifact
     from .process_grouping import ProcessGroupMap
 
@@ -2720,17 +2722,35 @@ class _NoModelSupportedAmplitudes(GenerationError):
 
 
 class _RequestWithoutTreeDiagram(Exception):
-    """A tree-level request without a diagram, collected for the one
-    ``NoTreeDiagramError`` of the call (``reason``: why, when known;
-    ``loop_hint``: whether a loop could serve it)."""
+    """A tree-level request without a diagram, collected for the one refusal
+    of the call (``reason``: why, when known; ``loop_hint``: whether a loop
+    could serve it). With ``settings`` the request has diagrams and those
+    settings remove them all (``RequestFilterError``); without, it has none
+    (``NoTreeDiagramError``)."""
 
     def __init__(
-        self, expression: str, reason: str | None = None, *, loop_hint: bool = True
+        self,
+        expression: str,
+        reason: str | None = None,
+        *,
+        loop_hint: bool = True,
+        settings: tuple[str, ...] = (),
     ) -> None:
         super().__init__(expression)
         self.expression = expression
         self.reason = reason
-        self.loop_hint = loop_hint
+        self.loop_hint = loop_hint and not settings
+        self.settings = settings
+
+
+#: Why the built-in process selection rejects a concrete process
+#: (``BuiltinProcessSelectionReport.rejection_counts``) when no loop can serve it.
+_BUILTIN_CONSERVATION_REJECTIONS = {
+    "charge": "it violates electric-charge conservation",
+    "fermion-family": "it changes a fermion family number, which the built-in "
+    "model conserves",
+    "single-coloured-state": "a single coloured particle cannot be colour neutral",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -5577,45 +5597,110 @@ class GenerationBackend:
     def _no_tree_diagram_error(
         self,
         refusals: Sequence[_RequestWithoutTreeDiagram],
-        *,
-        caps: Mapping[str, int] | None = None,
-    ) -> NoTreeDiagramError:
-        """The one refusal of tree-level requests without a diagram (``caps``:
-        the model's expansion orders that bounded the orders left open)."""
+    ) -> GenerationError:
+        """The one refusal of tree-level requests without a diagram: a
+        ``RequestFilterError`` naming the settings when a setting removes the
+        diagrams of some (the others, without any, follow in its message),
+        else a ``NoTreeDiagramError``."""
 
+        filtered = [refusal for refusal in refusals if refusal.settings]
+        missing = [refusal for refusal in refusals if not refusal.settings]
         orders = self._coupling_order_request_text()
-        where = (
-            f"at the requested coupling orders ({orders})"
-            if orders
-            else ("" if caps else "at any coupling order")
-        )
-        if caps:
-            capped = " ".join(f"{name}<={value}" for name, value in caps.items())
-            where = (
-                f"{where} " if where else ""
-            ) + f"within the model's expansion orders ({capped})"
-        quoted = ", ".join(
-            repr(refusal.expression)
-            + (f" ({refusal.reason})" if refusal.reason else "")
-            for refusal in refusals
-        )
-        single = len(refusals) == 1
-        message = (
-            f"no tree-level diagram: {'process' if single else 'processes'} "
-            f"{quoted} {'has' if single else 'have'} no tree-level Feynman "
-            f"diagram {where}, so there is nothing to generate."
-        )
-        if any(refusal.loop_hint for refusal in refusals):
-            message += (
-                " A process without a tree-level diagram may be loop-induced: "
-                "it is generated at one loop (MG5_aMC syntax '<process> "
-                "[noborn=QCD]', or process.loop_coupling_orders with "
-                "process.loop_induced)."
+        message = ""
+        if missing:
+            quoted = ", ".join(
+                repr(refusal.expression)
+                + (f" ({refusal.reason})" if refusal.reason else "")
+                for refusal in missing
             )
-        return NoTreeDiagramError(
-            message,
-            processes=tuple(refusal.expression for refusal in refusals),
-            coupling_orders=orders,
+            single = len(missing) == 1
+            message = (
+                f"no tree-level diagram: {'process' if single else 'processes'} "
+                f"{quoted} {'has' if single else 'have'} no tree-level Feynman "
+                "diagram at any coupling order, so there is nothing to generate."
+            )
+            if any(refusal.loop_hint for refusal in missing):
+                message += (
+                    " A process without a tree-level diagram may be "
+                    "loop-induced: it is generated at one loop (MG5_aMC syntax "
+                    "'<process> [noborn=QCD]', or process.loop_coupling_orders "
+                    "with process.loop_induced)."
+                )
+        if not filtered:
+            return NoTreeDiagramError(
+                message,
+                processes=tuple(refusal.expression for refusal in missing),
+                coupling_orders=orders,
+            )
+        settings = tuple(
+            dict.fromkeys(name for refusal in filtered for name in refusal.settings)
+        )
+        text = (
+            "request filter: "
+            + "; ".join(str(refusal.reason) for refusal in filtered)
+            + ", so there is nothing to generate; relaxing "
+            + " and ".join(settings)
+            + " serves "
+            + ("it" if len(filtered) == 1 else "them")
+            + "."
+        )
+        return RequestFilterError(
+            f"{text} {message}" if message else text,
+            processes=tuple(refusal.expression for refusal in filtered),
+            settings=settings,
+        )
+
+    def _builtin_request_without_process(
+        self,
+        expression: str,
+        expanded_request: str,
+        report: BuiltinProcessSelectionReport,
+        message: str,
+    ) -> _RequestWithoutTreeDiagram:
+        """Why the built-in selection keeps no concrete process of a request
+        (``message``: the selection's own words): the quark-line cut when the
+        request has processes without it, else the conservation laws its
+        candidates violate, else no connection in the model (loop-induced)."""
+
+        from ..models.builtin.process_selection import (
+            build_generic_process_selection_report,
+        )
+        from ..models.builtin.process_types import BuiltinProcessOptions
+
+        limit = self._max_quark_pairs
+        if limit is not None:
+            uncut = build_generic_process_selection_report(
+                expanded_request,
+                BuiltinProcessOptions(
+                    flavour_scheme=self._builtin_process_options.flavour_scheme,
+                    include_3qqbar=True,
+                ),
+                max_quark_pairs=None,
+            )
+            if uncut.entries:
+                lines = sorted({record.quark_lines for record in uncut.records})
+                counted = " or ".join(str(count) for count in lines)
+                return _RequestWithoutTreeDiagram(
+                    expression,
+                    f"{message}: process.max_quark_lines = {limit} removes every "
+                    f"concrete process of the request (they have {counted} quark "
+                    "lines)",
+                    settings=("process.max_quark_lines",),
+                )
+        reasons = dict(report.rejection_counts)
+        violated = [
+            text
+            for key, text in _BUILTIN_CONSERVATION_REJECTIONS.items()
+            if reasons.get(key)
+        ]
+        if violated and not reasons.get("model-reachability"):
+            return _RequestWithoutTreeDiagram(
+                expression, "; ".join(violated), loop_hint=False
+            )
+        return _RequestWithoutTreeDiagram(
+            expression,
+            "the built-in model connects none of its concrete processes",
+            loop_hint=True,
         )
 
     def _refuse_requests_without_tree_diagrams(
@@ -5638,8 +5723,11 @@ class GenerationBackend:
 
         # The limits every lane builds within (``request_coupling_order_limits``:
         # explicit, else the model's expansion orders under the minimal
-        # policy); the expansion-order caps among them, for the message.
-        explicit = dict(self._coupling_order_limits)
+        # policy); the expansion-order caps among them.
+        explicit = {
+            str(name).upper(): int(value)
+            for name, value in self._coupling_order_limits.items()
+        }
         bounds = (
             explicit
             if model is None
@@ -5647,9 +5735,10 @@ class GenerationBackend:
                 explicit, model, policy=self._coupling_order_policy
             )
         )
-        named = {str(name).upper() for name in explicit}
         caps = {
-            name: value for name, value in sorted(bounds.items()) if name not in named
+            name: value
+            for name, value in sorted(bounds.items())
+            if name not in explicit
         }
 
         def has_diagram(
@@ -5690,29 +5779,17 @@ class GenerationBackend:
                 members.setdefault(source.name, []).append(entry.process_ir)
         refused = {refusal.expression: refusal for refusal in without_concrete_process}
         for name, request in requests.items():
-            if name in supported:
-                continue
-            # A diagram above an expansion-order cap: a named limit decides,
-            # and no loop is needed.
-            above_caps = bool(caps) and any(
-                has_diagram(process, explicit or None)
-                for process in members.get(name, ())
-            )
-            refused.setdefault(
-                request.expression,
-                _RequestWithoutTreeDiagram(
+            if name not in supported:
+                refused.setdefault(
                     request.expression,
-                    (
-                        "a diagram exists above the expansion order of "
-                        + ", ".join(caps)
-                        + "; a limit on that order in process.max_coupling_orders "
-                        "decides"
-                    )
-                    if above_caps
-                    else None,
-                    loop_hint=not above_caps,
-                ),
-            )
+                    self._coupling_order_refusal(
+                        request.expression,
+                        members.get(name, ()),
+                        has_diagram,
+                        explicit,
+                        caps,
+                    ),
+                )
         if refused:
             # In request order.
             order = {
@@ -5722,9 +5799,57 @@ class GenerationBackend:
                 sorted(
                     refused.values(),
                     key=lambda refusal: order.get(refusal.expression, -1),
-                ),
-                caps=caps if model is not None else {},
+                )
             )
+
+    @staticmethod
+    def _coupling_order_refusal(
+        expression: str,
+        processes: Sequence[CanonicalProcessIR],
+        has_diagram: Callable[[CanonicalProcessIR, Mapping[str, int] | None], bool],
+        explicit: Mapping[str, int],
+        caps: Mapping[str, int],
+    ) -> _RequestWithoutTreeDiagram:
+        """A request without a diagram within its coupling-order limits: a
+        filter (the explicit limits, the expansion-order caps, or both, as
+        their removal shows) when it has diagrams without them, else none at
+        any order (loop-induced)."""
+
+        def found(limits: Mapping[str, int] | None) -> bool:
+            return any(has_diagram(process, limits) for process in processes)
+
+        if not (explicit or caps) or not found(None):
+            return _RequestWithoutTreeDiagram(expression)
+        by_explicit = bool(explicit)
+        by_caps = bool(caps)
+        if by_explicit and by_caps:
+            if found(explicit):
+                by_explicit = False
+            elif found(caps):
+                by_caps = False
+
+        def listed(limits: Mapping[str, int]) -> str:
+            return " ".join(f"{name}<={value}" for name, value in limits.items())
+
+        within = []
+        settings = []
+        if by_explicit:
+            within.append(f"process.max_coupling_orders ({listed(explicit)})")
+            settings.append("process.max_coupling_orders")
+        if by_caps:
+            within.append(
+                f"the model's expansion orders ({listed(caps)}), which the "
+                "minimal coupling-order policy applies to the orders the request "
+                f"leaves open (a limit on {', '.join(caps)} in "
+                "process.max_coupling_orders replaces them)"
+            )
+            settings.append("process.coupling_order_policy")
+        return _RequestWithoutTreeDiagram(
+            expression,
+            f"process {expression!r} has tree-level diagrams, but none within "
+            + " and ".join(within),
+            settings=tuple(settings),
+        )
 
     def _drop_processes_without_amplitudes(
         self,
@@ -8572,18 +8697,15 @@ class GenerationBackend:
             except ValueError as exc:
                 # The enumeration finds no concrete process the built-in model
                 # connects (and says so with a ValueError).
-                if not tree_refusal or (
-                    build_generic_process_selection_report(
-                        expanded_request,
-                        self._builtin_process_options,
-                        max_quark_pairs=self._max_quark_pairs,
-                    ).entries
-                ):
+                report = build_generic_process_selection_report(
+                    expanded_request,
+                    self._builtin_process_options,
+                    max_quark_pairs=self._max_quark_pairs,
+                )
+                if not tree_refusal or report.entries:
                     raise
-                raise _RequestWithoutTreeDiagram(
-                    request.expression,
-                    "the built-in model connects none of its concrete processes",
-                    loop_hint=True,
+                raise self._builtin_request_without_process(
+                    request.expression, expanded_request, report, str(exc)
                 ) from exc
             return tuple(
                 build_process_ir(
@@ -8944,9 +9066,18 @@ class GenerationBackend:
                 f"process {process.process!r} DAG was unexpectedly truncated"
             )
         if not dag.has_amplitudes:
+            limit = self._max_quark_pairs
+            cut = (
+                ""
+                if limit is None or process.color_endpoints.pair_count <= limit
+                else (
+                    f": process.max_quark_lines = {limit} removes it (it has "
+                    f"{process.color_endpoints.pair_count} quark lines)"
+                )
+            )
             raise _NoModelSupportedAmplitudes(
                 f"process {process.process!r} has no model-supported tree-level "
-                "amplitudes"
+                f"amplitudes{cut}"
             )
         return (
             dag,

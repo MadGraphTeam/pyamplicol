@@ -109,6 +109,7 @@ if TYPE_CHECKING:
         PyAmpliColError,
         ReductionGroup,
         ReductionUnavailable,
+        RequestFilterError,
         ResolvedEvaluation,
         Runtime,
         TreeGradedEvaluation,
@@ -220,6 +221,7 @@ __all__ = [
     "ReductionBackend",
     "ReductionGroup",
     "ReductionUnavailable",
+    "RequestFilterError",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
     "ResultWarning",
@@ -261,6 +263,7 @@ _ERROR_EXPORTS = (
     "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "RequestFilterError",
 )
 _REQUEST_EXPORTS = (
     "ModelSource",

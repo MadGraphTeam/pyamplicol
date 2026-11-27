@@ -323,9 +323,18 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 f"process {process.process!r} DAG was unexpectedly truncated"
             )
         if not dag.has_amplitudes:
+            limit = self._max_quark_pairs
+            cut = (
+                ""
+                if limit is None or process.color_endpoints.pair_count <= limit
+                else (
+                    f": process.max_quark_lines = {limit} removes it (it has "
+                    f"{process.color_endpoints.pair_count} quark lines)"
+                )
+            )
             raise _NoModelSupportedAmplitudes(
                 f"process {process.process!r} has no model-supported "
-                "tree-level amplitudes"
+                f"tree-level amplitudes{cut}"
             )
         return dag, {
             "key": process.key,

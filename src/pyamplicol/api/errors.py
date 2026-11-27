@@ -23,7 +23,9 @@ class NoTreeDiagramError(GenerationError):
     Raised before any execution lane is built, the same for every lane and
     model source. ``processes`` holds the request expressions without a
     diagram; ``coupling_orders`` describes the requested coupling-order
-    limits (empty: none). Such a process may be loop-induced: it is then
+    limits (empty: none). A request that has diagrams without a setting that
+    removes them all raises ``RequestFilterError`` instead. Such a process may
+    be loop-induced: it is then
     served at one loop (``process.loop_coupling_orders`` with
     ``process.loop_induced``, MG5_aMC syntax ``[noborn=QCD]``).
     ``key`` is ``"no-tree-diagram"``."""
@@ -40,6 +42,31 @@ class NoTreeDiagramError(GenerationError):
         super().__init__(message)
         self.processes = processes
         self.coupling_orders = coupling_orders
+
+
+class RequestFilterError(GenerationError):
+    """A setting of the request removes every tree-level process or diagram
+    that the request has without it.
+
+    Raised before any execution lane is built. The message names the setting
+    (``process.max_quark_lines``, ``process.max_coupling_orders``, the model's
+    coupling-order expansion orders under the ``minimal`` policy) and what it
+    removed; relaxing that setting serves the request. ``processes`` holds the
+    request expressions so emptied and ``settings`` the settings that emptied
+    them. ``key`` is ``"request-filter"``."""
+
+    key = "request-filter"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        processes: tuple[str, ...] = (),
+        settings: tuple[str, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.processes = processes
+        self.settings = settings
 
 
 class ArtifactError(PyAmpliColError):
@@ -129,4 +156,5 @@ __all__ = [
     "NoTreeDiagramError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "RequestFilterError",
 ]
