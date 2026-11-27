@@ -434,10 +434,28 @@ fn contribution_instruction(
     }
 }
 
+/// The binary64 values of the plan's exact factors, as an unweighted
+/// scheduler holds them before any run-time factor weight.
+#[cfg(test)]
+pub(crate) fn exact_export_factors(plan: &DirectRecurrencePlan) -> Vec<ExportComplex> {
+    plan.exact_factors()
+        .iter()
+        .map(|factor| ExportComplex {
+            re: factor.real().numerator() as f64 / factor.real().denominator() as f64,
+            im: factor.imag().numerator() as f64 / factor.imag().denominator() as f64,
+        })
+        .collect()
+}
+
 /// Lower the already bound batched schedule without executing a phase-space
-/// point. The caller supplies the *selected* row groups and prepared clears.
+/// point. The caller supplies the *selected* row groups, prepared clears and
+/// the scheduler's prepared factor table (`factors`, one value per exact
+/// factor of the plan): the instructions embed these values, so run-time
+/// factor weights (the QED-order weights of a several-order built-in Born)
+/// reach the exported program exactly as the runtime applies them.
 pub(crate) fn export_direct_body(
     plan: &DirectRecurrencePlan,
+    factors: &[ExportComplex],
     groups: &[DirectRowGroupDescriptor],
     clears: &[DirectStageClearRanges],
     executors: &BTreeMap<u32, DirectExportExecutor>,
@@ -449,14 +467,11 @@ pub(crate) fn export_direct_body(
 )> {
     let mut bindings = Vec::new();
     let mut source_rows = Vec::new();
-    let factors = plan
-        .exact_factors()
-        .iter()
-        .map(|factor| ExportComplex {
-            re: factor.real().numerator() as f64 / factor.real().denominator() as f64,
-            im: factor.imag().numerator() as f64 / factor.imag().denominator() as f64,
-        })
-        .collect::<Vec<_>>();
+    if factors.len() != plan.exact_factors().len() {
+        return Err(invalid(
+            "prepared factor table does not match the plan's exact factors",
+        ));
+    }
     let factor = |id: u32| {
         factors
             .get(id as usize)
@@ -725,8 +740,15 @@ mod tests {
             }]
             .into_boxed_slice(),
         }];
-        let (body, _, source_rows) =
-            export_direct_body(&plan, &plan.row_groups()[..3], &clears, &executors, None).unwrap();
+        let (body, _, source_rows) = export_direct_body(
+            &plan,
+            &exact_export_factors(&plan),
+            &plan.row_groups()[..3],
+            &clears,
+            &executors,
+            None,
+        )
+        .unwrap();
         assert_eq!(source_rows, [0]);
         assert!(matches!(
             body[0],
@@ -923,9 +945,15 @@ mod tests {
             parts.exact_factors.push(factor);
             parts.row_groups[1].direct_executor_id = DIRECT_NONE_U32;
             let plan = DirectRecurrencePlan::new(parts).unwrap();
-            let (body, bindings, sources) =
-                export_direct_body(&plan, &plan.row_groups()[1..2], &[], &BTreeMap::new(), None)
-                    .unwrap();
+            let (body, bindings, sources) = export_direct_body(
+                &plan,
+                &exact_export_factors(&plan),
+                &plan.row_groups()[1..2],
+                &[],
+                &BTreeMap::new(),
+                None,
+            )
+            .unwrap();
             assert!(bindings.is_empty());
             assert!(sources.is_empty());
             assert_eq!(body.len(), 2);
@@ -1016,6 +1044,7 @@ mod tests {
         )]);
         let (body, _, _) = export_direct_body(
             &plan,
+            &exact_export_factors(&plan),
             &plan.row_groups()[1..2],
             &[],
             &executors,

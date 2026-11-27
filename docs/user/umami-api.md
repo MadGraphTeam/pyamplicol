@@ -179,7 +179,13 @@ An αs input is advertised only for an explicit model mapping or a standard UFO
 external `SMINPUTS[3]` declaration. It is not guessed from particle names or
 coupling powers. The built-in demonstration model has no such declaration, so
 its integration uses the saved coupling defaults; a suitable UFO model can
-support the optional running-coupling workflow.
+support the optional running-coupling workflow. For a built-in provider,
+`UMAMI_IN_ALPHA_S` is therefore refused with `UMAMI_ERROR_UNSUPPORTED_INPUT`,
+also for a Born of several coupling orders. A persistent
+`umami_set_parameter("normalization.alpha_s_me_check", ...)` goes through the
+same validated setter as the other APIs: it reweights each coupling order,
+and it refuses a value outside the range in
+[Models and processes](models-and-processes.md).
 
 `UMAMI_META_MASSES` contains the **saved default** external masses and is not
 handle-specific. An integrator using these fixed masses must not change mass

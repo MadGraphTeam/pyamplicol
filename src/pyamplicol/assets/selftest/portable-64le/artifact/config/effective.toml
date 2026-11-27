@@ -12,6 +12,7 @@ entries = [{ expression = "d d~ > z" }]
 flavor_scheme = 5
 coupling_order_policy = "minimal"
 loop_induced = "auto"
+squared_coupling_orders = []
 reference_color_order = []
 selected_color_sector_ids = []
 flavor_blind = false
@@ -28,6 +29,7 @@ analyze_process_groups = "none"
 [loop]
 r2_strategy = "auto"
 reduction = "auto"
+external_widths = "model"
 external_photons = "final"
 alpha0_conversion_parameter = "eCoup_DGmua0_UV_EW"
 
@@ -112,6 +114,7 @@ orders = false
 on_failure = "raise"
 poles = "all"
 reduction_unchecked = false
+lane_rescue = true
 helicity_ids = []
 color_flow_ids = []
 
@@ -125,6 +128,10 @@ rotation_count = 0
 reduction_direction = false
 rescaled = false
 
+[evaluation.phase_space]
+points = 2
+seed = 1
+
 [benchmark]
 target_runtime = 10.0
 batch_size = 128
@@ -133,6 +140,14 @@ warmup_runs = 2
 minimum_samples = 5
 helicity_ids = []
 color_flow_ids = []
+runtime = false
+stability = false
+stability_points = 1000
+n_core = 10
+ground_truth = "double-double"
+measured_precisions = ["binary64"]
+checked = false
+runtime_threads = 1
 
 [check]
 points = 3

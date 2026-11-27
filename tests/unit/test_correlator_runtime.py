@@ -95,6 +95,27 @@ def test_spectator_helicities_are_summed_incoherently():
     # Coherently adding helicities would give (-72, 0), a different observable.
 
 
+def test_certified_zero_groups_contract_as_exact_zeros_and_nothing_else():
+    """Helicity +1 has no group in sector 1: an exact zero only when listed."""
+
+    matrix = _matrix(_matrix_record())
+    batch = CoherentAmplitudeBatch(
+        ((_amplitude(1), _amplitude(1j), _amplitude(2)),),
+        (_group(-1, 0, 0), _group(-1, 1, 1), _group(1, 0, 2)),
+        Decimal("1.5"),
+        60,
+        (),
+    )
+    zero = frozenset({((1,), 1)})
+    # (-7, -18) from helicity -1, and conj(2) (-16/3) 2 (3/2) = -32 from +1.
+    assert _contract(batch, matrix, precision=40, zero_groups=zero) == (
+        CorrelatedValue(Decimal(-39), Decimal(-18)),
+    )
+    for zero_groups in (frozenset(), frozenset({((1,), 0)}), zero | {((-1,), 1)}):
+        with pytest.raises(ArtifactError, match="do not cover the colour matrix"):
+            _contract(batch, matrix, precision=40, zero_groups=zero_groups)
+
+
 def test_batched_and_single_point_contractions_agree():
     points = [(1, 1j), (2, 2j), (3 - 1j, 2 + 4j)]
     matrix = _matrix(_matrix_record())
@@ -196,7 +217,14 @@ def test_reducer_checks_amplitude_matrix_shape(defect):
 
 class _Executor:
     def __init__(
-        self, artifact, process_id, native, *, spin_correlated_legs, coherent_groups
+        self,
+        artifact,
+        process_id,
+        native,
+        *,
+        spin_correlated_legs,
+        coherent_groups,
+        zero_groups=frozenset(),
     ):
         self.legs = spin_correlated_legs
         self.groups = coherent_groups

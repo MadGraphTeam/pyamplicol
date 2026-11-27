@@ -42,10 +42,9 @@ The default tier checks two of the six, the four named emission processes and
 the zero flow itself; the full list runs in the nightly tier.
 
 At full colour, ``u u~ > d d~ s s~`` and ``u d > u d s s~`` at QCD = 0, and
-``u c~ > d s~ d d~``, reach a different refusal: their helicity-selector
-companion needs complete per-sector helicity blocks of the primary colour
-reducer, which a helicity-dependent zero (the W pairing of these lines exists
-for some helicities only) does not give. That is pinned as a refusal here.
+``u c~ > d s~ d d~``, also have a helicity-dependent zero (the W pairing of
+these lines exists for some helicities only); they build and match MadGraph
+(``test_tree_full_colour_helicity_zeros``).
 """
 
 from __future__ import annotations
@@ -57,7 +56,7 @@ from pathlib import Path
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime
-from pyamplicol.api.errors import EvaluationError, GenerationError
+from pyamplicol.api.errors import EvaluationError
 from pyamplicol.config import (
     ColorConfig,
     EvaluatorConfig,
@@ -97,14 +96,6 @@ PURE_ELECTROWEAK = {
     "u u~ > d d~ s s~": {"QCD": 0, "QED": 4},
     "u d > u d s s~": {"QCD": 0, "QED": 4},
 }
-# Full colour: the helicity-selector companion refuses a primary colour
-# reducer with incomplete per-sector helicity blocks (module docstring).
-_FULL_COLOUR_HELICITY_BLOCK_REFUSALS = frozenset(
-    {"u u~ > d d~ s s~", "u d > u d s s~", "u c~ > d s~ d d~"}
-)
-_HELICITY_BLOCK_REFUSAL = (
-    "local-color view requires a direct, Walsh, or symmetric-group Fourier reducer"
-)
 
 
 def _references(path: Path) -> dict[str, dict[str, object]]:
@@ -189,16 +180,6 @@ def _check(
 ) -> None:
     entry = _references(REFERENCE if accuracy == "full" else LC_REFERENCE)[process]
     limits = PURE_ELECTROWEAK.get(process, ALL_ORDERS)
-    if (
-        accuracy == "full"
-        and execution_mode == "recurrence"
-        and process in _FULL_COLOUR_HELICITY_BLOCK_REFUSALS
-    ):
-        with pytest.raises(GenerationError, match=_HELICITY_BLOCK_REFUSAL):
-            _runtime(
-                model, process, tmp_path / "artifact", accuracy=accuracy, limits=limits
-            )
-        return
     runtime = _runtime(
         model,
         process,
@@ -572,18 +553,6 @@ def test_a_binding_that_revives_a_zero_flow_is_refused(
     )
     with pytest.raises(EvaluationError, match=refusal):
         Runtime.load(artifact, model_parameters={"MT": 174.0})
-    if accuracy == "full" and execution_mode == "recurrence":
-        # u d > u d at QCD = 0 has a helicity-dependent zero at MT = 174: the
-        # full-colour refusal of the module docstring.
-        with pytest.raises(GenerationError, match=_HELICITY_BLOCK_REFUSAL):
-            _runtime(
-                prepared[174],
-                "u d > u d",
-                tmp_path / "at-174",
-                accuracy=accuracy,
-                limits=limits,
-            )
-        return
     fresh = _runtime(
         prepared[174],
         "u d > u d",

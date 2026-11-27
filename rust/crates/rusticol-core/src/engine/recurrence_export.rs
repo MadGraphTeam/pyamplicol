@@ -320,6 +320,7 @@ impl NativeRuntime {
                             export_stage_clears(plan, Some(selector.representative_flow_id()))?;
                         let (body, bindings, source_rows) = export_direct_body(
                             plan,
+                            &factors,
                             selector.selected_row_groups(),
                             &clears,
                             &executors,
@@ -411,6 +412,7 @@ impl NativeRuntime {
                                 let clears = export_stage_clears(plan, None)?;
                                 let (body, bindings, rows) = export_direct_body(
                                     plan,
+                                    &factors,
                                     plan.row_groups(),
                                     &clears,
                                     &executors,

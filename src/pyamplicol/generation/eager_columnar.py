@@ -27,7 +27,7 @@ from ..color.contraction_types import (
     ColorContractionTemplateEntry,
 )
 from ..models.base import Model
-from .born_orders import RuntimeNormalizationRequest
+from .born_orders import RuntimeNormalizationRequest, runtime_normalization_payload
 from .contracts import runtime_coupling_parameter_names
 from .dag_types import GenericDAG
 from .eager_lowering import EagerKernelResolver, EagerResolvedKernel
@@ -639,8 +639,9 @@ class _Builder:
         )
         columns["normalization_ir_id"][0] = self.ir.add(
             dict(
-                self.model.runtime_normalization_payload(
-                    RuntimeNormalizationRequest.of_dag(self.dag, self.model)
+                runtime_normalization_payload(
+                    self.model,
+                    RuntimeNormalizationRequest.of_dag(self.dag, self.model),
                 )
             ),
             "runtime normalization",

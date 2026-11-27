@@ -5,7 +5,8 @@ use crate::direct_arena::{
     DirectArenaView, DirectFactorView, DirectMomentumView, DirectParameterView,
 };
 use crate::recurrence::direct_export::{
-    DirectExportExecutor, DirectExportInstruction, ExportComplex, export_direct_body,
+    DirectExportExecutor, DirectExportInstruction, ExportComplex, exact_export_factors,
+    export_direct_body,
 };
 use crate::recurrence::{
     DirectExecutorRole, DirectRecurrencePlan, valid_direct_plan_parts_fixture,
@@ -63,7 +64,15 @@ fn recurrence_export_closure_roundtrip_matches_native_bits() {
             coupling: ExportComplex::ONE,
         },
     )]);
-    let (body, _, _) = export_direct_body(&plan, &groups, &[], &executors, None).unwrap();
+    let (body, _, _) = export_direct_body(
+        &plan,
+        &exact_export_factors(&plan),
+        &groups,
+        &[],
+        &executors,
+        None,
+    )
+    .unwrap();
     let body: Vec<DirectExportInstruction> =
         serde_json::from_str(&serde_json::to_string(&body).unwrap()).unwrap();
     let points = 5usize;
@@ -1470,6 +1479,7 @@ fn check_every_exported_process(root: &Path) {
     let points = 5;
     let mut tested_programs = 0;
     let mut tested_values = 0;
+    let mut tested_rebound_programs = 0;
     let mut representatives = BTreeMap::<String, RecurrenceExport>::new();
     for process_id in process_ids {
         let mut runtime = NativeRuntime::load(root, Some(&process_id), None).unwrap();
@@ -1547,6 +1557,49 @@ fn check_every_exported_process(root: &Path) {
             tested_programs += 1;
             tested_values += actual.len();
         }
+        // An export is resolved at the runtime's current parameters: after a
+        // change of the normalization inputs (alpha_s and alpha_ew, then
+        // alpha_ew = 0) a new export replays the live runtime bit for bit. A
+        // built-in Born of several coupling orders weighs its closure factors
+        // by these inputs, and the body embeds the weighted factors.
+        let rebindings: [&[(&str, f64)]; 2] = [
+            &[
+                ("normalization.alpha_s_me_check", 0.13),
+                ("normalization.alpha_ew", 1.0 / 128.0),
+            ],
+            &[("normalization.alpha_ew", 0.0)],
+        ];
+        for rebinding in rebindings {
+            let mut changed = false;
+            for (name, value) in rebinding {
+                if export
+                    .parameters
+                    .iter()
+                    .any(|parameter| parameter.name == *name)
+                {
+                    runtime.set_model_parameter(name, *value, 0.0).unwrap();
+                    changed = true;
+                }
+            }
+            if !changed {
+                continue;
+            }
+            let rebound = runtime.export_recurrence(None).unwrap();
+            for program in &rebound.programs {
+                let expected = runtime
+                    .evaluate_resolved_f64(
+                        &momenta,
+                        points,
+                        None,
+                        Some(std::slice::from_ref(&program.colour_id)),
+                    )
+                    .unwrap();
+                let actual =
+                    interpret_recurrence_export(program, &rebound.kernels, &momenta, points);
+                assert_export_values(program, &actual, &expected.values);
+                tested_rebound_programs += 1;
+            }
+        }
     }
     assert!(
         tested_programs > 0,
@@ -1554,7 +1607,7 @@ fn check_every_exported_process(root: &Path) {
         root.display()
     );
     eprintln!(
-        "recurrence export parity for {}: {tested_programs} programs, {tested_values} per-helicity values, including all requested provider members",
+        "recurrence export parity for {}: {tested_programs} programs, {tested_values} per-helicity values, including all requested provider members; {tested_rebound_programs} programs re-exported after a change of alpha_s or alpha_ew",
         root.display()
     );
 }

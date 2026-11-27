@@ -16,12 +16,14 @@ The built-in-vs-UFO comparison is
 from __future__ import annotations
 
 import importlib.util
+import json
 import math
 from pathlib import Path
 
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime
+from pyamplicol._internal.qed_order_weights import QED_ORDER_WEIGHTED_COUPLING_POLICY
 from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
@@ -33,7 +35,10 @@ from pyamplicol.config import (
     ProcessConfig,
     RunConfig,
 )
-from pyamplicol.generation.born_orders import RuntimeNormalizationRequest
+from pyamplicol.generation.born_orders import (
+    RuntimeNormalizationRequest,
+    runtime_normalization_payload,
+)
 from pyamplicol.models import BuiltinSMModel
 from pyamplicol.models.builtin.process_ir import build_process_ir
 
@@ -223,25 +228,40 @@ def test_every_execution_mode_normalizes_the_colourless_born(
     _assert_analytic(Runtime.load(tmp_path / "artifact"), process)
 
 
-def test_born_amplitudes_of_several_coupling_orders_are_refused(
+def test_born_amplitudes_of_several_coupling_orders_are_weighed_by_their_orders(
     tmp_path: Path,
 ) -> None:
-    """One global factor cannot weigh Born amplitudes of different orders
-    against each other: u u~ > d d~ with the gluon and the photon, Z and W
-    exchanges between its quark lines is refused in every lane, naming them."""
+    """u u~ > d d~ with the gluon and the photon, Z and W exchanges between its
+    quark lines: the global factor becomes (4 pi alpha_s)^2 and each QED order
+    of an amplitude carries sqrt(8 pi alpha / (4 pi alpha_s)), so the value
+    with the interference is MadGraph's sum of split orders in every lane (the
+    full matrix: ``test_builtin_sm_mixed_orders``). A single Born order keeps
+    its own powers."""
 
     if importlib.util.find_spec("pyamplicol._rusticol") is None:
         pytest.skip("the Rusticol extension has not been built")
     orders = ProcessConfig(
         coupling_order_policy="explicit", max_coupling_orders={"QCD": 2, "QED": 2}
     )
+    reference_path = (
+        Path(__file__).resolve().parents[1] / "fixtures/tree/madgraph-split-orders.json"
+    )
+    (reference,) = (
+        entry
+        for entry in json.loads(reference_path.read_text(encoding="utf-8"))["processes"]
+        if entry["process"] == "u u~ > d d~"
+    )
     for execution_mode in ("compiled", "recurrence"):
-        with pytest.raises(GenerationError, match=r"QCD\^0 QED\^2, QCD\^2 QED\^0"):
-            Generator(_config(execution_mode, orders)).generate(
-                "u u~ > d d~",
-                tmp_path / execution_mode,
-                model=ModelSource.built_in_sm(),
-            )
+        Generator(_config(execution_mode, orders)).generate(
+            "u u~ > d d~",
+            tmp_path / execution_mode,
+            model=ModelSource.built_in_sm(),
+        )
+        runtime = Runtime.load(tmp_path / execution_mode)
+        values = runtime.evaluate(reference["points"])
+        for value, partials in zip(values, reference["partials"], strict=True):
+            scale = math.fsum(abs(partial) for partial in partials)
+            assert abs(complex(value).real - math.fsum(partials)) <= 1e-12 * scale
     model = BuiltinSMModel()
     process = build_process_ir("u u~ > d d~")
     single = RuntimeNormalizationRequest(process, lambda: ((("QCD", 2),),))
@@ -250,6 +270,16 @@ def test_born_amplitudes_of_several_coupling_orders_are_refused(
         2,
         0,
     )
+    mixed = runtime_normalization_payload(
+        model,
+        RuntimeNormalizationRequest(process, lambda: ((("QCD", 2),), (("QED", 2),))),
+    )
+    assert (mixed["qcd_coupling_power"], mixed["electroweak_coupling_power"]) == (2, 0)
+    assert mixed["coupling_policy"] == QED_ORDER_WEIGHTED_COUPLING_POLICY
+    with pytest.raises(GenerationError, match="QCD\\^0 QED\\^2, QCD\\^2 QED\\^0"):
+        model.runtime_normalization_payload(
+            RuntimeNormalizationRequest(process, lambda: ((("QCD", 2),), (("QED", 2),)))
+        )
 
 
 def test_an_artifact_of_another_built_in_sm_source_warns_at_load(

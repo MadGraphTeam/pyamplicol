@@ -297,14 +297,18 @@ class CorrelatedExactExecutor(SymbolicaExactExecutor):
         *,
         spin_correlated_legs: Sequence[int] = (),
         coherent_groups: Sequence[Mapping[str, object]] | None = None,
+        zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset(),
     ) -> None:
         super().__init__(artifact, process_id, native_runtime)
-        self._initialize_correlated_plan(spin_correlated_legs, coherent_groups)
+        self._initialize_correlated_plan(
+            spin_correlated_legs, coherent_groups, zero_groups
+        )
 
     def _initialize_correlated_plan(
         self,
         spin_correlated_legs: Sequence[int],
         coherent_groups: Sequence[Mapping[str, object]] | None = None,
+        zero_groups: frozenset[tuple[tuple[int, ...], int]] = frozenset(),
     ) -> None:
         particles = _records(
             self._physics.get("external_particles"), "external particles"
@@ -476,17 +480,36 @@ class CorrelatedExactExecutor(SymbolicaExactExecutor):
                 "correlated coherent groups do not cover "
                 "the retained physical helicities"
             )
+        # Every retained helicity carries the same colour basis, except for
+        # the (helicity, sector) amplitudes generation certified as exact
+        # zeros (``zero_groups``): those sectors have no group there.
         color_basis: dict[str, set[tuple[int, tuple[int, ...]]]] = {}
+        values_by_helicity: dict[str, tuple[int, ...]] = {}
         for group in groups:
             basis = color_basis.setdefault(group.helicity_id, set())
             color = (group.color_sector_id, group.color_word)
             basis.add(color)
-        if color_basis and any(
-            basis != next(iter(color_basis.values())) for basis in color_basis.values()
+            values_by_helicity[group.helicity_id] = group.helicities
+        owners = set().union(*color_basis.values()) if color_basis else set()
+        if any(
+            values not in helicity_by_values
+            or helicity_by_values[values] not in color_basis
+            or sector not in {owner for owner, _ in owners}
+            for values, sector in zero_groups
         ):
             raise ArtifactError(
-                "correlated coherent groups have incomplete helicity/color coverage"
+                "correlated zero groups name an unretained helicity or sector"
             )
+        for helicity_id, basis in color_basis.items():
+            zeros = {
+                sector
+                for values, sector in zero_groups
+                if values == values_by_helicity[helicity_id]
+            }
+            if basis != {color for color in owners if color[0] not in zeros}:
+                raise ArtifactError(
+                    "correlated coherent groups have incomplete helicity/color coverage"
+                )
         self._coherent_groups = tuple(groups)
         self._known_helicity_ids = frozenset(helicity_by_values.values())
         self._coherent_root_indices = {

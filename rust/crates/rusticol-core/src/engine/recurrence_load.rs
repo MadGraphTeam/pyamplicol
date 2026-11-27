@@ -374,6 +374,9 @@ fn validate_ready_runtime_capabilities(ready: &RecurrenceReadyExecutionV1) -> Ru
     if ready.companion.is_some() {
         expected.push(RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY);
     }
+    if is_qed_order_weighted_policy(Some(ready.runtime.normalization.coupling_policy.as_str())) {
+        expected.push(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY);
+    }
     expected.sort_unstable();
     if ready
         .required_runtime_capabilities
@@ -4087,6 +4090,7 @@ fn build_common_runtime(
             normalization_electroweak_coupling_power: normalization
                 .electroweak_coupling_power
                 .unwrap_or(0),
+            normalization_coupling_policy: normalization.coupling_policy.clone(),
         },
     )?;
     Ok((
@@ -4169,6 +4173,7 @@ fn build_ready_common_runtime(
                 .normalization
                 .electroweak_coupling_power
                 .unwrap_or(0),
+            normalization_coupling_policy: runtime.normalization.coupling_policy.clone(),
         },
     )?;
     Ok((
@@ -4237,6 +4242,7 @@ struct RecurrenceCommonRuntimeDefinition {
     normalization_identical_factor: f64,
     normalization_qcd_coupling_power: u64,
     normalization_electroweak_coupling_power: u64,
+    normalization_coupling_policy: String,
 }
 
 #[cfg_attr(target_vendor = "apple", unsafe(link_section = crate::rcl_load_section!()))]
@@ -4262,7 +4268,14 @@ fn assemble_common_runtime(
         normalization_identical_factor,
         normalization_qcd_coupling_power,
         normalization_electroweak_coupling_power,
+        normalization_coupling_policy,
     } = definition;
+    let mut model_parameter_values_f64 = model_parameter_values_f64;
+    let qed_order_weights = QedOrderWeights::for_policy(
+        Some(normalization_coupling_policy.as_str()),
+        &runtime_parameters,
+        &mut model_parameter_values_f64,
+    )?;
     let external_count = external_pdg_order.len();
     if plan.external_source_count() as usize != external_count
         || external_is_initial.len() != external_count
@@ -4346,6 +4359,7 @@ fn assemble_common_runtime(
             normalization_electroweak_coupling_power,
         )
         .map_err(|_| RusticolError::artifact("electroweak coupling power exceeds usize"))?,
+        qed_order_weights,
         model_parameters: runtime_parameters,
         model_parameter_name_to_index,
         model_parameter_runtime_slots,
