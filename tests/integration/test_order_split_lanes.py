@@ -649,6 +649,27 @@ _LAYOUTS = (
         {"jit_optimization_level": 1},
         id="compiled-lc-jit-o1",
     ),
+    pytest.param(
+        "compiled",
+        {"accuracy": "full"},
+        {"backend": "cpp"},
+        id="compiled-full-cpp",
+        marks=pytest.mark.skipif(
+            __import__("shutil").which("c++") is None, reason="no C++ compiler"
+        ),
+    ),
+    pytest.param(
+        "compiled",
+        {"accuracy": "lc"},
+        {"process": {"selected_color_sector_ids": (1,)}},
+        id="compiled-lc-fixed-colour-sector",
+    ),
+    pytest.param(
+        "compiled",
+        {"accuracy": "full"},
+        {"process": {"selected_source_helicities": {"1": 1, "5": -1}}},
+        id="compiled-full-fixed-source-helicities",
+    ),
     pytest.param("on-the-fly", {"accuracy": "lc"}, {}, id="on-the-fly-lc"),
     pytest.param("on-the-fly", {"accuracy": "nlc"}, {}, id="on-the-fly-nlc"),
     pytest.param("on-the-fly", {"accuracy": "full"}, {}, id="on-the-fly-full-auto"),
@@ -687,7 +708,9 @@ def _layout_runtime(
         model=ModelConfig(cache=False),
         color=ColorConfig(**color),
         process=ProcessConfig(
-            coupling_order_policy="explicit", max_coupling_orders=limits
+            coupling_order_policy="explicit",
+            max_coupling_orders=limits,
+            **dict(options.get("process", {})),  # type: ignore[arg-type]
         ),
         generation=GenerationConfig(
             workers=1,
@@ -821,4 +844,49 @@ def test_compiled_all_flow_union_partials_run_every_helicity_schedule(
         )
         _assert_same_partials(
             selected, recurrence.evaluate_orders(points, helicities=[helicity]), 1e-12
+        )
+
+    # Above binary64 the exact executor runs every helicity's schedule too:
+    # its partials are the exact total's decomposition and equal the
+    # recurrence lane's exact partials.
+    for selectors in ({}, {"helicities": ["h:-1,+1,-1,+1" + ",-1" * gluons]}):
+        exact = runtime.evaluate_orders(points, precision=32, **selectors)
+        reference = recurrence.evaluate_orders(points, precision=32, **selectors)
+        assert exact.total == runtime.evaluate(points, precision=32, **selectors)
+        assert exact.orders == reference.orders
+        scale = sum(abs(value) for value in reference.values[0])
+        assert abs(sum(exact.values[0]) - exact.total[0]) <= Decimal("1e-25") * scale
+        # The two lanes' exact totals of this built-in several-order process
+        # already differ at 1e-17 (the same at 32 and 50 digits: an input of
+        # the electroweak weighting held in binary64), so the lanes are
+        # compared at 1e-15; the split itself is exact (the sum above).
+        for value, expected in zip(exact.values[0], reference.values[0], strict=True):
+            assert abs(value - expected) <= Decimal("1e-15") * scale
+
+
+@pytest.mark.parametrize(
+    "fixed",
+    [
+        {"selected_color_sector_ids": (1,)},
+        {"selected_source_helicities": {"1": 1, "5": -1}},
+    ],
+)
+def test_on_the_fly_refuses_generation_fixed_coverage(
+    sm_model: ModelSource, tmp_path: Path, fixed: dict[str, object]
+) -> None:
+    """On-the-fly keeps every selection at run time: generation-fixed colour
+    sectors or source helicities are refused when the artifact is built, so
+    no on-the-fly artifact of that kind exists to split."""
+
+    from pyamplicol.api.errors import GenerationError
+
+    with pytest.raises(GenerationError, match="complete runtime selector coverage"):
+        _layout_runtime(
+            sm_model,
+            "u u~ > d d~ g",
+            tmp_path / "artifact",
+            "on-the-fly",
+            {"accuracy": "lc" if "selected_color_sector_ids" in fixed else "full"},
+            {"process": fixed},
+            {"QCD": 3, "QED": 2},
         )
