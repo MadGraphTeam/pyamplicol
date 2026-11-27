@@ -215,6 +215,7 @@ def test_a_loop_induced_request_stays_within_the_expansion_order(
 ) -> None:
     from pyamplicol import ProcessRequest, ProcessSet
     from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
+    from pyamplicol.models.loading import compile_model_source
 
     model = tmp_path / "loop_sm_qed1"
     shutil.copytree(
@@ -230,6 +231,9 @@ def test_a_loop_induced_request_stays_within_the_expansion_order(
     )
     assert count == 1
     orders.write_text(text, encoding="utf-8")
+    # A dry run compiles no model source: compile the copy into the model
+    # cache first, as generation would.
+    compile_model_source(str(model), restriction="no_b_mass")
     processes = ProcessSet((ProcessRequest.parse("g g > a a", name="gg_aa"),))
 
     default = _loop_generator(model, tmp_path / "default", "")
