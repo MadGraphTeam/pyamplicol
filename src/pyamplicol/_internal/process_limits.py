@@ -11,12 +11,13 @@ Symbolica ``PanicException`` (not even an ``Exception``), a SymJIT
 "unable to make memory readable+executable ... os error 12" error, a
 ``MemoryError``. :func:`resource_exhaustion` recognises these and returns
 the typed :class:`pyamplicol.api.errors.ResourceExhaustedError` to raise in
-their place.
+their place, and only when the process's map count corroborates it.
 """
 
 from __future__ import annotations
 
 import contextlib
+import errno
 import functools
 import os
 import platform
@@ -30,12 +31,11 @@ if TYPE_CHECKING:
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
-# The kernel's mprotect/mmap refusal as SymJIT reports it.
-_SIGNATURES = (
-    "unable to make memory readable+executable",
-    "Cannot allocate memory (os error 12)",
-)
-# A process this close to its limit cannot be relied on to map anything.
+# ENOMEM as Rust's io::Error renders it (SymJIT's mprotect/mmap refusal,
+# "System call failed: Cannot allocate memory (os error 12)"): the evidence
+# read from the text of an error that carries no structured cause.
+_ENOMEM_TEXT = ("(os error 12)", "Cannot allocate memory")
+# The map count corroborates exhaustion within this many maps of the limit.
 _MARGIN = 64
 
 
@@ -54,52 +54,89 @@ def memory_maps() -> tuple[int, int] | None:
     return in_use, limit
 
 
-def _messages(exc: BaseException) -> str:
+def _chain(exc: BaseException) -> list[BaseException]:
     seen: set[int] = set()
-    parts = []
+    chain = []
     current: BaseException | None = exc
     while current is not None and id(current) not in seen:
         seen.add(id(current))
-        with contextlib.suppress(Exception):  # a broken __str__ adds nothing
-            parts.append(str(current))
+        chain.append(current)
         current = current.__cause__ or current.__context__
-    return "\n".join(parts)
+    return chain
+
+
+def _allocation_failure(exc: BaseException) -> bool:
+    """Whether ``exc`` (or an error in its chain) is a failure to allocate or
+    map memory: a ``MemoryError``, an ``OSError`` with errno ENOMEM, or, for
+    an error without structured information, the ENOMEM text of native
+    code. An ``OSError`` with another errno (a missing file) is not."""
+
+    for error in _chain(exc):
+        if isinstance(error, MemoryError):
+            return True
+        if isinstance(error, OSError):
+            if error.errno == errno.ENOMEM:
+                return True
+            continue
+        text = ""
+        with contextlib.suppress(Exception):  # a broken __str__ adds nothing
+            text = str(error)
+        if any(signature in text for signature in _ENOMEM_TEXT):
+            return True
+    return False
 
 
 def resource_exhaustion(exc: BaseException) -> ResourceExhaustedError | None:
-    """The typed error for ``exc`` when it was caused by this process's
-    exhausted memory maps; None otherwise (``KeyboardInterrupt``,
-    ``SystemExit`` and ``GeneratorExit`` never)."""
+    """The typed error to raise in place of ``exc``, or None to let ``exc``
+    pass unchanged.
+
+    "memory maps" is claimed only when both hold: ``exc`` is an allocation
+    or mapping failure (``_allocation_failure``) and the process's map count
+    is within ``_MARGIN`` of ``vm.max_map_count`` now. Every other failure
+    passes unchanged (an unrelated error near the limit keeps its type),
+    except an untyped native panic (pyo3's ``PanicException``, which is not
+    even an ``Exception``) of an allocation failure away from the limit: it
+    becomes the error it is, ``resource="memory"``. ``KeyboardInterrupt``,
+    ``SystemExit`` and ``GeneratorExit`` always pass."""
 
     from pyamplicol.api.errors import ResourceExhaustedError
 
-    if isinstance(exc, ResourceExhaustedError):
+    if isinstance(
+        exc, (ResourceExhaustedError, KeyboardInterrupt, SystemExit, GeneratorExit)
+    ):
         return None
-    if isinstance(exc, (KeyboardInterrupt, SystemExit, GeneratorExit)):
-        return None
-    if not isinstance(exc, Exception) and type(exc).__name__ != "PanicException":
+    panic = type(exc).__name__ == "PanicException"
+    if not (isinstance(exc, Exception) or panic) or not _allocation_failure(exc):
         return None
     counts = memory_maps()
-    at_limit = counts is not None and counts[0] >= counts[1] - _MARGIN
-    text = _messages(exc)
-    signed = all(signature in text for signature in _SIGNATURES)
-    if not (at_limit or signed):
+    detail = f"Original error: {type(exc).__name__}: {str(exc)[:400]}"
+    if counts is not None and counts[0] >= counts[1] - _MARGIN:
+        in_use, limit = counts
+        return ResourceExhaustedError(
+            "memory maps exhausted in this process: it holds "
+            f"{in_use} memory maps of its limit vm.max_map_count = {limit}, so "
+            "native code can no longer be mapped. Start a new process (code "
+            "compiled at run time is never released, so a process that "
+            "generates or loads many artifacts reaches the limit), or raise "
+            f"vm.max_map_count. {detail}",
+            resource="memory maps",
+            in_use=in_use,
+            limit=limit,
+        )
+    if not panic:
         return None
-    in_use, limit = counts if counts is not None else (None, None)
     held = (
-        f"{in_use} memory maps of its limit vm.max_map_count = {limit}"
+        f" while {counts[0]} of its {counts[1]} memory maps are in use"
         if counts is not None
-        else "its limit of memory maps (vm.max_map_count)"
+        else ""
     )
     return ResourceExhaustedError(
-        f"memory maps exhausted in this process: it holds {held}, so native "
-        "code can no longer be mapped. Start a new process (code compiled at "
-        "run time is never released, so a process that generates or loads "
-        "many artifacts reaches the limit), or raise vm.max_map_count. "
-        f"Original error: {type(exc).__name__}: {str(exc)[:400]}",
-        resource="memory maps",
-        in_use=in_use,
-        limit=limit,
+        "out of memory: native code failed to allocate memory (ENOMEM)"
+        f"{held}. Free memory (or raise the process's memory limit), or start "
+        f"a new process. {detail}",
+        resource="memory",
+        in_use=None if counts is None else counts[0],
+        limit=None if counts is None else counts[1],
     )
 
 

@@ -98,13 +98,17 @@ class ResourceExhaustedError(PyAmpliColError):
     process is needed.
 
     Raised by ``Generator.generate`` and ``Runtime.load`` in place of the
-    failure that the exhausted resource caused (chained as ``__cause__``).
-    At present the resource is the process's memory maps
-    (``vm.max_map_count``): code compiled at run time is never released, so
-    a process that generates or loads many artifacts can reach the limit.
+    failure that the exhausted resource caused (chained as ``__cause__``),
+    only when the cause is an allocation or mapping failure. ``resource`` is
+    ``"memory maps"`` when the process's map count is at its limit
+    (``vm.max_map_count``) at the failure: code compiled at run time is never
+    released, so a process that generates or loads many artifacts can reach
+    it. ``"memory"`` is an untyped native allocation failure (a Symbolica
+    panic with ENOMEM) away from that limit: the process is out of memory.
 
-    Attributes: ``resource`` (``"memory maps"``), ``in_use`` and ``limit``
-    (the counts when the platform reports them, else None).
+    Attributes: ``resource``, ``in_use`` and ``limit`` (the memory maps in
+    use and ``vm.max_map_count`` when the platform reports them, else
+    None).
     """
 
     def __init__(

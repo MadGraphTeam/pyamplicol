@@ -268,9 +268,13 @@ shares it between every load, but a process that generates or loads very many
 different artifacts can still reach the operating system's limit
 (`vm.max_map_count`, often 65,530; `sysctl vm.max_map_count`). From then on no
 generation or load can succeed in that process: `generate` and `Runtime.load`
-raise this error in place of the failure (chained as its cause). Start a new
-process, for example one per batch of artifacts, or raise the limit
-(`sysctl -w vm.max_map_count=1048576`, as root).
+raise this error in place of the failure (chained as its cause), with
+`resource == "memory maps"`, when the failure is an allocation failure and the
+process holds its limit of maps; any other failure keeps its own error. Start a
+new process, for example one per batch of artifacts, or raise the limit
+(`sysctl -w vm.max_map_count=1048576`, as root). The same error with
+`resource == "memory"` reports a native allocation failure (out of memory)
+while maps remain.
 
 ## `NativePlatformError`: a native library needs a newer glibc
 
