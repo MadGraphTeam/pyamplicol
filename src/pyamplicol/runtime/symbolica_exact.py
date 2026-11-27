@@ -729,6 +729,296 @@ class SymbolicaExactExecutor:
             color_accuracy=cast(Any, str(self._physics["color_accuracy"])),
         )
 
+    def evaluate_orders(
+        self,
+        momenta: Momenta,
+        *,
+        helicities: Sequence[str] | None,
+        color_flows: Sequence[str] | None,
+        precision: int,
+    ) -> tuple[ResolvedEvaluation, tuple[tuple[Decimal, ...], ...]]:
+        """Resolved totals and squared coupling-order partials.
+
+        The resolved values are those of :meth:`evaluate_resolved`; the
+        partials (``[point][squared order]``, the native catalogue's order)
+        are the bilinear reduction of the amplitude roots of every ordered
+        component pair, from the amplitude-root orders the compiled process
+        records (``physics.json`` extension ``amplitude_orders``).
+        """
+
+        resolved = self.evaluate_resolved(
+            momenta,
+            helicities=helicities,
+            color_flows=color_flows,
+            precision=precision,
+        )
+        orders = _compiled_amplitude_orders(self._representative_physics)
+        if len(orders.squared) == 1:
+            # One amplitude component: its one partial is the total.
+            return resolved, tuple((total,) for total in resolved.total())
+        # The helicity-sum execution, when there is one, serves every global
+        # selection through its resolved reduction (as natively).
+        self._activate_execution(None)
+        execution_name = (
+            "helicity_sum"
+            if self._execution is getattr(self, "_helicity_sum_execution", None)
+            else "primary"
+        )
+        root_components = orders.executions.get(execution_name)
+        if root_components is None:
+            raise ArtifactError(
+                "compiled amplitude coupling orders omit the "
+                f"{execution_name} execution"
+            )
+        working_precision = _working_precision(precision)
+        points = _prepare_points(momenta, self._physics, self._permutation)
+        state_payload = _runtime_state(self._native_runtime)
+        parameters = tuple(
+            _decimal(value, "runtime model parameter")
+            for value in state_payload["model_parameter_values"]
+        )
+        self._load_evaluators()
+        with localcontext() as context:
+            context.prec = working_precision
+            context.rounding = ROUND_HALF_EVEN
+            if self._color_replay is not None:
+                self._color_replay = parse_exact_color_topology_replay(
+                    self._execution, self._physics, self._permutation
+                )
+            parameters = self._derive_model_parameters(parameters, working_precision)
+            normalization = exact_normalization(
+                self._physics,
+                parameters,
+                working_precision,
+                cast(
+                    Any, self._execution["runtime_schema"].get("model_parameters", ())
+                ),
+            )
+            if self._lc_replay is not None:
+                evaluation_points = tuple(
+                    _apply_lc_replay_input_mapping(point, entry.input_mapping)
+                    for entry in self._lc_replay.entries
+                    for point in points
+                )
+            elif self._color_replay is not None:
+                evaluation_points = tuple(
+                    apply_exact_color_replay_input_mapping(point, mapping.input_mapping)
+                    for mapping in self._color_replay.mappings
+                    for point in points
+                )
+            else:
+                evaluation_points = points
+            if self._helicity_plan is not None:
+                partials = self._order_partials_helicity_quotient(
+                    evaluation_points,
+                    len(points),
+                    parameters,
+                    normalization,
+                    working_precision,
+                    helicities,
+                    color_flows,
+                    orders,
+                    root_components,
+                )
+                with localcontext() as context:
+                    context.prec = precision
+                    context.rounding = ROUND_HALF_EVEN
+                    rounded = tuple(
+                        tuple(+value for value in point) for point in partials
+                    )
+                _check_partials_sum_to_totals(resolved.total(), rounded)
+                return resolved, rounded
+            amplitudes = tuple(
+                self._evaluate_point(point, parameters, working_precision)
+                for point in evaluation_points
+            )
+            if any(len(values) != len(root_components) for values in amplitudes):
+                raise ArtifactError(
+                    "compiled amplitude coupling orders do not match the "
+                    "amplitude stage"
+                )
+            masked = tuple(
+                tuple(
+                    tuple(
+                        value if component == wanted else (_ZERO, _ZERO)
+                        for value, component in zip(
+                            values, root_components, strict=True
+                        )
+                    )
+                    for values in amplitudes
+                )
+                for wanted in range(len(orders.components))
+            )
+            partials = [[_ZERO for _ in orders.squared] for _ in points]
+            for column, pairs in enumerate(orders.squared):
+                for left, right in pairs:
+                    if self._color_replay is not None:
+                        values, _, _ = reduce_exact_color_topology_replay(
+                            masked[left],
+                            self._color_replay,
+                            len(points),
+                            normalization,
+                            helicities,
+                            color_flows,
+                            right_amplitudes=masked[right],
+                        )
+                    else:
+                        values, helicity_ids, color_ids = _reduce_resolved(
+                            masked[left],
+                            self._execution,
+                            self._physics,
+                            normalization,
+                            helicities if self._lc_replay is None else None,
+                            color_flows if self._lc_replay is None else None,
+                            right_amplitudes=masked[right],
+                        )
+                        if self._lc_replay is not None:
+                            values, _, _ = _apply_lc_replay_resolved(
+                                values,
+                                self._lc_replay,
+                                len(points),
+                                helicity_ids,
+                                color_ids,
+                                helicities,
+                                color_flows,
+                            )
+                    for point_index, point_values in enumerate(values):
+                        for colors in point_values:
+                            for value in colors:
+                                partials[point_index][column] += value
+        with localcontext() as context:
+            context.prec = precision
+            context.rounding = ROUND_HALF_EVEN
+            rounded = tuple(tuple(+value for value in point) for point in partials)
+        _check_partials_sum_to_totals(resolved.total(), rounded)
+        return resolved, rounded
+
+    def _order_partials_helicity_quotient(
+        self,
+        evaluation_points: Sequence[
+            tuple[tuple[Decimal, Decimal, Decimal, Decimal], ...]
+        ],
+        point_count: int,
+        model_parameters: tuple[Decimal, ...],
+        normalization: Decimal,
+        precision: int,
+        selected_helicities: Sequence[str] | None,
+        selected_colors: Sequence[str] | None,
+        orders: _CompiledAmplitudeOrders,
+        root_components: Sequence[int],
+    ) -> list[list[Decimal]]:
+        """:meth:`_evaluate_helicity_quotient` per squared order: every
+        physical helicity's materialized schedule (source states, root
+        factors), its amplitudes evaluated once and reduced as the bilinear
+        form of every ordered component pair; LC topology replay as in
+        :meth:`evaluate_resolved`."""
+
+        assert self._helicity_plan is not None
+        helicities = cast(Sequence[Mapping[str, object]], self._physics["helicities"])
+        colors = cast(Sequence[Mapping[str, object]], self._physics["color_components"])
+        helicity_ids = tuple(str(item["id"]) for item in helicities)
+        color_ids = tuple(str(item["id"]) for item in colors)
+        local_helicities = selected_helicities if self._lc_replay is None else None
+        local_colors = selected_colors if self._lc_replay is None else None
+        selected_h = _selected_indices(helicity_ids, local_helicities, "helicity")
+        selected_c = _selected_indices(color_ids, local_colors, "color component")
+        if str(self._physics["color_accuracy"]) != "lc" and local_colors is not None:
+            raise EvaluationError(
+                "LC color-flow selection is unavailable for NLC/full artifacts"
+            )
+        requested = set(selected_h)
+        component_count = len(orders.components)
+
+        def masked(
+            values: tuple[_ComplexDecimal, ...], wanted: int
+        ) -> tuple[_ComplexDecimal, ...]:
+            if len(values) != len(root_components):
+                raise ArtifactError(
+                    "compiled amplitude coupling orders do not match the "
+                    "amplitude stage"
+                )
+            return tuple(
+                value if component == wanted else (_ZERO, _ZERO)
+                for value, component in zip(values, root_components, strict=True)
+            )
+
+        # [squared order][evaluation point][helicity][colour]
+        per_order: list[list[tuple[tuple[Decimal, ...], ...]]] = [
+            [] for _ in orders.squared
+        ]
+        for point in evaluation_points:
+            full = [
+                [[_ZERO for _color in color_ids] for _helicity in helicity_ids]
+                for _ in orders.squared
+            ]
+            execution_amplitudes: dict[
+                int, tuple[tuple[_ComplexDecimal, ...], ...]
+            ] = {}
+            for schedule in self._helicity_plan.schedules:
+                helicity_index = schedule.physical_helicity_index
+                if helicity_index not in requested or schedule.structural_zero:
+                    continue
+                execution_index = schedule.execution_helicity_index
+                execution_schedule = self._helicity_plan.schedules[execution_index]
+                parts = execution_amplitudes.get(execution_index)
+                if parts is None:
+                    amplitudes = self._evaluate_point(
+                        point,
+                        model_parameters,
+                        precision,
+                        execution_schedule.source_states,
+                    )
+                    parts = tuple(
+                        masked(amplitudes, wanted) for wanted in range(component_count)
+                    )
+                    execution_amplitudes[execution_index] = parts
+                for column, pairs in enumerate(orders.squared):
+                    row = [_ZERO for _color in color_ids]
+                    for left, right in pairs:
+                        values = _reduce_materialized_helicity(
+                            parts[left],
+                            self._execution,
+                            self._physics,
+                            normalization,
+                            execution_index,
+                            execution_schedule.root_factors,
+                            right_amplitudes=parts[right],
+                        )
+                        row = [
+                            total + value
+                            for total, value in zip(row, values, strict=True)
+                        ]
+                    full[column][helicity_index] = row
+            for column in range(len(orders.squared)):
+                per_order[column].append(
+                    tuple(
+                        tuple(full[column][h][c] for c in selected_c)
+                        for h in selected_h
+                    )
+                )
+        partials = [[_ZERO for _ in orders.squared] for _ in range(point_count)]
+        for column, values in enumerate(per_order):
+            resolved_values: Sequence[tuple[tuple[Decimal, ...], ...]] = values
+            if self._lc_replay is not None:
+                resolved_values, _, _ = _apply_lc_replay_resolved(
+                    tuple(values),
+                    self._lc_replay,
+                    point_count,
+                    tuple(helicity_ids[index] for index in selected_h),
+                    tuple(color_ids[index] for index in selected_c),
+                    selected_helicities,
+                    selected_colors,
+                )
+            if len(resolved_values) != point_count:
+                raise ArtifactError(
+                    "exact helicity-quotient partials have an inconsistent point count"
+                )
+            for point_index, point_values in enumerate(resolved_values):
+                for colors_row in point_values:
+                    for value in colors_row:
+                        partials[point_index][column] += value
+        return partials
+
     def _activate_execution(self, helicities: Sequence[str] | None) -> None:
         primary_execution = getattr(self, "_primary_execution", self._execution)
         primary_physics = getattr(self, "_primary_physics", self._physics)
@@ -3952,7 +4242,13 @@ def _reduce_materialized_helicity(
     normalization: Decimal,
     helicity_index: int,
     root_factors: Sequence[_ComplexDecimal | None],
+    right_amplitudes: Sequence[_ComplexDecimal] | None = None,
 ) -> tuple[Decimal, ...]:
+    """One physical helicity's resolved colour values from its materialized
+    schedule; ``right_amplitudes`` (same shape) makes it the bilinear form of
+    the left and right amplitudes (order-resolved partials), by default the
+    ordinary quadratic form."""
+
     helicities = cast(Sequence[Mapping[str, object]], physics["helicities"])
     colors = cast(Sequence[Mapping[str, object]], physics["color_components"])
     try:
@@ -3971,7 +4267,11 @@ def _reduce_materialized_helicity(
     if isinstance(raw_roots, str | bytes) or not isinstance(raw_roots, Sequence):
         raise ArtifactError("amplitude roots are invalid")
     roots = cast(Sequence[Mapping[str, object]], raw_roots)
-    if len(amplitudes) != len(roots) or len(root_factors) != len(roots):
+    if (
+        len(amplitudes) != len(roots)
+        or len(root_factors) != len(roots)
+        or (right_amplitudes is not None and len(right_amplitudes) != len(roots))
+    ):
         raise ArtifactError(
             "helicity recurrence amplitude output width is inconsistent"
         )
@@ -4020,6 +4320,7 @@ def _reduce_materialized_helicity(
         raise ArtifactError("resolved physics is missing an amplitude reduction group")
 
     coherent: dict[int, _ComplexDecimal] = {}
+    coherent_right: dict[int, _ComplexDecimal] = {}
     active_groups: set[int] = set()
     for group_id, indices in groups.items():
         reduction = reductions[group_id]
@@ -4044,6 +4345,18 @@ def _reduce_materialized_helicity(
             sum((value[0] for value in values), _ZERO),
             sum((value[1] for value in values), _ZERO),
         )
+        if right_amplitudes is None:
+            coherent_right[group_id] = coherent[group_id]
+        else:
+            right_values = [
+                _complex_mul(right_amplitudes[index], factor)
+                for index in indices
+                if (factor := root_factors[index]) is not None
+            ]
+            coherent_right[group_id] = (
+                sum((value[0] for value in right_values), _ZERO),
+                sum((value[1] for value in right_values), _ZERO),
+            )
         active_groups.add(group_id)
 
     contraction = amplitude_stage.get("color_contraction")
@@ -4058,7 +4371,7 @@ def _reduce_materialized_helicity(
             if left_id not in active_groups or right_id not in active_groups:
                 continue
             left = coherent[left_id]
-            right = coherent[right_id]
+            right = coherent_right[right_id]
             product_re = left[0] * right[0] + left[1] * right[1]
             product_im = left[1] * right[0] - left[0] * right[1]
             totals[_contracted_color_slot(slots, entry.nc_degree)] += (
@@ -4099,10 +4412,11 @@ def _reduce_materialized_helicity(
         total_weight = sum((weight for _index, weight in member_weights), _ZERO)
         if total_weight <= 0:
             raise ArtifactError("reduction group has no positive color weight")
+        right_value = coherent_right[group_id]
         contribution = (
             normalization
             * all_sector_weights[group_id]
-            * (value[0] * value[0] + value[1] * value[1])
+            * (value[0] * right_value[0] + value[1] * right_value[1])
         )
         for index, weight in member_weights:
             full[index] += contribution * weight / total_weight
@@ -4125,6 +4439,7 @@ def _reduce_resolved(
     normalization: Decimal,
     selected_helicities: Sequence[str] | None,
     selected_colors: Sequence[str] | None,
+    right_amplitudes: Sequence[Sequence[_ComplexDecimal]] | None = None,
 ) -> tuple[
     tuple[tuple[tuple[Decimal, ...], ...], ...],
     tuple[str, ...],
@@ -4168,7 +4483,7 @@ def _reduce_resolved(
     color_index = {identifier: index for index, identifier in enumerate(color_ids)}
     full_points = []
     contraction = amplitude_stage.get("color_contraction")
-    for raw_amplitudes in amplitudes:
+    for point_index, raw_amplitudes in enumerate(amplitudes):
         coherent = {
             group_id: (
                 sum((raw_amplitudes[index][0] for index in indices), _ZERO),
@@ -4176,6 +4491,25 @@ def _reduce_resolved(
             )
             for group_id, indices in groups.items()
         }
+        # The right amplitudes of a bilinear (order-resolved) reduction; the
+        # ordinary reduction is the quadratic form, right = left.
+        coherent_right = (
+            coherent
+            if right_amplitudes is None
+            else {
+                group_id: (
+                    sum(
+                        (right_amplitudes[point_index][index][0] for index in indices),
+                        _ZERO,
+                    ),
+                    sum(
+                        (right_amplitudes[point_index][index][1] for index in indices),
+                        _ZERO,
+                    ),
+                )
+                for group_id, indices in groups.items()
+            }
+        )
         full = [[_ZERO for _ in color_ids] for _ in helicity_ids]
         if isinstance(contraction, Mapping):
             slots = _contracted_color_slots(colors)
@@ -4188,7 +4522,7 @@ def _reduce_resolved(
                 left_id = entry.left_group_id
                 right_id = entry.right_group_id
                 left = coherent[left_id]
-                right = coherent[right_id]
+                right = coherent_right[right_id]
                 product_re = left[0] * right[0] + left[1] * right[1]
                 product_im = left[1] * right[0] - left[0] * right[1]
                 contribution = (
@@ -4229,10 +4563,11 @@ def _reduce_resolved(
         else:
             for group_id, value in coherent.items():
                 reduction = reductions[group_id]
+                right_value = coherent_right[group_id]
                 contribution = (
                     normalization
                     * all_sector_weights[group_id]
-                    * (value[0] * value[0] + value[1] * value[1])
+                    * (value[0] * right_value[0] + value[1] * right_value[1])
                 )
                 diagonal_members: list[tuple[int, int, Decimal]] = []
                 total_weight = _ZERO
@@ -4268,6 +4603,95 @@ def _reduce_resolved(
         tuple(full_points),
         tuple(helicity_ids[index] for index in selected_h),
         tuple(color_ids[index] for index in selected_c),
+    )
+
+
+def _check_partials_sum_to_totals(
+    totals: Sequence[complex | Decimal], partials: Sequence[Sequence[Decimal]]
+) -> None:
+    """The run-time invariant of the native lanes: per point the partials sum
+    to the total within ``1e-9`` of the larger of the total and the partials'
+    magnitudes; a violation is an integrity error, never wrong columns."""
+
+    for point, (total, row) in enumerate(zip(totals, partials, strict=True)):
+        value = (
+            Decimal(complex(total).real) if not isinstance(total, Decimal) else total
+        )
+        scale = max(abs(value), sum((abs(entry) for entry in row), Decimal(0)))
+        if not abs(sum(row, Decimal(0)) - value) <= Decimal("1e-9") * scale:
+            raise ArtifactError(
+                "squared coupling-order partials do not sum to the total at point "
+                f"{point}"
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class _CompiledAmplitudeOrders:
+    components: tuple[tuple[int, ...], ...]
+    #: The ordered component pairs of every squared order, in the native
+    #: catalogue's column order.
+    squared: tuple[tuple[tuple[int, int], ...], ...]
+    executions: Mapping[str, tuple[int, ...]]
+
+
+def _compiled_amplitude_orders(
+    physics: Mapping[str, object],
+) -> _CompiledAmplitudeOrders:
+    """The ``amplitude_orders`` physics extension of a compiled process."""
+
+    extensions = physics.get("extensions")
+    record = (
+        extensions.get("amplitude_orders") if isinstance(extensions, Mapping) else None
+    )
+    if record is None:
+        raise CompatibilityError(
+            "this compiled artifact records no amplitude coupling orders (it "
+            "predates squared coupling-order partials in the compiled lane); "
+            "regenerate it to evaluate partials"
+        )
+    try:
+        if not isinstance(record, Mapping) or record.get("kind") != (
+            "pyamplicol-compiled-amplitude-orders-v1"
+        ):
+            raise ValueError("unexpected kind")
+        names = tuple(str(name) for name in cast(Sequence[object], record["names"]))
+        components = tuple(
+            tuple(_json_integer(power) for power in cast(Sequence[object], powers))
+            for powers in cast(Sequence[object], record["components"])
+        )
+        if any(len(powers) != len(names) for powers in components):
+            raise ValueError("component width differs from the names")
+        executions = {
+            str(name): tuple(
+                _json_integer(value) for value in cast(Sequence[object], roots)
+            )
+            for name, roots in cast(Mapping[str, object], record["executions"]).items()
+        }
+        if any(
+            component >= len(components)
+            for roots in executions.values()
+            for component in roots
+        ):
+            raise ValueError("root names an absent component")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ArtifactError(
+            f"compiled amplitude coupling orders are invalid: {exc}"
+        ) from exc
+    squared: dict[tuple[tuple[int, int], ...], list[tuple[int, int]]] = {}
+    for left, left_powers in enumerate(components):
+        for right, right_powers in enumerate(components):
+            key = tuple(
+                (index, a + b)
+                for index, (a, b) in enumerate(
+                    zip(left_powers, right_powers, strict=True)
+                )
+                if a + b
+            )
+            squared.setdefault(key, []).append((left, right))
+    return _CompiledAmplitudeOrders(
+        components=components,
+        squared=tuple(tuple(squared[key]) for key in sorted(squared)),
+        executions=executions,
     )
 
 

@@ -318,12 +318,18 @@ def reduce_exact_color_topology_replay(
     normalization: Decimal,
     selected_helicities: Sequence[str] | None,
     selected_colors: Sequence[str] | None,
+    right_amplitudes: Sequence[Sequence[_ComplexDecimal]] | None = None,
 ) -> tuple[
     tuple[tuple[tuple[Decimal, ...], ...], ...],
     tuple[str, ...],
     tuple[str, ...],
 ]:
-    """Gather materialized amplitudes and apply the physical colour matrix."""
+    """Gather materialized amplitudes and apply the physical colour matrix.
+
+    ``right_amplitudes`` (same shape) makes the reduction the bilinear form of
+    the left and right amplitudes (order-resolved partials); by default the
+    right amplitudes are the left ones, the ordinary quadratic form.
+    """
 
     if selected_colors is not None:
         raise EvaluationError(
@@ -333,11 +339,15 @@ def reduce_exact_color_topology_replay(
     expected = point_count * len(plan.mappings)
     if len(amplitudes) != expected:
         raise ArtifactError("color replay amplitude point count is inconsistent")
-    full_points = []
-    for point_index in range(point_count):
+    if right_amplitudes is not None and len(right_amplitudes) != expected:
+        raise ArtifactError("color replay amplitude point count is inconsistent")
+
+    def gathered(
+        source: Sequence[Sequence[_ComplexDecimal]], point_index: int
+    ) -> list[_ComplexDecimal]:
         physical = [(_ZERO, _ZERO) for _ in range(plan.physical_group_count)]
         for mapping_index, mapping in enumerate(plan.mappings):
-            raw = amplitudes[mapping_index * point_count + point_index]
+            raw = source[mapping_index * point_count + point_index]
             for route in mapping.routes:
                 value = (_ZERO, _ZERO)
                 for output_index in route.source_output_indices:
@@ -347,10 +357,20 @@ def reduce_exact_color_topology_replay(
                         )
                     value = _complex_add(value, raw[output_index])
                 physical[route.target_group_index] = _complex_mul(value, route.factor)
+        return physical
+
+    full_points = []
+    for point_index in range(point_count):
+        physical = gathered(amplitudes, point_index)
+        physical_right = (
+            physical
+            if right_amplitudes is None
+            else gathered(right_amplitudes, point_index)
+        )
         full = [_ZERO for _ in plan.helicity_ids]
         for entry in _contraction_entries(plan):
             left = physical[entry.left_group_index]
-            right = physical[entry.right_group_index]
+            right = physical_right[entry.right_group_index]
             product_real = left[0] * right[0] + left[1] * right[1]
             product_imaginary = left[1] * right[0] - left[0] * right[1]
             contribution = (

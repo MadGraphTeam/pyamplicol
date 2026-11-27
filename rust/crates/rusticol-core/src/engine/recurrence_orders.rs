@@ -199,6 +199,19 @@ impl AmplitudeOrderCatalog {
                     .ok_or_else(|| RusticolError::integrity("amplitude order component is absent"))
             })
             .collect::<RusticolResult<Box<[Box<[u32]>]>>>()?;
+        Self::from_components(orders.names().into(), components)
+    }
+
+    /// Catalog of explicit amplitude components (powers over `names`).
+    pub fn from_components(
+        names: Box<[String]>,
+        components: Box<[Box<[u32]>]>,
+    ) -> RusticolResult<Self> {
+        if components.iter().any(|powers| powers.len() != names.len()) {
+            return Err(RusticolError::artifact(
+                "amplitude order component does not match its coupling-order names",
+            ));
+        }
         let mut squared = BTreeMap::<Vec<(usize, u32)>, (Vec<u32>, Vec<(u32, u32)>)>::new();
         for (left, left_powers) in components.iter().enumerate() {
             for (right, right_powers) in components.iter().enumerate() {
@@ -225,7 +238,7 @@ impl AmplitudeOrderCatalog {
             }
         }
         Ok(Self {
-            names: orders.names().into(),
+            names,
             components,
             squared: squared
                 .into_values()
@@ -406,5 +419,35 @@ mod tests {
             ]
         );
         assert!(!catalog.is_single());
+    }
+
+    #[test]
+    fn explicit_components_give_the_plan_catalog_and_check_their_width() {
+        let orders = DirectAmplitudeOrders {
+            names: vec!["QCD".into(), "QED".into()],
+            component_count: 2,
+            powers: vec![0, 2, 2, 0],
+            closure_components: vec![0, 1],
+        };
+        let explicit = AmplitudeOrderCatalog::from_components(
+            vec!["QCD".to_owned(), "QED".to_owned()].into_boxed_slice(),
+            vec![vec![0, 2].into_boxed_slice(), vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+        )
+        .unwrap();
+        assert_eq!(explicit, AmplitudeOrderCatalog::from_plan(&orders).unwrap());
+        let single = AmplitudeOrderCatalog::from_components(
+            vec!["QCD".to_owned(), "QED".to_owned()].into_boxed_slice(),
+            vec![vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+        )
+        .unwrap();
+        assert!(single.is_single());
+        assert_eq!(single.squared_orders().len(), 1);
+        assert!(
+            AmplitudeOrderCatalog::from_components(
+                vec!["QCD".to_owned()].into_boxed_slice(),
+                vec![vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+            )
+            .is_err()
+        );
     }
 }
