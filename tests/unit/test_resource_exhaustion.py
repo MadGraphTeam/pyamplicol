@@ -21,7 +21,12 @@ import pytest
 
 from pyamplicol import Generator, ResourceExhaustedError, Runtime
 from pyamplicol._internal import process_limits
-from pyamplicol.api.errors import CompatibilityError, GenerationError, PyAmpliColError
+from pyamplicol.api.errors import (
+    CompatibilityError,
+    DependencyError,
+    GenerationError,
+    PyAmpliColError,
+)
 
 SYMJIT_FAILURE = (
     "called `Result::unwrap()` on an `Err` value: Backend(unable to make memory "
@@ -153,3 +158,46 @@ def test_unrelated_failures_pass_unchanged(
     with pytest.raises(type(failure)) as caught:
         _generate_raising(monkeypatch, failure)()
     assert caught.value is failure
+
+
+def test_a_library_that_cannot_be_mapped_is_typed_at_the_limit_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Backend discovery reports an import that the dynamic loader could not
+    map as a DependencyError chained to the ImportError: at the map limit it
+    is exhausted maps, away from it the DependencyError is unchanged."""
+
+    def failure() -> DependencyError:
+        try:
+            raise ImportError(
+                "unicodedata.so: failed to map segment from shared object"
+            )
+        except ImportError as exc:
+            try:
+                raise DependencyError("no pyAmpliCol backend provides it") from exc
+            except DependencyError as error:
+                return error
+
+    _counts(monkeypatch, AT_LIMIT)
+    with pytest.raises(ResourceExhaustedError) as caught:
+        _generate_raising(monkeypatch, failure())()
+    assert caught.value.resource == "memory maps"
+    _counts(monkeypatch, AWAY)
+    unchanged = failure()
+    with pytest.raises(DependencyError) as kept:
+        _generate_raising(monkeypatch, unchanged)()
+    assert kept.value is unchanged
+
+
+def test_backend_discovery_chains_the_failed_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pyamplicol.api import services
+
+    def missing(name: str) -> object:
+        raise ImportError(f"{name}: failed to map segment from shared object")
+
+    monkeypatch.setattr(services.importlib, "import_module", missing)
+    with pytest.raises(DependencyError) as caught:
+        services._discover("create_generator_backend", ("a.backend",))
+    assert isinstance(caught.value.__cause__, ImportError)

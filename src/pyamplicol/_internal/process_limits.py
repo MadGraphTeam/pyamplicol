@@ -31,10 +31,16 @@ if TYPE_CHECKING:
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
-# ENOMEM as Rust's io::Error renders it (SymJIT's mprotect/mmap refusal,
-# "System call failed: Cannot allocate memory (os error 12)"): the evidence
-# read from the text of an error that carries no structured cause.
-_ENOMEM_TEXT = ("(os error 12)", "Cannot allocate memory")
+# The evidence read from the text of an error that carries no structured
+# cause: ENOMEM as Rust's io::Error renders it (SymJIT's mprotect/mmap
+# refusal, "System call failed: Cannot allocate memory (os error 12)") or as
+# strerror does, and the dynamic loader's failure to map a library (an
+# ImportError: "failed to map segment from shared object").
+_ENOMEM_TEXT = (
+    "(os error 12)",
+    "Cannot allocate memory",
+    "failed to map segment from shared object",
+)
 # The map count corroborates exhaustion within this many maps of the limit.
 _MARGIN = 64
 
