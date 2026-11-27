@@ -129,6 +129,7 @@ pub(crate) use interpreter::{
     OnTheFlyStructuralInterpreter, OnTheFlyUnionSourceBindingView, OnTheFlyWorkspaceV1,
     ResolvedOnTheFlyExecutor,
 };
+pub(crate) use orders::{on_the_fly_amplitude_order_components_v1, split_trace_by_amplitude_order};
 pub(crate) use persisted::{
     PersistedHelicityAmplitudeTileV1, PersistedHelicityFamilyCacheCensusV1,
     PersistedHelicityFamilyExecutionReportV1, PersistedHelicityFamilyExecutorV1,
@@ -159,9 +160,6 @@ pub(crate) use source_seed::{
     OnTheFlySourceWavefunctionFamilyV1,
 };
 use sweep::*;
-pub(crate) use orders::{
-    on_the_fly_amplitude_order_components_v1, split_trace_by_amplitude_order,
-};
 pub(crate) use templates::PreparedOnTheFlyGrammarV1;
 use templates::*;
 #[cfg(feature = "on-the-fly-test-support")]

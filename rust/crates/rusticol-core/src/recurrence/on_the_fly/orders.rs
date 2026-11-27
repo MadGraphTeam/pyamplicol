@@ -15,13 +15,16 @@ use super::super::direct_plan::DIRECT_NONE_U32;
 use super::coupling_policy::viable_amplitude_orders_v1;
 use super::*;
 
+/// Coupling-order names and the amplitude components (powers over them).
+pub(crate) type AmplitudeOrderComponents = (Vec<String>, Vec<Box<[u32]>>);
+
 /// Coupling-order names (the template catalogue's, ascending) and the
 /// process-wide amplitude components of an on-the-fly process.
 pub(crate) fn on_the_fly_amplitude_order_components_v1(
     templates: &ValidatedRecurrenceTemplateInput,
     seed: &OnTheFlyProcessSeedV1,
     coupling_policy: &OnTheFlyResolvedCouplingPolicyV1,
-) -> RusticolResult<(Vec<String>, Vec<Box<[u32]>>)> {
+) -> RusticolResult<AmplitudeOrderComponents> {
     let catalog = validate_seed_against_templates(templates, seed)?;
     let names = catalog
         .coupling_order_names()
