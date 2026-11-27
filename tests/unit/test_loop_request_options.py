@@ -351,3 +351,21 @@ output = {json.dumps(str(tmp_path / "artifact"))}
         )
     assert error.value.key == "external-photon-scheme"
     assert not (tmp_path / "artifact").exists()
+
+
+# F8: external particle names -------------------------------------------------
+
+
+def test_one_loop_runtimes_name_external_particles_by_the_model(one_loop_artifact):
+    _, artifact = one_loop_artifact
+    for process, names in (
+        ("uugg", ["u", "u~", "G", "G"]),
+        ("u u~ > g g", ["u", "u~", "G", "G"]),
+        # A side permutation of the stored process: its own leg order.
+        ("u~ u > g g", ["u~", "u", "G", "G"]),
+    ):
+        particles = Runtime.load(artifact, process=process).physics.external_particles
+        assert [particle.name for particle in particles] == names
+        assert [particle.pdg_id for particle in particles][:2] == (
+            [2, -2] if names[0] == "u" else [-2, 2]
+        )

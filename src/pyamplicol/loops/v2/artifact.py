@@ -2431,9 +2431,16 @@ class V2VirtualRuntime:
             if member is None
             else list(member.pdgs)
         )
+        expression = self._expression if member is None else str(member.expression)
+        # The model's particle names, as tree runtimes give them: the tokens
+        # of the served expression, in leg order (artifacts store no names).
+        initial, _, final = expression.partition(">")
+        names = [*initial.split(), *final.split()]
+        if len(names) != len(pdgs):
+            names = [str(pdg) for pdg in pdgs]
         return ProcessPhysics(
             process_id=self._public_id,
-            process=self._expression if member is None else str(member.expression),
+            process=expression,
             color_accuracy=accuracy,
             helicity_coverage=helicity_coverage,
             color_coverage=color_coverage,
@@ -2443,13 +2450,13 @@ class V2VirtualRuntime:
                 ExternalParticle(
                     index=i,
                     label=i + 1,
-                    name=str(pdg),
+                    name=name,
                     pdg_id=pdg,
                     state="incoming" if leg["incoming"] else "outgoing",
                     momentum_slot=i,
                 )
-                for i, (leg, pdg) in enumerate(
-                    zip(self._physics["state_legs"], pdgs, strict=True)
+                for i, (leg, pdg, name) in enumerate(
+                    zip(self._physics["state_legs"], pdgs, names, strict=True)
                 )
             ),
             helicities=tuple(
