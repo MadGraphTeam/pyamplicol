@@ -65,6 +65,7 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pyamplicol._internal import threads
 from pyamplicol._internal.threads import start_auxiliary
 
 # Optional ANSI colour codes and the tracing timestamp before the level.
@@ -98,6 +99,10 @@ class Captured:
     where: str
     events: dict[tuple[str, str], list[object]] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
+    # Set once the capture's setup is decided: standard output redirected
+    # to the reader, or left as it was (no reader); overlapping callers
+    # enter their block only then.
+    _ready: threading.Event = field(default_factory=threading.Event)
 
     def add(self, source: str, kind: str, message: str) -> None:
         with self._lock:
@@ -209,6 +214,12 @@ def capture(where: str) -> Iterator[Captured]:
         if not nested:
             _ACTIVE.append(sink)
     if nested:
+        # Another caller (another thread) may still be setting the capture
+        # up: wait for its decision, bounded as the reader's start is, so
+        # that what this block writes is counted (or, without a reader,
+        # reaches standard output unchanged). The owner's own nested blocks
+        # find it decided.
+        sink._ready.wait(threads.START_SECONDS + 1.0)
         yield sink
         return
     logger = logging.getLogger(LOADER_LOGGER)
@@ -250,6 +261,8 @@ def capture(where: str) -> Iterator[Captured]:
             # No file-descriptor level standard output (an embedded
             # interpreter): nothing is captured on this channel.
             redirected = None
+        finally:
+            sink._ready.set()
         yield sink
     finally:
         if redirected is not None:
