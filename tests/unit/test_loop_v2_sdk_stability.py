@@ -255,6 +255,7 @@ def _record(estimate) -> dict:
         "absolute": [laurent(row) for row in estimate.absolute],
         "magnitude": [laurent(row) for row in estimate.magnitude],
         "not_run": [[name, reason] for name, reason in estimate.not_run],
+        "floor_weight": estimate.floor_weight,
     }
 
 

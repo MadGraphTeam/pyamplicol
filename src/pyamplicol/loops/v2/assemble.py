@@ -4203,6 +4203,10 @@ class _PointEvaluation:
         """The number of legs of the highest-point loop the process reduces
         (its families' propagators; the floor weight's default,
         ``stability.default_floor_weight``)."""
+        found = getattr(self.slice, "largest_loop", None)
+        if found is not None:
+            # A native process's view: read from its plan's families.
+            return found
         families = self.slice.families.families.values()
         return max((family.size for family in families), default=0)
 

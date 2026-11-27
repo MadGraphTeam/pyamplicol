@@ -2072,6 +2072,20 @@ impl V2Executor {
         self.trees.is_some()
     }
 
+    /// The number of legs of the plan's highest-point loop (its families'
+    /// largest propagator count; the floor weight's default,
+    /// `v2_stability::default_floor_weight`).
+    #[getter]
+    fn largest_loop(&self) -> usize {
+        self.executor
+            .plan()
+            .families
+            .iter()
+            .map(|family| family.propagators())
+            .max()
+            .unwrap_or(0)
+    }
+
     /// The native tree inputs of a batch (needs a tree program): per point
     /// `(block_rows, born, amplitudes, born_squared, counterterms)`, see
     /// `TreeInputs` (counterterms with poles).

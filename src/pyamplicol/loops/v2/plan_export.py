@@ -2494,6 +2494,10 @@ class NativeExecutor:
                 if exact or self.contraction == "direct"
                 else self.exported.fourier,
             )
+        if not hasattr(self.slice, "families"):
+            # A native process's view: its plan's highest-point loop (the
+            # floor weight's default, ``stability.default_floor_weight``).
+            self.slice.largest_loop = found.largest_loop
         return found
 
     @property
