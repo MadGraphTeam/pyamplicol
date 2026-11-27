@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .._internal.physics.types import NativeEvaluationError
+from .._internal.threads import start_auxiliary
 from .symbolica_adapters import (
     _ChunkedSymbolicaEvaluator,
     _CompiledComplexEvaluatorAdapter,
@@ -476,8 +477,7 @@ class _JITBoundaryHeartbeat:
         ):
             return self
         self._started_at = time.perf_counter()
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
+        self._thread = start_auxiliary(self._run, name="pyamplicol-jit-heartbeat")
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
