@@ -22,6 +22,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import math
+import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -329,12 +331,61 @@ def test_a_bound_electroweak_coupling_stays_a_local_coupling(
 
 @pytest.mark.parametrize("mode", _MODES)
 def test_alpha_s_must_stay_positive(artifacts, mode: str) -> None:
-    runtime = Runtime.load(artifacts(mode, "lc", "u u~ > d d~"))
-    points = _points("u u~ > d d~")
+    """alpha_s = 0, and an alpha_s so small that 2 alpha_ew / alpha_s exceeds
+    2^52 (the binary64 QED weights and global factor would overflow), are
+    refused and leave the runtime unchanged; a small alpha_s within the bound
+    gives the default partials scaled by their powers (finite)."""
+
+    process = "u u~ > d d~"
+    runtime = Runtime.load(artifacts(mode, "lc", process))
+    points = _points(process)
     default = _real(runtime.evaluate(points))
-    with pytest.raises(Exception, match="alpha_s"):
-        runtime.set_model_parameter("normalization.alpha_s_me_check", 0.0)
-    assert _real(runtime.evaluate(points)) == default
+    for alpha_s in (0.0, 1e-160, 2.0 * _ALPHA_EW * 2.0**-53):
+        with pytest.raises(Exception, match="alpha_s"):
+            runtime.set_model_parameter("normalization.alpha_s_me_check", alpha_s)
+        assert _real(runtime.evaluate(points)) == default
+    reference = Runtime.load(artifacts("recurrence", "lc", process))
+    expected = _scaled_partials(reference.evaluate_orders(points), 1e-12, _ALPHA_EW)
+    runtime.set_model_parameter("normalization.alpha_s_me_check", 1e-12)
+    for value, target in zip(_real(runtime.evaluate(points)), expected, strict=True):
+        assert math.isfinite(value)
+        assert value == pytest.approx(target, rel=1e-12, abs=0.0)
+
+
+def test_recurrence_export_follows_the_qed_order_weights(artifacts) -> None:
+    """The leading-colour recurrence export embeds the weighted closure
+    factors at the runtime's current alpha_s and alpha_ew: a change of
+    either changes the exported bodies, changing back restores the export
+    exactly, and the export names no single alpha_s power. CI's Rust parity
+    test replays this artifact's exports against the live runtime bit for
+    bit at the default, rebound and alpha_ew = 0 inputs (see tests.yml)."""
+
+    process = "u u~ > d d~"
+    artifact = artifacts("recurrence", "lc", process)
+    kept = os.environ.get("PYAMPLICOL_RECURRENCE_EXPORT_ARTIFACTS")
+    if kept:
+        destination = Path(kept) / "builtin-mixed-orders"
+        shutil.rmtree(destination, ignore_errors=True)
+        shutil.copytree(artifact, destination)
+    runtime = Runtime.load(artifact)
+    default = runtime.export_recurrence()
+    assert default["programs"]
+    for program in default["programs"]:
+        assert program["alpha_s"]["squared_amplitude_power"] is None
+    bodies = [program["body"] for program in default["programs"]]
+    for name, value in (
+        ("normalization.alpha_ew", 0.0),
+        ("normalization.alpha_s_me_check", 0.13),
+    ):
+        runtime.set_model_parameter(name, value)
+        changed = runtime.export_recurrence()
+        assert [program["body"] for program in changed["programs"]] != bodies, name
+        assert [program["factors"] for program in changed["programs"]] != [
+            program["factors"] for program in default["programs"]
+        ], name
+    runtime.set_model_parameter("normalization.alpha_ew", _ALPHA_EW)
+    runtime.set_model_parameter("normalization.alpha_s_me_check", _ALPHA_S)
+    assert runtime.export_recurrence() == default
 
 
 @pytest.mark.parametrize("mode", _MODES)

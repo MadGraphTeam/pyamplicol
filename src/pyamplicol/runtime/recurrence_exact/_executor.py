@@ -12,6 +12,7 @@ from typing import Any, cast
 from pyamplicol._internal.qed_order_weights import (
     NORMALIZATION_ALPHA_EW,
     NORMALIZATION_ALPHA_S,
+    QED_ORDER_WEIGHT_MAX_SQUARED,
     is_qed_order_weighted,
 )
 from pyamplicol.api.errors import ArtifactError, EvaluationError
@@ -544,6 +545,13 @@ class RecurrenceExactExecutor:
                 "a process whose Born has amplitudes of several coupling orders "
                 f"needs {NORMALIZATION_ALPHA_S} > 0 and {NORMALIZATION_ALPHA_EW} "
                 f">= 0, got {alpha_s} and {alpha_ew}"
+            )
+        if 2 * alpha_ew > alpha_s * QED_ORDER_WEIGHT_MAX_SQUARED:
+            # The native parameter update refuses these first; the same bound.
+            raise EvaluationError(
+                "a process whose Born has amplitudes of several coupling orders "
+                f"needs {NORMALIZATION_ALPHA_S} >= 2 {NORMALIZATION_ALPHA_EW} * 2^-52, "
+                f"got {alpha_s} and {alpha_ew}"
             )
         rho = (2 * alpha_ew / alpha_s).sqrt()
         catalog = _mapping(
