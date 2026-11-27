@@ -8711,16 +8711,21 @@ class GenerationBackend:
             and complete_color_plan.color_accuracy == "lc"
             and complete_color_plan.basis == "trace"
             and complete_color_plan.trace_reflections_folded
-            and (complete_color_plan.truncated or materialized_sector_ids is not None)
+            and (
+                complete_color_plan.truncated
+                or selection.selected_color_sector_ids is not None
+            )
         ):
             # A subset of a plan with folded trace reflections has no topology
             # replay to evaluate a kept trace's other orientation, which its
             # public flows list: build the unfolded plan and keep both
             # orientations of every kept sector, each its own sector.
+            # The user's subset (a truncating cap, fixed ids); a topology
+            # replay's representatives are not one.
             dag_color_plan, materialized_sector_ids = _unfolded_subset(
                 process,
                 complete_color_plan,
-                materialized_sector_ids,
+                selection.selected_color_sector_ids,
                 reference_color_order=selection.reference_color_order,
             )
             dag_max_color_sectors = None
