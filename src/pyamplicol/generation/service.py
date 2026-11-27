@@ -2726,9 +2726,11 @@ class _RequestWithoutTreeDiagram(Exception):
     of the call (``reason``: why, when known; ``loop_hint``: whether a loop
     could serve it). With ``settings`` the request has diagrams and those
     settings remove them all (``RequestFilterError``); without, it has none
-    (``NoTreeDiagramError``). ``uncut``: the concrete processes the quark-line
-    cut ``cut`` removed (``reason`` says how), for the refusal step to decide
-    which settings empty the request."""
+    (``NoTreeDiagramError``). ``uncut``: every concrete process of the request
+    without the quark-line cut ``cut`` (``process.max_quark_lines = limit``;
+    ``reason`` says what it removes), with its number of quark lines in
+    ``lines``, for the refusal step to decide which settings empty the
+    request."""
 
     def __init__(
         self,
@@ -2739,6 +2741,7 @@ class _RequestWithoutTreeDiagram(Exception):
         settings: tuple[str, ...] = (),
         uncut: tuple[CanonicalProcessIR, ...] = (),
         cut: str | None = None,
+        lines: tuple[int, ...] = (),
     ) -> None:
         super().__init__(expression)
         self.expression = expression
@@ -2747,6 +2750,7 @@ class _RequestWithoutTreeDiagram(Exception):
         self.settings = settings
         self.uncut = uncut
         self.cut = cut
+        self.lines = lines
 
 
 #: Why the built-in process selection rejects a concrete process
@@ -5745,14 +5749,16 @@ class GenerationBackend:
         if not removed:
             return None
         counted = " or ".join(str(count) for count in sorted(set(removed)))
+        # What the members it keeps lack is said with the active bounds
+        # (``_filter_refusal``).
         return _RequestWithoutTreeDiagram(
             request.expression,
             f"process.max_quark_lines = {limit} removes {len(removed)} of the "
             f"{len(uncut)} concrete processes of {request.expression!r} (those "
-            f"with {counted} quark line{'' if removed == [1] * len(removed) else 's'})"
-            ", and none of those it keeps has a tree-level diagram",
+            f"with {counted} quark line{'' if removed == [1] * len(removed) else 's'})",
             cut=f"process.max_quark_lines = {limit}",
             uncut=uncut,
+            lines=lines,
         )
 
     def _builtin_request_without_process(
@@ -5782,6 +5788,7 @@ class GenerationBackend:
                     + ("line)" if lines == [1] else "lines)"),
                     cut=f"process.max_quark_lines = {limit}",
                     uncut=uncut,
+                    lines=counts,
                 )
         reasons = dict(report.rejection_counts)
         violated = [
@@ -5943,6 +5950,8 @@ class GenerationBackend:
                 caps=caps,
                 bounds=bounds,
                 limits_for=limits_for,
+                minimal_policy=self._coupling_order_policy == "minimal",
+                quark_line_limit=self._max_quark_pairs,
             )
 
         refused: dict[str, _RequestWithoutTreeDiagram] = {}
@@ -5988,44 +5997,74 @@ class GenerationBackend:
         caps: Mapping[str, int],
         bounds: Mapping[str, int],
         limits_for: Callable[[Mapping[str, int]], Mapping[str, int]],
+        minimal_policy: bool,
+        quark_line_limit: int | None,
     ) -> _RequestWithoutTreeDiagram:
         """Which settings leave a request without a Born, from the total
         coupling orders of its tree-level closures (``totals``, the sweep that
         decides service): those of the members it keeps and, with the
-        quark-line cut (``cut``: its removal and every concrete process of
-        the request without it), of all its members. Without any closure,
-        none (``NoTreeDiagramError``; the cut is mentioned as also excluding
-        it). Else every active bound is named and so are the fewest changes
-        that admit a closure: relaxing the cut and stating higher limits for
-        named orders (raising an explicit limit, or replacing an
-        expansion-order cap), each change confirmed by the same check on the
-        limits the request has with that change stated as a user states it
-        (``limits_for``) before it is named."""
+        quark-line cut (``cut``: its removal, every concrete process of the
+        request without it and their quark lines), of all its members.
+        Without any closure, none (``NoTreeDiagramError``; the cut is
+        mentioned as also excluding it). Else every sentence is a fact the
+        generator acts on: the active bounds (all of them), what the cut
+        removes, and the fewest changes that admit a closure, each a setting
+        with its new value (``process.max_quark_lines`` raised to a number of
+        quark lines; a coupling-order limit raised, or stated in place of an
+        expansion order) that is confirmed by the same check on the request
+        as it is with that change made the way the message says
+        (``limits_for``; the members the raised cut keeps) before it is
+        named. Under the ``minimal`` policy a limit goes in
+        ``process.max_coupling_orders`` only: an MG5_aMC annotation of the
+        process would switch to the ``explicit`` policy, which drops the
+        expansion orders of the other couplings and changes the request."""
 
         uncut = tuple(cut.uncut) if cut is not None else ()
-        options: dict[tuple[bool, tuple[tuple[str, int], ...]], int] = {}
-        for with_cut, processes in ((False, tuple(kept)), (True, uncut)):
-            for process in processes:
-                for total in totals(process):
-                    raised = tuple(
-                        sorted(
-                            (name, value)
-                            for name, value in total.items()
-                            if name in bounds and value > bounds[name]
-                        )
+        lines = tuple(cut.lines) if cut is not None else ()
+        # (quark lines the cut must allow or None, raised limits) -> changes.
+        Option = tuple[int | None, tuple[tuple[str, int], ...]]
+        options: dict[Option, int] = {}
+
+        def add(needed: int | None, process: CanonicalProcessIR) -> None:
+            for total in totals(process):
+                raised = tuple(
+                    sorted(
+                        (name, value)
+                        for name, value in total.items()
+                        if name in bounds and value > bounds[name]
                     )
-                    key = (with_cut, raised)
-                    options[key] = int(with_cut) + len(raised)
+                )
+                options[(needed, raised)] = int(needed is not None) + len(raised)
+
+        for process in kept:
+            add(None, process)
+        removed = [
+            (process, count)
+            for process, count in zip(uncut, lines, strict=True)
+            if quark_line_limit is not None and count > quark_line_limit
+        ]
+        for process, count in removed:
+            add(count, process)
         if not options:
             return _RequestWithoutTreeDiagram(
                 expression, None if cut is None else f"also excluded by {cut.cut}"
             )
 
-        def confirmed(option: tuple[bool, tuple[tuple[str, int], ...]]) -> bool:
-            with_cut, raised = option
+        def admitted(needed: int | None) -> tuple[CanonicalProcessIR, ...]:
+            """The members a cut raised to ``needed`` quark lines keeps."""
+
+            if needed is None:
+                return tuple(kept)
+            return tuple(kept) + tuple(
+                process for process, count in removed if count <= needed
+            )
+
+        def confirmed(option: Option) -> bool:
+            needed, raised = option
             limits = limits_for(dict(raised))
-            processes = uncut if with_cut else tuple(kept)
-            return any(has_diagram(process, limits or None) for process in processes)
+            return any(
+                has_diagram(process, limits or None) for process in admitted(needed)
+            )
 
         fewest = min(options.values())
         chosen = sorted(
@@ -6035,17 +6074,18 @@ class GenerationBackend:
                 if changes == fewest and changes > 0 and confirmed(option)
             ),
             key=lambda option: (
-                option[0],
+                option[0] is not None,
+                option[0] or 0,
                 [value for _, value in option[1]],
                 [name for name, _ in option[1]],
             ),
         )
-        # One raise per set of orders: the lowest.
-        unique: dict[
-            tuple[bool, tuple[str, ...]], tuple[bool, tuple[tuple[str, int], ...]]
-        ] = {}
+        # One change per setting and set of orders: the smallest.
+        unique: dict[tuple[bool, tuple[str, ...]], Option] = {}
         for option in chosen:
-            unique.setdefault((option[0], tuple(name for name, _ in option[1])), option)
+            unique.setdefault(
+                (option[0] is not None, tuple(name for name, _ in option[1])), option
+            )
         chosen = list(unique.values())
 
         def listed(limits: Mapping[str, int]) -> str:
@@ -6072,10 +6112,17 @@ class GenerationBackend:
             )
             if present
         )
-        if cut is not None and any(option[0] for option in chosen):
-            # Relaxing the cut is part of the remedy: say what it removes.
+        if cut is not None and any(option[0] is not None for option in chosen):
+            # Raising the cut is part of the remedy: say what it removes and,
+            # with the bounds they are checked within, what the rest lacks.
             text = str(cut.reason)
-            if within and (True, ()) not in options:
+            if kept:
+                text += ", and none of those it keeps has a tree-level diagram"
+                if within:
+                    text += " within " + within_text
+            if within and not any(
+                needed is not None and not raised for needed, raised in options
+            ):
                 text += (
                     ", and without the cut none has one within "
                     + within_text
@@ -6097,10 +6144,10 @@ class GenerationBackend:
                 settings=settings_named,
             )
 
-        def remedy(option: tuple[bool, tuple[tuple[str, int], ...]]) -> str:
+        def remedy(option: Option) -> str:
             changes = []
-            if option[0]:
-                changes.append("relaxing process.max_quark_lines")
+            if option[0] is not None:
+                changes.append(f"raising process.max_quark_lines to {option[0]}")
             raised_explicit = {
                 name: value for name, value in option[1] if name in explicit
             }
@@ -6124,16 +6171,25 @@ class GenerationBackend:
         )
         text += " serves the request"
         example = next((option[1][0] for option in chosen if option[1]), None)
-        if example is not None:
-            # A limit is stated once: in the run card (or the option, the
-            # Python configuration) or as an annotation of the process.
+        if example is not None and minimal_policy:
+            # Every limit of a minimal-policy request is stated in the
+            # configuration: an annotation would switch the policy.
             text += (
-                "; a limit is stated in process.max_coupling_orders or as the "
-                f"MG5_aMC annotation of the process ({example[0]}={example[1]}), "
-                "not in both: change a stated limit where it is stated"
+                "; state a limit in process.max_coupling_orders, not as an "
+                f"MG5_aMC annotation of the process such as {example[0]}="
+                f"{example[1]}: an annotation asks for the explicit coupling-order "
+                "policy, which drops the expansion orders of the other couplings"
+            )
+        elif example is not None:
+            # Under the explicit policy every limit is stated by the user, in
+            # the configuration or as an annotation of the process.
+            text += (
+                "; change a limit where it is stated: in "
+                "process.max_coupling_orders or in the MG5_aMC annotation of the "
+                f"process ({example[0]}={example[1]})"
             )
         settings = []
-        if any(option[0] for option in chosen):
+        if any(option[0] is not None for option in chosen):
             settings.append("process.max_quark_lines")
         if any(option[1] for option in chosen):
             settings.append("process.max_coupling_orders")

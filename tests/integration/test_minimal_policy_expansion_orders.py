@@ -101,10 +101,13 @@ def _config(orders: dict[str, int] | None) -> RunConfig:
     )
 
 
+# Where a limit goes under the minimal policy (the refusal's last sentence):
+# in the configuration, never as an annotation, which would switch the policy.
 _WHERE = (
-    "; a limit is stated in process.max_coupling_orders or as the MG5_aMC "
-    "annotation of the process ({}), not in both: change a stated limit where it "
-    "is stated."
+    "; state a limit in process.max_coupling_orders, not as an MG5_aMC "
+    "annotation of the process such as {}: an annotation asks for the explicit "
+    "coupling-order policy, which drops the expansion orders of the other "
+    "couplings."
 )
 _NP2 = (
     "stating the limit NP<=2, which replaces the expansion order NP<=1 serves the "
@@ -379,24 +382,124 @@ def test_a_loop_induced_request_stays_within_the_expansion_order(
     assert value.values[0][0].finite > 0.0
 
 
-@pytest.mark.parametrize("stated", ("card", "annotation"))
 def test_the_limit_stated_for_an_expansion_order_generates_where_stated(
-    np_model: ModelSource, tmp_path: Path, stated: str
+    np_model: ModelSource, tmp_path: Path
 ) -> None:
-    # The refusal asks for an NP limit, which replaces the expansion order:
-    # stated in process.max_coupling_orders or as the annotation NP=2.
+    # The refusal asks for an NP limit in process.max_coupling_orders, which
+    # replaces the expansion order and keeps the minimal policy.
     with pytest.raises(RequestFilterError) as caught:
         Generator(_config(None)).generate(
             "d d~ > vm vm~", tmp_path / "refused", model=np_model
         )
     assert str(caught.value).endswith(_NP2)
-    if stated == "card":
-        config = replace(
-            _config(None), process=ProcessConfig(max_coupling_orders={"NP": 2})
-        )
-        request = "d d~ > vm vm~"
-    else:
-        config, request = _config(None), "d d~ > vm vm~ NP=2"
-    Generator(config).generate(request, tmp_path / stated, model=np_model)
-    value = complex(Runtime.load(tmp_path / stated).evaluate(_POINTS)[0])
+    config = replace(
+        _config(None), process=ProcessConfig(max_coupling_orders={"NP": 2})
+    )
+    Generator(config).generate("d d~ > vm vm~", tmp_path / "card", model=np_model)
+    value = complex(Runtime.load(tmp_path / "card").evaluate(_POINTS)[0])
     assert value.real > 0.0
+
+
+def test_the_stated_limit_works_in_a_run_card_with_the_minimal_policy(
+    np_model: ModelSource, tmp_path: Path, capfd: pytest.CaptureFixture[str]
+) -> None:
+    # Through the command line, with coupling_order_policy = "minimal" in the
+    # run card: the refusal names the card field, and that edit generates (an
+    # annotation NP=2 would conflict with the stated policy).
+    from pyamplicol.cli.main import main as cli_main
+
+    def card(name: str, extra: str) -> Path:
+        path = tmp_path / f"{name}.toml"
+        path.write_text(
+            "schema_version = 1\n"
+            'action = "generate"\n'
+            "[model]\n"
+            f'source = "{np_model.path}"\n'
+            'restriction = "default"\n'
+            "[process]\n"
+            'entries = [{ expression = "d d~ > vm vm~" }]\n'
+            'coupling_order_policy = "minimal"\n'
+            f"{extra}\n"
+            "[generation]\n"
+            f'output = "{tmp_path / name}"\n'
+            "emit_api_bundle = false\n"
+            "workers = 1\n"
+            "[color]\n"
+            'accuracy = "full"\n'
+            "[evaluator]\n"
+            'execution_mode = "compiled"\n',
+            encoding="utf-8",
+        )
+        return path
+
+    assert cli_main([str(card("refused", ""))]) == 2
+    captured = capfd.readouterr()
+    assert _NP2.removesuffix(".") in captured.out + captured.err
+    assert cli_main([str(card("stated", "max_coupling_orders = { NP = 2 }"))]) == 0
+    assert (tmp_path / "stated" / "artifact.json").is_file()
+
+
+def test_the_stated_limit_keeps_the_other_expansion_orders(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    # The photon and Z couplings of the leptons carry NP, the Z ones WEAK as
+    # well, both of expansion order 1: e+ e- > mu+ mu- needs NP^2. The refusal
+    # asks for NP<=2 in process.max_coupling_orders, which keeps WEAK<=1; an
+    # annotation NP=2 would switch to the explicit policy and drop WEAK<=1,
+    # which is another request (a different value).
+    if importlib.util.find_spec("pyamplicol._rusticol") is None:
+        pytest.skip("the Rusticol extension has not been built")
+    root = tmp_path_factory.mktemp("np-weak")
+    source = root / "NPWEAK"
+    shutil.copytree(
+        _SM_UFO, source, ignore=shutil.ignore_patterns("*.pkl", "__pycache__")
+    )
+    with (source / "coupling_orders.py").open("a", encoding="utf-8") as handle:
+        for name in ("NP", "WEAK"):
+            handle.write(
+                f"\n{name} = CouplingOrder(name='{name}', expansion_order=1, "
+                "hierarchy=1)\n"
+            )
+    couplings = source / "couplings.py"
+    text = couplings.read_text(encoding="utf-8")
+    for index, orders in (
+        (3, {"QED": 1, "NP": 1}),
+        (50, {"QED": 1, "NP": 1, "WEAK": 1}),
+        (59, {"QED": 1, "NP": 1, "WEAK": 1}),
+    ):
+        text, count = re.subn(
+            r"(GC_"
+            + str(index)
+            + r" = Coupling\([^\n]*\n[^\n]*\n\s*order = )\{[^}]+\}",
+            lambda match, orders=orders: match[1] + repr(orders),
+            text,
+        )
+        assert count == 1
+    couplings.write_text(text, encoding="utf-8")
+    model = ModelSource.from_path(source, restriction="default")
+
+    def value(name: str, request: str, process: ProcessConfig) -> float:
+        output = root / name
+        Generator(replace(_config(None), process=process)).generate(
+            request, output, model=model
+        )
+        return complex(Runtime.load(output).evaluate(_POINTS)[0]).real
+
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(_config(None)).generate(
+            "e+ e- > mu+ mu-", root / "refused", model=model
+        )
+    message = str(caught.value)
+    assert "none within the model's expansion orders (NP<=1 WEAK<=1)" in message
+    assert message.endswith(_NP2)
+    stated = value(
+        "stated", "e+ e- > mu+ mu-", ProcessConfig(max_coupling_orders={"NP": 2})
+    )
+    # The same request under the explicit policy keeps WEAK<=1 as a limit.
+    assert stated == pytest.approx(
+        value("kept", "e+ e- > mu+ mu- NP=2 WEAK=1", ProcessConfig()), rel=1e-12
+    )
+    # Without WEAK<=1 (what an annotation NP=2 alone asks for) it differs.
+    assert value("dropped", "e+ e- > mu+ mu- NP=2", ProcessConfig()) != pytest.approx(
+        stated, rel=1e-6
+    )

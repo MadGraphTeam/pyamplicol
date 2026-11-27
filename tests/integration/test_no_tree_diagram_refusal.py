@@ -85,11 +85,11 @@ def _refusal(
 
 
 ANY = "has no tree-level Feynman diagram at any coupling order"
-# Where a raised coupling-order limit goes (the refusal's last sentence).
+# Where a raised coupling-order limit goes under the explicit policy (the
+# refusal's last sentence): where the user stated it.
 WHERE = (
-    "; a limit is stated in process.max_coupling_orders or as the MG5_aMC "
-    "annotation of the process ({}), not in both: change a stated limit where it "
-    "is stated."
+    "; change a limit where it is stated: in process.max_coupling_orders or in "
+    "the MG5_aMC annotation of the process ({})."
 )
 # (request, process, reason in the message or None, loop hint)
 BUILT_IN = (
@@ -178,7 +178,7 @@ def test_the_quark_line_cut_is_named_not_a_missing_diagram(
     assert error.key == "request-filter"
     message = str(error)
     assert message.startswith(QUARK_LINES)
-    assert "relaxing process.max_quark_lines serves the request" in message
+    assert "raising process.max_quark_lines to 2 serves the request." in message
     assert LOOP not in message
     assert "no tree-level" not in message
     assert error.processes == ("u d > u d",)
@@ -260,8 +260,8 @@ def test_two_settings_that_each_empty_the_request(tmp_path: Path) -> None:
         "within the coupling-order limits QCD<=0 either"
     )
     assert message.endswith(
-        "relaxing process.max_quark_lines together with raising the limit QCD<=0 "
-        "to QCD<=2 serves the request" + WHERE.format("QCD=2")
+        "raising process.max_quark_lines to 1 together with raising the limit "
+        "QCD<=0 to QCD<=2 serves the request" + WHERE.format("QCD=2")
     )
     assert LOOP not in message
     assert error.settings == ("process.max_quark_lines", "process.max_coupling_orders")
@@ -337,8 +337,8 @@ def test_a_partial_quark_line_cut_is_named(lane: str, tmp_path: Path) -> None:
     start = (
         "request filter: process.max_quark_lines = 0 removes 2 of the 3 concrete "
         "processes of 'x x > z z' (those with 1 quark line), and none of those it "
-        "keeps has a tree-level diagram, so there is nothing to generate; relaxing "
-        "process.max_quark_lines serves the request."
+        "keeps has a tree-level diagram, so there is nothing to generate; raising "
+        "process.max_quark_lines to 1 serves the request."
     )
     error = _refusal(
         model, "x x > z z", lane, tmp_path, error=RequestFilterError, process=cut
@@ -684,3 +684,43 @@ def test_a_batch_of_26_labels_is_refused_as_each_alone(lane: str) -> None:
         assert {request for request, value in kind.items() if value == "filter"} == {
             request for request in requests if request.endswith("> z z")
         }
+
+
+def test_a_kept_member_is_said_to_lack_a_diagram_within_the_bounds(
+    tmp_path: Path,
+) -> None:
+    # x = [g, u, u~], x x > t t~ with one quark line at most, QCD<=0 and
+    # QED<=2: the cut removes the quark members; the gluon member it keeps has
+    # a tree-level diagram, at QCD^2, outside the limits, and the message says
+    # so with the limits. Each remedy, applied as stated, generates.
+    model = ModelSource.built_in_sm()
+
+    def settings(cut: int, qcd: int) -> ProcessConfig:
+        return _label(
+            ("g", "u", "u~"),
+            max_quark_lines=cut,
+            coupling_order_policy="explicit",
+            max_coupling_orders={"QCD": qcd, "QED": 2},
+        )
+
+    error = _refusal(
+        model,
+        "x x > t t~",
+        "compiled",
+        tmp_path,
+        error=RequestFilterError,
+        process=settings(1, 0),
+    )
+    assert str(error) == (
+        "request filter: process.max_quark_lines = 1 removes 2 of the 3 concrete "
+        "processes of 'x x > t t~' (those with 2 quark lines), and none of those it "
+        "keeps has a tree-level diagram within the coupling-order limits QCD<=0 "
+        "QED<=2, so there is nothing to generate; raising the limit QCD<=0 to "
+        "QCD<=2 or raising process.max_quark_lines to 2 serves the request"
+        + WHERE.format("QCD=2")
+    )
+    assert error.settings == ("process.max_quark_lines", "process.max_coupling_orders")
+    for name, (cut, qcd) in {"qcd": (1, 2), "cut": (2, 0)}.items():
+        _generator("compiled", process=settings(cut, qcd)).generate(
+            ["x x > t t~"], tmp_path / name, model=model
+        )
