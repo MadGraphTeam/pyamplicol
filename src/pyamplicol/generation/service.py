@@ -69,7 +69,11 @@ from ..color.plan import (
     build_color_topology_replay_certificate,
     build_lc_topology_replay_plan,
 )
-from ..color.plan_build import _canonical_cycle
+from ..color.plan_build import (
+    _canonical_cycle,
+    _reference_lc_color_sectors,
+    _sector_tensor_key,
+)
 from ..models.adjoint_color_certificate import adjoint_tree_color_basis_is_proven
 from ..models.base import CouplingOrders, Model
 from ..models.loading import CompiledModel as _CompiledModelPayload
@@ -2713,6 +2717,42 @@ class _ExpandedProcess:
     group_members: tuple[GroupMember, ...] = ()
 
 
+def _unfolded_subset(
+    process: CanonicalProcessIR,
+    folded: GenericColorPlan,
+    selected: Iterable[int] | None,
+    *,
+    reference_color_order: Sequence[int] | None,
+) -> tuple[GenericColorPlan, frozenset[int]]:
+    """The unfolded plan of ``folded`` and the ids of both orientations of
+    every kept sector (the ``selected`` ids of ``folded``, or all of its
+    capped sectors)."""
+
+    chosen = None if selected is None else {int(sector_id) for sector_id in selected}
+    keys = {
+        _sector_tensor_key(sector, folded=True)
+        for sector in folded.sectors
+        if chosen is None or int(sector.id) in chosen
+    }
+    unfolded = build_color_plan(
+        process,
+        basis="trace",
+        color_accuracy=folded.color_accuracy,
+        max_sectors=None,
+        reference_color_order=reference_color_order,
+        fold_trace_reflections=False,
+    )
+    return unfolded, frozenset(
+        int(sector.id)
+        for sector in unfolded.sectors
+        if _sector_tensor_key(sector, folded=True) in keys
+    )
+
+
+def _optional_list(values: Sequence[int] | None) -> list[int] | None:
+    return None if values is None else list(values)
+
+
 def _canonical_reference_word(
     process: CanonicalProcessIR,
     reference: Sequence[int] | None,
@@ -2724,7 +2764,8 @@ def _canonical_reference_word(
     label (the smaller orientation where reflections are folded). A cyclic
     respelling or a reflection names the same sector, never another."""
 
-    if reference is None:
+    if reference is None or not _reference_lc_color_sectors(process, reference):
+        # A reference that names no sector reorders nothing in any lane.
         return None
     coloured = {
         *process.fundamental_labels,
@@ -2733,21 +2774,24 @@ def _canonical_reference_word(
     }
     word = tuple(int(label) for label in reference if int(label) in coloured)
     if process.fundamental_labels or process.antifundamental_labels:
-        return word
+        # Open lines in the selector's canonical spelling: each from its
+        # fundamental end (a reference may start a line at its antiquark), in
+        # the process's fundamental-label order (another order of whole lines
+        # is the same colour tensor).
+        named = _reference_lc_color_sectors(process, reference)
+        if not named:
+            return word
+        position = {
+            int(label): index for index, label in enumerate(process.fundamental_labels)
+        }
+        lines = tuple(
+            sorted(
+                named[0].open_color_lines,
+                key=lambda line: position[int(line.fundamental_label)],
+            )
+        )
+        return tuple(int(label) for line in lines for label in line.coloured_labels)
     return _canonical_cycle(word, folded=folded)
-
-
-class _NoModelSupportedAmplitudes(GenerationError):
-    """A concrete tree-level subprocess has no amplitude in the active model."""
-
-
-@dataclass(frozen=True, slots=True)
-class _UnsupportedProcess:
-    expanded: _ExpandedProcess
-    reason: str
-
-
-_SupportedT = TypeVar("_SupportedT", "_DagProcess", _ExpandedProcess)
 
 
 class _NoModelSupportedAmplitudes(GenerationError):
@@ -4422,11 +4466,11 @@ class GenerationBackend:
                 "reference_color_word": (
                     None
                     if selection.reference_color_order is None
-                    else list(
-                        projection.color_plan.sectors[0].trace_labels
-                        if projection.color_plan is not None
-                        and projection.color_plan.basis == "adjoint"
-                        else _canonical_reference_word(
+                    else list(projection.color_plan.sectors[0].trace_labels)
+                    if projection.color_plan is not None
+                    and projection.color_plan.basis == "adjoint"
+                    else _optional_list(
+                        _canonical_reference_word(
                             expanded.process_ir,
                             selection.reference_color_order,
                             folded=contracted_color is None
@@ -8660,11 +8704,32 @@ class GenerationBackend:
         limits = dict(prepared.coupling_order_limits)
         replay_plan = prepared.topology_replay
         selection = self._process_selection
+        dag_color_plan = complete_color_plan
+        dag_max_color_sectors = selection.max_color_sectors
+        if (
+            not self._eager_execution_enabled
+            and complete_color_plan.color_accuracy == "lc"
+            and complete_color_plan.basis == "trace"
+            and complete_color_plan.trace_reflections_folded
+            and (complete_color_plan.truncated or materialized_sector_ids is not None)
+        ):
+            # A subset of a plan with folded trace reflections has no topology
+            # replay to evaluate a kept trace's other orientation, which its
+            # public flows list: build the unfolded plan and keep both
+            # orientations of every kept sector, each its own sector.
+            dag_color_plan, materialized_sector_ids = _unfolded_subset(
+                process,
+                complete_color_plan,
+                materialized_sector_ids,
+                reference_color_order=selection.reference_color_order,
+            )
+            dag_max_color_sectors = None
+            replay_plan = None
         dag = compile_generic_dag(
             process,
             model=model,
-            color_plan=complete_color_plan,
-            max_color_sectors=selection.max_color_sectors,
+            color_plan=dag_color_plan,
+            max_color_sectors=dag_max_color_sectors,
             # The plan already starts with the reference sector.
             reference_color_order=None,
             selected_color_sector_ids=materialized_sector_ids,

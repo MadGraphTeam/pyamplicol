@@ -142,7 +142,8 @@ def _sector_tensor_key(sector: LCColorSector, *, folded: bool) -> tuple[object, 
     else:
         traces = tuple(
             sorted(
-                _canonical_cycle(trace, folded=False) for trace in sector.closed_traces
+                _canonical_cycle(trace, folded=False)
+                for trace in getattr(sector, "closed_traces", ())
             )
         )
     return (sector.kind, lines, traces, tuple(sorted(sector.singlet_labels)))
@@ -239,11 +240,12 @@ def _build_color_plan(
                 key = _sector_dedup_key(candidate)
                 if key in seen_sector_keys:
                     continue
-                seen_sector_keys.add(key)
-                sectors.append(candidate)
+                # A cap truncates the plan only when it leaves a sector out.
                 if max_sector_count is not None and len(sectors) >= max_sector_count:
                     truncated = True
                     break
+                seen_sector_keys.add(key)
+                sectors.append(candidate)
             if truncated:
                 break
         if truncated:
@@ -396,11 +398,12 @@ def _build_no_fundamental_color_plan(
         key = _sector_dedup_key(candidate)
         if key in seen_sector_keys:
             continue
-        seen_sector_keys.add(key)
-        sectors.append(candidate)
+        # A cap truncates the plan only when it leaves a sector out.
         if max_sectors is not None and len(sectors) >= max_sectors:
             truncated = True
             break
+        seen_sector_keys.add(key)
+        sectors.append(candidate)
     diagnostics: tuple[str, ...] = ()
     if truncated:
         diagnostics = (

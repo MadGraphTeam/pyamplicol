@@ -17,10 +17,12 @@ from __future__ import annotations
 import importlib.util
 import math
 from itertools import permutations
+from pathlib import Path
 
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime
+from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
     EvaluatorConfig,
@@ -134,19 +136,11 @@ def generate(tmp_path_factory: pytest.TempPathFactory):
     return artifact
 
 
-# (model, process, orders, references): ordinary QCD processes, pure gluons
-# with folded reflections and an open line beside gluons.
+# (model, process, orders, references): ordinary QCD processes.
 _ALL_FOUR = tuple(permutations((1, 2, 3, 4)))
 _CASES = (
     pytest.param(
         "sm", "g g > g g", None, ((1, 3, 4, 2), (2, 3, 4, 1), (1, 2, 4, 3)), id="qcd"
-    ),
-    pytest.param(
-        "sm",
-        "g g > t t~ g",
-        None,
-        ((3, 2, 1, 5, 4), (3, 1, 5, 2, 4)),
-        id="line",
     ),
     pytest.param("sm", "g g > g g", None, _ALL_FOUR, id="qcd-all", marks=_NIGHTLY),
     pytest.param(
@@ -161,8 +155,38 @@ _CASES = (
         "sm",
         "g g > t t~ g",
         None,
-        ((3, 5, 2, 1, 4), (3, 1, 2, 5, 4)),
+        ((3, 2, 1, 5, 4), (3, 1, 5, 2, 4), (3, 5, 2, 1, 4)),
         id="line-five",
+        marks=_NIGHTLY,
+    ),
+    # One quark line from either end (the incoming u is the outgoing
+    # antiquark 1), and two quark lines: line blocks in either order, a line
+    # spelled from its antiquark, the other pairing.
+    pytest.param(
+        "sm",
+        "u u~ > g g g",
+        None,
+        ((2, 3, 4, 5, 1), (1, 5, 4, 3, 2), (2, 4, 3, 5, 1)),
+        id="quark-gluons",
+    ),
+    pytest.param(
+        "sm",
+        "d d~ > u u~ g",
+        None,
+        ((3, 4, 1, 5, 2), (1, 5, 2, 3, 4), (2, 5, 1, 3, 4), (2, 4, 3, 5, 1)),
+        id="two-lines",
+    ),
+    pytest.param(
+        "sm",
+        "g g > g g g g",
+        None,
+        (
+            (1, 2, 3, 4, 5, 6),
+            (4, 5, 6, 1, 2, 3),
+            (1, 6, 5, 4, 3, 2),
+            (1, 4, 2, 6, 3, 5),
+        ),
+        id="qcd-six",
         marks=_NIGHTLY,
     ),
 )
@@ -195,6 +219,13 @@ def test_a_reference_order_changes_no_flow_and_no_value(
         assert set(r_flows) == set(flows), reference
         for flow, values in r_flows.items():
             _assert_close(values, flows[flow], (flow, reference))
+
+
+def _reflected(flow: str) -> str:
+    """The same trace in the other orientation (from the same first label)."""
+
+    labels = flow.removeprefix("flow:").split(",")
+    return "flow:" + ",".join([labels[0], *reversed(labels[1:])])
 
 
 def _reference_flow(flows: list[str], reference: tuple[int, ...]) -> str:
@@ -245,19 +276,86 @@ def test_a_capped_reference_keeps_the_reference_first(
             max_color_sectors=cap,
         )
         kept = [flow.id for flow in capped.physics.color_flows]
-        assert len(kept) == cap == len(set(kept)), (cap, kept)
+        assert len(kept) == len(set(kept)), (cap, kept)
+        # Where reflections are folded, a kept trace publishes both of its
+        # orientations: at most two flows per kept sector.
+        assert cap <= len(kept) <= 2 * cap or len(kept) == len(ids), (cap, kept)
         # Public physics lists flows in its own order: the cap keeps the
         # reference sector (alone at cap one).
         assert first in kept, (cap, kept)
         if cap == 1:
-            assert kept == [first]
+            assert set(kept) <= {first, _reflected(first)}, kept
         total = [0.0] * len(points)
         for flow in kept:
             expected = _real(complete.evaluate(points, color_flows=[flow]))
+            total = [a + b for a, b in zip(total, expected, strict=True)]
             _assert_close(
                 _real(capped.evaluate(points, color_flows=[flow])),
                 expected,
                 (cap, flow),
             )
-            total = [a + b for a, b in zip(total, expected, strict=True)]
         _assert_close(_real(capped.evaluate(points)), total, cap)
+
+
+def _sector_count(model: str, process: str, mode: str, accuracy: str, orders) -> int:
+    """The lane's colour-sector count, from its dry run (which reads the
+    model cache)."""
+
+    from dataclasses import replace
+
+    config = replace(_config(mode, accuracy, orders), model=ModelConfig())
+    plan = Generator(config).plan(process, model=_model(model))
+    (record,) = plan.estimated_coverage["processes"]
+    return int(record["color_sector_count"])
+
+
+@pytest.mark.parametrize("reference", [None, "cyclic"])
+@pytest.mark.parametrize("mode", _MODES)
+@pytest.mark.parametrize(
+    ("model", "process", "orders", "cyclic"),
+    [
+        pytest.param("sm", "g g > g g", None, (2, 3, 4, 1), id="qcd"),
+        pytest.param("sm", "u u~ > g g g", None, (2, 3, 4, 5, 1), id="quark-gluons"),
+        pytest.param("sm", "d d~ > u u~ g", None, (3, 4, 1, 5, 2), id="two-lines"),
+    ],
+)
+def test_the_cap_boundary_of_an_ordinary_plan(
+    generate, tmp_path: Path, model, process, orders, cyclic, mode, reference
+) -> None:
+    """A cap truncates the plan only when it leaves a sector out, with or
+    without a reference order: a cap of n or n + 1 for an n-sector plan
+    serves the complete plan in every lane that takes caps; n - 1 truncates
+    (recurrence refuses a truncated plan, compiled serves the subset, whose
+    flows keep their complete values); on-the-fly refuses any cap."""
+
+    selection = {} if reference is None else {"reference_color_order": list(cyclic)}
+    complete = generate(model, process, mode, "lc", orders)
+    points = _points(complete)
+    inclusive = _real(complete.evaluate(points))
+    n = _sector_count(
+        model, process, "compiled" if mode == "on-the-fly" else mode, "lc", orders
+    )
+    for cap in (n - 1, n, n + 1):
+        config = _config(mode, "lc", orders, max_color_sectors=cap, **selection)
+        path = tmp_path / f"{mode}-{cap}"
+        if mode == "on-the-fly" or (mode == "recurrence" and cap < n):
+            with pytest.raises(GenerationError, match=r"max_color_sectors|truncated"):
+                Generator(config).generate(process, path, model=_model(model))
+            continue
+        Generator(config).generate(process, path, model=_model(model))
+        capped = Runtime.load(path)
+        flows = [flow.id for flow in capped.physics.color_flows]
+        assert len(flows) == len(set(flows))
+        values = _real(capped.evaluate(points))
+        if cap >= n:
+            assert set(flows) == {flow.id for flow in complete.physics.color_flows}
+            _assert_close(values, inclusive, (cap, "complete"))
+            continue
+        total = [0.0] * len(points)
+        for flow in flows:
+            expected = _real(complete.evaluate(points, color_flows=[flow]))
+            _assert_close(
+                _real(capped.evaluate(points, color_flows=[flow])), expected, flow
+            )
+            total = [a + b for a, b in zip(total, expected, strict=True)]
+        _assert_close(values, total, (cap, "subset"))
