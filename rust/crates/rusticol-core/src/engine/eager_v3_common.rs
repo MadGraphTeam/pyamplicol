@@ -51,6 +51,7 @@ pub(super) struct EagerV3CommonParts {
     model_parameter_name_to_index: BTreeMap<String, usize>,
     model_parameter_runtime_slots: BTreeMap<String, RuntimeParameterSlots>,
     model_parameter_values_f64: Vec<f64>,
+    qed_order_weights: Option<QedOrderWeights>,
     physics: Arc<PhysicsRuntime>,
 }
 
@@ -103,7 +104,7 @@ impl EagerV3CommonParts {
 
         let model_parameters = build_model_parameters(decoded, &retained)?;
         validate_physics_parameters(&model_parameters, &physics)?;
-        let model_parameter_values_f64 = model_parameters
+        let mut model_parameter_values_f64 = model_parameters
             .iter()
             .map(|parameter| parameter.default)
             .collect::<Vec<_>>();
@@ -145,6 +146,21 @@ impl EagerV3CommonParts {
             / (normalization.average_factor * normalization.identical_factor);
         if !normalization_factor.is_finite() {
             return Err(integrity("eager runtime normalization is not finite"));
+        }
+        let qed_order_weights = QedOrderWeights::for_policy(
+            normalization.coupling_policy.as_deref(),
+            &model_parameters,
+            &mut model_parameter_values_f64,
+        )?;
+        if qed_order_weights.is_some()
+            != manifest
+                .required_runtime_capabilities
+                .iter()
+                .any(|capability| capability == QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
+        {
+            return Err(integrity(
+                "eager QED-order-weighted normalization and its runtime capability disagree",
+            ));
         }
         let physics = Arc::new(PhysicsRuntime::new(physics)?);
 
@@ -190,6 +206,7 @@ impl EagerV3CommonParts {
             model_parameter_name_to_index,
             model_parameter_runtime_slots,
             model_parameter_values_f64,
+            qed_order_weights,
             physics,
         })
     }
@@ -258,6 +275,7 @@ impl EagerV3CommonParts {
             model_parameter_name_to_index: self.model_parameter_name_to_index,
             model_parameter_runtime_slots: self.model_parameter_runtime_slots,
             model_parameter_values_f64: self.model_parameter_values_f64,
+            qed_order_weights: self.qed_order_weights,
             model_parameter_evaluator: None,
             physics_reduction_override: None,
             physics: Some(self.physics),
@@ -1437,6 +1455,8 @@ struct CanonicalNormalization {
     qcd_coupling_power: usize,
     #[serde(default)]
     electroweak_coupling_power: usize,
+    #[serde(default)]
+    coupling_policy: Option<String>,
 }
 
 impl CanonicalNormalization {

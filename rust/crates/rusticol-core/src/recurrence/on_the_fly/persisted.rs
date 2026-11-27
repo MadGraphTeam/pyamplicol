@@ -465,6 +465,28 @@ impl PersistedHelicityWorkspaceV1 {
         Ok(())
     }
 
+    /// Replaces the listed exact factors (QED-order-weighted closures) in
+    /// this workspace's factor planes.
+    fn apply_factor_overrides(&mut self, overrides: &[(usize, f64, f64)]) -> RusticolResult<()> {
+        for &(id, real, imag) in overrides {
+            match (
+                self.factors_re.as_mut_slice().get_mut(id),
+                self.factors_im.as_mut_slice().get_mut(id),
+            ) {
+                (Some(re), Some(im)) => {
+                    *re = real;
+                    *im = imag;
+                }
+                _ => {
+                    return Err(invalid(
+                        "persisted helicity factor override is outside the factor planes",
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     fn refresh_inputs(
         &mut self,
         layout: &PersistedPlanLayoutV1,
@@ -1292,6 +1314,9 @@ pub(crate) struct PersistedHelicityFamilyExecutorV1<R: OnTheFlyPreparedExecutorR
     layout: Option<PersistedPlanLayoutV1>,
     resolver: R,
     parameter_state: Vec<(f64, f64)>,
+    /// Exact factors replaced at run time (QED-order-weighted closures);
+    /// part of the parameter state and its version.
+    factor_overrides: Vec<(usize, f64, f64)>,
     parameter_version: u64,
     active_cache_hit: bool,
 }
@@ -1304,9 +1329,35 @@ impl<R: OnTheFlyPreparedExecutorResolver> PersistedHelicityFamilyExecutorV1<R> {
             layout: None,
             resolver,
             parameter_state: Vec::new(),
+            factor_overrides: Vec::new(),
             parameter_version: 0,
             active_cache_hit: false,
         }
+    }
+
+    /// Replaces exact factors of the plan (`(factor ID, real, imaginary)`),
+    /// applied to every family workspace with the parameters; an unchanged
+    /// set keeps the parameter version.
+    pub(crate) fn set_factor_overrides(
+        &mut self,
+        overrides: impl IntoIterator<Item = (usize, f64, f64)>,
+    ) -> RusticolResult<()> {
+        let overrides = overrides.into_iter().collect::<Vec<_>>();
+        if overrides
+            .iter()
+            .any(|(_, real, imag)| !real.is_finite() || !imag.is_finite())
+        {
+            return Err(invalid("persisted helicity factor override is not finite"));
+        }
+        if overrides == self.factor_overrides {
+            return Ok(());
+        }
+        self.factor_overrides = overrides;
+        self.parameter_version = self
+            .parameter_version
+            .checked_add(1)
+            .ok_or_else(|| invalid("persisted helicity parameter version exceeds u64"))?;
+        Ok(())
     }
 
     pub(crate) const fn resolver(&self) -> &R {
@@ -1674,6 +1725,9 @@ impl<R: OnTheFlyPreparedExecutorResolver> PersistedHelicityFamilyExecutorV1<R> {
             .ok_or_else(|| integrity("active persisted helicity family is absent"))?;
         if family.applied_parameter_version != self.parameter_version {
             family.workspace.refresh_parameters(&self.parameter_state)?;
+            family
+                .workspace
+                .apply_factor_overrides(&self.factor_overrides)?;
             family.applied_parameter_version = self.parameter_version;
         }
         family

@@ -218,6 +218,10 @@ pub(super) fn load_on_the_fly_native_runtime(
     {
         lane.install_symmetric_group_color_workspace(workspace)?;
     }
+    if let Some(weights) = common.qed_order_weights.as_ref() {
+        let (alpha_s_slot, alpha_ew_slot) = weights.input_slots();
+        lane.enable_qed_order_weights(alpha_s_slot, alpha_ew_slot)?;
+    }
     Ok(LoadedOnTheFlyRuntime {
         common,
         lane,
@@ -794,7 +798,7 @@ fn build_common_runtime(
         })
         .collect::<Vec<_>>();
     let model_parameter_runtime_slots = runtime_parameter_slots(&model_parameters)?;
-    let model_parameter_values_f64 = model_parameters
+    let mut model_parameter_values_f64 = model_parameters
         .iter()
         .map(|parameter| parameter.default)
         .collect::<Vec<_>>();
@@ -848,6 +852,11 @@ fn build_common_runtime(
             "on-the-fly runtime normalization is not finite",
         ));
     }
+    let qed_order_weights = QedOrderWeights::for_policy(
+        Some(normalization.coupling_policy.as_str()),
+        &model_parameters,
+        &mut model_parameter_values_f64,
+    )?;
     let particle_masses = metadata
         .particle_masses
         .iter()
@@ -911,6 +920,7 @@ fn build_common_runtime(
         normalization_electroweak_coupling_power: normalization
             .electroweak_coupling_power
             .unwrap_or(0) as usize,
+        qed_order_weights,
         model_parameters,
         model_parameter_name_to_index,
         model_parameter_runtime_slots,

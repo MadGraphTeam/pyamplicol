@@ -1486,6 +1486,26 @@ impl ValidatedRecurrenceProcessInput {
         &self.input
     }
 
+    /// The convention string of the process normalization row.
+    pub fn normalization_convention(&self) -> RusticolResult<&str> {
+        let row = self
+            .input
+            .normalization
+            .first()
+            .ok_or_else(|| invalid("recurrence process normalization row is absent"))?;
+        let range = *self
+            .input
+            .string_ranges
+            .get(row.convention_string_id as usize)
+            .ok_or_else(|| invalid("process normalization convention string is absent"))?;
+        let bytes = &self.input.string_bytes[range.as_usize_range(
+            self.input.string_bytes.len(),
+            "process normalization convention",
+        )?];
+        std::str::from_utf8(bytes)
+            .map_err(|error| invalid(format!("process normalization convention: {error}")))
+    }
+
     pub const fn summary(&self) -> &RecurrenceProcessValidationSummary {
         &self.summary
     }
