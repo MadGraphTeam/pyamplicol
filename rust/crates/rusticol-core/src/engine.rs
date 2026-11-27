@@ -210,6 +210,11 @@ pub const COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY: &str =
 /// A compiled LC process with zero colour flows: computed flows that no
 /// reduction group covers. Selecting one yields an exact zero.
 pub const COMPILED_ZERO_COLOR_FLOWS_CAPABILITY: &str = "rusticol.compiled.zero-color-flows.v1";
+/// An execution whose normalization weighs each QED order of its amplitudes
+/// by `sqrt(8 pi alpha_ew / (4 pi alpha_s))` from the current run-time inputs
+/// (`model_parameters::QED_ORDER_WEIGHTED_COUPLING_POLICY`).
+pub const QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY: &str =
+    "rusticol.normalization.qed-order-weights.v1";
 pub const SYMJIT_APPLICATION_STORAGE_ABI: &str = "symjit-application-storage-v4";
 pub const SYMJIT_PLANE_APPLICATION_ABI: &str = "pyamplicol-symjit-plane-application-v2";
 
@@ -256,6 +261,7 @@ pub enum RuntimeCapability {
     CompiledColorContractionWalshV1,
     CompiledColorTopologyLanesV1,
     CompiledZeroColorFlowsV1,
+    QedOrderWeightedCouplingsV1,
     CompiledHelicityDualLaneV1,
     CompiledHelicityPrimaryRecurrenceV1,
     CompiledHelicitySelectorUnionV1,
@@ -291,6 +297,7 @@ impl RuntimeCapability {
             Self::CompiledColorContractionWalshV1 => COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
             Self::CompiledColorTopologyLanesV1 => COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY,
             Self::CompiledZeroColorFlowsV1 => COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
+            Self::QedOrderWeightedCouplingsV1 => QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
             Self::CompiledHelicityDualLaneV1 => COMPILED_HELICITY_DUAL_LANE_CAPABILITY,
             Self::CompiledHelicityPrimaryRecurrenceV1 => {
                 COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY
@@ -337,6 +344,8 @@ pub fn supported_runtime_capabilities() -> Vec<&'static str> {
         COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
+        #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+        QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         COMPILED_HELICITY_DUAL_LANE_CAPABILITY,
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
@@ -405,6 +414,7 @@ fn runtime_capability_is_supported(capability: &str) -> bool {
         | COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY
         | COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY
         | COMPILED_ZERO_COLOR_FLOWS_CAPABILITY
+        | QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY
         | COMPILED_HELICITY_DUAL_LANE_CAPABILITY
         | COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY
         | COMPILED_HELICITY_SELECTOR_UNION_CAPABILITY
@@ -1242,6 +1252,9 @@ struct GenericRuntimeNormalizationManifest {
     qcd_coupling_power: usize,
     #[serde(default)]
     electroweak_coupling_power: usize,
+    /// Present only for a QED-order-weighted normalization.
+    #[serde(default)]
+    coupling_policy: Option<String>,
 }
 
 fn default_one_f64() -> f64 {
@@ -3415,6 +3428,9 @@ struct ExecutionRuntime {
     model_parameter_name_to_index: BTreeMap<String, usize>,
     model_parameter_runtime_slots: BTreeMap<String, RuntimeParameterSlots>,
     model_parameter_values_f64: Vec<f64>,
+    /// QED-order weights of a several-order global-coupling normalization
+    /// (`model_parameters::QedOrderWeights`); `None` for every other one.
+    qed_order_weights: Option<QedOrderWeights>,
     model_parameter_evaluator: Option<ModelParameterEvaluatorRuntime>,
     physics_reduction_override: Option<crate::Reduction>,
     physics: Option<Arc<PhysicsRuntime>>,
