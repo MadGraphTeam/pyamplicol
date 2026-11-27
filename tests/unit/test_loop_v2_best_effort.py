@@ -1029,9 +1029,16 @@ def test_the_floor_weight_reaches_every_estimate_by_every_route(aag, explicit):
             ], way
         else:
             assert result.stability is None or not any(result.stability), way
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+
     default = Runtime.load(artifact, process="p").evaluate(
-        points, mu_r2=scales, poles="none", reduction="tirust"
+        points,
+        mu_r2=scales,
+        poles="none",
+        reduction="tirust",
+        stability_checks=VirtualStabilityChecks(1 if explicit else 0),
     )
+    assert default.statuses == reference.statuses
     assert uncertainties(default) != uncertainties(reference)
 
 
@@ -1043,8 +1050,8 @@ def test_the_sdk_floor_weight_reaches_its_best_effort_checks(
 ):
     """The C ABI the same: a floor weight from the runtime-options TOML or
     from ``rusticol_virtual_set_stability_floor_weight``, with one rotation
-    or no check, gives the refused points the Python API's best-effort
-    uncertainty at that weight."""
+    or no check, gives the refused points the best-effort uncertainty the
+    Python API's runtime-options card gives on the same points."""
 
     import ctypes
 
@@ -1054,7 +1061,7 @@ def test_the_sdk_floor_weight_reaches_its_best_effort_checks(
     artifact, exact_points, exact_scales = aag
     points = [[[float(c) for c in leg] for leg in point] for point in exact_points]
     scales = [float(Fraction(s)) for s in exact_scales]
-    python = _weighted_python(artifact, exact_points, exact_scales, "object", explicit)
+    python = _weighted_python(artifact, exact_points, exact_scales, "card", explicit)
     refused = [p for p, s in enumerate(python.statuses) if s == "best-effort"]
     sdk = _sdk()
     sdk.rusticol_virtual_set_stability_floor_weight.argtypes = [
@@ -1130,3 +1137,54 @@ def test_a_rescue_level_takes_the_floor_weight_it_sets_or_the_cards(aag):
             e.relative for e in own.stability
         ]
     assert {e.floor_weight for e in wins.stability if e is not None} == {2.0}
+
+
+@pytest.mark.loop_physics
+def test_a_profile_with_only_a_floor_weight_weighs_its_default_checks(aag):
+    """``profile --stability`` with ``evaluation.stability_checks.floor_weight``
+    set and no check keeps its default set (one rotation; TIRust's points
+    add the rescaled reduction check) and weighs its estimates: 0 and 1024
+    give different estimates on both backends (review r1: identical)."""
+
+    import io
+
+    from pyamplicol.cli.main import run_cli
+    from tests.unit.test_loop_v2_orders_profile import _records
+
+    artifact, _points, _scales = aag
+    estimates = {}
+    for weight in ("0.0", "1024.0"):
+        stdout = io.StringIO()
+        code = run_cli(
+            [
+                "profile",
+                str(artifact),
+                "--stability",
+                "--stability-points",
+                "2",
+                "--ground-truth",
+                "none",
+                "--set",
+                f"evaluation.stability_checks.floor_weight={weight}",
+                "--progress",
+                "off",
+                "--json",
+            ],
+            stdout=stdout,
+            stderr=io.StringIO(),
+        )
+        assert code == 0
+        report = json.loads(stdout.getvalue())
+        estimates[weight] = [
+            [sample["estimate_relative"] for sample in _records(row["samples"])]
+            for row in report["stability"]
+        ]
+    low, high = estimates["0.0"], estimates["1024.0"]
+    assert len(low) == len(high) >= 2
+    for row_low, row_high in zip(low, high, strict=True):
+        pairs = [
+            (a, b)
+            for a, b in zip(row_low, row_high, strict=True)
+            if a is not None and b is not None
+        ]
+        assert pairs and all(a < b for a, b in pairs), (row_low, row_high)

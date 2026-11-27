@@ -148,20 +148,29 @@ def rescue_policy(
     together with an explicit carrier or checks, which the levels own), else
     the load-time ``default`` unless the call names its own arithmetic, a
     precision other than ``default_precision`` or stability checks (such a
-    call evaluates in that one carrier, without rescue)."""
+    call evaluates in that one carrier, without rescue). Checks that run
+    nothing but set a floor weight are no checks: their weight reaches the
+    policy's levels that set none (``VirtualRescuePolicy.
+    with_floor_weight``)."""
 
+    checks = stability_checks is not None and getattr(stability_checks, "enabled", True)
+    weight = None
+    if stability_checks is not None and not checks:
+        weight = getattr(stability_checks, "floor_weight", None)
     explicit = (
         arithmetic is not None
         or (precision is not None and precision != default_precision)
-        or stability_checks is not None
+        or checks
     )
     if stability is None:
-        return None if explicit else default
+        if explicit or default is None:
+            return None
+        return default.with_floor_weight(weight)
     if not isinstance(stability, VirtualRescuePolicy):
         raise TypeError("stability takes a VirtualRescuePolicy")
     if explicit:
         raise CompatibilityError(RESCUE_OWNS_CARRIER)
-    return stability
+    return stability.with_floor_weight(weight)
 
 
 @dataclass(frozen=True, slots=True)
