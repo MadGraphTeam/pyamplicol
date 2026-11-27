@@ -36,9 +36,13 @@ request whose readable name is already taken by an explicitly named request or
 by another process of the artifact an `append` extends, are named
 `<readable name>_<first ten hexadecimal digits of the SHA-256 of the
 expression>` instead, for example `u_mu_to_u_mu_cfd36ea45d`. Every other
-request keeps its readable name. Name requests explicitly (a run-card
+request keeps its readable name. A request is unnamed however it is passed: an
+expression, `ProcessRequest.parse(expression)` without a name (its
+`automatic_name` is true), a list of them or a `ProcessSet`, including
+`ProcessSet.from_expressions`. Name requests explicitly (a run-card
 `process.entries` name, `ProcessRequest.parse(..., name=...)`) to choose the
-IDs yourself.
+IDs yourself; an explicit name is never changed, and one that is already taken
+is an error.
 
 The same process can be selected with a readable expression:
 
