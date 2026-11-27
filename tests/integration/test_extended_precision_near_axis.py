@@ -21,7 +21,9 @@ that the one-loop runtime's trees use: the double-double virtual of a
 process with a massive fermion in the initial state was off by about 1e-17.
 Both are now formed without the cancellation (``|p| + pz = pT² / (|p| - pz)``
 and, massless, ``E + pz = pT² / (E - pz)`` when ``E`` and ``pz`` have
-opposite signs); the binary64 sources are unchanged.
+opposite signs), in every carrier. The binary64 sources had the same
+cancellation for a physical fermion close to the axis (a forward or backward
+final state: u u~ > t t~ 5e-5 off at 1 - cos(theta) = 1e-12, 3e-2 at 1e-15).
 """
 
 from __future__ import annotations
@@ -324,3 +326,110 @@ def test_loop_double_double_with_a_massive_initial_fermion(
             if b != 0
         )
         assert worst < bound, (arithmetic, worst)
+
+
+# Binary64 (commit B): the same cancellation for a physical final state close
+# to the beam axis. The reference is the exact runtime at 100 digits on the
+# same binary64 input (improvement off: both evaluate the caller's point), so
+# the tolerance is the binary64 evaluation's own rounding; s-channel processes,
+# whose matrix element is well conditioned in the forward direction.
+FORWARD = (8, 12, 15)
+
+
+def _forward_point(masses: list[float], one_minus_cos: float, sign: int) -> list:
+    sqrt_s = 1000.0
+    m1, m2, m3, m4 = masses
+    s = sqrt_s**2
+    beam = math.sqrt((s - (m1 + m2) ** 2) * (s - (m1 - m2) ** 2)) / (2 * sqrt_s)
+    q = math.sqrt((s - (m3 + m4) ** 2) * (s - (m3 - m4) ** 2)) / (2 * sqrt_s)
+    cos = sign * (1 - one_minus_cos)
+    sin = math.sqrt(1 - cos * cos)
+    p3 = [math.hypot(q, m3), q * sin * 0.6, q * sin * 0.8, q * cos]
+    return [
+        [math.hypot(beam, m1), 0.0, 0.0, beam],
+        [math.hypot(beam, m2), 0.0, 0.0, -beam],
+        p3,
+        [math.hypot(q, m4), -p3[1], -p3[2], -p3[3]],
+    ]
+
+
+@pytest.mark.parametrize("lane", (*LANES, "on-the-fly"))
+@pytest.mark.parametrize("process", ["u u~ > t t~", "e+ e- > u u~"])
+def test_binary64_forward_and_backward_fermions(
+    process: str, lane: str, tmp_path: Path
+) -> None:
+    """u u~ > t t~ was 2e-9 off at 1 - cos(theta) = 1e-8, 5e-5 at 1e-12 and
+    3e-2 at 1e-15 in binary64 (the massive spinor's |p| + pz from the rounded
+    |p|); a massless final quark the same through E + pz."""
+
+    from pyamplicol.models import BuiltinSMModel
+
+    Generator(_config(lane)).generate(
+        [process], tmp_path / "artifact", model=ModelSource.built_in_sm()
+    )
+    runtime = Runtime.load(tmp_path / "artifact")
+    sm = BuiltinSMModel()
+    masses = [sm.mass(leg.pdg_id) for leg in runtime.physics.external_particles]
+    points = [
+        _forward_point(masses, 10.0**-k, sign) for k in FORWARD for sign in (1, -1)
+    ]
+    binary64 = [complex(value).real for value in runtime.evaluate(points)]
+    if lane == "on-the-fly":
+        # The on-the-fly lane serves binary64 only: its reference is the
+        # compiled lane's exact runtime on the same points.
+        Generator(_config("compiled")).generate(
+            [process], tmp_path / "exact", model=ModelSource.built_in_sm()
+        )
+        exact = Runtime.load(tmp_path / "exact")
+    else:
+        exact = runtime
+    wide = exact.evaluate(
+        points, precision=REFERENCE_PRECISION, kinematics_improvement="off"
+    )
+    assert _relative([repr(x) for x in binary64], wide) < 1e-12
+
+
+@pytest.mark.loop_physics
+def test_loop_binary64_forward_massive_fermion(loop_native, tmp_path: Path) -> None:
+    """A default one-loop call (binary64, checks and lane rescue on) on
+    g b > t w- with the top within 1e-6 rad of the axis was served as a
+    success 1e-2 off (1 - cos(theta) = 1e-15)."""
+
+    from pyamplicol.api import ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    process = "g b > t w-"
+    card = tmp_path / "card.toml"
+    card.write_text(
+        LOOP_CARD.format(process=process, name="forward", output=tmp_path / "art")
+    )
+    Generator(resolve_config(card)).generate(
+        ProcessSet((ProcessRequest.parse(process, name="forward"),)),
+        tmp_path / "art",
+    )
+    runtime = Runtime.load(tmp_path / "art")
+    mz, alpha, gf = 91.188, 1 / 132.507, 1.16639e-5
+    mw = math.sqrt(
+        mz**2 / 2
+        + math.sqrt(mz**4 / 4 - (alpha * math.pi * mz**2) / (gf * math.sqrt(2)))
+    )
+    points = [
+        _forward_point([0.0, 4.7, 173.0, mw], 10.0**-k, sign)
+        for k in (12, 15)
+        for sign in (1, -1)
+    ]
+    scales = [8315.25] * len(points)
+    served = runtime.evaluate(points, mu_r2=scales)
+    assert all(d.status in ("success", "rescued") for d in served.diagnostics)
+    wide = Runtime.load(tmp_path / "art", lane_rescue=False).evaluate(
+        points,
+        mu_r2=scales,
+        arithmetic="arbitrary",
+        precision=50,
+        kinematics_improvement="off",
+    )
+    values, reference = _flat(served), _flat(wide)
+    worst = max(
+        float(abs(a - b) / abs(b)) for a, b in zip(values, reference, strict=True) if b
+    )
+    assert worst < 1e-12, worst

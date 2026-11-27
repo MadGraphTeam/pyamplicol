@@ -116,17 +116,104 @@ where
     }
 }
 
+/// The two-component helicity spinor chi of a massive Dirac state (HELAS
+/// ixxxxx/oxxxxx) from its signed three-momentum (`pp` = `|p|`, rounded),
+/// with `imag_sign` the sign of chi2's imaginary part (-1 for a particle,
+/// +1 for an antiparticle). Near the -z axis `|p| + pz` cancels against the
+/// rounded `|p|`: a fermion close to the axis (a forward or backward final
+/// state, `1 - cos(theta)` = 1e-12) kept only the digits of `|p|` beyond
+/// `|pz|` (its spinor 1e-6 off, 3e-2 at 1e-16). For `pz < 0` the spinor is
+/// formed from `q = |p| - pz` and `pT²` (`|p| + pz = pT² / q`,
+/// [`light_cone_sum_generic`] in binary64), with no more divisions on its
+/// path than the direct form; for `pz >= 0` it is the direct form.
+#[inline]
+pub(super) fn massive_helicity_spinor(
+    pp: f64,
+    nh: i32,
+    signed_px: f64,
+    signed_py: f64,
+    signed_pz: f64,
+    imag_sign: f64,
+) -> [Complex<f64>; 2] {
+    if pp == 0.0 {
+        return [c64(1.0, 0.0), c64(0.0, 0.0)];
+    }
+    if signed_pz >= 0.0 {
+        let pp3 = (pp + signed_pz).max(0.0);
+        let chi1 = c64((pp3 * 0.5 / pp).sqrt(), 0.0);
+        let chi2 = if pp3 == 0.0 {
+            c64(-(nh as f64), 0.0)
+        } else {
+            let denom = (2.0 * pp * pp3).sqrt();
+            c64(
+                (nh as f64) * signed_px / denom,
+                imag_sign * signed_py / denom,
+            )
+        };
+        return [chi1, chi2];
+    }
+    let pt2 = signed_px * signed_px + signed_py * signed_py;
+    if pt2 == 0.0 {
+        return [c64(0.0, 0.0), c64(-(nh as f64), 0.0)];
+    }
+    let q = pp - signed_pz;
+    let chi1 = c64((pt2 * 0.5 / (pp * q)).sqrt(), 0.0);
+    let reciprocal = (q / (2.0 * pp * pt2)).sqrt();
+    let chi2 = c64(
+        (nh as f64) * signed_px * reciprocal,
+        imag_sign * signed_py * reciprocal,
+    );
+    [chi1, chi2]
+}
+
+/// `sqrt(|E + pz|)` of a massless momentum (HELAS ixxxxx/oxxxxx's light-cone
+/// root: `E + pz` for `E > 0`, `-(E + pz)` for a crossed leg) and, where
+/// that sum cancels near the axis (`E` and `pz` of opposite signs), its
+/// reciprocal: there the root comes from the on-shell identity
+/// `|E + pz| = pT² / q` with `q = |E - pz|` ([`massless_light_cone_generic`]
+/// in binary64) and the caller multiplies by the reciprocal instead of
+/// dividing by the root (no more divisions on its path than the direct
+/// form). The direct sum depends on the point's residual `p²` (the rounding
+/// of its components) amplified by `E² / pT²`. Elsewhere: the direct root
+/// and `None` (the caller divides, as before).
+#[inline]
+pub(super) fn massless_light_cone_root(
+    energy: f64,
+    px: f64,
+    py: f64,
+    pz: f64,
+) -> (f64, Option<f64>) {
+    if energy * pz >= 0.0 {
+        let root = if energy > 0.0 {
+            (energy + pz).max(0.0).sqrt()
+        } else {
+            (-(energy + pz)).max(0.0).sqrt()
+        };
+        return (root, None);
+    }
+    let pt2 = px * px + py * py;
+    if pt2 == 0.0 {
+        return (0.0, None);
+    }
+    let q = (energy - pz).abs();
+    ((pt2 / q).sqrt(), Some((q / pt2).sqrt()))
+}
+
 pub(super) fn ext_quark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex<f64>; 4] {
     let [energy, px, py, pz] = momentum;
     if energy > 0.0 {
-        let sqp0p3 = if px == 0.0 && py == 0.0 && pz < 0.0 {
-            0.0
+        let (root, inverse) = if px == 0.0 && py == 0.0 && pz < 0.0 {
+            (0.0, None)
         } else {
-            (energy + pz).max(0.0).sqrt()
+            massless_light_cone_root(energy, px, py, pz)
         };
+        let sqp0p3 = root;
         let chi1 = c64(sqp0p3, 0.0);
         let chi2 = if sqp0p3 == 0.0 {
             c64(-(helicity as f64) * (2.0 * energy).sqrt(), 0.0)
+        } else if let Some(inverse) = inverse {
+            let reciprocal = inverse;
+            c64(helicity as f64 * px * reciprocal, -py * reciprocal)
         } else {
             c64(helicity as f64 * px / sqp0p3, -py / sqp0p3)
         };
@@ -135,14 +222,18 @@ pub(super) fn ext_quark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex<f64
         }
         return [c64(0.0, 0.0), c64(0.0, 0.0), chi2, chi1];
     }
-    let sqp0p3 = if px == 0.0 && py == 0.0 && pz > 0.0 {
-        0.0
+    let (root, inverse) = if px == 0.0 && py == 0.0 && pz > 0.0 {
+        (0.0, None)
     } else {
-        -(-(energy + pz)).max(0.0).sqrt()
+        massless_light_cone_root(energy, px, py, pz)
     };
+    let sqp0p3 = -root;
     let chi1 = c64(sqp0p3, 0.0);
     let chi2 = if sqp0p3 == 0.0 {
         c64(-(helicity as f64) * (2.0 * energy.abs()).sqrt(), 0.0)
+    } else if let Some(inverse) = inverse {
+        let reciprocal = -inverse;
+        c64(-(helicity as f64) * (-px) * reciprocal, py * reciprocal)
     } else {
         c64(-(helicity as f64) * (-px) / sqp0p3, py / sqp0p3)
     };
@@ -156,14 +247,18 @@ pub(super) fn ext_quark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex<f64
 pub(super) fn ext_antiquark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex<f64>; 4] {
     let [energy, px, py, pz] = momentum;
     if energy > 0.0 {
-        let sqp0p3 = if px == 0.0 && py == 0.0 && pz < 0.0 {
-            0.0
+        let (root, inverse) = if px == 0.0 && py == 0.0 && pz < 0.0 {
+            (0.0, None)
         } else {
-            -(energy + pz).max(0.0).sqrt()
+            massless_light_cone_root(energy, px, py, pz)
         };
+        let sqp0p3 = -root;
         let chi1 = c64(sqp0p3, 0.0);
         let chi2 = if sqp0p3 == 0.0 {
             c64(-(helicity as f64) * (2.0 * energy).sqrt(), 0.0)
+        } else if let Some(inverse) = inverse {
+            let reciprocal = -inverse;
+            c64(-(helicity as f64) * px * reciprocal, py * reciprocal)
         } else {
             c64(-(helicity as f64) * px / sqp0p3, py / sqp0p3)
         };
@@ -172,14 +267,18 @@ pub(super) fn ext_antiquark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex
         }
         return [chi2, chi1, c64(0.0, 0.0), c64(0.0, 0.0)];
     }
-    let sqp0p3 = if px == 0.0 && py == 0.0 && pz > 0.0 {
-        0.0
+    let (root, inverse) = if px == 0.0 && py == 0.0 && pz > 0.0 {
+        (0.0, None)
     } else {
-        (-(energy + pz)).max(0.0).sqrt()
+        massless_light_cone_root(energy, px, py, pz)
     };
+    let sqp0p3 = root;
     let chi1 = c64(sqp0p3, 0.0);
     let chi2 = if sqp0p3 == 0.0 {
         c64(-(helicity as f64) * (2.0 * energy.abs()).sqrt(), 0.0)
+    } else if let Some(inverse) = inverse {
+        let reciprocal = inverse;
+        c64(helicity as f64 * (-px) * reciprocal, -py * reciprocal)
     } else {
         c64(helicity as f64 * (-px) / sqp0p3, -py / sqp0p3)
     };
@@ -215,23 +314,10 @@ pub(super) fn ext_quark_dirac_massive(
     } else {
         (-px, -py, -pz)
     };
-    let pp3 = (pp + signed_pz).max(0.0);
-    let chi1 = if pp == 0.0 {
-        c64(1.0, 0.0)
-    } else {
-        c64((pp3 * 0.5 / pp).sqrt(), 0.0)
-    };
     // At rest (pp = 0) the helicity axis is +z, the limit of the general
     // branch along +z (HELAS ixxxxx/oxxxxx's rest spinor): chi = (1, 0). A
     // momentum along -z (pp3 = 0) takes chi = (0, -nh).
-    let chi2 = if pp == 0.0 {
-        c64(0.0, 0.0)
-    } else if pp3 == 0.0 {
-        c64(-(nh as f64), 0.0)
-    } else {
-        let denom = (2.0 * pp * pp3).sqrt();
-        c64((nh as f64) * signed_px / denom, -signed_py / denom)
-    };
+    let [chi1, chi2] = massive_helicity_spinor(pp, nh, signed_px, signed_py, signed_pz, -1.0);
     let chi = [chi1, chi2];
     [
         chi[im] * sfomeg[1],
@@ -266,23 +352,10 @@ pub(super) fn ext_antiquark_dirac_massive(
     } else {
         (-px, -py, -pz)
     };
-    let pp3 = (pp + signed_pz).max(0.0);
-    let chi1 = if pp == 0.0 {
-        c64(1.0, 0.0)
-    } else {
-        c64((pp3 * 0.5 / pp).sqrt(), 0.0)
-    };
     // At rest (pp = 0) the helicity axis is +z, the limit of the general
     // branch along +z (HELAS ixxxxx/oxxxxx's rest spinor): chi = (1, 0). A
     // momentum along -z (pp3 = 0) takes chi = (0, -nh).
-    let chi2 = if pp == 0.0 {
-        c64(0.0, 0.0)
-    } else if pp3 == 0.0 {
-        c64(-(nh as f64), 0.0)
-    } else {
-        let denom = (2.0 * pp * pp3).sqrt();
-        c64((nh as f64) * signed_px / denom, signed_py / denom)
-    };
+    let [chi1, chi2] = massive_helicity_spinor(pp, nh, signed_px, signed_py, signed_pz, 1.0);
     let chi = [chi1, chi2];
     [
         chi[im] * sfomeg[0],
@@ -860,14 +933,18 @@ pub(super) fn ext_quark_weyl_array(
 ) -> [Complex<f64>; 2] {
     let [energy, px, py, pz] = momentum;
     if energy > 0.0 {
-        let sqp0p3 = if px == 0.0 && py == 0.0 && pz < 0.0 {
-            0.0
+        let (root, inverse) = if px == 0.0 && py == 0.0 && pz < 0.0 {
+            (0.0, None)
         } else {
-            (energy + pz).max(0.0).sqrt()
+            massless_light_cone_root(energy, px, py, pz)
         };
+        let sqp0p3 = root;
         let chi1 = c64(sqp0p3, 0.0);
         let chi2 = if sqp0p3 == 0.0 {
             c64(-(helicity as f64) * (2.0 * energy).sqrt(), 0.0)
+        } else if let Some(inverse) = inverse {
+            let reciprocal = inverse;
+            c64(helicity as f64 * px * reciprocal, -py * reciprocal)
         } else {
             c64(helicity as f64 * px / sqp0p3, -py / sqp0p3)
         };
@@ -879,14 +956,18 @@ pub(super) fn ext_quark_weyl_array(
         }
         return [c64(0.0, 0.0), c64(0.0, 0.0)];
     }
-    let sqp0p3 = if px == 0.0 && py == 0.0 && pz > 0.0 {
-        0.0
+    let (root, inverse) = if px == 0.0 && py == 0.0 && pz > 0.0 {
+        (0.0, None)
     } else {
-        -(-(energy + pz)).max(0.0).sqrt()
+        massless_light_cone_root(energy, px, py, pz)
     };
+    let sqp0p3 = -root;
     let chi1 = c64(sqp0p3, 0.0);
     let chi2 = if sqp0p3 == 0.0 {
         c64(-(helicity as f64) * (2.0 * energy.abs()).sqrt(), 0.0)
+    } else if let Some(inverse) = inverse {
+        let reciprocal = -inverse;
+        c64(-(helicity as f64) * (-px) * reciprocal, py * reciprocal)
     } else {
         c64(-(helicity as f64) * (-px) / sqp0p3, py / sqp0p3)
     };
@@ -979,14 +1060,18 @@ pub(super) fn ext_antiquark_weyl_array(
 ) -> [Complex<f64>; 2] {
     let [energy, px, py, pz] = momentum;
     if energy > 0.0 {
-        let sqp0p3 = if px == 0.0 && py == 0.0 && pz < 0.0 {
-            0.0
+        let (root, inverse) = if px == 0.0 && py == 0.0 && pz < 0.0 {
+            (0.0, None)
         } else {
-            -(energy + pz).max(0.0).sqrt()
+            massless_light_cone_root(energy, px, py, pz)
         };
+        let sqp0p3 = -root;
         let chi1 = c64(sqp0p3, 0.0);
         let chi2 = if sqp0p3 == 0.0 {
             c64(-(helicity as f64) * (2.0 * energy).sqrt(), 0.0)
+        } else if let Some(inverse) = inverse {
+            let reciprocal = -inverse;
+            c64(-(helicity as f64) * px * reciprocal, py * reciprocal)
         } else {
             c64(-(helicity as f64) * px / sqp0p3, py / sqp0p3)
         };
@@ -998,14 +1083,18 @@ pub(super) fn ext_antiquark_weyl_array(
         }
         return [c64(0.0, 0.0), c64(0.0, 0.0)];
     }
-    let sqp0p3 = if px == 0.0 && py == 0.0 && pz > 0.0 {
-        0.0
+    let (root, inverse) = if px == 0.0 && py == 0.0 && pz > 0.0 {
+        (0.0, None)
     } else {
-        (-(energy + pz)).max(0.0).sqrt()
+        massless_light_cone_root(energy, px, py, pz)
     };
+    let sqp0p3 = root;
     let chi1 = c64(sqp0p3, 0.0);
     let chi2 = if sqp0p3 == 0.0 {
         c64(-(helicity as f64) * (2.0 * energy.abs()).sqrt(), 0.0)
+    } else if let Some(inverse) = inverse {
+        let reciprocal = inverse;
+        c64(helicity as f64 * (-px) * reciprocal, -py * reciprocal)
     } else {
         c64(helicity as f64 * (-px) / sqp0p3, -py / sqp0p3)
     };
@@ -1279,6 +1368,106 @@ mod tests {
                                 "mass {mass} axis {axis} energy sign {energy_sign} \
                                  helicity {helicity}: norm off by {error:e}"
                             );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// The binary64 fermion sources against the double-double ones (the
+    /// same conventions, robust near the axis) at a binary64 momentum a
+    /// small angle off either axis direction, both energy signs (crossed
+    /// legs), and exactly on the axis: their light-cone component cancelled
+    /// as in the wider carriers, by (p/pT)² roundoffs (3e-2 at
+    /// 1 - cos(theta) = 1e-16; 1.8 for a slow massive fermion).
+    #[cfg(feature = "symbolica-runtime")]
+    #[test]
+    fn binary64_fermion_sources_near_the_axis_match_double_float() {
+        use super::{
+            ext_antiquark_dirac, ext_antiquark_dirac_generic, ext_antiquark_dirac_massive,
+            ext_antiquark_weyl_array, ext_antiquark_weyl_generic, ext_dirac_massive_generic,
+            ext_quark_dirac, ext_quark_dirac_generic, ext_quark_dirac_massive,
+            ext_quark_weyl_array, ext_quark_weyl_generic,
+        };
+        use symbolica::domains::float::{DoubleFloat, RealLike};
+
+        let wide = |p: [f64; 4]| p.map(DoubleFloat::from);
+        let error = |narrow: &[Complex<f64>], double: &[Complex<DoubleFloat>]| {
+            let scale = double
+                .iter()
+                .map(|z| z.re.to_f64().hypot(z.im.to_f64()))
+                .fold(0.0, f64::max);
+            narrow
+                .iter()
+                .zip(double)
+                .map(|(a, b)| {
+                    let re = (DoubleFloat::from(a.re) - b.re.clone()).to_f64();
+                    let im = (DoubleFloat::from(a.im) - b.im.clone()).to_f64();
+                    re.hypot(im) / scale
+                })
+                .fold(0.0, f64::max)
+        };
+        for (mass, q) in [(0.0, 485.0), (4.7, 485.0), (173.0, 485.0), (173.0, 1.0e-3)] {
+            for k in [Some(4), Some(8), Some(12), Some(14), Some(16), None] {
+                for axis in [1.0, -1.0] {
+                    let (sin, cos) = match k {
+                        Some(k) => {
+                            let cos = axis * (1.0 - 10f64.powi(-k));
+                            ((1.0 - cos * cos).sqrt(), cos)
+                        }
+                        None => (0.0, axis),
+                    };
+                    let (px, py, pz) = (q * sin * 0.6, q * sin * 0.8, q * cos);
+                    let energy = (px * px + py * py + pz * pz + mass * mass).sqrt();
+                    for sign in [1.0, -1.0] {
+                        let p = [sign * energy, sign * px, sign * py, sign * pz];
+                        for helicity in [-1, 1] {
+                            let mut errors = Vec::new();
+                            if mass == 0.0 {
+                                errors.push(error(
+                                    &ext_quark_dirac(p, helicity),
+                                    &ext_quark_dirac_generic(&wide(p), helicity),
+                                ));
+                                errors.push(error(
+                                    &ext_antiquark_dirac(p, helicity),
+                                    &ext_antiquark_dirac_generic(&wide(p), helicity),
+                                ));
+                                for chirality in [-1, 1] {
+                                    errors.push(error(
+                                        &ext_quark_weyl_array(p, helicity, chirality),
+                                        &ext_quark_weyl_generic(&wide(p), helicity, chirality),
+                                    ));
+                                    errors.push(error(
+                                        &ext_antiquark_weyl_array(p, helicity, chirality),
+                                        &ext_antiquark_weyl_generic(&wide(p), helicity, chirality),
+                                    ));
+                                }
+                            } else {
+                                let m = DoubleFloat::from(mass);
+                                errors.push(error(
+                                    &ext_quark_dirac_massive(p, helicity, mass),
+                                    &ext_dirac_massive_generic(
+                                        &wide(p),
+                                        helicity,
+                                        m.clone(),
+                                        false,
+                                    )
+                                    .unwrap(),
+                                ));
+                                errors.push(error(
+                                    &ext_antiquark_dirac_massive(p, helicity, mass),
+                                    &ext_dirac_massive_generic(&wide(p), helicity, m, true)
+                                        .unwrap(),
+                                ));
+                            }
+                            for e in errors {
+                                assert!(
+                                    e < 1.0e-15,
+                                    "mass {mass} |p| {q} k {k:?} axis {axis} sign {sign} \
+                                     helicity {helicity}: {e:e}"
+                                );
+                            }
                         }
                     }
                 }
