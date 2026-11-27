@@ -26,16 +26,18 @@ moved `conj` into its numeric trait, which GammaLoop's Spenso implements:
 FeynKit and Spenso come from the fork ValentinHirschi/gammaloop
 `pyamplicol-community` `ea3faaae` (alphal00p/gammaloop `d1904bf2` plus that
 one change), the revision NinjaRS pins. NinjaRS
-(`1f3d9d0e`, main after PR #24 = `e1d94412` with its oneloopmaster pin moved to `cdbc912`;
+(main after PR #25 = its oneloopmaster pin moved to `a4b16f70`, on `1f3d9d0e` = PR #24, oneloopmaster `cdbc912`, on
 `e1d94412` = main after PR #23, the local cancellation rescue, and PR #22, on top
 of `a2546170`, main after PR #20: `f7f5e165` with PR #16's box-Gram bound
 and PR #19's records of why a lane is refused, + `ninjars_symbolica::reserve`,
 the history-independent exact evaluators; main `3116e5e6` = `ac66cf6c` + PR #16,
 `ac66cf6c` = branch `symbolica-community-2`: main `b51b7465`'s crate sources, the
 per-row evaluation without the batch evaluator; pinned on this Symbolica, the gammaloop fork and
-oneloopmaster `cdbc912`) pins the same revision, as does oneloopmaster
-(`cdbc912`, main: `07fc754f` = branch `symbolica-community-2`, `3b6f229f`'s
-sources, + #21, the native C0's series at small external momenta) in its
+oneloopmaster `a4b16f70`) pins the same revision, as does oneloopmaster
+(`a4b16f70`, main after #25, a soft three-mass box at a vanishing channel that
+keeps its labelling, and #23, the small-momentum C0 series at extreme mass
+ratios; on `cdbc912` = `07fc754f` (branch `symbolica-community-2`, `3b6f229f`'s
+sources) + #21, the native C0's series at small external momenta) in its
 own standalone `[patch]`, which only applies when it is the root workspace.
 `cargo tree -i symbolica` lists one source, as do `numerica`, `graphica`,
 `oneloop` and `spenso`. SymJIT stays 2.28.3. These pins are recorded by Cargo.
@@ -45,7 +47,8 @@ publishable until this revision is in a Symbolica release.
 
 TIRust ([huashengshao/TIRust](https://github.com/huashengshao/TIRust), crates
 `iregi-rust` and `iregi-masters`, pinned to a commit after its one history
-rewrite, currently `c20d0be2` (main after PRs #76, a relation's constant
+rewrite, currently main after PR #83 (its oneloopmaster pin moved to
+`a4b16f70`), on `c20d0be2` (main after PRs #76, a relation's constant
 denominator identity held to the inputs' rounding, and #77, exactly
 dependent triangles kept on their relation at a stability threshold of 0; on
 `6ba4b531` = PR #70, refusal texts that name
