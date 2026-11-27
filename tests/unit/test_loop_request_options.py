@@ -143,6 +143,7 @@ def test_max_quark_lines_that_empties_a_request_is_refused_naming_it(
     (blocker,) = plan["unsupported_features"]
     assert "process.max_quark_lines = 1" in blocker
     assert plan["estimated_coverage"]["processes"] == []
+    assert plan["concrete_processes"] == []
     with pytest.raises(GenerationError, match=r"process\.max_quark_lines = 1") as error:
         Generator(resolve_config(card)).generate(
             ProcessRequest.parse("u d > u d", name="ud"), tmp_path / "artifact"
@@ -334,6 +335,7 @@ output = {json.dumps(str(tmp_path / "artifact"))}
     # Every entry's members or none: none, as generation refuses them all.
     assert plan["estimated_coverage"]["processes"] == []
     assert plan["estimated_coverage"]["process_count"] == 0
+    assert plan["concrete_processes"] == []
 
     def forbidden(*args, **kwargs):
         raise AssertionError("a refused request must not generate any process")
@@ -416,3 +418,43 @@ def test_one_loop_dry_run_on_an_uncompiled_model_fails_as_the_tree_one(tmp_path)
             ProcessRequest.parse("u u~ > g g", name="uugg")
         )
     assert not empty.exists() or not any(empty.rglob("*.json"))
+
+
+@pytest.mark.parametrize(
+    ("policy", "qed", "key"),
+    [
+        ("auto", 1, "no-loop-amplitude"),
+        ("skip", 1, "loop-induced"),
+        ("skip", 2, "loop-induced"),
+    ],
+)
+def test_a_plan_wide_refusal_lists_no_process_in_any_field(
+    tmp_path, model_cache, policy, qed, key
+):
+    # The cut leaves g g > a a, which has no Born (and at QED <= 1 no loop
+    # amplitude): the request is refused, so no field lists a process.
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="x y > a a",
+        name="sample",
+        extra=f"""multiparticles = {{ x = ["g", "u"], y = ["g", "u~"] }}
+max_quark_lines = 0
+loop_induced = "{policy}"
+coupling_order_policy = "explicit"
+max_coupling_orders = {{ QCD = 2, QED = {qed} }}""",
+    )
+    _compiled(card)
+    plan = _plan(card)
+    (blocker,) = plan["unsupported_features"]
+    assert blocker.startswith(f"{key}: ")
+    coverage = plan["estimated_coverage"]
+    assert plan["concrete_processes"] == []
+    assert coverage["processes"] == []
+    assert coverage["process_count"] == 0
+    assert coverage["skipped_members"] == []
+    assert coverage["runtime_capabilities"] == []
+    code, _, stderr = _cli("generate", "--card", str(card))
+    assert code != 0
+    assert key in stderr
+    assert not (tmp_path / "artifact").exists()

@@ -549,8 +549,12 @@ def _resolve_limits(names, limits: Mapping[str, int]) -> dict[str, int]:
 
 
 def _plan_result(backend, processes, blockers, *, context=None, coverage=()):
+    # A plan-wide refusal (``blockers``) lists no process anywhere: generation
+    # then generates none.
     return GenerationPlan(
-        concrete_processes=tuple(e.request for e in context.expanded)
+        concrete_processes=()
+        if blockers
+        else tuple(e.request for e in context.expanded)
         if context
         else processes.requests,
         estimated_coverage={
@@ -571,10 +575,10 @@ def _plan_result(backend, processes, blockers, *, context=None, coverage=()):
             "correlations": False,
             "resolved": True,
             "api_bundle": True,
-            "process_count": len(coverage),
+            "process_count": 0 if blockers else len(coverage),
             "exact_flavor_grouping_requested": backend._run_config.process.flavor_blind,
             "flavor_transport_checked": False,
-            "processes": tuple(coverage),
+            "processes": () if blockers else tuple(coverage),
             "model_declaration": context.declaration.to_dict() if context else None,
             "model_preparation": context.preparation.to_dict() if context else None,
             "source_compatibility_diagnostics": (),
@@ -1637,7 +1641,7 @@ def _plan_v2(backend, processes, blockers, *, model=None):
             f"{refusal.key}: {refusal.feature}" for refusal in LOOP_INTERNAL_REFUSALS
         ),
         # Members of multiparticle requests without a Born (m-sm Q2 (a)).
-        skipped_members=tuple(skipped),
+        skipped_members=() if result.unsupported_features else tuple(skipped),
         process_request_refusals=tuple(
             f"{refusal.key}: {refusal.feature}; instead: {refusal.remedy}"
             for refusal in PROCESS_REQUEST_REFUSALS
