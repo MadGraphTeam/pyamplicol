@@ -4,7 +4,8 @@
 A user SM UFO tags the down-quark and neutrino Z couplings ``NP:1`` and
 declares ``NP`` with ``expansion_order = 1``, so ``d d~ > vm vm~`` needs
 ``NP^2``: at the default (minimal) policy it has no Born, in the tree, the
-correlated and the loop-Born paths alike; a named limit still decides.
+correlated and the loop-Born paths alike (tree generation refuses it with the
+typed ``NoTreeDiagramError``); a named limit still decides.
 
 A copy of ``loop_sm`` with ``QED`` of expansion order 1 does the same for a
 loop-induced request: the default ``g g > a a`` (``QED^2``) has no loop
@@ -27,9 +28,9 @@ from pyamplicol import (
     CorrelatorConfig,
     Generator,
     ModelSource,
+    NoTreeDiagramError,
     Runtime,
 )
-from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
     EvaluatorConfig,
@@ -105,10 +106,14 @@ def test_the_default_policy_stays_within_the_expansion_order(
     np_model: ModelSource, tmp_path: Path, correlated: bool
 ) -> None:
     extra = {"correlators": _DIPOLE} if correlated else {}
-    with pytest.raises(GenerationError, match="no model-supported tree-level"):
+    with pytest.raises(NoTreeDiagramError) as caught:
         Generator(_config(None)).generate(
             "d d~ > vm vm~", tmp_path / "default", model=np_model, **extra
         )
+    message = str(caught.value)
+    assert "within the model's expansion orders (NP<=1)" in message
+    assert "a diagram exists above the expansion order of NP" in message
+    assert "loop-induced" not in message
 
 
 @pytest.mark.parametrize("correlated", (False, True))
@@ -116,7 +121,7 @@ def test_a_named_limit_decides(
     np_model: ModelSource, tmp_path: Path, correlated: bool
 ) -> None:
     extra = {"correlators": _DIPOLE} if correlated else {}
-    with pytest.raises(GenerationError, match="no model-supported tree-level"):
+    with pytest.raises(NoTreeDiagramError, match=r"coupling orders \(NP<=1\)"):
         Generator(_config({"NP": 1})).generate(
             "d d~ > vm vm~", tmp_path / "np1", model=np_model, **extra
         )

@@ -5577,15 +5577,23 @@ class GenerationBackend:
     def _no_tree_diagram_error(
         self,
         refusals: Sequence[_RequestWithoutTreeDiagram],
+        *,
+        caps: Mapping[str, int] | None = None,
     ) -> NoTreeDiagramError:
-        """The one refusal of tree-level requests without a diagram."""
+        """The one refusal of tree-level requests without a diagram (``caps``:
+        the model's expansion orders that bounded the orders left open)."""
 
         orders = self._coupling_order_request_text()
         where = (
             f"at the requested coupling orders ({orders})"
             if orders
-            else "at any coupling order"
+            else ("" if caps else "at any coupling order")
         )
+        if caps:
+            capped = " ".join(f"{name}<={value}" for name, value in caps.items())
+            where = (
+                f"{where} " if where else ""
+            ) + f"within the model's expansion orders ({capped})"
         quoted = ", ".join(
             repr(refusal.expression)
             + (f" ({refusal.reason})" if refusal.reason else "")
@@ -5628,23 +5636,33 @@ class GenerationBackend:
         colour-blind closure sweep its Born coupling orders come from
         (``process_born_amplitude_orders``), which over-estimates no less."""
 
-        requests: dict[str, ProcessRequest] = {}
-        supported: set[str] = set()
-        limits = self._coupling_order_limits or None
-        for entry in expanded:
-            source = _source_request(entry)
-            requests.setdefault(source.name, source)
-            if source.name in supported or model is None:
-                supported.add(source.name)
-                continue
-            process = entry.process_ir
+        # The limits every lane builds within (``request_coupling_order_limits``:
+        # explicit, else the model's expansion orders under the minimal
+        # policy); the expansion-order caps among them, for the message.
+        explicit = dict(self._coupling_order_limits)
+        bounds = (
+            explicit
+            if model is None
+            else request_coupling_order_limits(
+                explicit, model, policy=self._coupling_order_policy
+            )
+        )
+        named = {str(name).upper() for name in explicit}
+        caps = {
+            name: value for name, value in sorted(bounds.items()) if name not in named
+        }
+
+        def has_diagram(
+            process: CanonicalProcessIR, limits: Mapping[str, int] | None
+        ) -> bool:
+            assert model is not None
             if self._on_the_fly_execution_enabled:
-                if process_born_amplitude_orders(
-                    process, model=model, max_coupling_orders=limits
-                ):
-                    supported.add(source.name)
-                continue
-            if has_model_supported_amplitudes(
+                return bool(
+                    process_born_amplitude_orders(
+                        process, model=model, max_coupling_orders=limits
+                    )
+                )
+            return has_model_supported_amplitudes(
                 process,
                 model=model,
                 color_plan=build_color_plan(
@@ -5655,15 +5673,46 @@ class GenerationBackend:
                     ),
                 ),
                 max_coupling_orders=limits,
-            ):
+            )
+
+        requests: dict[str, ProcessRequest] = {}
+        supported: set[str] = set()
+        members: dict[str, list[CanonicalProcessIR]] = {}
+        for entry in expanded:
+            source = _source_request(entry)
+            requests.setdefault(source.name, source)
+            if source.name in supported or model is None:
                 supported.add(source.name)
+                continue
+            if has_diagram(entry.process_ir, bounds or None):
+                supported.add(source.name)
+            else:
+                members.setdefault(source.name, []).append(entry.process_ir)
         refused = {refusal.expression: refusal for refusal in without_concrete_process}
         for name, request in requests.items():
-            if name not in supported:
-                refused.setdefault(
+            if name in supported:
+                continue
+            # A diagram above an expansion-order cap: a named limit decides,
+            # and no loop is needed.
+            above_caps = bool(caps) and any(
+                has_diagram(process, explicit or None)
+                for process in members.get(name, ())
+            )
+            refused.setdefault(
+                request.expression,
+                _RequestWithoutTreeDiagram(
                     request.expression,
-                    _RequestWithoutTreeDiagram(request.expression),
-                )
+                    (
+                        "a diagram exists above the expansion order of "
+                        + ", ".join(caps)
+                        + "; a limit on that order in process.max_coupling_orders "
+                        "decides"
+                    )
+                    if above_caps
+                    else None,
+                    loop_hint=not above_caps,
+                ),
+            )
         if refused:
             # In request order.
             order = {
@@ -5673,7 +5722,8 @@ class GenerationBackend:
                 sorted(
                     refused.values(),
                     key=lambda refusal: order.get(refusal.expression, -1),
-                )
+                ),
+                caps=caps if model is not None else {},
             )
 
     def _drop_processes_without_amplitudes(
