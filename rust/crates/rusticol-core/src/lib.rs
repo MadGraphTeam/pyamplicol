@@ -220,6 +220,15 @@ pub mod __private {
         crate::engine::plane_code_cache_len()
     }
 
+    /// Unstable diagnostic bridge: the SymJIT P-kernel builds started in this
+    /// process (one per distinct application whatever the concurrency, plus
+    /// the retries of failed builds).
+    #[doc(hidden)]
+    #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+    pub fn symjit_plane_code_builds() -> usize {
+        crate::engine::plane_code_builds()
+    }
+
     /// Unstable cold-path bridge: evaluate a stored complex plane application
     /// through the production loader ((re, im) per value, row-major by point).
     #[doc(hidden)]

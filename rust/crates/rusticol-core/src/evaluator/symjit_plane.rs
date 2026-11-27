@@ -16,7 +16,8 @@ use std::marker::PhantomData;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::ptr::NonNull;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex, OnceLock, PoisonError};
 #[cfg(any(test, feature = "python-generation-bridge"))]
 use symjit::Compiler;
 use symjit::{
@@ -236,18 +237,162 @@ impl std::ops::Deref for SymjitPlaneKernel {
 /// and the host CPU check are fixed for the process, the parameter values
 /// are inputs at evaluation. Entries are never evicted: the cache holds one
 /// copy per distinct application loaded, which SymJIT keeps anyway.
+///
+/// Each key is compiled at most once at a time and, once it succeeds, never
+/// again: concurrent loaders of the same key wait for the one build and
+/// share it (a second, concurrent compile would leak its pages), loaders of
+/// other keys compile in parallel (no lock is held across a compile). A
+/// failed build is returned to every loader that waited for it, and the
+/// next loader tries again; a builder that panics releases its waiters with
+/// an error.
 type PlaneCodeKey = ([u8; 32], SymjitPlaneLayout);
 
-fn plane_code_cache() -> &'static Mutex<HashMap<PlaneCodeKey, Arc<SymjitPlaneCode>>> {
-    static CACHE: OnceLock<Mutex<HashMap<PlaneCodeKey, Arc<SymjitPlaneCode>>>> = OnceLock::new();
+#[derive(Default)]
+struct PlaneCodeSlot {
+    state: Mutex<PlaneCodeState>,
+    settled: Condvar,
+    /// Builds started for this key (successful or not).
+    #[cfg_attr(not(test), allow(dead_code))]
+    attempts: AtomicUsize,
+}
+
+#[derive(Default)]
+struct PlaneCodeState {
+    phase: PlaneCodePhase,
+    /// The latest failed build of this key, by build number.
+    failure: Option<(u64, RusticolError)>,
+}
+
+#[derive(Default)]
+enum PlaneCodePhase {
+    #[default]
+    Empty,
+    Building(u64),
+    Ready(Arc<SymjitPlaneCode>),
+}
+
+type PlaneCodeSlots = Mutex<HashMap<PlaneCodeKey, Arc<PlaneCodeSlot>>>;
+
+fn plane_code_cache() -> &'static PlaneCodeSlots {
+    static CACHE: OnceLock<PlaneCodeSlots> = OnceLock::new();
     CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+static PLANE_CODE_BUILDS: AtomicUsize = AtomicUsize::new(0);
+static PLANE_CODE_BUILD_NUMBER: AtomicU64 = AtomicU64::new(0);
+
+fn plane_code_slot(key: PlaneCodeKey) -> Arc<PlaneCodeSlot> {
+    plane_code_cache()
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .entry(key)
+        .or_default()
+        .clone()
+}
+
+impl PlaneCodeSlot {
+    fn settle(&self, build: u64, outcome: Result<Arc<SymjitPlaneCode>, RusticolError>) {
+        let mut state = self.state.lock().unwrap_or_else(PoisonError::into_inner);
+        match outcome {
+            Ok(code) => state.phase = PlaneCodePhase::Ready(code),
+            Err(error) => {
+                state.phase = PlaneCodePhase::Empty;
+                state.failure = Some((build, error));
+            }
+        }
+        self.settled.notify_all();
+    }
+}
+
+/// Settles a build as failed if its builder unwinds before settling it.
+struct BuildGuard<'slot> {
+    slot: &'slot PlaneCodeSlot,
+    build: u64,
+    armed: bool,
+}
+
+impl Drop for BuildGuard<'_> {
+    fn drop(&mut self) {
+        if self.armed {
+            self.slot.settle(
+                self.build,
+                Err(RusticolError::internal(
+                    "the SymJIT kernel build of another loader panicked",
+                )),
+            );
+        }
+    }
+}
+
+/// The shared compiled code of `key`, built by `build` if no loader has
+/// built it yet (documentation of `PlaneCodeKey`).
+fn shared_plane_code(
+    key: PlaneCodeKey,
+    build: impl FnOnce() -> RusticolResult<SymjitPlaneCode>,
+) -> RusticolResult<Arc<SymjitPlaneCode>> {
+    let slot = plane_code_slot(key);
+    let mut state = slot.state.lock().unwrap_or_else(PoisonError::into_inner);
+    match &state.phase {
+        PlaneCodePhase::Ready(code) => return Ok(code.clone()),
+        PlaneCodePhase::Building(awaited) => {
+            let awaited = *awaited;
+            state = slot
+                .settled
+                .wait_while(state, |state| {
+                    matches!(state.phase, PlaneCodePhase::Building(current) if current == awaited)
+                })
+                .unwrap_or_else(PoisonError::into_inner);
+            if let PlaneCodePhase::Ready(code) = &state.phase {
+                return Ok(code.clone());
+            }
+            // The awaited build failed (the latest failure is its own
+            // unless a later build of this key failed meanwhile).
+            return Err(match &state.failure {
+                Some((_, error)) => error.clone(),
+                None => RusticolError::internal("the awaited SymJIT kernel build failed"),
+            });
+        }
+        // No build yet, or only failed ones: this loader builds.
+        PlaneCodePhase::Empty => {}
+    }
+    let number = PLANE_CODE_BUILD_NUMBER.fetch_add(1, Ordering::Relaxed);
+    state.phase = PlaneCodePhase::Building(number);
+    drop(state);
+    slot.attempts.fetch_add(1, Ordering::Relaxed);
+    PLANE_CODE_BUILDS.fetch_add(1, Ordering::Relaxed);
+    let mut guard = BuildGuard {
+        slot: &slot,
+        build: number,
+        armed: true,
+    };
+    let built = build().map(Arc::new);
+    guard.armed = false;
+    slot.settle(number, built.clone());
+    built
 }
 
 /// Distinct P-kernel applications compiled in this process so far.
 pub(crate) fn plane_code_cache_len() -> usize {
     plane_code_cache()
         .lock()
-        .map_or_else(|poisoned| poisoned.into_inner().len(), |cache| cache.len())
+        .unwrap_or_else(PoisonError::into_inner)
+        .values()
+        .filter(|slot| {
+            matches!(
+                slot.state
+                    .lock()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .phase,
+                PlaneCodePhase::Ready(_)
+            )
+        })
+        .count()
+}
+
+/// P-kernel builds started in this process so far (each compiles a kernel:
+/// with the cache, one per distinct application, plus retries of failures).
+pub(crate) fn plane_code_builds() -> usize {
+    PLANE_CODE_BUILDS.load(Ordering::Relaxed)
 }
 
 impl std::fmt::Debug for SymjitPlaneKernel {
@@ -256,6 +401,17 @@ impl std::fmt::Debug for SymjitPlaneKernel {
             .debug_struct("SymjitPlaneKernel")
             .field("display_path", &self.display_path)
             .field("layout", &self.layout)
+            .field("optimization_level", &self.optimization_level)
+            .field("compression", &self.compression)
+            .field("simd_lanes", &self.simd_lanes)
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for SymjitPlaneCode {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SymjitPlaneCode")
             .field("optimization_level", &self.optimization_level)
             .field("compression", &self.compression)
             .field("simd_lanes", &self.simd_lanes)
@@ -275,25 +431,7 @@ impl SymjitPlaneKernel {
         require_symjit_host_cpu(&display_path)?;
 
         let key: PlaneCodeKey = (Sha256::digest(bytes).into(), layout);
-        let cached = plane_code_cache()
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .get(&key)
-            .cloned();
-        let code = match cached {
-            Some(code) => code,
-            None => {
-                // Compiled outside the lock (loads run in parallel); a
-                // concurrent compile of the same bytes keeps the first copy.
-                let code = Arc::new(Self::compile_code(bytes, &display_path, layout)?);
-                plane_code_cache()
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .entry(key)
-                    .or_insert(code)
-                    .clone()
-            }
-        };
+        let code = shared_plane_code(key, || Self::compile_code(bytes, &display_path, layout))?;
         Ok(Self {
             code,
             display_path,
@@ -3212,5 +3350,174 @@ mod tests {
         let error = compile_symbolica_program_to_plane_application_bytes(&program, 2, 7, 2, false)
             .unwrap_err();
         assert!(error.message().contains("unknown"), "{}", error.message());
+    }
+
+    fn real_code() -> SymjitPlaneCode {
+        SymjitPlaneKernel::compile_code(
+            &application_bytes(false, 3),
+            Path::new("coordination.symjit"),
+            SymjitPlaneLayout::real(2, 1),
+        )
+        .unwrap()
+    }
+
+    fn fake_key(tag: u8) -> PlaneCodeKey {
+        let mut digest = [0xa5; 32];
+        digest[0] = tag;
+        (digest, SymjitPlaneLayout::real(2, 1))
+    }
+
+    fn attempts(key: PlaneCodeKey) -> usize {
+        plane_code_slot(key).attempts.load(Ordering::Relaxed)
+    }
+
+    #[test]
+    fn concurrent_loads_of_one_key_build_it_once() {
+        let key = fake_key(1);
+        let builds = AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(8);
+        let codes: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8)
+                .map(|_| {
+                    scope.spawn(|| {
+                        start.wait();
+                        shared_plane_code(key, || {
+                            builds.fetch_add(1, Ordering::Relaxed);
+                            std::thread::sleep(std::time::Duration::from_millis(100));
+                            Ok(real_code())
+                        })
+                        .unwrap()
+                    })
+                })
+                .collect();
+            handles.into_iter().map(|h| h.join().unwrap()).collect()
+        });
+        assert_eq!(builds.load(Ordering::Relaxed), 1);
+        assert_eq!(attempts(key), 1);
+        assert!(codes.iter().all(|code| Arc::ptr_eq(code, &codes[0])));
+        // Later loads share it too.
+        let later = shared_plane_code(key, || panic!("no second build")).unwrap();
+        assert!(Arc::ptr_eq(&later, &codes[0]));
+    }
+
+    #[test]
+    fn different_keys_build_in_parallel() {
+        let (to_second, from_first) = std::sync::mpsc::channel::<()>();
+        let (to_first, from_second) = std::sync::mpsc::channel::<()>();
+        let timeout = std::time::Duration::from_secs(10);
+        std::thread::scope(|scope| {
+            let first = scope.spawn(move || {
+                shared_plane_code(fake_key(2), || {
+                    to_second.send(()).unwrap();
+                    from_second
+                        .recv_timeout(timeout)
+                        .expect("the other key's build ran meanwhile");
+                    Ok(real_code())
+                })
+            });
+            let second = scope.spawn(move || {
+                shared_plane_code(fake_key(3), || {
+                    to_first.send(()).unwrap();
+                    from_first
+                        .recv_timeout(timeout)
+                        .expect("the other key's build ran meanwhile");
+                    Ok(real_code())
+                })
+            });
+            first.join().unwrap().unwrap();
+            second.join().unwrap().unwrap();
+        });
+    }
+
+    #[test]
+    fn a_failed_build_reaches_every_waiter_and_a_later_load_retries() {
+        let key = fake_key(4);
+        let builds = AtomicUsize::new(0);
+        let start = std::sync::Barrier::new(8);
+        let outcomes: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8)
+                .map(|_| {
+                    scope.spawn(|| {
+                        start.wait();
+                        shared_plane_code(key, || {
+                            builds.fetch_add(1, Ordering::Relaxed);
+                            std::thread::sleep(std::time::Duration::from_millis(300));
+                            Err(RusticolError::compatibility("the bytes do not load"))
+                        })
+                    })
+                })
+                .collect();
+            handles.into_iter().map(|h| h.join().unwrap()).collect()
+        });
+        assert_eq!(builds.load(Ordering::Relaxed), 1);
+        for outcome in &outcomes {
+            let error = outcome
+                .as_ref()
+                .err()
+                .expect("every waiter sees the failure");
+            assert_eq!(error.kind(), RusticolErrorKind::Compatibility);
+            assert_eq!(error.message(), "the bytes do not load");
+        }
+        // No stranded entry: the next load builds again, and succeeds.
+        let code = shared_plane_code(key, || Ok(real_code())).unwrap();
+        assert_eq!(attempts(key), 2);
+        let again = shared_plane_code(key, || panic!("no third build")).unwrap();
+        assert!(Arc::ptr_eq(&code, &again));
+    }
+
+    #[test]
+    fn a_panicking_build_releases_its_waiters() {
+        let key = fake_key(5);
+        let (building, is_building) = std::sync::mpsc::channel::<()>();
+        let (release, released) = std::sync::mpsc::channel::<()>();
+        std::thread::scope(|scope| {
+            let builder = scope.spawn(move || {
+                shared_plane_code(key, || -> RusticolResult<SymjitPlaneCode> {
+                    building.send(()).unwrap();
+                    released.recv().unwrap();
+                    panic!("builder failure");
+                })
+            });
+            is_building.recv().unwrap();
+            let waiter =
+                scope.spawn(|| shared_plane_code(key, || panic!("the waiter never builds")));
+            // The waiter is waiting for the build (or arrives after it).
+            std::thread::sleep(std::time::Duration::from_millis(200));
+            release.send(()).unwrap();
+            assert!(
+                builder.join().is_err(),
+                "the builder's panic reaches its caller"
+            );
+            let error = waiter.join().unwrap().unwrap_err();
+            assert_eq!(error.kind(), RusticolErrorKind::Internal);
+            assert!(error.message().contains("panicked"), "{}", error.message());
+        });
+        assert!(shared_plane_code(key, || Ok(real_code())).is_ok());
+        assert_eq!(attempts(key), 2);
+    }
+
+    #[test]
+    fn concurrent_cold_loads_of_real_bytes_compile_once() {
+        let bytes = application_bytes(false, 2);
+        let layout = SymjitPlaneLayout::real(2, 1);
+        let key: PlaneCodeKey = (Sha256::digest(&bytes).into(), layout);
+        let start = std::sync::Barrier::new(8);
+        let kernels: Vec<_> = std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..8)
+                .map(|_| {
+                    scope.spawn(|| {
+                        start.wait();
+                        SymjitPlaneKernel::load_bytes(&bytes, "cold.symjit", layout).unwrap()
+                    })
+                })
+                .collect();
+            handles.into_iter().map(|h| h.join().unwrap()).collect()
+        });
+        assert_eq!(attempts(key), 1);
+        assert!(
+            kernels
+                .iter()
+                .all(|kernel| Arc::ptr_eq(&kernel.code, &kernels[0].code))
+        );
     }
 }

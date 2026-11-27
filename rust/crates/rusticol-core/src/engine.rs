@@ -5093,7 +5093,7 @@ pub(crate) use evaluator::symjit_direct::tests::count_allocations;
 pub(crate) use evaluator::symjit_eager_direct;
 #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
 pub(crate) use evaluator::symjit_plane::{
-    PlaneDescriptor, SymjitPlaneKernel, SymjitPlaneLayout, plane_code_cache_len,
+    PlaneDescriptor, SymjitPlaneKernel, SymjitPlaneLayout, plane_code_builds, plane_code_cache_len,
     symjit_cpu_features, symjit_host_cpu_supported,
 };
 #[cfg(all(
