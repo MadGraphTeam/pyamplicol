@@ -992,7 +992,25 @@ The keys read, every one also settable on its own:
 | `stability_checks.rotation_count` | `set_stability_checks` (`rotation_count`) | `evaluate(stability_checks=VirtualStabilityChecks(count))` | `--stability-rotations` |
 | `stability_checks.reduction_direction` | `set_stability_checks` (`reduction_direction`) | `evaluate(stability_checks=VirtualStabilityChecks(..., True))` | `--stability-reduction-direction` |
 | `stability_checks.rescaled` | `set_stability_checks` (`rescaled`) | `evaluate(stability_checks=VirtualStabilityChecks(..., rescaled=True))` | `--stability-rescaled` |
+| `stability_checks.floor_weight` | `set_stability_floor_weight` | `evaluate(stability_checks=VirtualStabilityChecks(..., floor_weight=))` | `--stability-floor-weight` |
 | `threads` | `set_threads` | `Runtime.load(threads=)` | `--threads` |
+
+The **floor weight** (`stability_checks.floor_weight`, a finite
+non-negative number, default 2^-12) weighs the first-order term of a
+loop-induced estimate's rounding floor, w x 2^14 u (N S' + S N'), with N
+the size of the computed amplitude and S the size of what cancelled in it,
+per side of |A|^2. The floor stands for the roundings no stability check
+samples. With w = 1 it has its calibrated coverage: on 95,857 binary64
+reference points of both backends, every point the previous floor covered
+stays within ten times E and fewer than 1 in 10^4 exceed E. The default
+2^-12 trades that coverage for a typical one-digit overestimate of the true
+error on strongly cancelling loop-induced processes (g g > z z g g g),
+where the full floor overestimates the error by about four digits; w = 0
+leaves twice the checks plus the second-order term (16 u)^2 S S', which
+keeps an exact zero "zero within its estimate". The weight changes no value
+and no other estimate (the fallback guard keeps deciding with 16 u S), and
+every estimate reports the weight it was formed with
+(`VirtualStabilityEstimate.floor_weight`).
 
 Rules, the same in every interface:
 

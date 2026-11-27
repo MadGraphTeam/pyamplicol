@@ -407,7 +407,12 @@ checks** (one rotation, the reduction-direction check and the rescaled
 check; importable as `pyamplicol.loops.v2.stability.RECOMMENDED_CHECKS`).
 Stability checks are off by default (no estimate is returned then); the
 reduction backends' own acceptance and refusal checks stay on unless
-`reduction_unchecked=True`. How these checks, the lane rescue and the
+`reduction_unchecked=True`. `VirtualStabilityChecks(..., floor_weight=)`
+(and `VirtualRescueLevel(..., floor_weight=)`) weighs the first-order term
+of a loop-induced estimate's rounding floor: default 2^-12, a typical
+one-digit overestimate on strongly cancelling loop-induced processes; 1 the
+calibrated coverage; 0 the checks alone
+([configuration](configuration.md#runtime-options)). How these checks, the lane rescue and the
 rescue stack fit together, and how to turn each one off:
 [The stability machinery, end to end](#the-stability-machinery-end-to-end).
 

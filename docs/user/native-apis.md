@@ -829,7 +829,11 @@ Python API's `stability_checks=`: `rusticol_virtual_set_stability_checks`
 (C++ and Fortran `set_stability_checks`, the packaged Rust wrapper's
 `set_stability_checks`) takes a count of default rotations or rotation
 specifications, the reduction-direction check, its rescaled variant and the
-cross-backend check. Without checks (the default, or a rotation count of 0
+cross-backend check; `rusticol_virtual_set_stability_floor_weight` (C++ and
+Fortran `set_stability_floor_weight`) sets the weight of a loop-induced
+estimate's first-order floor term (default 2^-12, 1 the calibrated coverage,
+0 the checks alone; kept by `rusticol_virtual_set_stability_checks`; the
+Python API's `VirtualStabilityChecks(floor_weight=)`). Without checks (the default, or a rotation count of 0
 with the other checks off) nothing else runs and no estimate is formed. The
 SDK has no per-backend default set: the checks a caller sets are run as set
 on every backend (an explicit set is never changed, as in the Python API).
