@@ -65,6 +65,9 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pyamplicol._internal import threads
+from pyamplicol._internal.threads import start_auxiliary
+
 # Optional ANSI colour codes and the tracing timestamp before the level.
 _ANSI = re.compile(rb"\x1b\[[0-9;]*m")
 SYMBOLICA_CLASSES = (
@@ -96,6 +99,10 @@ class Captured:
     where: str
     events: dict[tuple[str, str], list[object]] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
+    # Set once the capture's setup is decided: standard output redirected
+    # to the reader, or left as it was (no reader); overlapping callers
+    # enter their block only then.
+    _ready: threading.Event = field(default_factory=threading.Event)
 
     def add(self, source: str, kind: str, message: str) -> None:
         with self._lock:
@@ -207,6 +214,12 @@ def capture(where: str) -> Iterator[Captured]:
         if not nested:
             _ACTIVE.append(sink)
     if nested:
+        # Another caller (another thread) may still be setting the capture
+        # up: wait for its decision, bounded as the reader's start is, so
+        # that what this block writes is counted (or, without a reader,
+        # reaches standard output unchanged). The owner's own nested blocks
+        # find it decided.
+        sink._ready.wait(threads.START_SECONDS + 1.0)
         yield sink
         return
     logger = logging.getLogger(LOADER_LOGGER)
@@ -217,19 +230,39 @@ def capture(where: str) -> Iterator[Captured]:
             for stream in (sys.stdout, sys.stderr):
                 stream.flush()
             saved = os.dup(1)
-            read_fd, write_fd = os.pipe()
-            os.dup2(write_fd, 1)
-            os.close(write_fd)
+            try:
+                read_fd, write_fd = os.pipe()
+            except OSError:
+                os.close(saved)
+                raise
             done = threading.Event()
-            reader = threading.Thread(
-                target=_forward, args=(read_fd, saved, sink, done), daemon=True
+            # The reader starts while the original standard output is still
+            # installed: when it cannot start, nothing was redirected (no
+            # writer's output is lost, and the warning about it goes to the
+            # real standard output, never into a pipe nobody reads).
+            reader = start_auxiliary(
+                _forward,
+                name="pyamplicol-symbolica-log",
+                args=(read_fd, saved, sink, done),
             )
-            reader.start()
-            redirected = (saved, reader, done)
+            if reader is None:
+                for fd in (read_fd, write_fd, saved):
+                    with suppress(OSError):
+                        os.close(fd)
+            else:
+                # From here the reader owns read_fd and saved (it closes them
+                # at the end of the pipe, which closing write_fd brings).
+                try:
+                    os.dup2(write_fd, 1)
+                finally:
+                    os.close(write_fd)
+                redirected = (saved, reader, done)
         except (OSError, ValueError, AttributeError):
             # No file-descriptor level standard output (an embedded
             # interpreter): nothing is captured on this channel.
             redirected = None
+        finally:
+            sink._ready.set()
         yield sink
     finally:
         if redirected is not None:
