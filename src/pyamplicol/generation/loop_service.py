@@ -50,7 +50,10 @@ from pyamplicol.models.loop_preparation import (
 )
 from pyamplicol.reporting.logging import notice
 
-from .dag_algorithms import infer_minimal_coupling_order_limits
+from .dag_algorithms import (
+    infer_minimal_coupling_order_limits,
+    minimal_policy_coupling_limits,
+)
 from .loop_artifact import (
     LoopV2ExecutionMetadata,
     LoopV2ProcessArtifact,
@@ -341,12 +344,9 @@ def _prepare(
         if run.process.coupling_order_policy == "minimal":
             # The same model hierarchy, reachable Born closures and inclusive
             # envelope as the tree service, before adding virtual corrections.
-            inferred = infer_minimal_coupling_order_limits(
-                entry.process_ir,
-                model=resolved.model,
-                max_coupling_orders=limits or None,
+            limits = _minimal_born_limits(
+                entry.process_ir, resolved.model, limits, names
             )
-            limits = names.mapping(inferred) if inferred else limits
         # The Born of a virtual request has the colour of its tree.
         require_representable_singlet_exchange(
             entry.process_ir, model=resolved.model, max_coupling_orders=limits or None
@@ -412,6 +412,23 @@ def _resolve_orders(names, values, what: str) -> tuple[str, ...]:
         return tuple(sorted(set(names.resolve_all(values, what=what))))
     except CouplingOrderNameError as error:
         raise GenerationError(str(error)) from error
+
+
+def _minimal_born_limits(process_ir, model, explicit: Mapping[str, int], names):
+    """The Born limits of the minimal policy, keyed by the declared names:
+    the inferred envelope within the explicit limits and the model's expansion
+    orders, or those capped limits when nothing is inferred (no Born within
+    them), never the uncapped ones."""
+
+    capped = minimal_policy_coupling_limits(explicit, model)
+    inferred = infer_minimal_coupling_order_limits(
+        process_ir, model=model, max_coupling_orders=capped
+    )
+    if inferred:
+        return names.mapping(inferred)
+    if capped:
+        return names.mapping(capped)
+    return explicit
 
 
 def _resolve_limits(names, limits: Mapping[str, int]) -> dict[str, int]:

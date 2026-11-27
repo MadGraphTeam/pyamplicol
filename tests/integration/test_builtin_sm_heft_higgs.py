@@ -325,3 +325,67 @@ def test_a_singlet_between_two_gluon_groups_is_refused(generate, mode: str) -> N
 
     with pytest.raises(GenerationError, match="closed gluon trace"):
         generate("g g > g g", mode, "full", {"QCD": 2, "QED": 1, "HIG": 2})
+
+
+@pytest.mark.parametrize("mode", ("compiled", "eager"))
+def test_virtual_gluons_into_the_effective_vertex_refuse_in_the_dag_modes(
+    generate, mode: str
+) -> None:
+    """``u u~ > d d~ t t~`` with no external gluon: a gluon of the u line and
+    one of the d line fuse into the Higgs that the top line absorbs. The
+    compiled and eager modes gave half the value; they refuse."""
+
+    with pytest.raises(GenerationError, match="recurrence or on-the-fly"):
+        generate("u u~ > d d~ t t~", mode, "full", {"QCD": 2, "QED": 1, "HIG": 1})
+
+
+@pytest.mark.loop_nightly
+@pytest.mark.parametrize("mode", ("recurrence", "on-the-fly"))
+def test_virtual_gluons_into_the_effective_vertex_match_madgraph(
+    generate, mode: str
+) -> None:
+    payload = json.loads(
+        (_FIXTURES / "madgraph-split-orders-heft-six-quark.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    reference = payload["processes"][0]
+    column = reference["squared_orders"].index({"QCD": 4, "HIG": 2, "QED": 2})
+    runtime = Runtime.load(
+        generate("u u~ > d d~ t t~", mode, "full", {"QCD": 2, "QED": 1, "HIG": 1})
+    )
+    for value, row in zip(
+        _real(runtime.evaluate(reference["points"])), reference["partials"], strict=True
+    ):
+        assert value == pytest.approx(row[column], rel=1e-12, abs=0.0)
+
+
+def test_an_external_higgs_with_a_photon_between_the_lines_is_served(
+    generate,
+) -> None:
+    """``u c > u c g h``: the effective vertex emits the external Higgs, a
+    photon or Z joins the quark lines; nothing to refuse, and the compiled
+    mode equals the recurrence mode."""
+
+    orders = {"QCD": 1, "QED": 2, "HIG": 1}
+    process = "u c > u c g h"
+    from pyamplicol.generation.phase_space import massive_rambo_final_state
+
+    points = [
+        [
+            [500.0, 0.0, 0.0, 500.0],
+            [500.0, 0.0, 0.0, -500.0],
+            *(
+                list(momentum)
+                for momentum in massive_rambo_final_state(
+                    4, sqrt_s=1000.0, masses=[0.0, 0.0, 0.0, 125.0], seed=seed
+                )
+            ),
+        ]
+        for seed in (31, 32)
+    ]
+    compiled = Runtime.load(generate(process, "compiled", "full", orders))
+    recurrence = Runtime.load(generate(process, "recurrence", "full", orders))
+    assert _real(compiled.evaluate(points)) == pytest.approx(
+        _real(recurrence.evaluate(points)), rel=1e-12, abs=0.0
+    )

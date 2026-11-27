@@ -14,10 +14,15 @@ product: the compiled and eager modes project it onto the open-line flows
 the recurrence and on-the-fly modes drop it. Until the sectors exist,
 generation refuses such a request in every mode, before any lowering.
 
-The check is colour-blind and runs only for models with such a vertex: it
-asks whether, within the coupling-order limits, one colour singlet can be the
-current of a leg set holding a coloured non-adjoint leg and, at the same
-time, of the complementary leg set, which holds gluons and no such leg.
+The check is colour-blind and runs only for models with such a vertex. It
+follows the singlet lines such a vertex emits (through colour-singlet
+currents only, so an external Higgs at the vertex is not one) and asks
+whether, within the coupling-order limits, one of them joins two leg sets
+whose colour no sector of the lane carries: a quark-free gluon group and a
+quark line (every mode), two gluon groups (every mode), or two parts with
+quark lines (the compiled and eager modes, which do not build these trees:
+also with no external gluon, ``u u~ > d d~ t t~``). The trees decide, not
+the external legs.
 """
 
 from __future__ import annotations
@@ -125,7 +130,11 @@ def require_representable_singlet_exchange(
         return
     open_legs = [index for index, rep in enumerate(reps) if rep not in (1, _ADJOINT)]
     gluon_legs = [index for index, rep in enumerate(reps) if rep == _ADJOINT]
-    if not gluon_legs:
+    # The vertex can sit on internal gluons alone (two virtual gluons of two
+    # quark lines fusing into the singlet, u u~ > d d~ t t~): the trees
+    # decide, not the external gluons. Without a coloured leg there is no
+    # colour to misrepresent.
+    if not gluon_legs and len(open_legs) < 4:
         return
     limits = (
         {str(name).upper(): int(value) for name, value in max_coupling_orders.items()}
@@ -137,9 +146,9 @@ def require_representable_singlet_exchange(
     }
     count = len(legs)
     full = (1 << count) - 1
-    # reach[mask]: {species: {(coupling orders, through a singlet-gluons
-    # vertex)}} of the currents that cover exactly the legs in mask
-    # (colour-blind, within the limits).
+    # reach[mask]: {species: {(coupling orders, on the singlet line of a
+    # singlet-gluons vertex)}} of the currents that cover exactly the legs in
+    # mask (colour-blind, within the limits).
     Entry = tuple[tuple[tuple[str, int], ...], bool]
     reach: dict[int, dict[int, set[Entry]]] = {}
     for index, pdg in enumerate(pdgs):
@@ -173,16 +182,28 @@ def require_representable_singlet_exchange(
                                         tuple(vertex.particles),
                                     ) in marked
                                     result = int(vertex.particles[2])
+                                    # The flag follows the singlet line the
+                                    # vertex emits: a colour-singlet result
+                                    # of such a vertex, or of colour-singlet
+                                    # inputs one of which carries it. A
+                                    # coloured current drops it (an external
+                                    # Higgs at the vertex, u c > u c g h).
+                                    singlet_result = _colour(model, result) == 1
+                                    a_singlet = _colour(model, a) == 1
+                                    b_singlet = _colour(model, b) == 1
                                     for x, x_through in a_entries:
                                         for y, y_through in b_entries:
                                             total = _add(_add(dict(x), dict(y)), own)
                                             if _within(total, limits):
+                                                carried = singlet_result and (
+                                                    through
+                                                    or (a_singlet and x_through)
+                                                    or (b_singlet and y_through)
+                                                )
                                                 currents.setdefault(result, set()).add(
                                                     (
                                                         tuple(sorted(total.items())),
-                                                        through
-                                                        or x_through
-                                                        or y_through,
+                                                        carried,
                                                     )
                                                 )
                 sub = (sub - 1) & mask

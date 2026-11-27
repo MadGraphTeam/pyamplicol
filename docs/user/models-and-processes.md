@@ -196,10 +196,13 @@ A Higgs between the effective gluon vertex and the rest of a tree:
     as MadGraph does, so a default `t g > t g g` is its QCD tree.
   - Two closed traces, a Higgs between two groups of gluons through two
     effective vertices (`g g > g g` with `HIG = 2`): refused alike.
-- A colour singlet that the effective vertex joins, through a gluon of one
-  quark line, to a second quark line (`d d~ > t t~ g`, `s t~ > s t~ g` with
-  `HIG >= 1`) is served by the recurrence and on-the-fly modes, equal to
-  MadGraph's `heft` with its split orders. The compiled and eager modes do not
+- A colour singlet that the effective vertex joins, through gluons of quark
+  lines, to another quark line (`d d~ > t t~ g`, `s t~ > s t~ g` with
+  `HIG >= 1`; also with no external gluon, two virtual gluons of two lines
+  fusing into the Higgs that a top pair absorbs, `u u~ > d d~ t t~`,
+  `u d > u d t t~`) is served by the recurrence and on-the-fly modes, equal to
+  MadGraph's `heft` with its split orders, also after a run-time change of
+  `ymt`. The compiled and eager modes do not
   build these trees and refuse the request. Earlier versions gave their
   value without these trees.
 - Leftover gaps, refused with "no model-supported tree-level amplitudes" by
