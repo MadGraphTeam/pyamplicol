@@ -1632,6 +1632,12 @@ class ColorEngine:
             label for label in labels if label in self._shared_lc_coloured_labels
         )
 
+    @property
+    def builds_loop_blocks(self) -> bool:
+        """Whether this engine orders the merges of a loop-block DAG."""
+
+        return bool(self._loop_blocks)
+
     def singlet_order_allowed(
         self,
         left_index: CurrentIndex,
