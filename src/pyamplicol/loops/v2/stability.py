@@ -64,10 +64,14 @@ with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u
 (``induced.floor``, ``induced_observables.PointOutputs.floor``), linear in
 the cancellation where the product is quadratic in it. Its first-order
 term models the first-order error of each amplitude that no check samples
-as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound,
-its unit count the smallest power of 4 under which no measured
-loop-induced row has a miss the floor could cure, with a margin of about 5
-(``tools/loop_v2_floor_units.py``, the derivation table in the tests). The
+as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound.
+Its unit count is the smallest power of 4 under which, on the measured
+binary64 loop-induced points (``tools/loop_v2_floor_units.py``, the
+derivation fixture in the tests), no point that FLOOR_UNITS u S covered is
+a miss, and at every row's worst covered point E / error is at least what
+FLOOR_UNITS u S gave there. No margin beyond that is claimed: on rows whose
+worst points are dominated by the checks (their budgets under-measure the
+error) no unit count gives one, with either floor. The
 second-order term keeps a vanishing value "zero within the estimate". The
 model holds only where the checks sample the rotation-invariant parts of
 the evaluation, so the floor is used only by an estimate to which the
@@ -137,12 +141,15 @@ SAFETY = 2
 FLOOR_UNITS = 16
 # The first-order term of a loop-induced output's floor, eps1 (|A| S' + S
 # |A'|) with eps1 = BILINEAR_FLOOR_UNITS u (``induced.floor_kernel``): the
-# unsampled rounding of an amplitude against its term floor S, calibrated on
-# the loop-induced rows against double-double (binary64 g g > z z, g g > z z
-# g, g g > z z g g on both backends; g g > h h, g g > z z helicity rows),
-# where the checks under-measure the reduction's own error by up to ~180x.
-# Its second-order term keeps FLOOR_UNITS.
-BILINEAR_FLOOR_UNITS = 2**16
+# unsampled error of an amplitude against its term floor S, where the checks
+# under-measure the reduction's own error. A measured count, not a proven
+# bound: the smallest power of 4 under which, on the binary64 loop-induced
+# points of tests/fixtures/loop/v2/floor_units_li.json (estimates with the
+# rescaled check against double-double), (a) no point the previous floor
+# FLOOR_UNITS u S covered is a miss and (b) at each row's worst covered point
+# E / error is at least the previous estimate's there. Its second-order term
+# keeps FLOOR_UNITS.
+BILINEAR_FLOOR_UNITS = 2**18
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"

@@ -34,7 +34,7 @@ pub const SAFETY: f64 = 2.0;
 pub const FLOOR_UNITS: f64 = 16.0;
 /// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
 /// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
-pub const BILINEAR_FLOOR_UNITS: f64 = 65536.0;
+pub const BILINEAR_FLOOR_UNITS: f64 = 262144.0;
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
