@@ -1573,6 +1573,7 @@ class EvaluationStabilityChecksConfig:
     def to_checks(self) -> VirtualStabilityChecks | None:
         """The requested checks, or None when none is requested."""
         from pyamplicol.api.virtual_results import VirtualStabilityChecks
+        from pyamplicol.loops.v2.stability import DEFAULT_FLOOR_WEIGHT
 
         if self.rotations and self.rotation_count:
             raise ConfigurationError(
@@ -1583,10 +1584,10 @@ class EvaluationStabilityChecksConfig:
                 self.rotations or self.rotation_count,
                 self.reduction_direction,
                 self.rescaled,
-                **(
-                    {}
+                floor_weight=(
+                    DEFAULT_FLOOR_WEIGHT
                     if self.floor_weight is None
-                    else {"floor_weight": self.floor_weight}
+                    else self.floor_weight
                 ),
             )
         except (TypeError, ValueError, ZeroDivisionError) as error:
