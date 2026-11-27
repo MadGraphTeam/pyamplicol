@@ -65,6 +65,8 @@ from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pyamplicol._internal.threads import start_auxiliary
+
 # Optional ANSI colour codes and the tracing timestamp before the level.
 _ANSI = re.compile(rb"\x1b\[[0-9;]*m")
 SYMBOLICA_CLASSES = (
@@ -221,11 +223,20 @@ def capture(where: str) -> Iterator[Captured]:
             os.dup2(write_fd, 1)
             os.close(write_fd)
             done = threading.Event()
-            reader = threading.Thread(
-                target=_forward, args=(read_fd, saved, sink, done), daemon=True
+            reader = start_auxiliary(
+                _forward,
+                name="pyamplicol-symbolica-log",
+                args=(read_fd, saved, sink, done),
             )
-            reader.start()
-            redirected = (saved, reader, done)
+            if reader is None:
+                # No reader (the process cannot start a thread): standard
+                # output stays as it was, nothing is captured on it.
+                os.dup2(saved, 1)
+                for fd in (read_fd, saved):
+                    with suppress(OSError):
+                        os.close(fd)
+            else:
+                redirected = (saved, reader, done)
         except (OSError, ValueError, AttributeError):
             # No file-descriptor level standard output (an embedded
             # interpreter): nothing is captured on this channel.

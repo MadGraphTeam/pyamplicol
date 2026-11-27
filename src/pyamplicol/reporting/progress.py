@@ -18,6 +18,7 @@ from threading import Event, RLock, Thread
 from types import MappingProxyType
 from typing import Any, Literal, Protocol, TextIO, TypeAlias, runtime_checkable
 
+from .._internal.threads import start_auxiliary
 from .eta import Estimate, combined, count_estimate, remaining_estimate
 from .logging import get_logger
 from .resources import ResourceUsage, ResourceUsageMonitor
@@ -753,10 +754,9 @@ class _LineProgressSink:
                 else frozenset(),
             )
             self._monitor.start()
-        self._thread = Thread(
-            target=self._beat, name="pyamplicol-progress-log-heartbeat", daemon=True
+        self._thread = start_auxiliary(
+            self._beat, name="pyamplicol-progress-log-heartbeat"
         )
-        self._thread.start()
 
     def _stop_heartbeat(self) -> None:
         self._stop.set()
@@ -905,12 +905,7 @@ class _Dashboard:
     def start(self) -> None:
         self._resource_monitor.start()
         self.render_now()
-        self._thread = Thread(
-            target=self._run,
-            name="pyamplicol-progress-dashboard",
-            daemon=True,
-        )
-        self._thread.start()
+        self._thread = start_auxiliary(self._run, name="pyamplicol-progress-dashboard")
 
     def close(self) -> None:
         self._stop.set()
@@ -1253,10 +1248,9 @@ class _SidecarDashboard:
     # --- the _Dashboard interface -------------------------------------------
     def start(self) -> None:
         self._send_state()
-        self._thread = Thread(
-            target=self._run, name="pyamplicol-progress-renderer-feed", daemon=True
+        self._thread = start_auxiliary(
+            self._run, name="pyamplicol-progress-renderer-feed"
         )
-        self._thread.start()
 
     def render_now(self, *, force: bool = False) -> None:
         if self._fallback is not None:
