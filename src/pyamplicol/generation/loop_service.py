@@ -1841,6 +1841,12 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     memo = PreparationMemo(store_for(backend._run_config.model))
     stack = ExitStack()
     try:
+        if mode == "append":
+            # The writer's settings check of an append, before any process
+            # is generated (a v2 one-loop artifact carries no API bundle).
+            from .artifact_writer import check_append_settings
+
+            check_append_settings(output, backend._configuration, api_bundle=False)
         with reporter.phase(
             "loop-model",
             "Preparing the loop model and the requests",

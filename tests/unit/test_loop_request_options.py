@@ -204,3 +204,96 @@ def test_model_processes_applies_max_quark_lines(model, expected):
     assert cut["n_dropped_by_max_quark_lines"] == full["n_entries"] - len(kept)
     if expected is not None:
         assert len(kept) == expected
+
+
+# F2: appending to a one-loop artifact ----------------------------------------
+
+
+def _digest(artifact):
+    import hashlib
+
+    digest = hashlib.sha256()
+    for path in sorted(artifact.rglob("*")):
+        if path.is_file():
+            digest.update(str(path.relative_to(artifact)).encode())
+            digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+@pytest.fixture
+def one_loop_artifact(tmp_path, model_cache):
+    card = _card(tmp_path, model_cache, expression="u u~ > g g", name="uugg")
+    code, _, stderr = _cli("generate", "--card", str(card))
+    assert code == 0, stderr
+    return card, tmp_path / "artifact"
+
+
+def test_cli_append_of_a_compatible_one_loop_request_succeeds(
+    one_loop_artifact, tmp_path, model_cache
+):
+    card, artifact = one_loop_artifact
+    # The CLI records mode = "append" and the new entry; neither shapes the
+    # stored processes.
+    code, _, stderr = _cli(
+        "generate",
+        "--card",
+        str(card),
+        "--process",
+        "d d~ > g g",
+        "--name",
+        "ddgg",
+        "--mode",
+        "append",
+    )
+    assert code == 0, stderr
+    stored = [row["id"] for row in _manifest(artifact)["processes"]]
+    assert stored == ["uugg", "ddgg"]
+    fresh = _card(
+        tmp_path, model_cache, expression="d d~ > g g", name="ddgg", output="fresh"
+    )
+    code, _, stderr = _cli("generate", "--card", str(fresh))
+    assert code == 0, stderr
+    assert _values(artifact, "ddgg") == _values(tmp_path / "fresh", "ddgg")
+
+
+def test_python_append_of_another_process_count_succeeds(one_loop_artifact):
+    from pyamplicol.api import ProcessSet
+
+    card, artifact = one_loop_artifact
+    # generation.workers = "auto" resolves to the appended request's process
+    # count (2 here, 1 in the artifact).
+    Generator(resolve_config(card)).generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("s s~ > g g", name="ssgg"),
+                ProcessRequest.parse("c c~ > g g", name="ccgg"),
+            )
+        ),
+        artifact,
+        mode="append",
+    )
+    stored = [row["id"] for row in _manifest(artifact)["processes"]]
+    assert stored == ["uugg", "ssgg", "ccgg"]
+    for process in stored:
+        assert "nan" not in _values(artifact, process)
+
+
+def test_incompatible_append_names_the_setting_before_generating(
+    one_loop_artifact, monkeypatch
+):
+    import pyamplicol.loops.v2.artifact as loop_artifact
+
+    card, artifact = one_loop_artifact
+    before = _digest(artifact)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("an incompatible append must not generate")
+
+    monkeypatch.setattr(loop_artifact, "generate_process", forbidden)
+    configuration = resolve_config(card, overrides=("color.accuracy=lc",))
+    with pytest.raises(GenerationError, match=r"setting color\.accuracy") as error:
+        Generator(configuration).generate(
+            ProcessRequest.parse("d d~ > g g", name="ddgg"), artifact, mode="append"
+        )
+    assert '"lc" in this request but "full" in the artifact' in str(error.value)
+    assert _digest(artifact) == before

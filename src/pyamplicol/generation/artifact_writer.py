@@ -986,6 +986,10 @@ def _write_umami_bundle(
         )
 
 
+# The adjustment of ``generation.emit_api_bundle`` in a v2 one-loop artifact.
+_V2_NO_BUNDLE_REASON = "the standalone SDK does not evaluate v2 virtuals yet"
+
+
 def write_schema_v3_artifact(
     destination: str | Path,
     *,
@@ -1061,7 +1065,7 @@ def write_schema_v3_artifact(
         adjustments.append(
             {
                 "path": "generation.emit_api_bundle",
-                "reason": "the standalone SDK does not evaluate v2 virtuals yet"
+                "reason": _V2_NO_BUNDLE_REASON
                 if v2_loop
                 else "no root API-bundle emitter is installed",
             }
@@ -5187,12 +5191,56 @@ def _validate_append_compatibility(
         raise ValueError("append model provenance differs from the existing artifact")
     if existing_producer.get("target") != producer.get("target"):
         raise ValueError("append target differs from the existing artifact")
+    _validate_append_settings(
+        existing,
+        requested_bytes=requested_bytes,
+        effective_bytes=effective_bytes,
+        adjustments=adjustments,
+    )
+    existing_ids = {str(record["id"]) for record in existing.processes}
+    duplicates = existing_ids.intersection(process.process_id for process in processes)
+    if duplicates:
+        raise ValueError(
+            "append process IDs already exist: " + ", ".join(sorted(duplicates))
+        )
+
+
+def _validate_append_settings(
+    existing: ArtifactManifest,
+    *,
+    requested_bytes: bytes,
+    effective_bytes: bytes,
+    adjustments: Sequence[Mapping[str, str]],
+) -> None:
+    """An append generates with the settings ``existing`` records: its
+    requested and effective configurations and their adjustments, but for
+    ``_APPEND_INDEPENDENT_SETTINGS``; else a ``ValueError`` naming the first
+    setting that differs."""
+
     requested_path = existing.root / str(existing.configuration["requested_path"])
     effective_path = existing.root / str(existing.configuration["effective_path"])
-    if requested_path.read_bytes() != requested_bytes:
-        raise ValueError("append requested configuration differs from the artifact")
-    if effective_path.read_bytes() != effective_bytes:
-        raise ValueError("append effective configuration differs from the artifact")
+    for kind, stored, incoming in (
+        ("requested", requested_path.read_bytes(), requested_bytes),
+        ("effective", effective_path.read_bytes(), effective_bytes),
+    ):
+        differences = _append_setting_differences(stored, incoming)
+        if differences:
+            path, old, new = differences[0]
+            verb = "is" if kind == "requested" else "resolves to"
+            others = (
+                f" (and {len(differences) - 1} more: "
+                + ", ".join(item[0] for item in differences[1:4])
+                + (", ..." if len(differences) > 4 else "")
+                + ")"
+                if len(differences) > 1
+                else ""
+            )
+            raise ValueError(
+                f"append: setting {path} {verb} {_setting_text(new)} in this "
+                f"request but {_setting_text(old)} in the artifact{others}; an "
+                "append generates with the settings the artifact was generated "
+                "with: use them, or write a separate artifact"
+            )
     existing_adjustments: list[dict[str, str]] = []
     for item in _sequence(existing.configuration["adjustments"]):
         adjustment = _mapping(item)
@@ -5202,14 +5250,141 @@ def _validate_append_compatibility(
                 "reason": str(adjustment["reason"]),
             }
         )
-    if existing_adjustments != list(adjustments):
-        raise ValueError("append configuration adjustments differ from the artifact")
-    existing_ids = {str(record["id"]) for record in existing.processes}
-    duplicates = existing_ids.intersection(process.process_id for process in processes)
-    if duplicates:
-        raise ValueError(
-            "append process IDs already exist: " + ", ".join(sorted(duplicates))
+    stored_adjustments = [
+        item for item in existing_adjustments if not _append_independent(item["path"])
+    ]
+    incoming_adjustments = [
+        dict(item) for item in adjustments if not _append_independent(item["path"])
+    ]
+    if stored_adjustments != incoming_adjustments:
+        stored_paths = {item["path"] for item in stored_adjustments}
+        incoming_paths = {item["path"] for item in incoming_adjustments}
+        changed = sorted(stored_paths ^ incoming_paths) or sorted(
+            item["path"]
+            for item in incoming_adjustments
+            if item not in stored_adjustments
         )
+        raise ValueError(
+            "append: the configuration adjustments differ from the artifact's "
+            f"({', '.join(changed)}); an append generates with the settings the "
+            "artifact was generated with"
+        )
+
+
+# Settings of a generation that do not shape the processes it stores (how
+# and where the call runs, which processes it asks for, how the CLI reports),
+# so an append to an artifact may differ in them: the run mode itself, the
+# output, the requested entries, the resolved worker and evaluator-core
+# counts (resolved from the call's process count), and the reporting.
+_APPEND_INDEPENDENT_SETTINGS = (
+    ("action",),
+    ("process", "entries"),
+    ("generation", "mode"),
+    ("generation", "output"),
+    ("generation", "workers"),
+    ("evaluator", "optimization", "cores"),
+    ("output",),
+    ("symbolica",),
+)
+
+
+def _append_independent(path: str) -> bool:
+    parts = tuple(path.split("."))
+    return any(
+        parts[: len(setting)] == setting for setting in _APPEND_INDEPENDENT_SETTINGS
+    )
+
+
+def _append_settings(payload: bytes) -> dict[str, object]:
+    """A recorded configuration without ``_APPEND_INDEPENDENT_SETTINGS``."""
+
+    import tomllib
+
+    settings = tomllib.loads(payload.decode("utf-8"))
+    for path in _APPEND_INDEPENDENT_SETTINGS:
+        node: object = settings
+        for key in path[:-1]:
+            node = node.get(key) if isinstance(node, dict) else None
+        if isinstance(node, dict):
+            node.pop(path[-1], None)
+    return settings
+
+
+def _append_setting_differences(
+    stored: bytes, incoming: bytes
+) -> list[tuple[str, object, object]]:
+    """The settings (dotted path, the artifact's value, the request's) in
+    which a recorded configuration ``incoming`` differs from ``stored``,
+    in the order the configuration lists them; none for an append."""
+
+    if stored == incoming:
+        return []
+    missing = object()
+    differences: list[tuple[str, object, object]] = []
+
+    def walk(path: tuple[str, ...], old: object, new: object) -> None:
+        if isinstance(old, dict) and isinstance(new, dict):
+            for key in [*old, *(key for key in new if key not in old)]:
+                walk((*path, key), old.get(key, missing), new.get(key, missing))
+        elif old != new:
+            differences.append((".".join(path), old, new))
+
+    walk((), _append_settings(stored), _append_settings(incoming))
+    return [
+        (
+            path,
+            "unset" if old is missing else old,
+            "unset" if new is missing else new,
+        )
+        for path, old, new in differences
+    ]
+
+
+def _setting_text(value: object) -> str:
+    return "unset" if value == "unset" else json.dumps(value, default=str)
+
+
+def check_append_settings(
+    destination: str | Path,
+    configuration: _GenerationConfigProvenance,
+    *,
+    api_bundle: bool,
+) -> None:
+    """Before an append generates anything: the settings check the writer
+    makes (``_validate_append_settings``) of ``configuration`` against the
+    artifact at ``destination`` (none there: nothing to check, the writer
+    decides). ``api_bundle`` is whether the appended processes can carry
+    an API bundle (a one-loop v2 artifact carries none)."""
+
+    output = Path(destination).expanduser().resolve(strict=False)
+    if not (output / "artifact.json").is_file():
+        return
+    existing = load_manifest(output)
+    _reject_legacy_eager_append(existing)
+    bundle_requested = _bundle_requested(configuration.effective)
+    requested_config = _config_payload(configuration.requested)
+    effective_config = _effective_config_payload(
+        _config_payload(configuration.effective),
+        disable_api_bundle=bundle_requested and not api_bundle,
+    )
+    adjustments = [
+        {"path": adjustment.path, "reason": adjustment.reason}
+        for adjustment in configuration.adjustments
+    ]
+    if bundle_requested and not api_bundle:
+        adjustments.append(
+            {"path": "generation.emit_api_bundle", "reason": _V2_NO_BUNDLE_REASON}
+        )
+    _validate_append_settings(
+        existing,
+        requested_bytes=_toml_bytes(
+            cast(dict[str, object], _portable_paths(requested_config))
+        ),
+        effective_bytes=_toml_bytes(
+            cast(dict[str, object], _portable_paths(effective_config))
+        ),
+        adjustments=adjustments,
+    )
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:
