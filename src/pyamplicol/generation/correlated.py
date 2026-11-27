@@ -29,6 +29,7 @@ from pyamplicol.color.correlator_matrices import (
 )
 from pyamplicol.color.nc_expansion import NcExpansion
 from pyamplicol.color.plan import GenericColorPlan, build_color_plan
+from pyamplicol.color.plan_types import _canonical_open_string_product_key
 from pyamplicol.config import (
     Action,
     ColorContraction,
@@ -438,7 +439,9 @@ class CorrelatedGenerationBackend(GenerationBackend):
         Every amplitude stays full colour (the correlators need them); the
         artifact's ordinary value -- Runtime.evaluate and every native
         consumer -- is the requested accuracy's, as for an ordinary artifact.
-        NLC contracts the same sectors with the NLC colour matrix."""
+        NLC contracts the same sectors with the NLC colour matrix; LC is the
+        diagonal over one sector per colour tensor, the LC plan's flows
+        (structural zeros included)."""
 
         requested = (
             str(self._run_config.color.accuracy)
@@ -450,21 +453,35 @@ class CorrelatedGenerationBackend(GenerationBackend):
         process = replace(dag.process, color_accuracy=requested)
         plan = replace(dag.color_plan, process=process, color_accuracy=requested)
         if requested == "lc":
-            # The LC metric of the complete plan is diagonal on the sectors
-            # whose amplitudes the trees build (the canonical owners; their
-            # block-permutation aliases carry none): LC is their diagonal.
-            owners = {
-                int(root.color_sector_id)
-                if root.color_sector_id is not None
-                else int(dag.currents[root.left_id].index.color_state.sector_id)
-                for root in dag.amplitude_roots
-            }
-            plan = replace(
-                plan,
-                sectors=tuple(
-                    sector for sector in plan.sectors if int(sector.id) in owners
-                ),
-            )
+            # The LC metric of the complete plan is diagonal up to the
+            # block-permutation aliases of open-line products (the same colour
+            # tensor in another line order). LC keeps one sector per tensor --
+            # its first, as the LC plan does -- including those with no tree
+            # (structural zeros, which the ordinary LC artifact exposes too).
+            seen: set[tuple[object, ...]] = set()
+            canonical = []
+            for sector in plan.sectors:
+                key: tuple[object, ...] = (
+                    (
+                        sector.kind,
+                        _canonical_open_string_product_key(
+                            (
+                                line.fundamental_label,
+                                line.adjoint_labels,
+                                line.antifundamental_label,
+                                line.singlet_labels,
+                            )
+                            for line in sector.open_color_lines
+                        ),
+                    )
+                    if sector.kind == "open-lines"
+                    else (sector.kind, int(sector.id))
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                canonical.append(sector)
+            plan = replace(plan, sectors=tuple(canonical))
         return replace(dag, process=process, color_plan=plan)
 
     def correlator_payload(self) -> dict[str, object]:

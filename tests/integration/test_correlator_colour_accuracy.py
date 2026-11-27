@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: 0BSD
 """Inherited LC/NLC Born results from independently generated ordinary artifacts."""
 
+import math
 from decimal import Decimal, localcontext
 
 import pytest
@@ -188,3 +189,101 @@ def test_a_correlated_artifact_has_one_colour_accuracy(
                 rel=1e-12,
                 abs=1e-15 * expected,
             )
+
+
+@pytest.mark.parametrize(
+    ("expression", "orders", "point"),
+    (
+        ("c d > u s", {"QCD": 0, "QED": 2}, _POINT),
+        (
+            "u u~ > d d~ s s~",
+            {"QCD": 0, "QED": 4},
+            (
+                (900, 0, 0, 900),
+                (900, 0, 0, -900),
+                (450, 450, 0, 0),
+                (450, -450, 0, 0),
+                (450, 0, 450, 0),
+                (450, 0, -450, 0),
+            ),
+        ),
+        ("d d~ > u u~ g", None, _THREE_BODY_POINT),
+        ("g g > g g", None, _POINT),
+    ),
+    ids=("w-exchange", "three-pairs-electroweak", "two-pairs-and-gluon", "gluons"),
+)
+def test_a_correlated_lc_artifact_exposes_the_ordinary_colour_flows(
+    tmp_path, expression, orders, point
+):
+    """At LC a correlated artifact exposes exactly the ordinary LC artifact's
+    colour flows, structural zeros included (only block-permutation aliases
+    are one flow): every flow is selectable in evaluate and evaluate_orders,
+    a flow without trees returns exactly zero, and the values are the
+    ordinary artifact's."""
+
+    pytest.importorskip("pyamplicol._rusticol")
+    from dataclasses import replace
+
+    from pyamplicol.config import ProcessConfig
+
+    config = _configuration("lc")
+    if orders is not None:
+        config = replace(
+            config,
+            process=ProcessConfig(
+                coupling_order_policy="explicit", max_coupling_orders=orders
+            ),
+        )
+    model = ModelSource.built_in_sm()
+    correlated_path = tmp_path / "correlated"
+    Generator(config).generate(
+        expression,
+        correlated_path,
+        model=model,
+        correlators=CorrelatorConfig(
+            color_correlations=(ColorCorrelator.dipole("T12", 1, 2),)
+        ),
+    )
+    ordinary_path = tmp_path / "ordinary"
+    Generator(config).generate(expression, ordinary_path, model=model)
+    correlated = Runtime.load(correlated_path)
+    ordinary = Runtime.load(ordinary_path)
+    flows = [flow.id for flow in ordinary.physics.color_flows]
+    assert sorted(flow.id for flow in correlated.physics.color_flows) == sorted(flows)
+    total = complex(ordinary.evaluate((point,))[0]).real
+    assert complex(correlated.evaluate((point,))[0]).real == pytest.approx(
+        total, rel=1e-12
+    )
+
+    def resolved(runtime):
+        evaluation = runtime.evaluate_resolved((point,))
+        ids = [flow.id for flow in runtime.physics.color_flows]
+        return {
+            flow: math.fsum(complex(row[index]).real for row in evaluation.values[0])
+            for index, flow in enumerate(ids)
+        }
+
+    resolved_correlated, resolved_ordinary = resolved(correlated), resolved(ordinary)
+    for flow in flows:
+        if resolved_ordinary[flow] == 0.0:
+            assert resolved_correlated[flow] == 0.0, flow
+        else:
+            assert resolved_correlated[flow] == pytest.approx(
+                resolved_ordinary[flow], rel=1e-12
+            ), flow
+        expected = complex(ordinary.evaluate((point,), color_flows=[flow])[0]).real
+        actual = complex(correlated.evaluate((point,), color_flows=[flow])[0]).real
+        if expected == 0.0:
+            assert actual == 0.0, flow
+        else:
+            assert actual == pytest.approx(expected, rel=1e-12), flow
+        split = correlated.evaluate_orders((point,), color_flows=[flow])
+        reference = ordinary.evaluate_orders((point,), color_flows=[flow])
+        assert set(split.orders) == set(reference.orders)
+        for order in reference.orders:
+            want = complex(reference.for_order(order)[0]).real
+            got = complex(split.for_order(order)[0]).real
+            if want == 0.0:
+                assert got == 0.0, (flow, order)
+            else:
+                assert got == pytest.approx(want, rel=1e-12), (flow, order)
