@@ -118,9 +118,11 @@ def test_the_default_policy_stays_within_the_expansion_order(
         "request filter: process 'd d~ > vm vm~' has tree-level diagrams, but none "
         "within the model's expansion orders (NP<=1)"
     )
-    assert "a limit on NP in process.max_coupling_orders replaces them" in message
+    assert message.endswith(
+        "an explicit limit NP<=2 in process.max_coupling_orders serves the request."
+    )
     assert "loop-induced" not in message
-    assert caught.value.settings == ("process.coupling_order_policy",)
+    assert caught.value.settings == ("process.max_coupling_orders",)
 
 
 @pytest.mark.parametrize("correlated", (False, True))
@@ -155,11 +157,11 @@ def test_an_explicit_limit_and_an_expansion_order_that_each_empty_it(
     assert "none within process.max_coupling_orders (QED<=1) and the model's " in (
         message
     )
-    assert "relaxing one of them does not serve the request" in message
-    assert caught.value.settings == (
-        "process.max_coupling_orders",
-        "process.coupling_order_policy",
+    assert message.endswith(
+        "an explicit limit NP<=2 QED<=2 in process.max_coupling_orders serves the "
+        "request (any smaller change does not)."
     )
+    assert caught.value.settings == ("process.max_coupling_orders",)
     # Relaxing the expansion order alone (explicit policy, QED <= 1 kept).
     with pytest.raises(RequestFilterError) as caught:
         Generator(_config({"QED": 1})).generate(
@@ -171,9 +173,52 @@ def test_an_explicit_limit_and_an_expansion_order_that_each_empty_it(
         Generator(_config(None)).generate(
             "d d~ > vm vm~", tmp_path / "limit-relaxed", model=np_model
         )
-    assert caught.value.settings == ("process.coupling_order_policy",)
-    # Relaxing both serves it.
-    Generator(_config({})).generate("d d~ > vm vm~", tmp_path / "none", model=np_model)
+    assert caught.value.settings == ("process.max_coupling_orders",)
+    # The named change serves it (minimal policy kept).
+    remedy = replace(
+        _config(None), process=ProcessConfig(max_coupling_orders={"QED": 2, "NP": 2})
+    )
+    Generator(remedy).generate("d d~ > vm vm~", tmp_path / "remedy", model=np_model)
+
+
+def test_an_explicit_limit_at_the_expansion_order_is_named_with_its_remedy(
+    np_model: ModelSource, tmp_path: Path
+) -> None:
+    # The reviewer's case: clearing the explicit limits would bring the NP
+    # expansion order back; the remedy names the NP limit that serves it.
+    limits = {"QCD": 0, "QED": 2, "NP": 1}
+    minimal = replace(_config(None), process=ProcessConfig(max_coupling_orders=limits))
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(minimal).generate("d d~ > vm vm~", tmp_path / "np1", model=np_model)
+    assert str(caught.value) == (
+        "request filter: process 'd d~ > vm vm~' has tree-level diagrams, but none "
+        "within process.max_coupling_orders (NP<=1), so there is nothing to "
+        "generate; an explicit limit NP<=2 in process.max_coupling_orders serves "
+        "the request."
+    )
+    remedy = replace(
+        _config(None), process=ProcessConfig(max_coupling_orders={**limits, "NP": 2})
+    )
+    Generator(remedy).generate("d d~ > vm vm~", tmp_path / "np2", model=np_model)
+
+
+def test_an_expansion_order_on_a_label(np_model: ModelSource, tmp_path: Path) -> None:
+    down = replace(
+        _config(None),
+        process=ProcessConfig(multiparticles={"x": ("d", "d~", "s", "s~")}),
+    )
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(down).generate("x x > vm vm~", tmp_path / "down", model=np_model)
+    assert "none within the model's expansion orders (NP<=1)" in str(caught.value)
+    assert str(caught.value).endswith(
+        "an explicit limit NP<=2 in process.max_coupling_orders serves the request."
+    )
+    # With an up-type member whose Z coupling carries no NP, it is served.
+    mixed = replace(
+        _config(None),
+        process=ProcessConfig(multiparticles={"x": ("d", "d~", "u", "u~")}),
+    )
+    Generator(mixed).generate("x x > vm vm~", tmp_path / "mixed", model=np_model)
 
 
 def test_no_diagram_within_or_without_the_expansion_order(
