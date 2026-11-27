@@ -802,7 +802,10 @@ def test_correlated_outputs_in_double_double_and_with_estimates(artifacts):
         for p, estimate in enumerate(checked[key].stability):
             a = complex(double[key].values[p][0].finite)
             b = complex(dd[key].values[p][0].finite.real)
-            assert 0 < estimate.relative < 1e-8
+            # Far below any rescue target (the bound was 1e-8 under the floor
+            # 16 u S; the first-order floor's BILINEAR_FLOOR_UNITS raise E
+            # where the outputs do not cancel).
+            assert 0 < estimate.relative < 1e-7
             # binary64 within ten times its own estimate of the DD value.
             assert abs(a - b) <= 10 * estimate.absolute[0].finite, (key, p)
             assert _relative(a, b) <= LAX
