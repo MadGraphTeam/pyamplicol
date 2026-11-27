@@ -19,7 +19,11 @@ from pyamplicol.api.requests import (
     _digest_process_name,
     parse_process_requests,
 )
-from pyamplicol.api.services import _appended_process_names, _process_set
+from pyamplicol.api.services import (
+    _appended_alias_names,
+    _appended_process_names,
+    _process_set,
+)
 from tools.developer.builtin_sm_ufo_sweep import two_to_two_processes
 
 _PAIR_TEXT = ("u mu- > u mu-", "u mu+ > u mu+")
@@ -164,3 +168,30 @@ def test_append_keeps_a_user_given_name_and_its_alias() -> None:
     moved = _process_set(aliased, reserved=reserved)
     assert moved.requests[0].name == _digest_process_name("u mu+ > u mu+")
     assert moved.aliases[0].process_name == moved.requests[0].name
+
+
+def test_automatic_names_avoid_process_aliases() -> None:
+    crossed = "mu+ u > u mu+"
+    assert _default_process_name(crossed) == "mu_u_to_u_mu"
+    # An alias of the call or of the appended artifact blocks the name.
+    request = parse_process_requests([crossed], blocked=("mu_u_to_u_mu",))[0]
+    assert request.name == _digest_process_name(crossed)
+    both = ProcessSet(
+        (ProcessRequest.parse("u mu- > u mu-"), ProcessRequest.parse(crossed)),
+        (ProcessAlias("mu_u_to_u_mu", "u_mu_to_u_mu", (1, 0, 2, 3)),),
+    )
+    assert [request.name for request in both.requests] == [
+        "u_mu_to_u_mu",
+        _digest_process_name(crossed),
+    ]
+    appended = _process_set(
+        ProcessSet((ProcessRequest.parse(crossed),)), blocked=("mu_u_to_u_mu",)
+    )
+    assert appended.requests[0].name == _digest_process_name(crossed)
+    # A name the user gives is kept: the writer refuses the collision.
+    named = ProcessRequest.parse(crossed, name="mu_u_to_u_mu")
+    assert _process_set(named, blocked=("mu_u_to_u_mu",)).requests == (named,)
+
+
+def test_appended_aliases_of_a_missing_artifact(tmp_path) -> None:
+    assert _appended_alias_names(tmp_path / "missing") == ()

@@ -70,6 +70,22 @@ class RequestFilterError(GenerationError):
         self.settings = settings
 
 
+class ProcessIdCollisionError(GenerationError):
+    """Two public processes of an artifact would share an ID.
+
+    The public IDs of an artifact are its process IDs and process alias IDs.
+    Raised before anything is written when a generation, or an append to an
+    existing artifact, would give one ID to two of them (the artifact is then
+    left as it was); the message names both. ``process_ids`` holds the shared
+    IDs. ``key`` is ``"process-id-collision"``."""
+
+    key = "process-id-collision"
+
+    def __init__(self, message: str, *, process_ids: tuple[str, ...] = ()) -> None:
+        super().__init__(message)
+        self.process_ids = process_ids
+
+
 class ArtifactError(PyAmpliColError):
     """An artifact is malformed, incomplete, or unavailable."""
 
@@ -155,6 +171,7 @@ __all__ = [
     "ModelError",
     "NativePlatformError",
     "NoTreeDiagramError",
+    "ProcessIdCollisionError",
     "PyAmpliColError",
     "ReductionUnavailable",
     "RequestFilterError",

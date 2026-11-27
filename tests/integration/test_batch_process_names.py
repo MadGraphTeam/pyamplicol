@@ -9,6 +9,7 @@ the automatically named request; a name the user gives still collides.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from pathlib import Path
@@ -18,6 +19,8 @@ import pytest
 from pyamplicol import (
     Generator,
     ModelSource,
+    ProcessAlias,
+    ProcessIdCollisionError,
     ProcessRequest,
     ProcessSet,
     PyAmpliColError,
@@ -128,3 +131,71 @@ def test_a_user_given_name_still_collides(tmp_path: Path) -> None:
     with pytest.raises(PyAmpliColError, match="u_mu_to_u_mu"):
         _generator().generate(named, appended, model=model, mode="append")
     assert _ids(appended) == ["u_mu_to_u_mu"]
+
+
+# The public IDs of an artifact are its process and alias IDs: an append
+# never publishes one twice. ``mu+ u > u mu+`` is named ``mu_u_to_u_mu``,
+# the ID of the crossed alias of ``u mu- > u mu-`` below.
+NEGATIVE = ProcessRequest.parse("u mu- > u mu-")
+CROSSED = ProcessRequest.parse("mu+ u > u mu+")
+CROSSED_ALIAS = ProcessAlias(CROSSED.name, NEGATIVE.name, (1, 0, 2, 3))
+
+
+def _digest(artifact: Path) -> str:
+    content = hashlib.sha256()
+    for path in sorted(artifact.rglob("*")):
+        if path.is_file():
+            content.update(str(path.relative_to(artifact)).encode())
+            content.update(path.read_bytes())
+    return content.hexdigest()
+
+
+def test_an_unnamed_process_avoids_an_existing_alias(tmp_path: Path) -> None:
+    model = ModelSource.built_in_sm()
+    artifact = tmp_path / "artifact"
+    _generator().generate(
+        ProcessSet((NEGATIVE,), (CROSSED_ALIAS,)), artifact, model=model
+    )
+    original = _value(artifact, NEGATIVE.name)
+    _generator().generate(ProcessSet((CROSSED,)), artifact, model=model, mode="append")
+    assert _ids(artifact) == [NEGATIVE.name, _digest_process_name(CROSSED.expression)]
+    assert _value(artifact, NEGATIVE.name) == original
+    assert Runtime.load(artifact, process=CROSSED_ALIAS.name) is not None
+
+
+@pytest.mark.parametrize(
+    "first",
+    [ProcessSet((NEGATIVE,)), ProcessSet((NEGATIVE,), (CROSSED_ALIAS,))],
+    ids=["alias-on-primary", "alias-on-alias"],
+)
+def test_an_explicit_collision_is_refused_and_writes_nothing(
+    first: ProcessSet, tmp_path: Path
+) -> None:
+    model = ModelSource.built_in_sm()
+    artifact = tmp_path / "artifact"
+    _generator().generate(first, artifact, model=model)
+    original = _value(artifact, NEGATIVE.name)
+    before = _digest(artifact)
+    taken = first.aliases[0].name if first.aliases else NEGATIVE.name
+    named = ProcessRequest.parse(CROSSED.expression, name="muons_positive")
+    second = ProcessSet((named,), (ProcessAlias(taken, named.name, (1, 0, 2, 3)),))
+    with pytest.raises(ProcessIdCollisionError) as caught:
+        _generator().generate(second, artifact, model=model, mode="append")
+    assert caught.value.key == "process-id-collision"
+    assert caught.value.process_ids == (taken,)
+    message = str(caught.value)
+    assert f"public process ID {taken!r} would name both" in message
+    assert "an alias of the appended process 'muons_positive'" in message
+    assert _digest(artifact) == before
+    assert _value(artifact, NEGATIVE.name) == original
+
+
+def test_one_call_keeps_an_unnamed_process_off_an_alias(tmp_path: Path) -> None:
+    artifact = tmp_path / "artifact"
+    _generator().generate(
+        ProcessSet((NEGATIVE, CROSSED), (CROSSED_ALIAS,)),
+        artifact,
+        model=ModelSource.built_in_sm(),
+    )
+    assert _ids(artifact) == [NEGATIVE.name, _digest_process_name(CROSSED.expression)]
+    assert Runtime.load(artifact, process=CROSSED_ALIAS.name) is not None

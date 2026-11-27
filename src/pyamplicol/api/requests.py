@@ -400,6 +400,7 @@ def _with_unique_default_names(
     requests: Sequence[ProcessRequest],
     automatic: Sequence[bool],
     reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
 ) -> tuple[ProcessRequest, ...]:
     """Disambiguate automatic names that collide within one request list.
 
@@ -408,8 +409,9 @@ def _with_unique_default_names(
     it. Only the automatically named requests whose name is shared by another
     expression, by an explicitly named request, or by a ``reserved`` name
     (``name -> expression``: the processes of an artifact appended to) of
-    another expression take the digest form (``<readable>_<sha256 of the
-    expression>``); every other name is the default name, unchanged.
+    another expression, or by a ``blocked`` name (a process alias, of the call
+    or of the artifact appended to) take the digest form (``<readable>_<sha256
+    of the expression>``); every other name is the default name, unchanged.
     Repeating the same expression stays a duplicate.
     """
 
@@ -419,6 +421,7 @@ def _with_unique_default_names(
         if not auto
     }
     taken = dict(reserved or {})
+    aliases = set(blocked)
     expressions_by_name: dict[str, set[str]] = {}
     for request, auto in zip(requests, automatic, strict=True):
         if auto:
@@ -427,6 +430,7 @@ def _with_unique_default_names(
     for request, auto in zip(requests, automatic, strict=True):
         if auto and (
             request.name in explicit
+            or request.name in aliases
             or len(expressions_by_name[request.name]) > 1
             or taken.get(request.name, request.expression) != request.expression
         ):
@@ -443,6 +447,7 @@ def parse_process_requests(
     entries: Iterable[ProcessRequest | str | tuple[str, str | None]],
     *,
     reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
 ) -> tuple[ProcessRequest, ...]:
     """Parse a list of process requests with injective automatic names.
 
@@ -466,7 +471,7 @@ def parse_process_requests(
             expression, name = entry, None
         requests.append(ProcessRequest.parse(expression, name=name))
         automatic.append(name is None)
-    return _with_unique_default_names(requests, automatic, reserved)
+    return _with_unique_default_names(requests, automatic, reserved, blocked)
 
 
 @dataclass(frozen=True, slots=True)
@@ -575,7 +580,9 @@ class ProcessSet:
         # Automatic names of distinct expressions are made unique however the
         # requests were built (``ProcessRequest.automatic_name``).
         requests = _with_unique_default_names(
-            requests, tuple(request.automatic_name for request in requests)
+            requests,
+            tuple(request.automatic_name for request in requests),
+            blocked=(alias.name for alias in aliases),
         )
         request_names = tuple(request.name for request in requests)
         if len(set(request_names)) != len(request_names):

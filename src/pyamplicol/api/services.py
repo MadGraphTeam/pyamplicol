@@ -207,10 +207,12 @@ def _process_set(
     processes: ProcessSet | ProcessRequest | str | Iterable[ProcessRequest | str],
     *,
     reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
 ) -> ProcessSet:
     """The request set of a call; automatic names are unique among its
     expressions and against ``reserved`` (``name -> expression`` of the
-    processes already in an artifact appended to)."""
+    processes already in an artifact appended to) and ``blocked`` (the
+    artifact's process aliases)."""
 
     from dataclasses import replace
 
@@ -219,10 +221,11 @@ def _process_set(
         parse_process_requests,
     )
 
+    blocked = tuple(blocked)
     if isinstance(processes, ProcessRequest):
         processes = ProcessSet((processes,))
     if isinstance(processes, ProcessSet):
-        if not reserved:
+        if not reserved and not blocked:
             return processes
         # The automatic names of the set against the appended artifact's; an
         # alias follows its renamed target.
@@ -230,6 +233,7 @@ def _process_set(
             processes.requests,
             tuple(request.automatic_name for request in processes.requests),
             reserved,
+            (*blocked, *(alias.name for alias in processes.aliases)),
         )
         renamed = {
             old.name: new.name
@@ -249,7 +253,9 @@ def _process_set(
         )
     if isinstance(processes, str):
         processes = (processes,)
-    return ProcessSet(parse_process_requests(processes, reserved=reserved))
+    return ProcessSet(
+        parse_process_requests(processes, reserved=reserved, blocked=blocked)
+    )
 
 
 def _appended_process_names(destination: Path) -> dict[str, str]:
@@ -266,6 +272,23 @@ def _appended_process_names(destination: Path) -> dict[str, str]:
         str(record["id"]): str(record.get("expression", ""))
         for record in manifest.processes
     }
+
+
+def _appended_alias_names(destination: Path) -> tuple[str, ...]:
+    """The process alias IDs of the artifact an append extends (public
+    process IDs no appended process may take)."""
+
+    from pyamplicol.artifacts.manifest import load_manifest
+
+    try:
+        manifest = load_manifest(destination)
+    except Exception:  # the writer reports an unreadable artifact
+        return ()
+    return tuple(
+        str(alias["id"])
+        for record in manifest.processes
+        for alias in record.get("aliases", ())
+    )
 
 
 def _validate_progress(progress: ProgressSink | None) -> None:
@@ -524,13 +547,11 @@ class Generator:
         started = time.perf_counter()
         processes = self._translate(processes)
         destination = Path(os.fspath(output)).expanduser().resolve(strict=False)
+        appending = mode == "append" and destination.is_dir()
         process_set = _process_set(
             processes,
-            reserved=(
-                _appended_process_names(destination)
-                if mode == "append" and destination.is_dir()
-                else None
-            ),
+            reserved=_appended_process_names(destination) if appending else None,
+            blocked=_appended_alias_names(destination) if appending else (),
         )
         if destination.exists() and not destination.is_dir():
             raise GenerationError(
