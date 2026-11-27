@@ -1153,7 +1153,7 @@ fn guard_rotation_estimate(
     Estimate::from_checks(
         reference,
         vec![(stability::rotation_name(0), budget)],
-        shape.scale(direct)?,
+        shape.scale(direct, roundoff)?,
         roundoff,
         Vec::new(),
     )
@@ -1378,6 +1378,23 @@ fn call_guard_estimate(
             .collect()
     };
     let floors = ids(&floors);
+    // The outputs' vectors b (`PointOutputs.amplitudes`: the spin-moved
+    // vectors, else the point's amplitude vectors), |b| per cell
+    // (`induced_observables._absolute`: abs(complex(.))).
+    let vectors = point.moved.as_ref().unwrap_or(&found.parts.total);
+    let values: RowCells = vectors
+        .iter()
+        .map(|(key, vector)| {
+            (
+                key.clone(),
+                vector
+                    .iter()
+                    .map(|cell| cell.iter().map(decimal).collect())
+                    .collect(),
+            )
+        })
+        .collect();
+    let values = ids(&values);
     let rotation = stability::rotation_name(0);
     if turned.outputs.len() != point.outputs.len() {
         return Err(invalid("the rotated call returned other outputs"));
@@ -1455,7 +1472,13 @@ fn call_guard_estimate(
                     .map(|laurent| laurent.iter().map(|d| context.abs(d).to_f64()).collect())
                     .collect(),
             };
-            let scale = shape.magnitude_form(&form.magnitude, &floors, &floors);
+            let scale = stability::output_floor_scale(
+                &shape,
+                &form.magnitude,
+                &floors,
+                &values,
+                roundoff,
+            );
             Estimate::from_checks(
                 &reference,
                 vec![(rotation.clone(), budget)],

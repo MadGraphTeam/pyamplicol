@@ -1378,12 +1378,51 @@ impl InducedShape {
             .collect())
     }
 
+    /// Per key of the amplitude vectors and Laurent coefficient k the
+    /// absolute size of the computed amplitude on the term floor's footing
+    /// (`induced.row_values`): N_k = sum_t |a_{t,k}| sqrt(G_tt).
+    pub fn row_values(&self, point: &InducedPoint) -> Keyed<Vec<f64>> {
+        let roots: Vec<f64> = (0..self.size)
+            .map(|t| py_pow(py_max(self.metric(t, t).0, 0.0), 0.5))
+            .collect();
+        point
+            .amplitudes
+            .iter()
+            .map(|(key, vector)| {
+                (
+                    *key,
+                    (0..self.width)
+                        .map(|k| {
+                            (0..self.size).fold(0.0_f64, |sum, t| {
+                                let (re, im) = vector[t][k];
+                                sum + modulus(re, im) * roots[t]
+                            })
+                        })
+                        .collect(),
+                )
+            })
+            .collect()
+    }
+
     /// The scale S of the estimate's floor (`induced.scale`): the |A|^2
-    /// product of the per-row term floors.
-    pub fn scale(&self, point: &InducedPoint) -> RusticolResult<Budget> {
+    /// first-order form of the per-row term floors S against the computed
+    /// amplitude's sizes N (`induced.floor_kernel`: x S' + S y +
+    /// FLOOR_UNITS u S S' on (value, floor) pairs; a key with only one of
+    /// them counts with a zero for the other).
+    pub fn scale(&self, point: &InducedPoint, roundoff: f64) -> RusticolResult<Budget> {
         let scales = self.row_scales(point)?;
-        let get = |key: Key| lookup(&scales, &key).cloned();
-        Ok(self.sector_form(get, get, |a, b| a * b))
+        let values = self.row_values(point);
+        let zero = vec![0.0_f64; self.width];
+        let pairs = |key: Key| -> Option<Vec<(f64, f64)>> {
+            let (found, value) = (lookup(&scales, &key), lookup(&values, &key));
+            if found.is_none() && value.is_none() {
+                return None;
+            }
+            let (found, value) = (found.unwrap_or(&zero), value.unwrap_or(&zero));
+            Some((0..self.width).map(|k| (value[k], found[k])).collect())
+        };
+        let kernel = floor_kernel(roundoff);
+        Ok(self.sector_form(pairs, pairs, kernel))
     }
 
     /// The point's finiteness ratio (`induced.point_finiteness` with the
@@ -1445,7 +1484,46 @@ pub fn induced_estimate(
         Some(CrossRun::NotRun(why)) => not_run.push((CROSS.to_string(), why.clone())),
         None => {}
     }
-    Estimate::from_checks(reference, budgets, shape.scale(direct)?, roundoff, not_run)
+    Estimate::from_checks(reference, budgets, shape.scale(direct, roundoff)?, roundoff, not_run)
+}
+
+/// The floor's bilinear kernel on (value, floor) pairs of the two sides
+/// (`induced.floor_kernel`): x S' + S y + FLOOR_UNITS u S S', so that
+/// FLOOR_UNITS u times it bounds the form's change from roundings of at
+/// most FLOOR_UNITS u S per side.
+pub fn floor_kernel(roundoff: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
+    let epsilon = FLOOR_UNITS * roundoff;
+    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| x * t + s * y + epsilon * s * t
+}
+
+/// The scale S of one loop-induced output's floor (`induced_observables.
+/// PointOutputs.scale`): F^T|M||b| + |b|^T|M|F + FLOOR_UNITS u F^T|M|F per
+/// record sector and Laurent coefficient (`InducedShape::magnitude_form` of
+/// the term floors F and the output's absolute vectors b, summed in that
+/// order).
+pub fn output_floor_scale(
+    shape: &InducedShape,
+    magnitude: &[f64],
+    floors: &Keyed<ErrorCells>,
+    values: &Keyed<ErrorCells>,
+    roundoff: f64,
+) -> Budget {
+    let epsilon = FLOOR_UNITS * roundoff;
+    let first = shape.magnitude_form(magnitude, floors, values);
+    let second = shape.magnitude_form(magnitude, values, floors);
+    let third = shape.magnitude_form(magnitude, floors, floors);
+    first
+        .iter()
+        .zip(&second)
+        .zip(&third)
+        .map(|((a, b), c)| {
+            a.iter()
+                .zip(b)
+                .zip(c)
+                .map(|((a, b), c)| a + b + epsilon * c)
+                .collect()
+        })
+        .collect()
 }
 
 #[cfg(test)]
