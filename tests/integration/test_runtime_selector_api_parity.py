@@ -1522,10 +1522,13 @@ def test_native_order_partials_match_python(
     ]
 
 
-@pytest.fixture(scope="module")
-def builtin_order_artifact(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Built-in SM recurrence artifact whose Borns have several coupling
-    orders: QED-order-weighted normalization (2 -> 2 and 2 -> 3)."""
+@pytest.fixture(scope="module", params=("recurrence", "compiled", "on-the-fly"))
+def builtin_order_artifact(
+    tmp_path_factory: pytest.TempPathFactory, request: pytest.FixtureRequest
+) -> Path:
+    """Built-in SM artifact whose Borns have several coupling orders:
+    QED-order-weighted normalization (2 -> 2 and 2 -> 3), in each lane that
+    splits by coupling order."""
 
     if importlib.util.find_spec("pyamplicol._rusticol") is None:
         _unavailable("the Rusticol extension has not been built")
@@ -1540,7 +1543,7 @@ def builtin_order_artifact(tmp_path_factory: pytest.TempPathFactory) -> Path:
         ),
         generation=GenerationConfig(workers=1, emit_api_bundle=False),
         evaluator=EvaluatorConfig(
-            execution_mode="recurrence",
+            execution_mode=request.param,
             optimization=EvaluatorOptimizationConfig(cores=1),
         ),
     )
