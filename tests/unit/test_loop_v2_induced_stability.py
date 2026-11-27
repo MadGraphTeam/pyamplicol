@@ -7,8 +7,10 @@ reduction re-test) + floor, with budgets quadratic in the colour-metric
 norm (``induced.quadratic_budget``, the rotation budget after removing each
 helicity row's little-group phase), S the |A|^2-level product of the
 per-row pre-reduction term floors (``induced.scale``) and the floor first
-order in each side's term floor, eps (N S' + S N' + eps S S') with eps =
-FLOOR_UNITS u (``induced.floor``). On
+order in each side's term floor, eps1 (N S' + S N') + eps2^2 S S' with
+eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u (``induced.floor``),
+used only by an estimate to which the rescaled reduction check
+contributed (rotations alone keep FLOOR_UNITS u S, bitwise). On
 the two calibration rows, g g > h h (large cancellations) and g g > z
 (Landau-Yang: every family integrates to zero by itself), on the stored
 runtime's route (native point inputs) against Float(256):
@@ -39,6 +41,7 @@ runtime's route (native point inputs) against Float(256):
 
 from __future__ import annotations
 
+import itertools
 import json
 from decimal import Decimal
 from fractions import Fraction
@@ -667,11 +670,11 @@ def _largest_change(amplitude, terms, epsilon):
 
 @pytest.mark.loop_fast
 def test_the_loop_induced_floor_is_first_order_in_each_sides_floor():
-    """The floor of |A|^2 = a^dag G a (``induced.floor``) is eps (N S + S N
-    + eps S S), eps = FLOOR_UNITS u, N = sum_t |a_t| sqrt(G_tt) and S the
-    term floor: for an amplitude whose terms cancel to N / S = 3.5e-5 it is
-    2 N / S = 7e-5 of FLOOR_UNITS u times the product of the two sides'
-    term floors (``induced.scale``, the scale S of the estimate, which is
+    """The floor of |A|^2 = a^dag G a (``induced.floor``) is eps1 (N S + S
+    N) + eps2^2 S S, eps1 = BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u, N =
+    sum_t |a_t| sqrt(G_tt) and S the term floor: for an amplitude whose
+    terms cancel to N / S = 3.5e-5 it is 2 N / S = 7e-5 of eps1 times the
+    product of the two sides' term floors (``induced.scale``, the scale S of the estimate, which is
     unchanged), linear in the cancellation where the product is quadratic,
     and it bounds the form's change for every rounding of at most eps T_t
     per component (exact rationals over the corners)."""
@@ -716,24 +719,83 @@ def test_a_vanishing_loop_induced_amplitude_keeps_its_floor():
 
 
 @pytest.mark.loop_fast
+def test_only_the_rescaled_check_selects_the_loop_induced_floor():
+    """The loop-induced floor holds only where the checks sample the
+    rotation-invariant parts of the evaluation (``stability`` module
+    docstring): an estimate of rotations alone, or with the cached
+    reduction-direction re-test (NinjaRS's campaign checks, the fallback
+    guard's rotation), combines to SAFETY x (max rotations + additive) +
+    FLOOR_UNITS u S bitwise, whatever floor is passed; with the rescaled
+    re-test among its checks the floor replaces FLOOR_UNITS u S, and its
+    subset of the rotation alone drops back to FLOOR_UNITS u S."""
+
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import (
+        FLOOR_UNITS,
+        REDUCTION,
+        RESCALED,
+        SAFETY,
+        Budget,
+        StabilityEstimate,
+    )
+
+    value, scale, floor = 2.5e-3, 7.0e3, 3.0e-9
+    rotations = {"rotation-0": 4e-15, "rotation-1": 9e-15}
+    reference = {_SECTOR: Laurent(value)}
+
+    def estimate(checks, with_floor):
+        return StabilityEstimate.from_checks(
+            reference,
+            {name: {_SECTOR: Budget((size,))} for name, size in checks.items()},
+            scale={_SECTOR: Budget((scale,))},
+            roundoff=_U,
+            floor={_SECTOR: Budget((floor,))} if with_floor else None,
+        )
+
+    for checks in (rotations, {**rotations, REDUCTION: 2e-14}):
+        main = SAFETY * (max(rotations.values()) + checks.get(REDUCTION, 0.0))
+        main += FLOOR_UNITS * _U * scale
+        for with_floor in (False, True):
+            found = estimate(checks, with_floor)
+            assert found.absolute[_SECTOR].coefficients == (main,), (checks, with_floor)
+            assert found.relative == main / value
+    rescaled = estimate({**rotations, RESCALED: 2e-14}, True)
+    linear = SAFETY * (max(rotations.values()) + 2e-14) + floor
+    assert rescaled.absolute[_SECTOR].coefficients == (linear,)
+    assert rescaled.subset(["rotation-1"]).absolute[_SECTOR].coefficients == (
+        SAFETY * 9e-15 + FLOOR_UNITS * _U * scale,
+    )
+
+@pytest.mark.loop_fast
 def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
     """The native estimate (``stability_loop_induced``, the SDK's Rust
     implementation) forms the constructed point's floor, scale and estimate
     bitwise as the Python oracle (``induced.floor``, ``induced.scale``,
-    ``StabilityEstimate.from_checks``)."""
+    ``StabilityEstimate.from_checks``), with the rotation check alone (the
+    floor FLOOR_UNITS u S) and with the rescaled reduction check (a zero
+    re-test budget: E is the floor itself)."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import Laurent
-    from pyamplicol.loops.v2.stability import Budget, StabilityEstimate
+    from pyamplicol.loops.v2.stability import (
+        FLOOR_UNITS,
+        RESCALED,
+        Budget,
+        StabilityEstimate,
+    )
 
-    for amplitude, terms in (
-        ((3e-5, 4e-5 - 1e-9j), (1.0, 1.0)),
-        ((0.0, 0.0), (1.0, 3.0)),
-        ((0.7, -0.2 + 0.1j), (0.9, 0.4)),
+    for (amplitude, terms), reduction in itertools.product(
+        (
+            ((3e-5, 4e-5 - 1e-9j), (1.0, 1.0)),
+            ((0.0, 0.0), (1.0, 3.0)),
+            ((0.7, -0.2 + 0.1j), (0.9, 0.4)),
+        ),
+        (None, RESCALED),
     ):
         point = _constructed(amplitude, terms)
         cells = [((0, 0), [[(complex(a).real, complex(a).imag)] for a in amplitude])]
-        native = (cells, cells, [], None, [((0, 0), [[float(t)] for t in terms])])
+        budget = None if reduction is None else [((0, 0), [[0.0] for _ in amplitude])]
+        native = (cells, cells, [], budget, [((0, 0), [[float(t)] for t in terms])])
         value = sum(abs(complex(a)) ** 2 for a in amplitude)
         shape = (
             2,
@@ -744,7 +806,7 @@ def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
             1.0,
         )
         found = loop_native.stability_loop_induced(
-            shape, _U, [[value]], native, [native], None, None, None
+            shape, _U, [[value]], native, [native], reduction, None, None
         )
         relative, _coefficients, _relatives, absolute, budgets, scale, _, floor = found
         assert floor == [list(induced.floor(point)[_SECTOR].coefficients)]
@@ -758,3 +820,10 @@ def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
         )
         assert absolute == [list(oracle.absolute[_SECTOR].coefficients)]
         assert relative == oracle.relative
+        # Every budget is zero (the rotated point is the direct one): E is
+        # the floor the rule selects.
+        assert [name for name, _ in budgets] == ["rotation-0"] + (
+            [] if reduction is None else [RESCALED]
+        )
+        bottom = floor[0][0] if reduction else FLOOR_UNITS * _U * scale[0][0]
+        assert absolute == [[bottom]], (amplitude, reduction)

@@ -824,8 +824,9 @@ pub struct Estimate {
     pub roundoff: f64,
     /// Each requested check that did not run, with its reason.
     pub not_run: Vec<(String, String)>,
-    /// The absolute floor per sector and Laurent coefficient where it is
-    /// not FLOOR_UNITS u S (a loop-induced output; `StabilityEstimate.floor`).
+    /// The absolute floor per sector and Laurent coefficient of a
+    /// loop-induced output, in place of FLOOR_UNITS u S when the rescaled
+    /// reduction check is among the budgets (`StabilityEstimate.floor`).
     pub floor: Option<Budget>,
 }
 
@@ -844,8 +845,11 @@ impl Estimate {
     }
 
     /// [`Estimate::from_checks`] with the absolute floor `floor` per sector
-    /// and Laurent coefficient in place of FLOOR_UNITS u S where given
-    /// (`StabilityEstimate.from_checks`' `floor`).
+    /// and Laurent coefficient of a loop-induced output, used in place of
+    /// FLOOR_UNITS u S when the rescaled reduction check is among `budgets`
+    /// (`StabilityEstimate.from_checks`' `floor`: a rotation cannot see an
+    /// error in a rotation-invariant quantity, so without the rescaled
+    /// check the conservative FLOOR_UNITS u S stays).
     pub fn from_checks_floor(
         reference: &Budget,
         budgets: Vec<(String, Budget)>,
@@ -866,6 +870,11 @@ impl Estimate {
             return Err(invalid(format!("unknown stability checks {unknown:?}")));
         }
         let additive = |name: &str| ADDITIVE.contains(&name);
+        let linear = if budgets.iter().any(|(name, _)| name == RESCALED) {
+            floor.as_ref()
+        } else {
+            None
+        };
         let at = |budget: &Budget, sector: usize, k: usize| -> RusticolResult<f64> {
             budget
                 .get(sector)
@@ -888,7 +897,7 @@ impl Estimate {
                     }
                 }
                 let sampled = rotated.unwrap_or(0.0) + reductions;
-                let bottom = match &floor {
+                let bottom = match linear {
                     None => FLOOR_UNITS * roundoff * at(&scale, sector, k)?,
                     Some(floor) => at(floor, sector, k)?,
                 };

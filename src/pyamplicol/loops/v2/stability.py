@@ -59,11 +59,25 @@ the master integrals unless the rescaled check runs). A loop-induced output
 <A|M|A> is a bilinear form of amplitudes whose terms may cancel: its S is
 the product of the two sides' term floors (the size of what cancelled,
 ``induced.scale``), and its floor (``from_checks``' ``floor``) is the same
-roundings' first-order effect on the form, eps (|A| S' + S |A'| + eps S S')
-with eps = FLOOR_UNITS u (``induced.floor``,
-``induced_observables.PointOutputs.floor``): about 2 FLOOR_UNITS u S
-where nothing cancels (both sides round), linear in the cancellation where
-the product is quadratic in it.
+roundings' effect on the form, eps1 (|A| S' + S |A'|) + eps2 (eps2 S S')
+with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u
+(``induced.floor``, ``induced_observables.PointOutputs.floor``), linear in
+the cancellation where the product is quadratic in it. Its first-order
+term models the first-order error of each amplitude that no check samples
+as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound,
+its unit count the smallest power of 4 under which no measured
+loop-induced row has a miss the floor could cure, with a margin of about 5
+(``tools/loop_v2_floor_units.py``, the derivation table in the tests). The
+second-order term keeps a vanishing value "zero within the estimate". The
+model holds only where the checks sample the rotation-invariant parts of
+the evaluation, so the floor is used only by an estimate to which the
+rescaled reduction check contributed (it re-evaluates the master integrals
+at rescaled inputs). A rotation cannot
+see an error in a rotation-invariant quantity (a master integral, a
+reduction coefficient built from invariants), nor can the cached
+re-reduction see a master's; an estimate of rotations alone, or with the
+cached reduction-direction check, keeps FLOOR_UNITS u S at every carrier,
+the conservative bound.
 
 In arbitrary precision the sizes of an estimate (budgets, E, S, the unit
 roundoff) are exponent-safe ``loops.v2.wide.Wide`` magnitudes: at the default
@@ -662,8 +676,8 @@ class StabilityEstimate:
     and Laurent coefficient. ``checks`` holds each check's own budget against
     the Laurent vector, without safety factor and floor. ``budgets``
     (absolute, per check and sector), ``scale`` (the absolute sums S) and
-    ``floor`` (the absolute floor where it is not FLOOR_UNITS u S: a
-    loop-induced output) let ``subset`` re-combine fewer checks;
+    ``floor`` (a loop-induced output's floor, in place of FLOOR_UNITS u S
+    when the rescaled reduction check is among the budgets) let ``subset`` re-combine fewer checks;
     ``families`` holds |Omega - Omega'| per reduction lane when the
     reduction check ran. ``not_run`` names each
     requested check that did not run at the point with its reason (the
@@ -708,8 +722,9 @@ class StabilityEstimate:
         per sector; ``scale`` are the absolute sums S and ``roundoff`` the
         carrier's unit roundoff; ``not_run`` the requested checks that did
         not run, with their reasons; ``floor`` the absolute floor per sector
-        and Laurent coefficient where it is not FLOOR_UNITS u S (a
-        loop-induced output, module docstring)."""
+        and Laurent coefficient of a loop-induced output, used in place of
+        FLOOR_UNITS u S when the rescaled reduction check is among
+        ``budgets`` (module docstring)."""
 
         if not budgets:
             raise ValueError("a stability estimate needs at least one check")
@@ -722,6 +737,8 @@ class StabilityEstimate:
             raise ValueError(f"unknown stability checks {unknown}")
         rotations = [b for name, b in budgets.items() if name not in ADDITIVE]
         reductions = [b for name, b in budgets.items() if name in ADDITIVE]
+        # The first-order floor needs the rescaled check (module docstring).
+        linear = floor if RESCALED in budgets else None
         combined = {}
         for sector, laurent in reference.items():
             width = len(laurent.coefficients)
@@ -738,8 +755,8 @@ class StabilityEstimate:
                     SAFETY * sampled(k)
                     + (
                         FLOOR_UNITS * roundoff * _at(scale[sector], k)
-                        if floor is None
-                        else _at(floor[sector], k)
+                        if linear is None
+                        else _at(linear[sector], k)
                     )
                     for k in range(width)
                 )

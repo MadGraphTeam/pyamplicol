@@ -1404,8 +1404,9 @@ def row_values(evaluation: Any) -> dict:
 
 def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
     """The floor's bilinear kernel on (value, floor) pairs of the two sides:
-    eps (x S' + S y + eps S S'), eps = FLOOR_UNITS u. With |delta a| <= eps
-    S per side (the roundings no check samples, ``stability``), the form
+    eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 = BILINEAR_FLOOR_UNITS u and
+    eps2 = FLOOR_UNITS u. With |delta a| <= eps1 S per side to first order
+    (the errors no check samples, a calibrated model, ``stability``), the form
     a^dag G a' of the rounded vectors moves by at most that (x, y the
     computed sizes): first order in each side's floor against the other
     side's value, as the checks' budgets (``quadratic_budget``). The
@@ -1448,9 +1449,11 @@ def floor(evaluation: Any) -> dict:
     (``StabilityEstimate.from_checks``' ``floor``): the |A|^2-level
     first-order form of the per-row term floors S_{l,h} (``row_scales``)
     against the computed amplitude's sizes N_{l,h} (``row_values``),
-    sum_pairs kappa sum_h sum_{i+j=k} eps (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
-    N_{l',h,j} + eps S_{l,h,i} S_{l',h,j}) / avg, eps = FLOOR_UNITS u
-    (``floor_kernel``). An amplitude whose terms cancel by a factor r gets
+    sum_pairs kappa sum_h sum_{i+j=k} (eps1 (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
+    N_{l',h,j}) + eps2^2 S_{l,h,i} S_{l',h,j}) / avg, eps1 =
+    BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u (``floor_kernel``); the
+    estimate uses it only when the rescaled reduction check ran
+    (``StabilityEstimate.from_checks``). An amplitude whose terms cancel by a factor r gets
     a floor linear in r, as its roundings are (the product of the two
     sides' term floors, ``scale``, grows like r^2); a numerical zero (N ~ u
     S) keeps the second-order term. A key with a value and no term floor
