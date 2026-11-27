@@ -48,6 +48,7 @@ from .dag_ordering import (
     _lc_all_adjoint_symmetry_order_variants,
     _lc_color_order_reachable_masks,
     _mask_labels,
+    _refuse_unavailable_vertex_orientation,
 )
 from .dag_reachability import (
     _coupling_orders_within_limits,
@@ -1158,6 +1159,14 @@ class GenericDAGCompiler:
                             if ordered_external_labels is None and not (
                                 left_reflection_reusable or right_reflection_reusable
                             ):
+                                _refuse_unavailable_vertex_orientation(
+                                    self.model,
+                                    color_engine,
+                                    left.index,
+                                    right.index,
+                                    vertex,
+                                    color_accuracy=process_ir.color_accuracy,
+                                )
                                 continue
                             if (
                                 left_reflection_reusable or right_reflection_reusable
@@ -1232,6 +1241,15 @@ class GenericDAGCompiler:
                                     )
                                 order_variants = tuple(variants)
                                 if not order_variants:
+                                    if ordered_external_labels is None:
+                                        _refuse_unavailable_vertex_orientation(
+                                            self.model,
+                                            color_engine,
+                                            left.index,
+                                            right.index,
+                                            vertex,
+                                            color_accuracy=process_ir.color_accuracy,
+                                        )
                                     continue
                             else:
                                 if ordered_external_labels is None:

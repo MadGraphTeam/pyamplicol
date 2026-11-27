@@ -29,6 +29,7 @@ from .dag_ordering import (
     _labels_mask,
     _lc_color_order_reachable_masks,
     _mask_labels,
+    _refuse_unavailable_vertex_orientation,
 )
 from .dag_reachability import (
     UsefulStateMap,
@@ -434,6 +435,14 @@ def build_backward_live_state_plan(
                                 vertex,
                             )
                             if ordered_labels is None:
+                                _refuse_unavailable_vertex_orientation(
+                                    model,
+                                    color_engine,
+                                    left_index,
+                                    right_index,
+                                    vertex,
+                                    color_accuracy=process.color_accuracy,
+                                )
                                 continue
                             quantum_key = (
                                 vertex.kind,
