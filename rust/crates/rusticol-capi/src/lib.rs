@@ -1619,7 +1619,7 @@ pub unsafe extern "C" fn rusticol_runtime_coupling_orders_json(
     }
 }
 
-/// Writes the number of squared coupling orders of a recurrence runtime.
+/// Writes the number of squared coupling orders of a recurrence, compiled or on-the-fly runtime.
 ///
 /// # Safety
 ///

@@ -3,6 +3,10 @@
 use super::super::*;
 use super::*;
 
+#[path = "amplitude_orders.rs"]
+mod orders;
+pub(crate) use orders::ColorReplayOrderScratch;
+
 /// A single-state selector needs only an equality check, not a position table
 /// covering every physical helicity or colour per tile. Larger selections
 /// retain the existing constant-time dense lookup, including nearly full axes.

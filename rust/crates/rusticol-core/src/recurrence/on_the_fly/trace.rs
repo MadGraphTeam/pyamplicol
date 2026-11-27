@@ -313,6 +313,72 @@ impl OnTheFlyStructuralTraceV1 {
         self.operations.iter().map(OnTheFlyTraceOperationV1::key)
     }
 
+    /// The trace of one amplitude coupling-order component of this query: the
+    /// same currents with only the closure operations `keep` admits (by
+    /// operation index), under a query and semantic identity of its own per
+    /// `component`. `None` when no closure stays. Only an unbound trace (no
+    /// prepared executor rows yet) is split.
+    pub(crate) fn order_component_trace(
+        &self,
+        component: u32,
+        keep: impl Fn(usize) -> bool,
+    ) -> RusticolResult<Option<Self>> {
+        if self.prepared_executor_rows_bound {
+            return Err(integrity(
+                "an order-component trace is split from an unbound query trace",
+            ));
+        }
+        let operations = self
+            .operations
+            .iter()
+            .enumerate()
+            .filter(|(index, operation)| {
+                !matches!(operation, OnTheFlyTraceOperationV1::Closure { .. }) || keep(*index)
+            })
+            .map(|(_, operation)| operation.clone())
+            .collect::<Box<[_]>>();
+        let closure_count = operations
+            .iter()
+            .filter(|operation| matches!(operation, OnTheFlyTraceOperationV1::Closure { .. }))
+            .count();
+        if closure_count == 0 {
+            return Ok(None);
+        }
+        let tagged = |domain: &[u8], digest: SemanticDigest| {
+            let mut hash = Sha256::new();
+            hash.update(domain);
+            hash.update(digest.as_bytes());
+            hash.update(component.to_le_bytes());
+            SemanticDigest::new(hash.finalize().into())
+        };
+        Ok(Some(Self {
+            seed_digest: self.seed_digest,
+            query_digest: tagged(
+                b"pyamplicol-otf-order-component-query-v1",
+                self.query_digest,
+            )?,
+            current_keys: self.current_keys.clone(),
+            current_colors: self.current_colors.clone(),
+            operations,
+            momentum_forms: self.momentum_forms.clone(),
+            exact_factors: self.exact_factors.clone(),
+            pairing_owners: self.pairing_owners.clone(),
+            layout: self.layout,
+            proof: OnTheFlyStructuralProofV1 {
+                closure_count: checked_u32(closure_count, "order-component closure count")?,
+                ..self.proof
+            },
+            semantic_digest: tagged(
+                b"pyamplicol-otf-order-component-trace-v1",
+                self.semantic_digest,
+            )?,
+            prepared_executor_rows_bound: false,
+            current_component_ranges: self.current_component_ranges.clone(),
+            current_semantic_digests: self.current_semantic_digests.clone(),
+            contribution_proof_rows: self.contribution_proof_rows.clone(),
+        }))
+    }
+
     /// Bind authenticated prepared-executor parent order into the trace rows
     /// once, before any executor can cache descriptors for their addresses.
     /// The semantic trace identity is unchanged: this is a private physical
