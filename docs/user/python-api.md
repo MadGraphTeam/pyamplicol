@@ -2086,15 +2086,22 @@ same in every execution mode and for the built-in SM and UFO models; its
 `coupling_orders` the requested limits (empty: none). Its message gives the
 conservation law a process violates; otherwise it says that the process may be
 loop-induced, which a one-loop request serves (`[noborn=QCD]`,
-`process.loop_coupling_orders`). `RequestFilterError`, a `GenerationError` with
-key `"request-filter"`, refuses instead a request that has diagrams but whose
-settings remove them all: `process.max_quark_lines`,
-`process.max_coupling_orders`, or, under the default `minimal` coupling-order
-policy, the model's expansion orders for the orders the request leaves open. Its
-message names the setting and what it removed, and never suggests a loop;
-`processes` lists the requests so emptied and `settings` the settings. Inside a
-multiparticle request, members without a diagram are skipped with a warning as
-before; the request is refused only when no member has one.
+`process.loop_coupling_orders`); a setting that also removes the request is
+mentioned as also excluding it. `RequestFilterError`, a `GenerationError` with
+key `"request-filter"`, refuses instead a request that has a Born but whose
+settings remove it: `process.max_quark_lines`, `process.max_coupling_orders`,
+or, under the default `minimal` coupling-order policy, the model's expansion
+orders for the orders the request leaves open. Its message names the settings
+and what each removed, and says which must be relaxed to serve the request: one
+of them, or several together when each alone keeps it empty; it never suggests a
+loop. `processes` lists the requests so emptied and `settings` those settings.
+Inside a multiparticle request, members without a diagram are skipped with a
+warning as before; the request is refused only when no member has one.
+`ProcessIdCollisionError`, a `GenerationError` with key
+`"process-id-collision"`, refuses before anything is written a generation or
+append that would give one public ID (a process ID or a process alias ID) to two
+processes of the artifact; the message names both, `process_ids` the shared IDs,
+and an appended-to artifact is left as it was.
 `NativePlatformError`, a `DependencyError`, means that this platform cannot
 load a native library at all (for example a glibc that lacks a version the
 library needs; see
