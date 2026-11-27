@@ -29,7 +29,7 @@ def test_model_builtin_sm_preserves_production_tables_and_couplings() -> None:
     model = BuiltinSMModel()
 
     assert len(model.particles) == 24
-    assert len(model.vertices) == 313
+    assert len(model.vertices) == 316
     assert model.sin_weak == 0.47143025548407230
     assert model.mass(23) == 91.188
     assert model.width(23) == 2.441404
@@ -339,7 +339,7 @@ def test_model_builtin_compiles_to_canonical_records_without_replacing_path() ->
 
     assert compiled.name == "built-in-sm"
     assert len(compiled.ir.particles) == 38
-    assert len(compiled.ir.vertex_terms) == 313
+    assert len(compiled.ir.vertex_terms) == 316
     assert compiled.ir.oriented_kernels == ()
     assert compiled.source["kind"] == "built-in-sm"
     assert compiled.source["source_name"] is None
