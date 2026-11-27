@@ -1358,14 +1358,15 @@ def test_one_parameter_snapshot_for_every_rescue_level(uux_ttx_free, monkeypatch
 @pytest.mark.loop_physics
 def test_one_parameter_snapshot_for_a_rescued_batch(uux_ttx_free, monkeypatch):
     """The review of 80403dc7c: two seed-7 top-pair points with every
-    helicity selected, TIRust in binary64 at 1.40e-14 then in double-double
+    helicity selected, TIRust in binary64 at 1.48e-14 then in double-double
     at 1e-3, and aS set to 0.15 after the first screen. The point that
     retries and the point that does not are both evaluated at the entry's
     aS: the batch equals its control point by point. The target lies
-    between the two points' binary64 estimates (1.36e-14 and 1.45e-14; they
+    between the two points' binary64 estimates (1.45e-14 and 1.51e-14; they
     were 2.21e-14 and 2.12e-14, with 2.17e-14 between them, while the
     binary64 sources formed their light-cone component with a cancellation
-    near the beam axis)."""
+    near the beam axis, which the estimate's rotated copies of the points
+    reach)."""
 
     from pyamplicol.api import Runtime
     from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
@@ -1376,7 +1377,7 @@ def test_one_parameter_snapshot_for_a_rescued_batch(uux_ttx_free, monkeypatch):
     points = [[list(leg) for leg in point] for point in flat.points]
     policy = VirtualRescuePolicy(
         (
-            VirtualRescueLevel("double", target=1.40e-14, reduction="tirust"),
+            VirtualRescueLevel("double", target=1.48e-14, reduction="tirust"),
             VirtualRescueLevel("double-double", target=1e-3, reduction="tirust"),
         )
     )
