@@ -20,7 +20,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import TYPE_CHECKING, BinaryIO, Literal, cast
 
-from pyamplicol.api.errors import CompatibilityError
+from pyamplicol.api.errors import CompatibilityError, ProcessIdCollisionError
 from pyamplicol.api.requests import ModelSource
 from pyamplicol.artifacts import (
     ArtifactBuilder,
@@ -1123,6 +1123,7 @@ def write_schema_v3_artifact(
         adjustments=adjustments,
         processes=processes,
     )
+    _validate_public_process_ids(existing, processes)
     if existing is not None:
         producer = _plain_mapping(existing.producer)
         model = _plain_mapping(existing.model)
@@ -5385,6 +5386,47 @@ def check_append_settings(
         ),
         adjustments=adjustments,
     )
+
+
+def _validate_public_process_ids(
+    existing: ArtifactManifest | None,
+    processes: Sequence[ProcessArtifact],
+) -> None:
+    """Before anything is written: the public IDs of the artifact as it will
+    be (the process and process alias IDs of ``existing`` and of
+    ``processes``) are unique, as its loader requires; else a
+    ``ProcessIdCollisionError`` naming both owners."""
+
+    owners: dict[str, str] = {}
+
+    def claim(public_id: str, owner: str) -> None:
+        previous = owners.get(public_id)
+        if previous is not None:
+            raise ProcessIdCollisionError(
+                f"public process ID {public_id!r} would name both {previous} "
+                f"and {owner}; nothing was written. Name the process or alias "
+                "differently (an unnamed request takes a digest-suffixed name)",
+                process_ids=(public_id,),
+            )
+        owners[public_id] = owner
+
+    if existing is not None:
+        for record in existing.processes:
+            process_id = str(record["id"])
+            claim(process_id, f"the artifact's process {process_id!r}")
+            for alias in _sequence(record.get("aliases", ())):
+                claim(
+                    str(_mapping(alias)["id"]),
+                    f"an alias of the artifact's process {process_id!r}",
+                )
+    incoming = "appended" if existing is not None else "generated"
+    for process in processes:
+        claim(process.process_id, f"the {incoming} process {process.process_id!r}")
+        for alias in process.aliases:
+            claim(
+                str(alias["id"]),
+                f"an alias of the {incoming} process {process.process_id!r}",
+            )
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:

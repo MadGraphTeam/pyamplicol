@@ -205,18 +205,93 @@ def _get_benchmark_factory() -> BenchmarkFactory:
 
 def _process_set(
     processes: ProcessSet | ProcessRequest | str | Iterable[ProcessRequest | str],
+    *,
+    reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
 ) -> ProcessSet:
-    if isinstance(processes, ProcessSet):
-        return processes
-    if isinstance(processes, ProcessRequest):
-        return ProcessSet((processes,))
-    if isinstance(processes, str):
-        return ProcessSet((ProcessRequest.parse(processes),))
-    requests = tuple(
-        entry if isinstance(entry, ProcessRequest) else ProcessRequest.parse(entry)
-        for entry in processes
+    """The request set of a call; automatic names are unique among its
+    expressions and against ``reserved`` (``name -> expression`` of the
+    processes already in an artifact appended to) and ``blocked`` (the
+    artifact's process aliases)."""
+
+    from dataclasses import replace
+
+    from pyamplicol.api.requests import (
+        _with_unique_default_names,
+        parse_process_requests,
     )
-    return ProcessSet(requests)
+
+    blocked = tuple(blocked)
+    if isinstance(processes, ProcessRequest):
+        processes = ProcessSet((processes,))
+    if isinstance(processes, ProcessSet):
+        if not reserved and not blocked:
+            return processes
+        # The automatic names of the set against the appended artifact's; an
+        # alias follows its renamed target.
+        requests = _with_unique_default_names(
+            processes.requests,
+            tuple(request.automatic_name for request in processes.requests),
+            reserved,
+            (*blocked, *(alias.name for alias in processes.aliases)),
+        )
+        renamed = {
+            old.name: new.name
+            for old, new in zip(processes.requests, requests, strict=True)
+            if old.name != new.name
+        }
+        if not renamed:
+            return processes
+        return ProcessSet(
+            requests,
+            tuple(
+                replace(alias, process_name=renamed[alias.process_name])
+                if alias.process_name in renamed
+                else alias
+                for alias in processes.aliases
+            ),
+        )
+    if isinstance(processes, str):
+        processes = (processes,)
+    return ProcessSet(
+        parse_process_requests(processes, reserved=reserved, blocked=blocked)
+    )
+
+
+def _appended_process_names(destination: Path) -> dict[str, str]:
+    """``process id -> expression`` of the artifact an append extends (empty
+    when there is none or it cannot be read: the writer then reports it)."""
+
+    from pyamplicol.artifacts.manifest import load_manifest
+
+    try:
+        manifest = load_manifest(destination)
+    except Exception:  # the writer reports an unreadable artifact
+        return {}
+    return {
+        str(record["id"]): str(record.get("expression", ""))
+        for record in manifest.processes
+    }
+
+
+def _appended_alias_names(destination: Path) -> tuple[str, ...]:
+    """The process alias IDs of the artifact an append extends (public
+    process IDs no appended process may take)."""
+
+    from pyamplicol.artifacts.manifest import load_manifest
+
+    try:
+        manifest = load_manifest(destination)
+    except Exception:  # the writer reports an unreadable artifact
+        return ()
+    names: list[str] = []
+    for record in manifest.processes:
+        aliases = record.get("aliases", ())
+        if isinstance(aliases, Iterable) and not isinstance(aliases, str | bytes):
+            names.extend(
+                str(alias["id"]) for alias in aliases if isinstance(alias, Mapping)
+            )
+    return tuple(names)
 
 
 def _validate_progress(progress: ProgressSink | None) -> None:
@@ -474,8 +549,13 @@ class Generator:
 
         started = time.perf_counter()
         processes = self._translate(processes)
-        process_set = _process_set(processes)
         destination = Path(os.fspath(output)).expanduser().resolve(strict=False)
+        appending = mode == "append" and destination.is_dir()
+        process_set = _process_set(
+            processes,
+            reserved=_appended_process_names(destination) if appending else None,
+            blocked=_appended_alias_names(destination) if appending else (),
+        )
         if destination.exists() and not destination.is_dir():
             raise GenerationError(
                 f"artifact destination is not a directory: {destination}"
@@ -2368,9 +2448,10 @@ def _check(
     else:
         if not run.process.entries:
             raise GenerationError("check requires the process entries of a request")
-        requests = tuple(
-            ProcessRequest.parse(entry.expression, name=entry.name)
-            for entry in run.process.entries
+        from pyamplicol.api.requests import parse_process_requests
+
+        requests = parse_process_requests(
+            (entry.expression, entry.name) for entry in run.process.entries
         )
     count = run.check.points if points is None else int(points)
     if count < 1:

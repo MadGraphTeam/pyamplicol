@@ -2077,6 +2077,31 @@ except EvaluationError as error:
 Useful subclasses include configuration, model, generation, artifact,
 compatibility, dependency, and evaluation errors. Catch the narrowest type you
 can handle; catch `PyAmpliColError` at an application boundary.
+`NoTreeDiagramError`, a `GenerationError` with key `"no-tree-diagram"`, refuses
+a tree-level request that has no Feynman diagram at any coupling order (no Born
+amplitude in the model, or a request violating a conservation law). It is raised
+after process expansion and before any execution lane is built, so it reads the
+same in every execution mode and for the built-in SM and UFO models; its
+`processes` attribute lists the request expressions without a diagram and
+`coupling_orders` the requested limits (empty: none). Its message gives the
+conservation law a process violates; otherwise it says that the process may be
+loop-induced, which a one-loop request serves (`[noborn=QCD]`,
+`process.loop_coupling_orders`); a setting that also removes the request is
+mentioned as also excluding it. `RequestFilterError`, a `GenerationError` with
+key `"request-filter"`, refuses instead a request that has a Born but whose
+settings remove it: `process.max_quark_lines`, `process.max_coupling_orders`,
+or, under the default `minimal` coupling-order policy, the model's expansion
+orders for the orders the request leaves open. Its message names the settings
+and what each removed, and says which must be relaxed to serve the request: one
+of them, or several together when each alone keeps it empty; it never suggests a
+loop. `processes` lists the requests so emptied and `settings` those settings.
+Inside a multiparticle request, members without a diagram are skipped with a
+warning as before; the request is refused only when no member has one.
+`ProcessIdCollisionError`, a `GenerationError` with key
+`"process-id-collision"`, refuses before anything is written a generation or
+append that would give one public ID (a process ID or a process alias ID) to two
+processes of the artifact; the message names both, `process_ids` the shared IDs,
+and an appended-to artifact is left as it was.
 `NativePlatformError`, a `DependencyError`, means that this platform cannot
 load a native library at all (for example a glibc that lacks a version the
 library needs; see

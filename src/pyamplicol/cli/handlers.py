@@ -119,18 +119,22 @@ def _model_source(config: RunConfig) -> ModelSource:
 
 def _process_set(config: RunConfig) -> ProcessSet:
     from pyamplicol.api import ProcessRequest, ProcessSet
+    from pyamplicol.api.requests import parse_process_requests
 
-    requests: list[ProcessRequest] = []
     errors: list[str] = []
     for index, entry in enumerate(config.process.entries):
         try:
-            requests.append(ProcessRequest.parse(entry.expression, name=entry.name))
+            ProcessRequest.parse(entry.expression, name=entry.name)
         except (TypeError, ValueError) as exc:
             errors.append(f"process.entries[{index}]: {exc}")
     if errors:
         raise ConfigurationError(errors)
     try:
-        return ProcessSet(tuple(requests))
+        return ProcessSet(
+            parse_process_requests(
+                (entry.expression, entry.name) for entry in config.process.entries
+            )
+        )
     except (TypeError, ValueError) as exc:
         raise ConfigurationError(str(exc)) from exc
 

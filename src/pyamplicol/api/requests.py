@@ -4,8 +4,8 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
@@ -371,24 +371,122 @@ def _validate_delimiters(expression: str) -> None:
         raise ValueError("process expression has unbalanced delimiters")
 
 
-def _default_process_name(expression: str) -> str:
+def _readable_process_name(expression: str) -> str:
     readable = expression.replace("~", "bar")
     readable = readable.replace(">", "_to_")
     readable = re.sub(r"[^A-Za-z0-9]+", "_", readable).strip("_").lower()
     if not readable or not readable[0].isalpha():
         readable = f"process_{readable}" if readable else "process"
-    if len(readable) <= 72:
-        return readable
+    return readable
+
+
+def _digest_process_name(expression: str) -> str:
+    """The readable name with a digest of the normalized expression: distinct
+    expressions give distinct names."""
+
+    readable = _readable_process_name(expression)
     digest = hashlib.sha256(expression.encode("utf-8")).hexdigest()[:10]
     return f"{readable[:61]}_{digest}"
 
 
+def _default_process_name(expression: str) -> str:
+    readable = _readable_process_name(expression)
+    if len(readable) <= 72:
+        return readable
+    return _digest_process_name(expression)
+
+
+def _with_unique_default_names(
+    requests: Sequence[ProcessRequest],
+    automatic: Sequence[bool],
+    reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
+) -> tuple[ProcessRequest, ...]:
+    """Disambiguate automatic names that collide within one request list.
+
+    The readable default name drops charge signs, case and punctuation, so
+    distinct expressions (``u mu- > u mu-`` and ``u mu+ > u mu+``) can share
+    it. Only the automatically named requests whose name is shared by another
+    expression, by an explicitly named request, or by a ``reserved`` name
+    (``name -> expression``: the processes of an artifact appended to) of
+    another expression, or by a ``blocked`` name (a process alias, of the call
+    or of the artifact appended to) take the digest form (``<readable>_<sha256
+    of the expression>``); every other name is the default name, unchanged.
+    Repeating the same expression stays a duplicate.
+    """
+
+    explicit = {
+        request.name
+        for request, auto in zip(requests, automatic, strict=True)
+        if not auto
+    }
+    taken = dict(reserved or {})
+    aliases = set(blocked)
+    expressions_by_name: dict[str, set[str]] = {}
+    for request, auto in zip(requests, automatic, strict=True):
+        if auto:
+            expressions_by_name.setdefault(request.name, set()).add(request.expression)
+    result: list[ProcessRequest] = []
+    for request, auto in zip(requests, automatic, strict=True):
+        if auto and (
+            request.name in explicit
+            or request.name in aliases
+            or len(expressions_by_name[request.name]) > 1
+            or taken.get(request.name, request.expression) != request.expression
+        ):
+            request = ProcessRequest(
+                expression=request.expression,
+                name=_digest_process_name(request.expression),
+                automatic_name=True,
+            )
+        result.append(request)
+    return tuple(result)
+
+
+def parse_process_requests(
+    entries: Iterable[ProcessRequest | str | tuple[str, str | None]],
+    *,
+    reserved: Mapping[str, str] | None = None,
+    blocked: Iterable[str] = (),
+) -> tuple[ProcessRequest, ...]:
+    """Parse a list of process requests with injective automatic names.
+
+    An entry is a ``ProcessRequest`` (named automatically when it records so,
+    ``automatic_name``), an expression (named automatically) or an
+    ``(expression, name)`` pair (``name=None``: named automatically).
+    Automatic names that would collide between distinct expressions are
+    disambiguated (``_with_unique_default_names``).
+    """
+
+    requests: list[ProcessRequest] = []
+    automatic: list[bool] = []
+    for entry in entries:
+        if isinstance(entry, ProcessRequest):
+            requests.append(entry)
+            automatic.append(entry.automatic_name)
+            continue
+        if isinstance(entry, tuple):
+            expression, name = entry
+        else:
+            expression, name = entry, None
+        requests.append(ProcessRequest.parse(expression, name=name))
+        automatic.append(name is None)
+    return _with_unique_default_names(requests, automatic, reserved, blocked)
+
+
 @dataclass(frozen=True, slots=True)
 class ProcessRequest:
-    """One concrete or multiparticle process expression and its artifact name."""
+    """One concrete or multiparticle process expression and its artifact name.
+
+    ``automatic_name`` records that the name was derived from the expression
+    (``parse`` without a name): such a name takes the digest form when it
+    collides with another expression's name in one call or in the artifact an
+    append extends (``_with_unique_default_names``); a name given by the user
+    is kept and a collision is an error. It takes no part in equality."""
 
     expression: str
     name: str
+    automatic_name: bool = field(default=False, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.expression, str) or not self.expression:
@@ -428,7 +526,9 @@ class ProcessRequest:
             if any(not side.strip() for side in sides):
                 raise ValueError("each process arrow must have particles on both sides")
         selected_name = _default_process_name(normalized) if name is None else name
-        return cls(expression=normalized, name=selected_name)
+        return cls(
+            expression=normalized, name=selected_name, automatic_name=name is None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -477,9 +577,40 @@ class ProcessSet:
             raise TypeError("ProcessSet.requests must contain ProcessRequest objects")
         if not all(isinstance(alias, ProcessAlias) for alias in aliases):
             raise TypeError("ProcessSet.aliases must contain ProcessAlias objects")
+        # Automatic names of distinct expressions are made unique however the
+        # requests were built (``ProcessRequest.automatic_name``); an alias
+        # that targets a renamed request by its unique original name follows it.
+        original_names = tuple(request.name for request in requests)
+        requests = _with_unique_default_names(
+            requests,
+            tuple(request.automatic_name for request in requests),
+            blocked=(alias.name for alias in aliases),
+        )
         request_names = tuple(request.name for request in requests)
+        renamed = {
+            old: new
+            for old, new in zip(original_names, request_names, strict=True)
+            if old != new
+            and original_names.count(old) == 1
+            and old not in request_names
+        }
+        if renamed:
+            aliases = tuple(
+                ProcessAlias(
+                    alias.name,
+                    renamed.get(alias.process_name, alias.process_name),
+                    alias.particle_permutation,
+                )
+                for alias in aliases
+            )
         if len(set(request_names)) != len(request_names):
-            raise ValueError("ProcessSet request names must be unique")
+            repeated = sorted(
+                {name for name in request_names if request_names.count(name) > 1}
+            )
+            raise ValueError(
+                "ProcessSet request names must be unique; repeated: "
+                + ", ".join(repr(name) for name in repeated)
+            )
         alias_names = tuple(alias.name for alias in aliases)
         if len(set(alias_names)) != len(alias_names):
             raise ValueError("ProcessSet alias names must be unique")
@@ -512,11 +643,8 @@ class ProcessSet:
         name_tuple = tuple(names)
         if name_tuple and len(name_tuple) != len(expression_tuple):
             raise ValueError("process names must be empty or aligned with expressions")
-        requests = tuple(
-            ProcessRequest.parse(
-                expression,
-                name=name_tuple[index] if name_tuple else None,
-            )
+        requests = parse_process_requests(
+            (expression, name_tuple[index] if name_tuple else None)
             for index, expression in enumerate(expression_tuple)
         )
         return cls(requests=requests, aliases=tuple(aliases))

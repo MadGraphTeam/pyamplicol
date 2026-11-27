@@ -17,6 +17,75 @@ class GenerationError(PyAmpliColError):
     """Planning or artifact generation failed."""
 
 
+class NoTreeDiagramError(GenerationError):
+    """A tree-level request has no Feynman diagram at its coupling orders.
+
+    Raised before any execution lane is built, the same for every lane and
+    model source. ``processes`` holds the request expressions without a
+    diagram; ``coupling_orders`` describes the requested coupling-order
+    limits (empty: none). A request that has diagrams without a setting that
+    removes them all raises ``RequestFilterError`` instead. Such a process may
+    be loop-induced: it is then
+    served at one loop (``process.loop_coupling_orders`` with
+    ``process.loop_induced``, MG5_aMC syntax ``[noborn=QCD]``).
+    ``key`` is ``"no-tree-diagram"``."""
+
+    key = "no-tree-diagram"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        processes: tuple[str, ...] = (),
+        coupling_orders: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.processes = processes
+        self.coupling_orders = coupling_orders
+
+
+class RequestFilterError(GenerationError):
+    """Settings of the request remove the tree-level Born it has without them.
+
+    Raised before any execution lane is built. The message names the settings
+    (``process.max_quark_lines``, ``process.max_coupling_orders``, the model's
+    coupling-order expansion orders under the ``minimal`` policy), what each
+    removed and which must be relaxed to serve the request: one of them, or
+    several together when each alone keeps it empty (decided by the same Born
+    check as generation, on the relaxed request). ``processes`` holds the
+    request expressions so emptied and ``settings`` those settings. ``key`` is
+    ``"request-filter"``."""
+
+    key = "request-filter"
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        processes: tuple[str, ...] = (),
+        settings: tuple[str, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.processes = processes
+        self.settings = settings
+
+
+class ProcessIdCollisionError(GenerationError):
+    """Two public processes of an artifact would share an ID.
+
+    The public IDs of an artifact are its process IDs and process alias IDs.
+    Raised before anything is written when a generation, or an append to an
+    existing artifact, would give one ID to two of them (the artifact is then
+    left as it was); the message names both. ``process_ids`` holds the shared
+    IDs. ``key`` is ``"process-id-collision"``."""
+
+    key = "process-id-collision"
+
+    def __init__(self, message: str, *, process_ids: tuple[str, ...] = ()) -> None:
+        super().__init__(message)
+        self.process_ids = process_ids
+
+
 class ArtifactError(PyAmpliColError):
     """An artifact is malformed, incomplete, or unavailable."""
 
@@ -101,6 +170,9 @@ __all__ = [
     "GenerationError",
     "ModelError",
     "NativePlatformError",
+    "NoTreeDiagramError",
+    "ProcessIdCollisionError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "RequestFilterError",
 ]
