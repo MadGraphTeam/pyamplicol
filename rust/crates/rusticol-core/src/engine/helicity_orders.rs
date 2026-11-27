@@ -74,8 +74,7 @@ impl ExecutionRuntime {
                 ));
             }
             for (target, selected) in values.iter_mut().zip(&per_order) {
-                if selected.color_indices != color_indices || selected.point_count != point_count
-                {
+                if selected.color_indices != color_indices || selected.point_count != point_count {
                     return Err(RusticolError::integrity(
                         "materialized helicity schedule returned an inconsistent resolved shape",
                     ));
@@ -168,16 +167,17 @@ impl ExecutionRuntime {
                     false,
                     point_stop - point_start,
                 )?;
-                let resolved = amplitude.reduce_planes_f64_order_resolved_for_materialized_helicity(
-                    direct.amplitude_planes()?,
-                    physics,
-                    *normalization_factor,
-                    schedule.physical_helicity_index,
-                    &schedule.root_factors,
-                    selected_color_ids,
-                    catalog,
-                    root_components,
-                )?;
+                let resolved = amplitude
+                    .reduce_planes_f64_order_resolved_for_materialized_helicity(
+                        direct.amplitude_planes()?,
+                        physics,
+                        *normalization_factor,
+                        schedule.physical_helicity_index,
+                        &schedule.root_factors,
+                        selected_color_ids,
+                        catalog,
+                        root_components,
+                    )?;
                 for (target, tile) in values.iter_mut().zip(&resolved) {
                     if tile.color_indices != color_indices
                         || tile.point_count != point_stop - point_start

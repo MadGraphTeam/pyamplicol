@@ -6006,4 +6006,3 @@ pub(super) fn check_partials_sum_to_totals(
     }
     Ok(())
 }
-

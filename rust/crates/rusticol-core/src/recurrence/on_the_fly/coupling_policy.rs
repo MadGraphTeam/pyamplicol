@@ -140,15 +140,15 @@ fn insert_order(
 ) -> bool {
     match retention {
         OrderRetention::Pareto => insert_pareto_order(orders, candidate),
-        OrderRetention::All => match orders.binary_search_by(|existing| {
-            existing.as_ref().cmp(candidate.as_slice())
-        }) {
-            Ok(_) => false,
-            Err(position) => {
-                orders.insert(position, candidate.into_boxed_slice());
-                true
+        OrderRetention::All => {
+            match orders.binary_search_by(|existing| existing.as_ref().cmp(candidate.as_slice())) {
+                Ok(_) => false,
+                Err(position) => {
+                    orders.insert(position, candidate.into_boxed_slice());
+                    true
+                }
             }
-        },
+        }
     }
 }
 
@@ -787,8 +787,13 @@ pub(super) fn resolve_on_the_fly_coupling_policy_from_grammar_v1(
         });
     }
     let mut census = OnTheFlyCouplingPolicyCensusV1::default();
-    let nodes =
-        build_global_topologies(templates, seed, grammar, &mut census, OrderRetention::Pareto)?;
+    let nodes = build_global_topologies(
+        templates,
+        seed,
+        grammar,
+        &mut census,
+        OrderRetention::Pareto,
+    )?;
     let totals = collect_viable_total_orders(
         templates,
         seed,
@@ -1285,6 +1290,27 @@ mod tests {
         assert_eq!(
             orders,
             [vec![0, 2].into_boxed_slice(), vec![1, 0].into_boxed_slice()]
+        );
+    }
+
+    #[test]
+    fn complete_retention_keeps_dominated_orders_once_and_sorted() {
+        // (QED 2, NP 0) dominates (QED 2, NP 2): the minimal policy keeps one,
+        // the amplitude-order catalogue both.
+        let mut pareto = Vec::new();
+        let mut all = Vec::new();
+        for candidate in [vec![2, 2], vec![0, 2], vec![2, 2], vec![0, 4]] {
+            insert_order(&mut pareto, candidate.clone(), OrderRetention::Pareto);
+            insert_order(&mut all, candidate, OrderRetention::All);
+        }
+        assert_eq!(pareto, [vec![0, 2].into_boxed_slice()]);
+        assert_eq!(
+            all,
+            [
+                vec![0, 2].into_boxed_slice(),
+                vec![0, 4].into_boxed_slice(),
+                vec![2, 2].into_boxed_slice()
+            ]
         );
     }
 }

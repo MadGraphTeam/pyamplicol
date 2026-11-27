@@ -517,3 +517,308 @@ def test_two_gluon_partials_equal_the_recurrence_lane(
     assert len(result.amplitude_orders) == 2
     _assert_partials_keep_the_total(runtime, result, points)
     _assert_same_partials(result, recurrence.evaluate_orders(points), 1e-12)
+
+
+# ---------------------------------------------------------------------------
+# A user UFO whose extra coupling order makes the minimal order dominate:
+# the shipped ``sm`` with the two Z-lepton couplings GC_50 and GC_59 tagged
+# ``NP:1`` besides ``QED:1``. At QCD <= 0, QED <= 2, NP <= 2 the photon
+# exchange of e+ e- > mu+ mu- is (QED 2, NP 0) and the Z exchange (QED 2,
+# NP 2), which a Pareto-minimal order sweep would drop. MadGraph's split
+# orders of the same model: ``fixtures/tree/madgraph-split-orders-np.json``
+# (``tools/developer/madgraph_split_orders.py --orders QCD,QED,NP``).
+NP_REFERENCE = FIXTURES / "madgraph-split-orders-np.json"
+_NP_PROCESS = "e+ e- > mu+ mu-"
+_NP_LIMITS = {"QCD": 0, "QED": 2, "NP": 2}
+
+
+def _np_tagged_sm(source: Path, destination: Path) -> Path:
+    import re
+    import shutil
+
+    shutil.copytree(
+        source, destination, ignore=shutil.ignore_patterns("*.pyc", "__pycache__")
+    )
+    couplings = (destination / "couplings.py").read_text(encoding="utf-8")
+    for name in ("GC_50", "GC_59"):
+        couplings, count = re.subn(
+            rf"({name} = Coupling\(name = '{name}',\n\s+value = '[^']*',\n"
+            r"\s+order = )\{'QED':1\}\)",
+            r"\1{'NP':1,'QED':1})",
+            couplings,
+        )
+        assert count == 1, name
+    (destination / "couplings.py").write_text(couplings, encoding="utf-8")
+    orders = (destination / "coupling_orders.py").read_text(encoding="utf-8")
+    orders += (
+        "\nNP = CouplingOrder(name = 'NP',\n"
+        "                   expansion_order = 99,\n"
+        "                   hierarchy = 3)\n"
+    )
+    (destination / "coupling_orders.py").write_text(orders, encoding="utf-8")
+    return destination
+
+
+@pytest.fixture(scope="module")
+def np_model(madgraph_source: Path, tmp_path_factory: pytest.TempPathFactory):
+    root = tmp_path_factory.mktemp("np-tagged-sm")
+    ufo = _np_tagged_sm(madgraph_source / "models/sm", root / "sm_np")
+    bundle = root / "sm_np.pyamplicol-model"
+    ModelSource.from_path(ufo, restriction="default").compile(
+        cache_dir=root / "cache", prepared_output=bundle, evaluator=EvaluatorConfig()
+    )
+    return ModelSource.from_path(bundle)
+
+
+def test_an_order_dominating_the_minimal_one_gets_its_own_column(
+    np_model: ModelSource, tmp_path: Path
+) -> None:
+    """Every lane lists the three squared orders (QED^4 NP^0, NP^2, NP^4) and
+    puts each contribution in its own column, as MadGraph does; on-the-fly
+    and compiled equal the recurrence lane, per helicity too."""
+
+    (reference,) = json.loads(NP_REFERENCE.read_text(encoding="utf-8"))["processes"]
+    points = reference["points"]
+    expected_orders = tuple(
+        sorted(
+            tuple(sorted((name, power) for name, power in order.items() if power))
+            for order in reference["squared_orders"]
+        )
+    )
+    results = {}
+    for lane in ("recurrence", "compiled", "on-the-fly"):
+        runtime = _runtime(
+            np_model,
+            _NP_PROCESS,
+            tmp_path / lane,
+            limits=_NP_LIMITS,
+            execution_mode=lane,
+        )
+        result = runtime.evaluate_orders(points)
+        assert result.orders == expected_orders, lane
+        assert len(result.amplitude_orders) == 2, lane
+        _assert_partials_keep_the_total(runtime, result, points)
+        _assert_matches_madgraph(result, reference)
+        helicity = next(
+            h.id
+            for h in runtime.physics.helicities
+            if complex(runtime.evaluate(points, helicities=[h.id])[0]) != 0
+        )
+        selected = runtime.evaluate_orders(points, helicities=[helicity])
+        _assert_partials_keep_the_total(
+            runtime, selected, points, helicities=[helicity]
+        )
+        results[lane] = (result, selected)
+    for lane in ("compiled", "on-the-fly"):
+        for actual, expected in zip(results[lane], results["recurrence"], strict=True):
+            _assert_same_partials(actual, expected, 1e-12)
+
+
+# ---------------------------------------------------------------------------
+# Every layout and option of the two lanes: the partials are the total's own
+# decomposition (default and one selected helicity), on a process with
+# several Born orders and on one with a single order; a layout that cannot be
+# served refuses evaluate_orders with a typed error.
+_LAYOUTS = (
+    pytest.param("compiled", {"accuracy": "lc"}, {}, id="compiled-lc-topology-replay"),
+    pytest.param(
+        "compiled",
+        {"accuracy": "lc", "lc_flow_layout": "all-flow-union"},
+        {},
+        id="compiled-lc-all-flow-union",
+    ),
+    pytest.param("compiled", {"accuracy": "nlc"}, {}, id="compiled-nlc"),
+    pytest.param("compiled", {"accuracy": "full"}, {}, id="compiled-full"),
+    pytest.param(
+        "compiled", {"accuracy": "full", "graded": True}, {}, id="compiled-full-graded"
+    ),
+    pytest.param("compiled", {"accuracy": "strict-lc"}, {}, id="compiled-strict-lc"),
+    pytest.param("compiled", {"accuracy": "strict-nlc"}, {}, id="compiled-strict-nlc"),
+    pytest.param(
+        "compiled", {"accuracy": "lc"}, {"backend": "asm"}, id="compiled-lc-asm"
+    ),
+    pytest.param(
+        "compiled",
+        {"accuracy": "full"},
+        {"relation_discovery": "certified-reuse"},
+        id="compiled-full-certified-reuse",
+    ),
+    pytest.param(
+        "compiled",
+        {"accuracy": "lc"},
+        {"jit_optimization_level": 1},
+        id="compiled-lc-jit-o1",
+    ),
+    pytest.param("on-the-fly", {"accuracy": "lc"}, {}, id="on-the-fly-lc"),
+    pytest.param("on-the-fly", {"accuracy": "nlc"}, {}, id="on-the-fly-nlc"),
+    pytest.param("on-the-fly", {"accuracy": "full"}, {}, id="on-the-fly-full-auto"),
+    pytest.param(
+        "on-the-fly",
+        {"accuracy": "full", "contraction": "direct"},
+        {},
+        id="on-the-fly-full-direct",
+    ),
+    pytest.param(
+        "on-the-fly",
+        {"accuracy": "full", "fft_basis": "trace"},
+        {},
+        id="on-the-fly-full-fft-trace",
+    ),
+)
+_LAYOUT_PROCESSES = (
+    pytest.param("u u~ > d d~ g", {"QCD": 3, "QED": 2}, id="several-orders"),
+    pytest.param("u u~ > d d~ g", {"QCD": 3, "QED": 0}, id="one-order"),
+)
+
+
+def _layout_runtime(
+    model: ModelSource,
+    process: str,
+    artifact: Path,
+    lane: str,
+    color: dict[str, object],
+    options: dict[str, object],
+    limits: dict[str, int],
+) -> Runtime:
+    from pyamplicol.config import JITConfig
+
+    config = RunConfig(
+        action="generate",
+        model=ModelConfig(cache=False),
+        color=ColorConfig(**color),
+        process=ProcessConfig(
+            coupling_order_policy="explicit", max_coupling_orders=limits
+        ),
+        generation=GenerationConfig(
+            workers=1,
+            emit_api_bundle=False,
+            relation_discovery=GenerationRelationDiscoveryConfig(
+                mode=str(options.get("relation_discovery", "off"))
+            ),
+            validation=GenerationValidationConfig(
+                enabled=False, samples=1, seed=7, post_build_validation=False
+            ),
+        ),
+        evaluator=EvaluatorConfig(
+            execution_mode=lane,
+            backend=str(options.get("backend", "jit")),
+            optimization=EvaluatorOptimizationConfig(cores=1),
+            jit=JITConfig(
+                optimization_level=int(options.get("jit_optimization_level", 2))
+            ),
+        ),
+    )
+    Generator(config).generate(process, artifact, model=model)
+    return Runtime.load(artifact)
+
+
+@pytest.mark.parametrize(("process", "limits"), _LAYOUT_PROCESSES)
+@pytest.mark.parametrize(("lane", "color", "options"), _LAYOUTS)
+def test_every_layout_decomposes_its_own_total(
+    sm_model: ModelSource,
+    tmp_path: Path,
+    lane: str,
+    color: dict[str, object],
+    options: dict[str, object],
+    process: str,
+    limits: dict[str, int],
+) -> None:
+    runtime = _layout_runtime(
+        sm_model, process, tmp_path / "artifact", lane, color, options, limits
+    )
+    points = _reference("u u~ > d d~ g")["points"]
+    result = runtime.evaluate_orders(points)
+    assert len(result.amplitude_orders) == (2 if limits["QED"] else 1)
+    _assert_partials_keep_the_total(runtime, result, points)
+    if len(result.amplitude_orders) == 1:
+        assert result.values == tuple((total,) for total in result.total)
+    helicity = next(
+        h.id
+        for h in runtime.physics.helicities
+        if complex(runtime.evaluate(points[:1], helicities=[h.id])[0]) != 0
+    )
+    selected = runtime.evaluate_orders(points, helicities=[helicity])
+    _assert_partials_keep_the_total(runtime, selected, points, helicities=[helicity])
+
+
+def test_the_compiled_fft_diagnostic_refuses_partials_typed(
+    sm_model: ModelSource, tmp_path: Path
+) -> None:
+    """The compiled symmetric-group FFT diagnostic contraction has no
+    order-resolved reduction: the configuration refuses it for the compiled
+    lane; were it built, evaluate_orders would refuse it typed."""
+
+    from pyamplicol.api.errors import GenerationError
+    from pyamplicol.config.errors import ConfigurationError
+
+    try:
+        runtime = _layout_runtime(
+            sm_model,
+            "u u~ > d d~ g g",
+            tmp_path / "artifact",
+            "compiled",
+            {"accuracy": "full", "contraction": "symmetric-group-fft"},
+            {},
+            {"QCD": 4, "QED": 2},
+        )
+    except (ConfigurationError, GenerationError, CompatibilityError):
+        return
+    points = [runtime._backend.validation_momenta()[0]]
+    with pytest.raises(CompatibilityError):
+        runtime.evaluate_orders(points)
+
+
+@pytest.mark.parametrize("gluons", [1, 2])
+def test_compiled_all_flow_union_partials_run_every_helicity_schedule(
+    tmp_path: Path, gluons: int
+) -> None:
+    """Built-in SM u u~ > d d~ g (g) at QCD <= 4, QED <= 2 in the compiled
+    leading-colour all-flow-union layout: its plain amplitude stage holds only
+    the representative helicities, so the partials run every helicity's
+    schedule; they sum to the total, per helicity too, and equal the
+    recurrence lane's."""
+
+    process = "u u~ > d d~" + " g" * gluons
+    final = (
+        [
+            [500.0, 400.0, 300.0, 0.0],
+            [500.0, 400.0, -300.0, 0.0],
+            [800.0, -800.0, 0.0, 0.0],
+        ]
+        if gluons == 1
+        else [
+            [450.0, 360.0, 270.0, 0.0],
+            [450.0, 360.0, -270.0, 0.0],
+            [450.0, -360.0, 0.0, 270.0],
+            [450.0, -360.0, 0.0, -270.0],
+        ]
+    )
+    points = [[[900.0, 0.0, 0.0, 900.0], [900.0, 0.0, 0.0, -900.0], *final]]
+    limits = {"QCD": 4, "QED": 2}
+    runtime = _runtime(
+        None,
+        process,
+        tmp_path / "union",
+        accuracy="lc",
+        limits=limits,
+        lc_flow_layout="all-flow-union",
+    )
+    recurrence = _runtime(
+        None,
+        process,
+        tmp_path / "recurrence",
+        accuracy="lc",
+        limits=limits,
+        execution_mode="recurrence",
+    )
+    result = runtime.evaluate_orders(points)
+    _assert_partials_keep_the_total(runtime, result, points)
+    _assert_same_partials(result, recurrence.evaluate_orders(points), 1e-12)
+    for helicity in ("h:-1,+1,-1,+1" + ",-1" * gluons,):
+        selected = runtime.evaluate_orders(points, helicities=[helicity])
+        _assert_partials_keep_the_total(
+            runtime, selected, points, helicities=[helicity]
+        )
+        _assert_same_partials(
+            selected, recurrence.evaluate_orders(points, helicities=[helicity]), 1e-12
+        )
