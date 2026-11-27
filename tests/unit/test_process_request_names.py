@@ -13,7 +13,7 @@ import re
 
 import pytest
 
-from pyamplicol.api import ProcessRequest, ProcessSet
+from pyamplicol.api import ProcessAlias, ProcessRequest, ProcessSet
 from pyamplicol.api.requests import (
     _default_process_name,
     _digest_process_name,
@@ -22,6 +22,7 @@ from pyamplicol.api.requests import (
 from pyamplicol.api.services import _appended_process_names, _process_set
 from tools.developer.builtin_sm_ufo_sweep import two_to_two_processes
 
+_PAIR_TEXT = ("u mu- > u mu-", "u mu+ > u mu+")
 _DIGEST_FORM = re.compile(r"^[a-z][a-z0-9_]*_[0-9a-f]{10}$")
 
 
@@ -110,3 +111,56 @@ def test_append_reserves_the_names_of_the_artifact() -> None:
 
 def test_appended_names_of_a_missing_artifact(tmp_path) -> None:
     assert _appended_process_names(tmp_path / "missing") == {}
+
+
+def test_an_unnamed_process_request_is_automatically_named() -> None:
+    assert ProcessRequest.parse("u mu- > u mu-").automatic_name
+    assert not ProcessRequest.parse("u mu- > u mu-", name="mine").automatic_name
+    assert not ProcessRequest("u mu- > u mu-", "u_mu_to_u_mu").automatic_name
+    # Provenance takes no part in equality.
+    assert ProcessRequest.parse("u mu- > u mu-") == ProcessRequest(
+        "u mu- > u mu-", "u_mu_to_u_mu"
+    )
+
+
+def test_a_process_set_of_unnamed_requests_has_distinct_names() -> None:
+    both = ProcessSet(tuple(ProcessRequest.parse(text) for text in _PAIR_TEXT))
+    assert [request.name for request in both.requests] == [
+        _digest_process_name(text) for text in _PAIR_TEXT
+    ]
+    named = tuple(
+        ProcessRequest.parse(text, name="u_mu_to_u_mu") for text in _PAIR_TEXT
+    )
+    with pytest.raises(ValueError, match="names must be unique"):
+        ProcessSet(named)
+
+
+@pytest.mark.parametrize(
+    "second",
+    [
+        lambda: ProcessSet.from_expressions(["u mu+ > u mu+"]),
+        lambda: ProcessRequest.parse("u mu+ > u mu+"),
+        lambda: [ProcessRequest.parse("u mu+ > u mu+")],
+        lambda: "u mu+ > u mu+",
+    ],
+    ids=["ProcessSet.from_expressions", "ProcessRequest", "list", "expression"],
+)
+def test_append_reserves_the_names_for_every_request_type(second) -> None:
+    reserved = {"u_mu_to_u_mu": "u mu- > u mu-"}
+    requests = _process_set(second(), reserved=reserved).requests
+    assert [request.name for request in requests] == [
+        _digest_process_name("u mu+ > u mu+")
+    ]
+
+
+def test_append_keeps_a_user_given_name_and_its_alias() -> None:
+    reserved = {"u_mu_to_u_mu": "u mu- > u mu-"}
+    named = ProcessSet((ProcessRequest.parse("u mu+ > u mu+", name="u_mu_to_u_mu"),))
+    assert _process_set(named, reserved=reserved) is named
+    aliased = ProcessSet(
+        (ProcessRequest.parse("u mu+ > u mu+"),),
+        (ProcessAlias("crossed", "u_mu_to_u_mu", (1, 0, 2, 3)),),
+    )
+    moved = _process_set(aliased, reserved=reserved)
+    assert moved.requests[0].name == _digest_process_name("u mu+ > u mu+")
+    assert moved.aliases[0].process_name == moved.requests[0].name

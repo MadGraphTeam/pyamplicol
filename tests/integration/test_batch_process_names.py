@@ -3,7 +3,8 @@
 
 ``u mu- > u mu-`` and ``u mu+ > u mu+`` share the readable default name
 ``u_mu_to_u_mu``: one ``generate`` call (and an append) builds both, with the
-values of the processes generated alone.
+values of the processes generated alone, whichever public request type carries
+the automatically named request; a name the user gives still collides.
 """
 
 from __future__ import annotations
@@ -14,7 +15,14 @@ from pathlib import Path
 
 import pytest
 
-from pyamplicol import Generator, ModelSource, Runtime
+from pyamplicol import (
+    Generator,
+    ModelSource,
+    ProcessRequest,
+    ProcessSet,
+    PyAmpliColError,
+    Runtime,
+)
 from pyamplicol.api.requests import _digest_process_name
 from pyamplicol.config import (
     ColorConfig,
@@ -87,3 +95,36 @@ def test_colliding_names_generate_in_one_call_and_by_append(tmp_path: Path) -> N
     _generator().generate([PAIR[1]], appended, model=model, mode="append")
     assert _ids(appended) == ["u_mu_to_u_mu", names[1]]
     assert _value(appended, names[1]) == pytest.approx(alone[PAIR[1]], rel=1e-13)
+
+
+# The second process of the pair, through every public request type: its
+# automatic name collides with the appended artifact's ``u_mu_to_u_mu``.
+SECOND = {
+    "expression": lambda: PAIR[1],
+    "expression list": lambda: [PAIR[1]],
+    "ProcessRequest.parse": lambda: ProcessRequest.parse(PAIR[1]),
+    "ProcessRequest list": lambda: [ProcessRequest.parse(PAIR[1])],
+    "ProcessSet.from_expressions": lambda: ProcessSet.from_expressions([PAIR[1]]),
+    "ProcessSet": lambda: ProcessSet((ProcessRequest.parse(PAIR[1]),)),
+}
+
+
+@pytest.mark.parametrize("kind", sorted(SECOND))
+def test_an_automatic_name_is_automatic_in_every_request_type(
+    kind: str, tmp_path: Path
+) -> None:
+    model = ModelSource.built_in_sm()
+    appended = tmp_path / "appended"
+    _generator().generate(ProcessSet.from_expressions([PAIR[0]]), appended, model=model)
+    _generator().generate(SECOND[kind](), appended, model=model, mode="append")
+    assert _ids(appended) == ["u_mu_to_u_mu", _digest_process_name(PAIR[1])]
+
+
+def test_a_user_given_name_still_collides(tmp_path: Path) -> None:
+    model = ModelSource.built_in_sm()
+    appended = tmp_path / "appended"
+    _generator().generate([PAIR[0]], appended, model=model)
+    named = ProcessRequest.parse(PAIR[1], name="u_mu_to_u_mu")
+    with pytest.raises(PyAmpliColError, match="u_mu_to_u_mu"):
+        _generator().generate(named, appended, model=model, mode="append")
+    assert _ids(appended) == ["u_mu_to_u_mu"]

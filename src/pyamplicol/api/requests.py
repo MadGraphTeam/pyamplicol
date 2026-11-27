@@ -5,7 +5,7 @@ import hashlib
 import os
 import re
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
@@ -422,9 +422,7 @@ def _with_unique_default_names(
     expressions_by_name: dict[str, set[str]] = {}
     for request, auto in zip(requests, automatic, strict=True):
         if auto:
-            expressions_by_name.setdefault(request.name, set()).add(
-                request.expression
-            )
+            expressions_by_name.setdefault(request.name, set()).add(request.expression)
     result: list[ProcessRequest] = []
     for request, auto in zip(requests, automatic, strict=True):
         if auto and (
@@ -435,6 +433,7 @@ def _with_unique_default_names(
             request = ProcessRequest(
                 expression=request.expression,
                 name=_digest_process_name(request.expression),
+                automatic_name=True,
             )
         result.append(request)
     return tuple(result)
@@ -447,10 +446,11 @@ def parse_process_requests(
 ) -> tuple[ProcessRequest, ...]:
     """Parse a list of process requests with injective automatic names.
 
-    An entry is a ``ProcessRequest`` (its name is kept), an expression (named
-    automatically) or an ``(expression, name)`` pair (``name=None``: named
-    automatically). Automatic names that would collide between distinct
-    expressions are disambiguated (``_with_unique_default_names``).
+    An entry is a ``ProcessRequest`` (named automatically when it records so,
+    ``automatic_name``), an expression (named automatically) or an
+    ``(expression, name)`` pair (``name=None``: named automatically).
+    Automatic names that would collide between distinct expressions are
+    disambiguated (``_with_unique_default_names``).
     """
 
     requests: list[ProcessRequest] = []
@@ -458,7 +458,7 @@ def parse_process_requests(
     for entry in entries:
         if isinstance(entry, ProcessRequest):
             requests.append(entry)
-            automatic.append(False)
+            automatic.append(entry.automatic_name)
             continue
         if isinstance(entry, tuple):
             expression, name = entry
@@ -471,10 +471,17 @@ def parse_process_requests(
 
 @dataclass(frozen=True, slots=True)
 class ProcessRequest:
-    """One concrete or multiparticle process expression and its artifact name."""
+    """One concrete or multiparticle process expression and its artifact name.
+
+    ``automatic_name`` records that the name was derived from the expression
+    (``parse`` without a name): such a name takes the digest form when it
+    collides with another expression's name in one call or in the artifact an
+    append extends (``_with_unique_default_names``); a name given by the user
+    is kept and a collision is an error. It takes no part in equality."""
 
     expression: str
     name: str
+    automatic_name: bool = field(default=False, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.expression, str) or not self.expression:
@@ -514,7 +521,9 @@ class ProcessRequest:
             if any(not side.strip() for side in sides):
                 raise ValueError("each process arrow must have particles on both sides")
         selected_name = _default_process_name(normalized) if name is None else name
-        return cls(expression=normalized, name=selected_name)
+        return cls(
+            expression=normalized, name=selected_name, automatic_name=name is None
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -563,6 +572,11 @@ class ProcessSet:
             raise TypeError("ProcessSet.requests must contain ProcessRequest objects")
         if not all(isinstance(alias, ProcessAlias) for alias in aliases):
             raise TypeError("ProcessSet.aliases must contain ProcessAlias objects")
+        # Automatic names of distinct expressions are made unique however the
+        # requests were built (``ProcessRequest.automatic_name``).
+        requests = _with_unique_default_names(
+            requests, tuple(request.automatic_name for request in requests)
+        )
         request_names = tuple(request.name for request in requests)
         if len(set(request_names)) != len(request_names):
             repeated = sorted(
