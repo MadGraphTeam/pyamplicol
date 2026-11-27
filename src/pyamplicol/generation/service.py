@@ -5,6 +5,7 @@ import gc
 import hashlib
 import importlib
 import io
+import itertools
 import json
 import logging
 import math
@@ -2726,7 +2727,9 @@ class _RequestWithoutTreeDiagram(Exception):
     of the call (``reason``: why, when known; ``loop_hint``: whether a loop
     could serve it). With ``settings`` the request has diagrams and those
     settings remove them all (``RequestFilterError``); without, it has none
-    (``NoTreeDiagramError``)."""
+    (``NoTreeDiagramError``). ``uncut``: the concrete processes the quark-line
+    cut ``cut`` removed (``reason`` says how), for the refusal step to decide
+    which settings empty the request."""
 
     def __init__(
         self,
@@ -2735,12 +2738,16 @@ class _RequestWithoutTreeDiagram(Exception):
         *,
         loop_hint: bool = True,
         settings: tuple[str, ...] = (),
+        uncut: tuple[CanonicalProcessIR, ...] = (),
+        cut: str | None = None,
     ) -> None:
         super().__init__(expression)
         self.expression = expression
         self.reason = reason
         self.loop_hint = loop_hint and not settings
         self.settings = settings
+        self.uncut = uncut
+        self.cut = cut
 
 
 #: Why the built-in process selection rejects a concrete process
@@ -5659,14 +5666,8 @@ class GenerationBackend:
         settings = tuple(
             dict.fromkeys(name for refusal in filtered for name in refusal.settings)
         )
-        text = (
-            "request filter: "
-            + "; ".join(str(refusal.reason) for refusal in filtered)
-            + ", so there is nothing to generate; relaxing "
-            + " and ".join(settings)
-            + " serves "
-            + ("it" if len(filtered) == 1 else "them")
-            + "."
+        text = "request filter: " + " ".join(
+            str(refusal.reason) for refusal in filtered
         )
         return RequestFilterError(
             f"{text} {message}" if message else text,
@@ -5702,14 +5703,26 @@ class GenerationBackend:
                 max_quark_pairs=None,
             )
             if uncut.entries:
+                from ..models.builtin.process_ir import build_process_ir
+
                 lines = sorted({record.quark_lines for record in uncut.records})
                 counted = " or ".join(str(count) for count in lines)
+                # Whether the cut is why there is nothing to generate (a Born
+                # exists without it) is decided with the other settings.
                 return _RequestWithoutTreeDiagram(
                     expression,
                     f"{message}: process.max_quark_lines = {limit} removes every "
                     f"concrete process of the request (they have {counted} quark "
-                    "lines)",
-                    settings=("process.max_quark_lines",),
+                    + ("line)" if lines == [1] else "lines)"),
+                    cut=f"process.max_quark_lines = {limit}",
+                    uncut=tuple(
+                        build_process_ir(
+                            entry.process,
+                            color_accuracy=self._color_accuracy,
+                            options=uncut.options,
+                        )
+                        for entry in uncut.entries
+                    ),
                 )
         reasons = dict(report.rejection_counts)
         violated = [
@@ -5765,6 +5778,8 @@ class GenerationBackend:
             if name not in explicit
         }
 
+        color_plans: dict[int, GenericColorPlan] = {}
+
         def has_diagram(
             process: CanonicalProcessIR, limits: Mapping[str, int] | None
         ) -> bool:
@@ -5775,17 +5790,17 @@ class GenerationBackend:
                         process, model=model, max_coupling_orders=limits
                     )
                 )
-            return has_model_supported_amplitudes(
-                process,
-                model=model,
-                color_plan=build_color_plan(
+            plan = color_plans.get(id(process))
+            if plan is None:
+                plan = color_plans[id(process)] = build_color_plan(
                     process,
                     color_accuracy=self._color_accuracy,
                     fold_trace_reflections=(
                         model.lc_trace_reflection_equivalence_is_proven(process)
                     ),
-                ),
-                max_coupling_orders=limits,
+                )
+            return has_model_supported_amplitudes(
+                process, model=model, color_plan=plan, max_coupling_orders=limits
             )
 
         requests: dict[str, ProcessRequest] = {}
@@ -5801,18 +5816,42 @@ class GenerationBackend:
                 supported.add(source.name)
             else:
                 members.setdefault(source.name, []).append(entry.process_ir)
-        refused = {refusal.expression: refusal for refusal in without_concrete_process}
+        relaxed_explicit = (
+            {}
+            if model is None
+            else request_coupling_order_limits(
+                {}, model, policy=self._coupling_order_policy
+            )
+        )
+
+        def decide(
+            expression: str,
+            kept: Sequence[CanonicalProcessIR],
+            cut: _RequestWithoutTreeDiagram | None,
+        ) -> _RequestWithoutTreeDiagram:
+            return self._filter_refusal(
+                expression,
+                kept,
+                cut,
+                has_diagram,
+                explicit=explicit,
+                caps=caps,
+                bounds=bounds,
+                relaxed_explicit=relaxed_explicit,
+            )
+
+        refused: dict[str, _RequestWithoutTreeDiagram] = {}
+        for refusal in without_concrete_process:
+            refused[refusal.expression] = (
+                decide(refusal.expression, (), refusal)
+                if refusal.uncut and model is not None
+                else refusal
+            )
         for name, request in requests.items():
             if name not in supported:
                 refused.setdefault(
                     request.expression,
-                    self._coupling_order_refusal(
-                        request.expression,
-                        members.get(name, ()),
-                        has_diagram,
-                        explicit,
-                        caps,
-                    ),
+                    decide(request.expression, members.get(name, ()), None),
                 )
         if refused:
             # In request order.
@@ -5827,53 +5866,126 @@ class GenerationBackend:
             )
 
     @staticmethod
-    def _coupling_order_refusal(
+    def _filter_refusal(
         expression: str,
-        processes: Sequence[CanonicalProcessIR],
+        kept: Sequence[CanonicalProcessIR],
+        cut: _RequestWithoutTreeDiagram | None,
         has_diagram: Callable[[CanonicalProcessIR, Mapping[str, int] | None], bool],
+        *,
         explicit: Mapping[str, int],
         caps: Mapping[str, int],
+        bounds: Mapping[str, int],
+        relaxed_explicit: Mapping[str, int],
     ) -> _RequestWithoutTreeDiagram:
-        """A request without a diagram within its coupling-order limits: a
-        filter (the explicit limits, the expansion-order caps, or both, as
-        their removal shows) when it has diagrams without them, else none at
-        any order (loop-induced)."""
+        """Which settings leave a request without a Born, by the check that
+        decides service (``has_diagram`` within the limits) run on the request
+        with settings relaxed: the quark-line cut (``cut``: its removal and the
+        processes it removed), the explicit coupling-order limits and the
+        expansion-order caps of the minimal policy. Without a Born at any
+        order, none (``NoTreeDiagramError``; the cut is mentioned as also
+        excluding it). Else the smallest sets of settings whose relaxation
+        serves it: one setting (relaxing it serves the request) or several
+        (all of them must be relaxed). At most seven relaxed checks."""
 
-        def found(limits: Mapping[str, int] | None) -> bool:
+        uncut = tuple(cut.uncut) if cut is not None else ()
+        candidates = uncut if cut is not None else tuple(kept)
+
+        def served(
+            processes: Sequence[CanonicalProcessIR],
+            limits: Mapping[str, int] | None,
+        ) -> bool:
             return any(has_diagram(process, limits) for process in processes)
 
-        if not (explicit or caps) or not found(None):
-            return _RequestWithoutTreeDiagram(expression)
-        by_explicit = bool(explicit)
-        by_caps = bool(caps)
-        if by_explicit and by_caps:
-            if found(explicit):
-                by_explicit = False
-            elif found(caps):
-                by_caps = False
+        if not served(candidates, None):
+            return _RequestWithoutTreeDiagram(
+                expression, None if cut is None else f"also excluded by {cut.cut}"
+            )
+        active = [
+            name
+            for name, present in (
+                ("process.max_quark_lines", cut is not None),
+                ("process.max_coupling_orders", bool(explicit)),
+                ("process.coupling_order_policy", bool(caps)),
+            )
+            if present
+        ]
+
+        def serves(relaxed: frozenset[str]) -> bool:
+            processes = (
+                uncut
+                if cut is not None and "process.max_quark_lines" in relaxed
+                else tuple(kept)
+            )
+            if not processes:
+                return False
+            explicit_off = "process.max_coupling_orders" in relaxed
+            caps_off = "process.coupling_order_policy" in relaxed
+            if explicit_off and caps_off:
+                limits: Mapping[str, int] | None = None
+            elif explicit_off:
+                limits = dict(relaxed_explicit) or None
+            elif caps_off:
+                limits = dict(explicit) or None
+            else:
+                limits = dict(bounds) or None
+            return served(processes, limits)
+
+        chosen: list[tuple[str, ...]] = []
+        for size in range(1, len(active) + 1):
+            chosen = [
+                combo
+                for combo in itertools.combinations(active, size)
+                if serves(frozenset(combo))
+            ]
+            if chosen:
+                break
+        if not chosen:  # pragma: no cover - relaxing every setting serves it
+            chosen = [tuple(active)]
 
         def listed(limits: Mapping[str, int]) -> str:
             return " ".join(f"{name}<={value}" for name, value in limits.items())
 
+        named = sorted({name for combo in chosen for name in combo}, key=active.index)
         within = []
-        settings = []
-        if by_explicit:
+        if "process.max_coupling_orders" in named:
             within.append(f"process.max_coupling_orders ({listed(explicit)})")
-            settings.append("process.max_coupling_orders")
-        if by_caps:
+        if "process.coupling_order_policy" in named:
             within.append(
                 f"the model's expansion orders ({listed(caps)}), which the "
                 "minimal coupling-order policy applies to the orders the request "
                 f"leaves open (a limit on {', '.join(caps)} in "
                 "process.max_coupling_orders replaces them)"
             )
-            settings.append("process.coupling_order_policy")
-        return _RequestWithoutTreeDiagram(
-            expression,
-            f"process {expression!r} has tree-level diagrams, but none within "
-            + " and ".join(within),
-            settings=tuple(settings),
-        )
+        if "process.max_quark_lines" in named:
+            assert cut is not None
+            text = str(cut.reason)
+            if within:
+                text += (
+                    ", and they have no tree-level diagram within "
+                    + " and ".join(within)
+                    + " either"
+                )
+        else:
+            text = (
+                f"process {expression!r} has tree-level diagrams, but none within "
+                + " and ".join(within)
+            )
+        if len(chosen[0]) == 1:
+            text += ", so there is nothing to generate; relaxing " + (
+                f"{chosen[0][0]} serves the request"
+                if len(chosen) == 1
+                else "any one of "
+                + " or ".join(combo[0] for combo in chosen)
+                + " serves the request"
+            )
+        else:
+            text += (
+                ", so there is nothing to generate; relaxing one of them does not "
+                "serve the request: "
+                + " or ".join(" and ".join(combo) for combo in chosen)
+                + " must all be relaxed"
+            )
+        return _RequestWithoutTreeDiagram(expression, text + ".", settings=tuple(named))
 
     def _drop_processes_without_amplitudes(
         self,

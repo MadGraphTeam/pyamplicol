@@ -172,7 +172,7 @@ def test_the_quark_line_cut_is_named_not_a_missing_diagram(
     assert error.key == "request-filter"
     message = str(error)
     assert message.startswith(QUARK_LINES)
-    assert "relaxing process.max_quark_lines serves it" in message
+    assert "relaxing process.max_quark_lines serves the request" in message
     assert LOOP not in message
     assert "no tree-level" not in message
     assert error.processes == ("u d > u d",)
@@ -211,6 +211,97 @@ def test_a_coupling_order_limit_is_named_not_a_missing_diagram(
     )
     assert LOOP not in message
     assert error.settings == ("process.max_coupling_orders",)
+
+
+def test_a_coupling_order_limit_relaxed_serves_the_request(tmp_path: Path) -> None:
+    _generator("recurrence").generate(
+        ["b g > b g"], tmp_path / "relaxed", model=ModelSource.built_in_sm()
+    )
+
+
+# Two settings that each empty the request: both are named and both must be
+# relaxed; relaxing either one alone still refuses it, with the other named.
+BOTH = dict(
+    max_quark_lines=0, coupling_order_policy="explicit", max_coupling_orders={"QCD": 0}
+)
+
+
+def test_two_settings_that_each_empty_the_request(tmp_path: Path) -> None:
+    model = ModelSource.built_in_sm()
+    error = _refusal(
+        model,
+        "b g > b g",
+        "recurrence",
+        tmp_path,
+        error=RequestFilterError,
+        process=ProcessConfig(**BOTH),
+    )
+    message = str(error)
+    assert message.startswith(
+        "request filter: no valid processes found for 'b g > b g': "
+        "process.max_quark_lines = 0 removes every concrete process of the "
+        "request (they have 1 quark line), and they have no tree-level diagram "
+        "within process.max_coupling_orders (QCD<=0) either"
+    )
+    assert "relaxing one of them does not serve the request" in message
+    assert "process.max_quark_lines and process.max_coupling_orders must all be" in (
+        message
+    )
+    assert "serves the request" not in message.replace("does not serve", "")
+    assert LOOP not in message
+    assert error.settings == ("process.max_quark_lines", "process.max_coupling_orders")
+    # Relaxing one alone: the other still empties it, and is named alone.
+    only_cut = dict(BOTH, max_quark_lines=None)
+    with pytest.raises(RequestFilterError) as caught:
+        _generator("recurrence", process=ProcessConfig(**only_cut)).generate(
+            ["b g > b g"], tmp_path / "cut-relaxed", model=model
+        )
+    assert caught.value.settings == ("process.max_coupling_orders",)
+    only_orders = dict(max_quark_lines=0)
+    with pytest.raises(RequestFilterError) as caught:
+        _generator("recurrence", process=ProcessConfig(**only_orders)).generate(
+            ["b g > b g"], tmp_path / "orders-relaxed", model=model
+        )
+    assert caught.value.settings == ("process.max_quark_lines",)
+    # Relaxing both serves it.
+    _generator("recurrence").generate(["b g > b g"], tmp_path / "both", model=model)
+
+
+def test_a_cut_on_a_request_without_any_diagram_is_no_diagram(tmp_path: Path) -> None:
+    # The reviewer's case: the cut removes the processes, but there is no
+    # tree-level diagram without it either.
+    model = ModelSource.built_in_sm()
+    error = _refusal(
+        model,
+        "u u~ > h h",
+        "recurrence",
+        tmp_path,
+        process=ProcessConfig(max_quark_lines=0),
+    )
+    assert isinstance(error, NoTreeDiagramError)
+    message = str(error)
+    assert message.startswith(
+        "no tree-level diagram: process 'u u~ > h h' (also excluded by "
+        "process.max_quark_lines = 0) " + ANY
+    )
+    assert "serves" not in message and "relax" not in message
+    # Without the cut: the same refusal, the true reason.
+    relaxed = str(_refusal(model, "u u~ > h h", "compiled", tmp_path / "relaxed"))
+    assert relaxed.startswith("no tree-level diagram: process 'u u~ > h h' " + ANY)
+
+
+def test_a_coupling_order_limit_on_a_request_without_any_diagram(
+    tmp_path: Path,
+) -> None:
+    error = _refusal(
+        ModelSource.built_in_sm(),
+        "a a > a a QED=2",
+        "recurrence",
+        tmp_path,
+    )
+    assert isinstance(error, NoTreeDiagramError)
+    assert str(error).startswith("no tree-level diagram: process 'a a > a a' " + ANY)
+    assert "max_coupling_orders" not in str(error)
 
 
 def test_one_call_with_a_filtered_and_a_missing_request(tmp_path: Path) -> None:

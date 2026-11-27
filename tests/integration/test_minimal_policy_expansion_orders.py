@@ -20,6 +20,7 @@ import importlib.util
 import json
 import re
 import shutil
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,7 @@ from pyamplicol import (
     CorrelatorConfig,
     Generator,
     ModelSource,
+    NoTreeDiagramError,
     RequestFilterError,
     Runtime,
 )
@@ -137,6 +139,50 @@ def test_a_named_limit_decides(
     )
     value = complex(Runtime.load(tmp_path / "np2").evaluate(_POINTS)[0])
     assert value.real > 0.0
+
+
+def test_an_explicit_limit_and_an_expansion_order_that_each_empty_it(
+    np_model: ModelSource, tmp_path: Path
+) -> None:
+    # Under the minimal policy QED <= 1 and the NP expansion order 1 each
+    # remove the QED^2 NP^2 Born: both are named and both must be relaxed.
+    minimal = replace(
+        _config(None), process=ProcessConfig(max_coupling_orders={"QED": 1})
+    )
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(minimal).generate("d d~ > vm vm~", tmp_path / "both", model=np_model)
+    message = str(caught.value)
+    assert "none within process.max_coupling_orders (QED<=1) and the model's " in (
+        message
+    )
+    assert "relaxing one of them does not serve the request" in message
+    assert caught.value.settings == (
+        "process.max_coupling_orders",
+        "process.coupling_order_policy",
+    )
+    # Relaxing the expansion order alone (explicit policy, QED <= 1 kept).
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(_config({"QED": 1})).generate(
+            "d d~ > vm vm~", tmp_path / "caps-relaxed", model=np_model
+        )
+    assert caught.value.settings == ("process.max_coupling_orders",)
+    # Relaxing the explicit limit alone (minimal policy, no limit).
+    with pytest.raises(RequestFilterError) as caught:
+        Generator(_config(None)).generate(
+            "d d~ > vm vm~", tmp_path / "limit-relaxed", model=np_model
+        )
+    assert caught.value.settings == ("process.coupling_order_policy",)
+    # Relaxing both serves it.
+    Generator(_config({})).generate("d d~ > vm vm~", tmp_path / "none", model=np_model)
+
+
+def test_no_diagram_within_or_without_the_expansion_order(
+    np_model: ModelSource, tmp_path: Path
+) -> None:
+    with pytest.raises(NoTreeDiagramError, match="at any coupling order"):
+        Generator(_config(None)).generate(
+            "a a > a a", tmp_path / "none", model=np_model
+        )
 
 
 def test_the_loop_limits_keep_the_cap_when_nothing_is_inferred(

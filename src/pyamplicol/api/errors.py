@@ -45,15 +45,16 @@ class NoTreeDiagramError(GenerationError):
 
 
 class RequestFilterError(GenerationError):
-    """A setting of the request removes every tree-level process or diagram
-    that the request has without it.
+    """Settings of the request remove the tree-level Born it has without them.
 
-    Raised before any execution lane is built. The message names the setting
+    Raised before any execution lane is built. The message names the settings
     (``process.max_quark_lines``, ``process.max_coupling_orders``, the model's
-    coupling-order expansion orders under the ``minimal`` policy) and what it
-    removed; relaxing that setting serves the request. ``processes`` holds the
-    request expressions so emptied and ``settings`` the settings that emptied
-    them. ``key`` is ``"request-filter"``."""
+    coupling-order expansion orders under the ``minimal`` policy), what each
+    removed and which must be relaxed to serve the request: one of them, or
+    several together when each alone keeps it empty (decided by the same Born
+    check as generation, on the relaxed request). ``processes`` holds the
+    request expressions so emptied and ``settings`` those settings. ``key`` is
+    ``"request-filter"``."""
 
     key = "request-filter"
 
