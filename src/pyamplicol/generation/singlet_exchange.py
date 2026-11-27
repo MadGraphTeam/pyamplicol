@@ -30,6 +30,8 @@ from ..models.base import Model
 from ..processes.ir import CanonicalProcessIR
 
 _ADJOINT = 8
+# The execution modes that build their trees by the generic DAG.
+_DAG_MODES = frozenset({"compiled", "eager", None})
 
 
 class SingletExchangeColourError(GenerationError):
@@ -81,8 +83,16 @@ def require_representable_singlet_exchange(
     *,
     model: Model,
     max_coupling_orders: Mapping[str, int] | None,
+    execution_mode: str | None = None,
 ) -> None:
-    """Raise ``SingletExchangeColourError`` for a request with such a tree."""
+    """Raise ``SingletExchangeColourError`` for a request with such a tree.
+
+    ``execution_mode`` (``"compiled"``, ``"eager"``, or ``None`` for the
+    correlated lane and loop Borns, which build compiled trees) also refuses
+    the trees those modes drop: a singlet from a vertex with gluons alone
+    exchanged between two quark lines (``d d~ > t t~ g``), which the
+    recurrence and on-the-fly modes serve.
+    """
 
     singlet_vertices = _gluon_singlet_vertices(model)
     if not singlet_vertices:
@@ -97,9 +107,13 @@ def require_representable_singlet_exchange(
         }
         for vertex in singlet_vertices
     ]
-    vertex_orders = sorted(set.intersection(*order_sets)) or [
-        "<the order of that vertex>"
-    ]
+    carried = [orders for orders in order_sets if orders]
+    vertex_orders = sorted(set.intersection(*carried)) if carried else []
+    remedy = (
+        " ".join(f"max_coupling_orders {{ {name} = 0 }}" for name in vertex_orders)
+        if vertex_orders
+        else "a zero limit on the coupling order of that vertex"
+    )
     legs = tuple(process.legs)
     pdgs: list[int] = []
     for leg in legs:
@@ -111,91 +125,117 @@ def require_representable_singlet_exchange(
         return
     open_legs = [index for index, rep in enumerate(reps) if rep not in (1, _ADJOINT)]
     gluon_legs = [index for index, rep in enumerate(reps) if rep == _ADJOINT]
-    if not open_legs or not gluon_legs:
+    if not gluon_legs:
         return
     limits = (
         {str(name).upper(): int(value) for name, value in max_coupling_orders.items()}
         if max_coupling_orders
         else None
     )
+    marked = {
+        (int(vertex.kind), tuple(vertex.particles)) for vertex in singlet_vertices
+    }
     count = len(legs)
     full = (1 << count) - 1
-    # reach[mask]: {species: set of frozen coupling orders} of currents that
-    # cover exactly the legs in mask (colour-blind, within the limits).
-    reach: dict[int, dict[int, set[tuple[tuple[str, int], ...]]]] = {}
+    # reach[mask]: {species: {(coupling orders, through a singlet-gluons
+    # vertex)}} of the currents that cover exactly the legs in mask
+    # (colour-blind, within the limits).
+    Entry = tuple[tuple[tuple[str, int], ...], bool]
+    reach: dict[int, dict[int, set[Entry]]] = {}
     for index, pdg in enumerate(pdgs):
-        reach[1 << index] = {pdg: {()}}
+        reach[1 << index] = {pdg: {((), False)}}
     for size in range(2, count):
         for chosen in combinations(range(count), size):
             mask = sum(1 << index for index in chosen)
-            currents: dict[int, set[tuple[tuple[str, int], ...]]] = {}
+            currents: dict[int, set[Entry]] = {}
             low = mask & -mask
             sub = (mask - 1) & mask
             while sub:
                 # Each unordered split once: the left side holds the lowest leg.
                 if sub & low:
-                    other = mask ^ sub
                     left_currents = reach.get(sub, {})
-                    right_currents = reach.get(other, {})
-                    for left, left_orders in left_currents.items():
-                        for right, right_orders in right_currents.items():
-                            for a, b, a_orders, b_orders in (
-                                (left, right, left_orders, right_orders),
-                                (right, left, right_orders, left_orders),
+                    right_currents = reach.get(mask ^ sub, {})
+                    for left, left_entries in left_currents.items():
+                        for right, right_entries in right_currents.items():
+                            for a, b, a_entries, b_entries in (
+                                (left, right, left_entries, right_entries),
+                                (right, left, right_entries, left_entries),
                             ):
                                 for vertex in model.vertices_accepting(a, b):
-                                    vertex_orders = {
+                                    own = {
                                         str(name).upper(): int(value)
                                         for name, value in model.vertex_coupling_orders(
                                             vertex
                                         )
                                     }
+                                    through = (
+                                        int(vertex.kind),
+                                        tuple(vertex.particles),
+                                    ) in marked
                                     result = int(vertex.particles[2])
-                                    for x in a_orders:
-                                        for y in b_orders:
-                                            total = _add(
-                                                _add(dict(x), dict(y)), vertex_orders
-                                            )
+                                    for x, x_through in a_entries:
+                                        for y, y_through in b_entries:
+                                            total = _add(_add(dict(x), dict(y)), own)
                                             if _within(total, limits):
                                                 currents.setdefault(result, set()).add(
-                                                    tuple(sorted(total.items()))
+                                                    (
+                                                        tuple(sorted(total.items())),
+                                                        through
+                                                        or x_through
+                                                        or y_through,
+                                                    )
                                                 )
                 sub = (sub - 1) & mask
             if currents:
                 reach[mask] = currents
     open_mask = sum(1 << index for index in open_legs)
+    gluon_mask = sum(1 << index for index in gluon_legs)
     for mask, currents in reach.items():
         complement = full ^ mask
-        if not mask & open_mask or complement & open_mask:
-            continue
-        if not any(complement & (1 << index) for index in gluon_legs):
-            continue
+        if mask > complement:
+            continue  # each split once
         other = reach.get(complement, {})
-        for species, orders in currents.items():
+        for species, entries in currents.items():
             if _colour(model, species) != 1:
                 continue
             for partner in (species, -species):
-                for x in orders:
-                    for y in other.get(partner, ()):
-                        if _within(_add(dict(x), dict(y)), limits):
+                for x, x_through in entries:
+                    for y, y_through in other.get(partner, ()):
+                        if not (x_through or y_through) or not _within(
+                            _add(dict(x), dict(y)), limits
+                        ):
+                            continue
+                        sides = (mask, complement)
+                        quark_free = [side for side in sides if not side & open_mask]
+                        gluon_sides = [side for side in quark_free if side & gluon_mask]
+                        if gluon_sides and (
+                            len(quark_free) == 1 or len(gluon_sides) == 2
+                        ):
+                            # A closed gluon trace beside an open line, or two
+                            # closed traces: no colour-flow sector carries it.
                             gluons = [
                                 process.legs[index].label
                                 for index in gluon_legs
-                                if complement & (1 << index)
+                                if gluon_sides[0] & (1 << index)
                             ]
                             raise SingletExchangeColourError(
-                                f"process {process.process!r}: its coupling orders "
-                                "admit a tree in which a colour singlet is "
-                                f"exchanged between the gluons {gluons} and the "
-                                "quark line(s), through a vertex that joins a "
-                                "singlet to gluons alone. The colour of such a "
-                                "tree is an open colour line times a closed gluon "
+                                f"process {process.process!r} is refused; set "
+                                f"{remedy} to generate it without the trees "
+                                "in which a colour singlet joins the gluons "
+                                f"{gluons} to the rest through a vertex with "
+                                "gluons alone: their colour holds a closed "
+                                "gluon trace beside an open line or another "
                                 "trace, which no colour-flow sector of this "
-                                "version carries, so its value would be wrong. "
-                                "To generate the process without these trees, "
-                                "set the coupling order of that vertex to zero: "
-                                + " ".join(
-                                    f"max_coupling_orders {{ {name} = 0 }}"
-                                    for name in vertex_orders
-                                )
+                                "version carries, so their value would be wrong"
+                            )
+                        if not quark_free and execution_mode in _DAG_MODES:
+                            raise SingletExchangeColourError(
+                                f"process {process.process!r} is refused in the "
+                                f"{execution_mode or 'compiled'} mode: its "
+                                "trees in which a colour singlet joins two "
+                                "quark lines through a "
+                                "vertex with gluons alone are not built there, "
+                                "so its value would be wrong. Generate it in the "
+                                "recurrence or on-the-fly mode, or set "
+                                f"{remedy}"
                             )

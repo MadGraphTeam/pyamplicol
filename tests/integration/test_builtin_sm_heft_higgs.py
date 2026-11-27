@@ -258,3 +258,70 @@ def test_requests_without_that_exchange_still_build(
     generate, process: str, orders, mode: str
 ) -> None:
     generate(process, mode, "full", orders)
+
+
+def test_the_correlated_lane_refuses_the_same_born(tmp_path: Path) -> None:
+    if importlib.util.find_spec("pyamplicol._rusticol") is None:
+        pytest.skip("the Rusticol extension has not been built")
+    from pyamplicol import ColorCorrelator, CorrelatorConfig
+
+    correlators = CorrelatorConfig(
+        color_correlations=(ColorCorrelator.dipole("T1_2", 1, 2),)
+    )
+    config = _config("compiled", "full", {"QCD": 2, "QED": 1, "HIG": 1})
+    with pytest.raises(GenerationError, match="closed gluon trace"):
+        Generator(config).generate(
+            "g g > t t~",
+            tmp_path / "refused",
+            model=ModelSource.built_in_sm_heft(),
+            correlators=correlators,
+        )
+    Generator(_config("compiled", "full", {"QCD": 0, "QED": 1, "HIG": 1})).generate(
+        "g g > z z",
+        tmp_path / "served",
+        model=ModelSource.built_in_sm_heft(),
+        correlators=correlators,
+    )
+
+
+@pytest.mark.parametrize("mode", _MODES)
+def test_a_singlet_between_two_quark_lines_through_the_effective_vertex(
+    generate, mode: str
+) -> None:
+    """``d d~ > t t~ g``: a gluon of the d line and the external gluon fuse
+    into a Higgs that the top line absorbs. The recurrence and on-the-fly
+    modes equal MadGraph's heft, split orders included; the compiled and eager
+    modes, which do not build these trees, refuse the request."""
+
+    process, orders = "d~ d > t~ t g", {"QCD": 99, "QED": 99, "HIG": 1}
+    if mode in ("compiled", "eager"):
+        with pytest.raises(GenerationError, match="recurrence or on-the-fly"):
+            generate(process, mode, "full", orders)
+        return
+    payload = json.loads(
+        (_FIXTURES / "madgraph-split-orders-heft-quark-lines.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    reference = next(p for p in payload["processes"] if p["process"] == process)
+    runtime = Runtime.load(generate(process, mode, "full", orders))
+    values = _real(runtime.evaluate(reference["points"]))
+    for value, row in zip(values, reference["partials"], strict=True):
+        assert abs(value - math.fsum(row)) <= 1e-12 * _scale(row)
+    if mode != "recurrence":
+        return
+    split = runtime.evaluate_orders(reference["points"])
+    for index, order in enumerate(reference["squared_orders"]):
+        label = tuple(sorted((name, power) for name, power in order.items() if power))
+        for point, row in enumerate(reference["partials"]):
+            actual = _real(split.for_order(label))[point]
+            assert abs(actual - row[index]) <= 1e-12 * _scale(row), (point, label)
+
+
+@pytest.mark.parametrize("mode", _MODES)
+def test_a_singlet_between_two_gluon_groups_is_refused(generate, mode: str) -> None:
+    """``g g > g g`` through two effective vertices: the colour is a product of
+    two closed traces, which no sector carries."""
+
+    with pytest.raises(GenerationError, match="closed gluon trace"):
+        generate("g g > g g", mode, "full", {"QCD": 2, "QED": 1, "HIG": 2})

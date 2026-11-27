@@ -493,7 +493,12 @@ load and evaluate it silently with the old values (see
   - the recurrence and on-the-fly modes dropped it.
 
   Every mode now refuses it with a typed error; `HIG = 0` serves these
-  processes without the effective vertex.
+  processes without the effective vertex. The same holds for a Higgs between
+  two groups of gluons (`g g > g g` at `HIG = 2`).
+- A Higgs that the effective vertex joins, through a gluon of one quark line,
+  to a second quark line (`d d~ > t t~ g`) was dropped by the compiled and
+  eager modes, giving a wrong value without a message. These modes now refuse
+  it, and the recurrence and on-the-fly modes serve it, equal to MadGraph.
 - The default (minimal) coupling-order policy now works within each order's
   UFO `expansion_order`, as MadGraph does: an amplitude carries at most that
   power of the order unless the request names a higher limit. Of the shipped

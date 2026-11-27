@@ -4127,7 +4127,10 @@ class GenerationBackend:
                 or explicit_limits
             )
         require_representable_singlet_exchange(
-            expanded.process_ir, model=model, max_coupling_orders=checked_limits or None
+            expanded.process_ir,
+            model=model,
+            max_coupling_orders=checked_limits or None,
+            execution_mode="on-the-fly",
         )
         projection = project_on_the_fly_process_seed_v1(
             expanded.process_ir,
@@ -8717,7 +8720,12 @@ class GenerationBackend:
                 )
             limits = inferred or capped or limits
         require_representable_singlet_exchange(
-            process, model=model, max_coupling_orders=limits or None
+            process,
+            model=model,
+            max_coupling_orders=limits or None,
+            execution_mode=(
+                str(run.evaluator.execution_mode) if run is not None else "compiled"
+            ),
         )
         replay_plan = None
         materialized_sector_ids = selection.selected_color_sector_ids
