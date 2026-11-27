@@ -98,7 +98,7 @@ def test_every_builtin_vertex_kind_has_a_constructive_binding(
     assert (
         {binding.key.kind for binding in catalog.vertex_bindings}
         == {vertex.kind for vertex in model.vertices}
-        == set(range(25))
+        == set(range(27))
     )
     assert not [
         gap for gap in catalog.unsupported_variants if gap.contract_kind == "vertex"
