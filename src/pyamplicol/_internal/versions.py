@@ -86,6 +86,10 @@ COMPILED_ZERO_COLOR_FLOWS_CAPABILITY = "rusticol.compiled.zero-color-flows.v1"
 # model with Born amplitudes of several coupling orders;
 # ``generation.born_orders.QED_ORDER_WEIGHTED_COUPLING_POLICY``).
 QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY = "rusticol.normalization.qed-order-weights.v1"
+# The tree correlator payload (``correlators.json``) that lists certified
+# zero coherent groups: a (helicity, colour sector) amplitude without
+# diagrams. Written only when there is one; schema 1 otherwise.
+CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION = 2
 COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY = (
     "rusticol.compiled.color-contraction-walsh.v1"
 )
