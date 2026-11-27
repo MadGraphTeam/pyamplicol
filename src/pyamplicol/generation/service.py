@@ -4686,6 +4686,12 @@ class GenerationBackend:
         (``_refuse_requests_without_tree_diagrams``)."""
 
         without_diagram: list[_RequestWithoutTreeDiagram] = []
+        # Requests of a model's own catalog (UFO) that the quark-line cut
+        # partly removes: the cut members, for the refusal step.
+        partly_cut: dict[str, _RequestWithoutTreeDiagram] = {}
+        builtin_selection = (
+            resolved.compiled is None or not resolved.use_compiled_process_catalog
+        )
         aliases_by_target: dict[str, list[ProcessAlias]] = {}
         for alias in processes.aliases:
             aliases_by_target.setdefault(alias.process_name, []).append(alias)
@@ -4699,8 +4705,17 @@ class GenerationBackend:
             except _RequestWithoutTreeDiagram as refusal:
                 without_diagram.append(refusal)
                 continue
+            kept: Sequence[int] = range(len(expanded))
+            if tree_refusal and not builtin_selection:
+                # The built-in enumeration applies the cut itself.
+                kept, cut = self._model_quark_line_cut(request, expanded)
+                if cut is not None and not kept:
+                    without_diagram.append(cut)
+                    continue
+                if cut is not None:
+                    partly_cut[request.name] = cut
             request_aliases = aliases_by_target.get(request.name, [])
-            if request_aliases and len(expanded) != 1:
+            if request_aliases and len(kept) != 1:
                 raise GenerationError(
                     f"process aliases for {request.name!r} are ambiguous after "
                     f"expansion into {len(expanded)} concrete processes"
@@ -4709,6 +4724,9 @@ class GenerationBackend:
                 set()
             )
             for concrete_index, process_ir in enumerate(expanded, start=1):
+                if concrete_index - 1 not in kept:
+                    # Cut: the others keep the names of the whole expansion.
+                    continue
                 permutation_class = _process_side_permutation_class(process_ir)
                 if permutation_class in side_permutation_classes:
                     continue
@@ -4773,14 +4791,19 @@ class GenerationBackend:
                 relation_warning=self._flavor_blind_relation_warning(resolved, table),
             )
         if tree_refusal:
+            model = resolved.model
+            if model is None and resolved.compiled is not None:
+                # Planning resolves no model object for every mode: the same
+                # check needs the compiled model's.
+                from ..models.external import CompiledUFOModel
+
+                model = CompiledUFOModel(resolved.compiled)
             self._refuse_requests_without_tree_diagrams(
                 result,
-                resolved.model,
+                model,
                 without_diagram,
-                builtin_selection=(
-                    resolved.compiled is None
-                    or not resolved.use_compiled_process_catalog
-                ),
+                partly_cut=partly_cut,
+                builtin_selection=builtin_selection,
                 request_order=tuple(
                     request.expression for request in processes.requests
                 ),
@@ -5761,6 +5784,49 @@ class GenerationBackend:
             lines=lines,
         )
 
+    def _model_quark_line_cut(
+        self,
+        request: ProcessRequest,
+        expanded: Sequence[CanonicalProcessIR],
+    ) -> tuple[tuple[int, ...], _RequestWithoutTreeDiagram | None]:
+        """``process.max_quark_lines`` on the concrete processes of a model's
+        own catalog (UFO), as the compiled lane applies it (colour-triplet
+        endpoint pairs): the indices it keeps and, when it removes any, the
+        removal with every concrete process (``_filter_refusal`` decides)."""
+
+        limit = self._max_quark_pairs
+        everything = tuple(range(len(expanded)))
+        if limit is None:
+            return everything, None
+        counts = [process.color_endpoints.pair_count for process in expanded]
+        kept = tuple(index for index in everything if counts[index] <= limit)
+        if len(kept) == len(expanded):
+            return everything, None
+        removed = sorted({count for count in counts if count > limit})
+        counted = " or ".join(str(count) for count in removed)
+        noun = "line" if removed == [1] else "lines"
+        cut = f"process.max_quark_lines = {limit}"
+        if kept:
+            # What the kept members lack is said with the active bounds
+            # (``_filter_refusal``).
+            reason = (
+                f"{cut} removes {len(expanded) - len(kept)} of the {len(expanded)} "
+                f"concrete processes of {request.expression!r} (those with "
+                f"{counted} quark {noun})"
+            )
+        else:
+            reason = (
+                f"{cut} removes every concrete process of {request.expression!r} "
+                f"(they have {counted} quark {noun})"
+            )
+        return kept, _RequestWithoutTreeDiagram(
+            request.expression,
+            reason,
+            cut=cut,
+            uncut=tuple(expanded),
+            lines=tuple(counts),
+        )
+
     def _builtin_request_without_process(
         self,
         expression: str,
@@ -5814,6 +5880,7 @@ class GenerationBackend:
         *,
         request_order: Sequence[str] = (),
         builtin_selection: bool = False,
+        partly_cut: Mapping[str, _RequestWithoutTreeDiagram] | None = None,
     ) -> None:
         """Refuse, before any lane is built, the requests none of whose
         concrete processes has a tree-level closure within the coupling-order
@@ -5965,13 +6032,13 @@ class GenerationBackend:
             if name not in supported:
                 kept = members.get(name, ())
                 # The members the built-in quark-line cut removed count too.
-                partly_cut = (
+                cut = (
                     self._builtin_partly_cut_request(request)
                     if builtin_selection and model is not None
-                    else None
+                    else (partly_cut or {}).get(name)
                 )
                 refused.setdefault(
-                    request.expression, decide(request.expression, kept, partly_cut)
+                    request.expression, decide(request.expression, kept, cut)
                 )
         if refused:
             # In request order.
