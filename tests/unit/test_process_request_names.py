@@ -37,7 +37,7 @@ _PAIRS = [pair for group in _GROUPS for pair in itertools.combinations(group, 2)
 
 
 def test_the_two_to_two_catalogue_has_colliding_default_names() -> None:
-    # The census of every 2 -> 2 Standard Model process: 126 names shared by
+    # Over every 2 -> 2 Standard Model process: 126 names shared by
     # 268 processes (164 pairs), from charge signs alone.
     assert len(_GROUPS) >= 100
     assert ("u mu- > u mu-", "u mu+ > u mu+") in _PAIRS or (
