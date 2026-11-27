@@ -66,7 +66,8 @@ mod amplitude;
 #[cfg(test)]
 pub(crate) use amplitude::build_compiled_symmetric_group_color_contraction_runtime;
 pub(crate) use amplitude::{
-    build_color_contraction_runtime, build_raw_sum_groups, generic_root_group_id,
+    ColorReplayOrderScratch, build_color_contraction_runtime, build_raw_sum_groups,
+    generic_root_group_id,
 };
 
 pub(crate) fn native_f64_simd_lane_width() -> usize {

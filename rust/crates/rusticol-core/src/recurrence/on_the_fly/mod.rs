@@ -96,6 +96,7 @@ fn final_digest(hash: Sha256) -> RusticolResult<SemanticDigest> {
 mod coupling_policy;
 mod family;
 mod interpreter;
+mod orders;
 mod persisted;
 #[cfg(any(test, feature = "on-the-fly-test-support"))]
 mod probe_guard;
@@ -113,6 +114,7 @@ mod trace;
 #[cfg(any(test, feature = "on-the-fly-test-support"))]
 pub(crate) use coupling_policy::OnTheFlyCouplingPolicyCensusV1;
 pub(crate) use coupling_policy::OnTheFlyResolvedCouplingPolicyV1;
+pub(crate) use coupling_policy::resolve_on_the_fly_coupling_policy_v1;
 pub use family::OnTheFlyQueryFamilyCensusV1;
 #[cfg(feature = "on-the-fly-test-support")]
 pub use family::on_the_fly_query_family_census_v1;
@@ -127,6 +129,7 @@ pub(crate) use interpreter::{
     OnTheFlyStructuralInterpreter, OnTheFlyUnionSourceBindingView, OnTheFlyWorkspaceV1,
     ResolvedOnTheFlyExecutor,
 };
+pub(crate) use orders::{on_the_fly_amplitude_order_components_v1, split_trace_by_amplitude_order};
 pub(crate) use persisted::{
     PersistedHelicityAmplitudeTileV1, PersistedHelicityFamilyCacheCensusV1,
     PersistedHelicityFamilyExecutionReportV1, PersistedHelicityFamilyExecutorV1,

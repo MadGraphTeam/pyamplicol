@@ -1321,15 +1321,18 @@ class RusticolRuntimeBackend:
         kinematics_improvement: str | None = None,
         kinematics_improvement_binary64: bool | None = None,
     ) -> TreeOrderEvaluation:
-        """Split tree values by squared coupling order in one recurrence pass.
+        """Split tree values by squared coupling order.
 
         Totals are exactly those of :meth:`evaluate` with the same selectors.
+        Recurrence, compiled and on-the-fly artifacts serve the split; eager
+        artifacts raise :class:`CompatibilityError`.
         """
 
-        if self._execution_mode != "recurrence":
+        if self._execution_mode not in {"recurrence", "compiled", "on-the-fly"}:
             raise CompatibilityError(
-                "squared coupling-order partials require a recurrence artifact; "
-                "regenerate with evaluator.execution_mode='recurrence'"
+                "squared coupling-order partials are not available for "
+                f"{self._execution_mode} artifacts; regenerate with "
+                "evaluator.execution_mode 'recurrence', 'compiled' or 'on-the-fly'"
             )
         self._require_supported_precision(precision)
         momenta = self._improved(
@@ -1347,6 +1350,11 @@ class RusticolRuntimeBackend:
             exact = cast(
                 "RecurrenceExactExecutor | _ProcessGroupExactExecutor", self._exact()
             )
+            if not callable(getattr(exact, "evaluate_orders", None)):
+                raise CompatibilityError(
+                    "squared coupling-order partials above binary64 are not "
+                    f"available for {self._execution_mode} artifacts"
+                )
             resolved, partials = exact.evaluate_orders(
                 momenta,
                 helicities=helicities,

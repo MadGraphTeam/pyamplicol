@@ -414,8 +414,8 @@ int rusticol_runtime_evaluate_resolved_f64(
 );
 
 /*
- * Squared coupling-order partials of recurrence artifacts. The JSON object
- * ("rusticol-amplitude-orders-v1") lists the coupling-order "names", the
+ * Squared coupling-order partials of recurrence, compiled and on-the-fly
+ * artifacts. The JSON object ("rusticol-amplitude-orders-v1") lists the coupling-order "names", the
  * amplitude "components" (powers per name) and the "squared" orders with
  * their ordered component "pairs". Partials use [point][squared order] in that
  * order, the canonical one of pyAmpliCol's Python API: nonzero (name, power)

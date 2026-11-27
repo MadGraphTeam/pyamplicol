@@ -44,10 +44,6 @@ import subprocess
 from pathlib import Path
 
 _SPLIT_ORDER_NAMES = ("QCD", "QED")
-# The order names of the split-order tables, as a comment in matrix.f.
-_NAMES_RE = re.compile(
-    r"following list of couplings \(and in this order\):\s*\nC\s*\[([^\]]*)\]"
-)
 _DATA_RE = re.compile(r"DATA \(SQSPLITORDERS\(\s*(\d+),I\),I=\s*1,\s*\d+\) /([^/]*)/")
 # One packed colour-matrix row and the basis element it belongs to.
 _CF_RE = re.compile(
@@ -147,11 +143,25 @@ def _set_parameters(card: Path, settings: list[str]) -> None:
     card.write_text("\n".join(lines) + "\n")
 
 
-def _squared_orders(matrix: str) -> list[dict[str, int]]:
-    match = _NAMES_RE.search(matrix)
+def _split_order_names(matrix: str) -> tuple[str, ...] | None:
+    """The coupling-order names of MadGraph's split-order columns, from the
+    comment MadGraph writes above the split-order tables."""
+
+    match = re.search(r"^C\s+\[((?:'\w+'(?:,\s*)?)+)\]\s*$", matrix, re.M)
     if match is None:
-        raise SystemExit("MadGraph split-order names are missing")
-    names = tuple(name.strip().strip("'") for name in match.group(1).split(","))
+        return None
+    return tuple(re.findall(r"'(\w+)'", match.group(1)))
+
+
+def _squared_orders(
+    matrix: str, names: tuple[str, ...] = _SPLIT_ORDER_NAMES
+) -> list[dict[str, int]]:
+    recorded = _split_order_names(matrix)
+    if recorded is not None and recorded != names:
+        raise SystemExit(
+            f"MadGraph's split-order columns are {list(recorded)}, not {list(names)}; "
+            "pass them with --orders"
+        )
     rows = {
         int(index): [int(value) for value in values.split(",")]
         for index, values in _DATA_RE.findall(matrix)
@@ -248,7 +258,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--colour", choices=("full", "lc"), default="full")
-    parser.add_argument("--orders", default=",".join(_SPLIT_ORDER_NAMES))
+    parser.add_argument(
+        "--orders",
+        default=",".join(_SPLIT_ORDER_NAMES),
+        help="comma-separated coupling-order names of the model, in the order of "
+        "MadGraph's split-order table columns (default: QCD,QED)",
+    )
     parser.add_argument("--set-param", action="append", default=[])
     options = parser.parse_args(argv)
     names = tuple(name.strip() for name in options.orders.split(",") if name.strip())
@@ -269,7 +284,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         matrix = subprocess_dir / "matrix.f"
         source = matrix.read_text()
-        orders = _squared_orders(source)
+        orders = _squared_orders(source, names)
         source = _zero_colour_amplitudes(source)
         if options.colour == "lc":
             source = _leading_colour(source)

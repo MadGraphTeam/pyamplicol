@@ -65,6 +65,8 @@ _PROCESSES = (
     ("u t > u t", {"QCD": 2, "QED": 2}),
 )
 _MODES = ("recurrence", "compiled", "eager", "on-the-fly")
+# The modes that split results by squared coupling order (eager does not).
+_SPLIT_MODES = ("recurrence", "compiled", "on-the-fly")
 _ACCURACIES = ("lc", "full")
 _ALPHA_S = 0.118
 _ALPHA_EW = 1.0 / 132.507
@@ -197,8 +199,9 @@ def test_mixed_orders_match_madgraph_and_the_ufo_sm(
 ) -> None:
     """The total, with the interference between the orders, equals MadGraph's
     sum of split orders (where MadGraph's colour basis gives the accuracy) and
-    the UFO ``sm`` value of the same mode and accuracy; the recurrence mode's
-    squared-order partials equal MadGraph's, and the UFO ``sm``'s."""
+    the UFO ``sm`` value of the same mode and accuracy; the squared-order
+    partials of every mode that splits by order (recurrence, compiled,
+    on-the-fly) equal MadGraph's, and the UFO ``sm``'s."""
 
     points = _points(process)
     runtime = Runtime.load(artifacts(mode, accuracy, process))
@@ -212,7 +215,7 @@ def test_mixed_orders_match_madgraph_and_the_ufo_sm(
             zip(totals, reference["partials"], strict=True)
         ):
             assert abs(total - math.fsum(partials)) <= 1e-12 * _scale(partials), point
-    if mode != "recurrence":
+    if mode not in _SPLIT_MODES:
         return
     split = runtime.evaluate_orders(points)
     ufo_split = ufo.evaluate_orders(points)
@@ -263,7 +266,7 @@ def test_rebinding_alpha_rescales_every_order_by_its_own_powers(
     """After a run-time change of alpha_s and alpha_ew the value equals the
     sum of the default partials, each scaled by its own coupling powers, in
     every mode; changing back restores the default values bitwise, and the
-    recurrence partials scale order by order."""
+    partials of every mode that splits by order scale order by order."""
 
     process = "u u~ > d d~ g"
     points = _points(process)
@@ -275,7 +278,7 @@ def test_rebinding_alpha_rescales_every_order_by_its_own_powers(
     runtime.set_model_parameter("normalization.alpha_ew", 1 / 128.0)
     for value, target in zip(_real(runtime.evaluate(points)), expected, strict=True):
         assert value == pytest.approx(target, rel=1e-12, abs=0.0)
-    if mode == "recurrence":
+    if mode in _SPLIT_MODES:
         rebound = runtime.evaluate_orders(points)
         default_split = reference.evaluate_orders(points)
         for order in rebound.orders:

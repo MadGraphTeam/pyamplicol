@@ -2,6 +2,10 @@
 
 use super::*;
 
+#[path = "compiled_orders.rs"]
+mod compiled_orders;
+pub(super) use compiled_orders::{CompiledAmplitudeOrders, compiled_orders_unrecorded};
+
 #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
 fn evaluate_direct_color_schedule(
     direct: &mut compiled_direct_prototype::CompiledDirectEnginePrototype,
