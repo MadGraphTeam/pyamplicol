@@ -55,7 +55,15 @@ contributions (sum_f |bare_f| plus the absolute local components): the
 factor 2 covers a difference of two evaluations with comparable rounding,
 which understates either one's error by up to about 2, and the floor covers
 roundings no check samples (couplings, kernel constants, the final sums, and
-the master integrals unless the rescaled check runs).
+the master integrals unless the rescaled check runs). A loop-induced output
+<A|M|A> is a bilinear form of amplitudes whose terms may cancel: its S is
+the product of the two sides' term floors (the size of what cancelled,
+``induced.scale``), and its floor (``from_checks``' ``floor``) is the same
+roundings' first-order effect on the form, eps (|A| S' + S |A'| + eps S S')
+with eps = FLOOR_UNITS u (``induced.floor``,
+``induced_observables.PointOutputs.floor``): about 2 FLOOR_UNITS u S
+where nothing cancels (both sides round), linear in the cancellation where
+the product is quadratic in it.
 
 In arbitrary precision the sizes of an estimate (budgets, E, S, the unit
 roundoff) are exponent-safe ``loops.v2.wide.Wide`` magnitudes: at the default
@@ -645,9 +653,11 @@ class StabilityEstimate:
     (finite, then the poles when computed), ``absolute`` E itself per sector
     and Laurent coefficient. ``checks`` holds each check's own budget against
     the Laurent vector, without safety factor and floor. ``budgets``
-    (absolute, per check and sector) and ``scale`` (the absolute sums S) let
-    ``subset`` re-combine fewer checks; ``families`` holds |Omega - Omega'|
-    per reduction lane when the reduction check ran. ``not_run`` names each
+    (absolute, per check and sector), ``scale`` (the absolute sums S) and
+    ``floor`` (the absolute floor where it is not FLOOR_UNITS u S: a
+    loop-induced output) let ``subset`` re-combine fewer checks;
+    ``families`` holds |Omega - Omega'| per reduction lane when the
+    reduction check ran. ``not_run`` names each
     requested check that did not run at the point with its reason (the
     cross-backend check where the other backend fails the point).
 
@@ -666,6 +676,7 @@ class StabilityEstimate:
     roundoff: float = field(repr=False)
     families: Mapping[Any, Any] | None = field(default=None, repr=False)
     not_run: Mapping[str, str] = field(default_factory=dict)
+    floor: Mapping[Any, Budget] | None = field(default=None, repr=False)
 
     @property
     def finite(self) -> float:
@@ -682,12 +693,15 @@ class StabilityEstimate:
         roundoff: float,
         families: Mapping[Any, Any] | None = None,
         not_run: Mapping[str, str] | None = None,
+        floor: Mapping[Any, Any] | None = None,
     ) -> StabilityEstimate:
         """Combine the absolute budgets of named checks (``ROTATION``,
         ``REDUCTION`` and ``ADDITIVE`` names) for the reference Laurent values
         per sector; ``scale`` are the absolute sums S and ``roundoff`` the
         carrier's unit roundoff; ``not_run`` the requested checks that did
-        not run, with their reasons."""
+        not run, with their reasons; ``floor`` the absolute floor per sector
+        and Laurent coefficient where it is not FLOOR_UNITS u S (a
+        loop-induced output, module docstring)."""
 
         if not budgets:
             raise ValueError("a stability estimate needs at least one check")
@@ -713,7 +727,12 @@ class StabilityEstimate:
 
             combined[sector] = Budget(
                 tuple(
-                    SAFETY * sampled(k) + FLOOR_UNITS * roundoff * _at(scale[sector], k)
+                    SAFETY * sampled(k)
+                    + (
+                        FLOOR_UNITS * roundoff * _at(scale[sector], k)
+                        if floor is None
+                        else _at(floor[sector], k)
+                    )
                     for k in range(width)
                 )
             )
@@ -728,6 +747,7 @@ class StabilityEstimate:
             roundoff,
             families,
             dict(not_run or {}),
+            None if floor is None else dict(floor),
         )
 
     def subset(self, names: Iterable[str]) -> StabilityEstimate:
@@ -744,6 +764,7 @@ class StabilityEstimate:
             roundoff=self.roundoff,
             families=self.families if set(names) & set(FRAMES) else None,
             not_run=self.not_run,
+            floor=self.floor,
         )
 
 
@@ -893,7 +914,7 @@ def native_estimate(
         cross,
         reason,
     )
-    relative_, coefficients, relatives, absolute, budgets, scale, not_run = found
+    relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
 
     def budget(rows: Sequence[Sequence[float]]) -> dict:
         return {
@@ -912,6 +933,7 @@ def native_estimate(
         roundoff,
         _deviations(reference),
         dict(not_run),
+        None if floor is None else budget(floor),
     )
 
 
@@ -1004,7 +1026,7 @@ def _native_induced_estimate(
         cross,
         reason,
     )
-    relative_, coefficients, relatives, absolute, budgets, scale, not_run = found
+    relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
     names = [sector for sector, _pairs in sectors]
 
     def budget(rows_: Sequence[Sequence[float]]) -> dict:
@@ -1023,6 +1045,7 @@ def _native_induced_estimate(
         roundoff,
         _deviations(reference),
         dict(not_run),
+        None if floor is None else budget(floor),
     )
 
 

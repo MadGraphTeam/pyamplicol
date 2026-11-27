@@ -1014,14 +1014,10 @@ class PointOutputs:
             errors = induced.lane_errors(evaluation, deviations)
         return _spin_errors(errors, self.coefficients)
 
-    def scale(self, output: Output, roundoff: Any) -> dict:
-        """The floor's scale S (its floor FLOOR_UNITS u S, ``roundoff`` u):
-        the output's |M| form of the per-row term floors F (term scale per t
-        and k with the row's finite floor, plus the counterterm kets'
-        magnitudes) against the output's vectors b, first order in each
-        side's floor, F^T|M||b| + |b|^T|M|F + FLOOR_UNITS u F^T|M|F
-        (``induced.floor_kernel``; the reduction budget's form,
-        ``_perturbed``, with errors FLOOR_UNITS u F)."""
+    def _floors(self) -> dict:
+        """The per-row term floors per t and k (term scale with the row's
+        finite floor, plus the counterterm kets' magnitudes), moved onto the
+        point's spin assignment."""
 
         evaluation = self.evaluation
         terms = induced.term_values(evaluation)
@@ -1037,22 +1033,48 @@ class PointOutputs:
                             values[k] += induced._size(source[t][k])
                 cells.append([max(value, values[0]) for value in values])
             floors[key] = cells
-        floors = _spin_errors(floors, self.coefficients)
+        return _spin_errors(floors, self.coefficients)
+
+    def scale(self, output: Output) -> dict:
+        """The scale S of the estimate (the public estimate's
+        ``magnitude``): the output's |M| form of the per-row term floors F
+        (``_floors``), F^T|M|F, the size of what cancelled."""
+
         _h, _k, magnitude_ = self.forms(output.metric)
-        rows = self.rows_of(output)
-        values = _absolute(self.amplitudes, evaluation.numbers.wide)
+        floors = self._floors()
+        return _bound(self.evaluation, magnitude_, floors, floors, self.rows_of(output))
+
+    def floor(self, output: Output, roundoff: Any) -> dict:
+        """The estimate's floor (``StabilityEstimate.from_checks``'
+        ``floor``): the change bound of the form for errors eps F of its
+        vectors b (``_perturbed`` with e = eps F, eps = FLOOR_UNITS u),
+        eps (F^T|M||b| + |b|^T|M|F + eps F^T|M|F): first order in each
+        side's floor (``induced.floor_kernel``)."""
+
         from .stability import FLOOR_UNITS, Budget
 
+        evaluation = self.evaluation
+        _h, _k, magnitude_ = self.forms(output.metric)
+        rows = self.rows_of(output)
+        floors = self._floors()
+        values = _absolute(self.amplitudes, evaluation.numbers.wide)
         epsilon = FLOOR_UNITS * roundoff
-        second = _bound(evaluation, magnitude_, floors, floors, rows)
-        return _add_budgets(
+        parts = (
             _bound(evaluation, magnitude_, floors, values, rows),
             _bound(evaluation, magnitude_, values, floors, rows),
-            {
-                sector: Budget(tuple(epsilon * x for x in budget.coefficients))
-                for sector, budget in second.items()
-            },
+            _bound(evaluation, magnitude_, floors, floors, rows),
         )
+        return {
+            sector: Budget(
+                tuple(
+                    epsilon * (x + y + epsilon * z)
+                    for x, y, z in zip(
+                        *(part[sector].coefficients for part in parts), strict=True
+                    )
+                )
+            )
+            for sector in parts[0]
+        }
 
     def estimate(
         self, output: Output, rotated, frame, roundoff, cross=None, not_run=None
@@ -1069,8 +1091,9 @@ class PointOutputs:
         return StabilityEstimate.from_checks(
             values,
             self.budgets(output, rotated, frame, cross),
-            scale=self.scale(output, roundoff),
+            scale=self.scale(output),
             roundoff=roundoff,
+            floor=self.floor(output, roundoff),
             not_run=not_run,
         )
 

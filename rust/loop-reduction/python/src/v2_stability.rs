@@ -19,7 +19,8 @@ type PyLane = (usize, usize, Vec<(f64, f64)>);
 type PyPoint = (Vec<PyLane>, Vec<Budget>);
 /// The estimate's fields: relative, per coefficient, per check its relative
 /// budget, E per sector, per check its absolute budget, S per sector, the
-/// checks that did not run.
+/// checks that did not run, the floor per sector where it is not
+/// FLOOR_UNITS u S (a loop-induced point).
 type PyEstimate = (
     f64,
     Vec<f64>,
@@ -28,6 +29,7 @@ type PyEstimate = (
     Vec<(String, Budget)>,
     Budget,
     Vec<(String, String)>,
+    Option<Budget>,
 );
 
 fn point((lanes, local): PyPoint) -> PointLanes<usize> {
@@ -145,6 +147,7 @@ fn fields(estimate: Estimate) -> PyEstimate {
         estimate.budgets,
         estimate.scale,
         estimate.not_run,
+        estimate.floor,
     )
 }
 

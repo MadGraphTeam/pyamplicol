@@ -3282,6 +3282,7 @@ class LoopSlice:
             budgets,
             scale=reference.stability_scale(),
             roundoff=precision.estimate_roundoff,
+            floor=reference.stability_floor(),
             families=reference.family_deviations,
             not_run=not_run,
         )
@@ -4193,6 +4194,14 @@ class _PointEvaluation:
         if self.slice.amplitude is not None:
             return induced.stability_scale(self)
         return self.absolute
+
+    def stability_floor(self) -> dict | None:
+        """The estimate's absolute floor where it is not FLOOR_UNITS u S
+        (``StabilityEstimate.from_checks``' ``floor``): a loop-induced
+        point's, formed on first use (``induced.floor``); None otherwise."""
+        if self.slice.amplitude is not None:
+            return induced.stability_floor(self)
+        return None
 
     def finish(self, retest: str | None) -> _PointEvaluation:
         """Dress (schedule B), reduce and assemble the complete virtual."""

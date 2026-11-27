@@ -1087,6 +1087,7 @@ def budgets(evaluation: Any) -> None:
             evaluation, lane_errors(evaluation, deviations)
         )
     evaluation.absolute = None
+    evaluation.floor_cache = None
 
 
 def rotation_budget(direct: Any, rotated: Any) -> dict:
@@ -1403,14 +1404,13 @@ def row_values(evaluation: Any) -> dict:
 
 def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
     """The floor's bilinear kernel on (value, floor) pairs of the two sides:
-    x S' + S y + FLOOR_UNITS u S S'. With |delta a| <= FLOOR_UNITS u S per
-    side (the roundings no check samples, ``stability``), the form a^dag G a'
-    computed from the rounded vectors moves by at most FLOOR_UNITS u (x S' +
-    S y) + (FLOOR_UNITS u)^2 S S' (x, y the computed sizes), so
-    FLOOR_UNITS u times this kernel bounds it: first order in each side's
-    floor against the other side's value, as the checks' budgets
-    (``quadratic_budget``). The second-order term keeps a vanishing value
-    "zero within the estimate" (RULED Q13): there x ~ u S."""
+    eps (x S' + S y + eps S S'), eps = FLOOR_UNITS u. With |delta a| <= eps
+    S per side (the roundings no check samples, ``stability``), the form
+    a^dag G a' of the rounded vectors moves by at most that (x, y the
+    computed sizes): first order in each side's floor against the other
+    side's value, as the checks' budgets (``quadratic_budget``). The
+    second-order term keeps a vanishing value "zero within the estimate"
+    (RULED Q13): there x ~ u S."""
 
     from .stability import FLOOR_UNITS
 
@@ -1418,25 +1418,43 @@ def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
 
     def kernel(left: Any, right: Any) -> Any:
         (x, s), (y, t) = left, right
-        return x * t + s * y + epsilon * s * t
+        return epsilon * (x * t + s * y + epsilon * s * t)
 
     return kernel
 
 
 def scale(evaluation: Any) -> dict:
-    """The scale S of the estimate's floor per sector and coefficient
-    (``StabilityEstimate.from_checks``' ``scale``, its floor FLOOR_UNITS u
-    S): the |A|^2-level first-order form of the per-row term floors S_{l,h}
-    (``row_scales``; PLAN §2.a.8 with the DECISIONS ~09:00 (1) scale)
+    """The scale S of the estimate per sector and coefficient
+    (``StabilityEstimate.from_checks``' ``scale``, the public estimate's
+    ``magnitude``): the |A|^2-level product of the per-row term floors,
+    sum_pairs kappa sum_h sum_{i+j=k} S_{l,h,i} S_{l',h,j} / avg
+    (``row_scales``; PLAN §2.a.8 with the DECISIONS ~09:00 (1) scale): the
+    size of what cancelled, against which a numerical zero is reported as
+    "zero within the estimate" (RULED Q13: no zero is declared). The
+    estimate's floor is ``floor``, not FLOOR_UNITS u S."""
+
+    scales = row_scales(evaluation)
+    return sector_form(
+        evaluation,
+        rows_of(evaluation),
+        scales.get,
+        scales.get,
+        lambda a, b: a * b,
+    )
+
+
+def floor(evaluation: Any) -> dict:
+    """The estimate's floor per sector and coefficient
+    (``StabilityEstimate.from_checks``' ``floor``): the |A|^2-level
+    first-order form of the per-row term floors S_{l,h} (``row_scales``)
     against the computed amplitude's sizes N_{l,h} (``row_values``),
-    sum_pairs kappa sum_h sum_{i+j=k} (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
-    N_{l',h,j} + FLOOR_UNITS u S_{l,h,i} S_{l',h,j}) / avg
-    (``floor_kernel``): an amplitude that cancels by a factor r between its
-    terms gets a floor linear in r, as its roundings are; a numerical zero
-    (N ~ u S) is still reported as "zero within the estimate" by the
-    second-order term (RULED Q13: no zero is declared). A key with a
-    value and no floor (or the reverse) counts with a zero for the missing
-    part."""
+    sum_pairs kappa sum_h sum_{i+j=k} eps (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
+    N_{l',h,j} + eps S_{l,h,i} S_{l',h,j}) / avg, eps = FLOOR_UNITS u
+    (``floor_kernel``). An amplitude whose terms cancel by a factor r gets
+    a floor linear in r, as its roundings are (the product of the two
+    sides' term floors, ``scale``, grows like r^2); a numerical zero (N ~ u
+    S) keeps the second-order term. A key with a value and no term floor
+    (or the reverse) counts with a zero for the missing part."""
 
     scales = row_scales(evaluation)
     values = row_values(evaluation)
@@ -1458,6 +1476,16 @@ def scale(evaluation: Any) -> dict:
         pairs,
         floor_kernel(evaluation.numbers.precision.estimate_roundoff),
     )
+
+
+def stability_floor(evaluation: Any) -> dict:
+    """``floor`` of a point, formed on first use (``stability_scale``'s
+    term scale)."""
+
+    found = getattr(evaluation, "floor_cache", None)
+    if found is None:
+        found = evaluation.floor_cache = floor(evaluation)
+    return found
 
 
 def stability_scale(evaluation: Any) -> dict:
@@ -3379,6 +3407,7 @@ __all__ = [
     "column_labels",
     "counterterm_kets",
     "finiteness",
+    "floor",
     "g_norm",
     "generation_probes",
     "goldstone_applicability",
@@ -3401,8 +3430,10 @@ __all__ = [
     "probes",
     "rotation_errors",
     "row_scales",
+    "row_values",
     "scale",
     "square",
+    "stability_floor",
     "stability_scale",
     "term_values",
     "ward_floors",

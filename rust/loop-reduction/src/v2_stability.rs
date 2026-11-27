@@ -821,6 +821,9 @@ pub struct Estimate {
     pub roundoff: f64,
     /// Each requested check that did not run, with its reason.
     pub not_run: Vec<(String, String)>,
+    /// The absolute floor per sector and Laurent coefficient where it is
+    /// not FLOOR_UNITS u S (a loop-induced output; `StabilityEstimate.floor`).
+    pub floor: Option<Budget>,
 }
 
 impl Estimate {
@@ -831,6 +834,20 @@ impl Estimate {
         reference: &Budget,
         budgets: Vec<(String, Budget)>,
         scale: Budget,
+        roundoff: f64,
+        not_run: Vec<(String, String)>,
+    ) -> RusticolResult<Self> {
+        Self::from_checks_floor(reference, budgets, scale, None, roundoff, not_run)
+    }
+
+    /// [`Estimate::from_checks`] with the absolute floor `floor` per sector
+    /// and Laurent coefficient in place of FLOOR_UNITS u S where given
+    /// (`StabilityEstimate.from_checks`' `floor`).
+    pub fn from_checks_floor(
+        reference: &Budget,
+        budgets: Vec<(String, Budget)>,
+        scale: Budget,
+        floor: Option<Budget>,
         roundoff: f64,
         not_run: Vec<(String, String)>,
     ) -> RusticolResult<Self> {
@@ -868,7 +885,11 @@ impl Estimate {
                     }
                 }
                 let sampled = rotated.unwrap_or(0.0) + reductions;
-                row.push(SAFETY * sampled + FLOOR_UNITS * roundoff * at(&scale, sector, k)?);
+                let bottom = match &floor {
+                    None => FLOOR_UNITS * roundoff * at(&scale, sector, k)?,
+                    Some(floor) => at(floor, sector, k)?,
+                };
+                row.push(SAFETY * sampled + bottom);
             }
             combined.push(row);
         }
@@ -885,6 +906,7 @@ impl Estimate {
             scale,
             roundoff,
             not_run,
+            floor,
         })
     }
 }
@@ -1404,12 +1426,19 @@ impl InducedShape {
             .collect()
     }
 
-    /// The scale S of the estimate's floor (`induced.scale`): the |A|^2
-    /// first-order form of the per-row term floors S against the computed
-    /// amplitude's sizes N (`induced.floor_kernel`: x S' + S y +
-    /// FLOOR_UNITS u S S' on (value, floor) pairs; a key with only one of
+    /// The scale S of the estimate (`induced.scale`, the public estimate's
+    /// `magnitude`): the |A|^2 product of the per-row term floors.
+    pub fn scale(&self, point: &InducedPoint) -> RusticolResult<Budget> {
+        let scales = self.row_scales(point)?;
+        let get = |key: Key| lookup(&scales, &key).cloned();
+        Ok(self.sector_form(get, get, |a, b| a * b))
+    }
+
+    /// The estimate's floor (`induced.floor`): the |A|^2 first-order form of
+    /// the per-row term floors S against the computed amplitude's sizes N
+    /// ([`floor_kernel`] on (value, floor) pairs; a key with only one of
     /// them counts with a zero for the other).
-    pub fn scale(&self, point: &InducedPoint, roundoff: f64) -> RusticolResult<Budget> {
+    pub fn floor(&self, point: &InducedPoint, roundoff: f64) -> RusticolResult<Budget> {
         let scales = self.row_scales(point)?;
         let values = self.row_values(point);
         let zero = vec![0.0_f64; self.width];
@@ -1421,8 +1450,7 @@ impl InducedShape {
             let (found, value) = (found.unwrap_or(&zero), value.unwrap_or(&zero));
             Some((0..self.width).map(|k| (value[k], found[k])).collect())
         };
-        let kernel = floor_kernel(roundoff);
-        Ok(self.sector_form(pairs, pairs, kernel))
+        Ok(self.sector_form(pairs, pairs, floor_kernel(roundoff)))
     }
 
     /// The point's finiteness ratio (`induced.point_finiteness` with the
@@ -1484,24 +1512,30 @@ pub fn induced_estimate(
         Some(CrossRun::NotRun(why)) => not_run.push((CROSS.to_string(), why.clone())),
         None => {}
     }
-    Estimate::from_checks(reference, budgets, shape.scale(direct, roundoff)?, roundoff, not_run)
+    Estimate::from_checks_floor(
+        reference,
+        budgets,
+        shape.scale(direct)?,
+        Some(shape.floor(direct, roundoff)?),
+        roundoff,
+        not_run,
+    )
 }
 
 /// The floor's bilinear kernel on (value, floor) pairs of the two sides
-/// (`induced.floor_kernel`): x S' + S y + FLOOR_UNITS u S S', so that
-/// FLOOR_UNITS u times it bounds the form's change from roundings of at
-/// most FLOOR_UNITS u S per side.
+/// (`induced.floor_kernel`): eps (x S' + S y + eps S S'), eps = FLOOR_UNITS
+/// u, the form's change bound for roundings of at most eps S per side.
 pub fn floor_kernel(roundoff: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
     let epsilon = FLOOR_UNITS * roundoff;
-    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| x * t + s * y + epsilon * s * t
+    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| epsilon * (x * t + s * y + epsilon * s * t)
 }
 
-/// The scale S of one loop-induced output's floor (`induced_observables.
-/// PointOutputs.scale`): F^T|M||b| + |b|^T|M|F + FLOOR_UNITS u F^T|M|F per
-/// record sector and Laurent coefficient (`InducedShape::magnitude_form` of
-/// the term floors F and the output's absolute vectors b, summed in that
-/// order).
-pub fn output_floor_scale(
+/// The floor of one loop-induced output (`induced_observables.
+/// PointOutputs.floor`): eps (F^T|M||b| + |b|^T|M|F + eps F^T|M|F) per
+/// record sector and Laurent coefficient, eps = FLOOR_UNITS u
+/// (`InducedShape::magnitude_form` of the term floors F and the output's
+/// absolute vectors b).
+pub fn output_floor(
     shape: &InducedShape,
     magnitude: &[f64],
     floors: &Keyed<ErrorCells>,
@@ -1520,7 +1554,7 @@ pub fn output_floor_scale(
             a.iter()
                 .zip(b)
                 .zip(c)
-                .map(|((a, b), c)| a + b + epsilon * c)
+                .map(|((a, b), c)| epsilon * (a + b + epsilon * c))
                 .collect()
         })
         .collect()

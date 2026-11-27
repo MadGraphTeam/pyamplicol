@@ -1948,6 +1948,7 @@ def point_estimate(
         budgets,
         scale=reference.stability_scale(),
         roundoff=roundoff,
+        floor=reference.stability_floor(),
         families=reference.family_deviations,
         not_run=not_run,
     )

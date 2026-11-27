@@ -1150,10 +1150,11 @@ fn guard_rotation_estimate(
         }
     }
     let budget = shape.quadratic_budget(direct, &errors);
-    Estimate::from_checks(
+    Estimate::from_checks_floor(
         reference,
         vec![(stability::rotation_name(0), budget)],
-        shape.scale(direct, roundoff)?,
+        shape.scale(direct)?,
+        Some(shape.floor(direct, roundoff)?),
         roundoff,
         Vec::new(),
     )
@@ -1472,17 +1473,14 @@ fn call_guard_estimate(
                     .map(|laurent| laurent.iter().map(|d| context.abs(d).to_f64()).collect())
                     .collect(),
             };
-            let scale = stability::output_floor_scale(
-                &shape,
-                &form.magnitude,
-                &floors,
-                &values,
-                roundoff,
-            );
-            Estimate::from_checks(
+            let scale = shape.magnitude_form(&form.magnitude, &floors, &floors);
+            let floor =
+                stability::output_floor(&shape, &form.magnitude, &floors, &values, roundoff);
+            Estimate::from_checks_floor(
                 &reference,
                 vec![(rotation.clone(), budget)],
                 scale,
+                Some(floor),
                 roundoff,
                 Vec::new(),
             )?
