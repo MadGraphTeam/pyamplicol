@@ -3,6 +3,7 @@
 //! Bounded parsing and semantic validation for recurrence execution manifests.
 
 use crate::engine::{
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY,
     SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY,
 };
@@ -36,6 +37,11 @@ pub(super) const RECURRENCE_HELICITY_DISPATCH_PATH: &str = "recurrence-helicity-
 pub(super) const RECURRENCE_HELICITY_SELECTOR_COMPANION_KIND: &str =
     "pyamplicol-recurrence-helicity-selector-companion-v2";
 pub(super) const RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW: &str = "primary-local-color-view-v1";
+/// The companion's view of a primary reducer that keeps only the
+/// (sector, helicity) groups with diagrams: expanded storage with several
+/// helicity components, one local group per active owner sector.
+pub(super) const RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW: &str =
+    "primary-sparse-local-color-view-v1";
 pub(super) const RECURRENCE_COLOR_CONTRACTION_PATH: &str = "recurrence-color.bin";
 pub(super) const RECURRENCE_KERNEL_PACK_MANIFEST_PATH: &str = "model/eager-kernel-pack.json";
 pub(super) const RECURRENCE_KERNEL_PAYLOAD_ROOT: &str = "model/eager-kernels";
@@ -807,11 +813,15 @@ impl RecurrenceExecutionManifest {
             .and_then(|reference| reference.factorization.as_ref())
             .is_some_and(|factorization| factorization.kind == "symmetric-group-fourier");
         let has_helicity_selector_companion = self.helicity_selector_companion.is_some();
+        let qed_order_weighted = super::is_qed_order_weighted_policy(Some(
+            self.runtime_metadata.normalization.coupling_policy.as_str(),
+        ));
         validate_capabilities(
             &self.required_runtime_capabilities,
             &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "recurrence execution manifest",
         )?;
         validate_capabilities(
@@ -819,6 +829,7 @@ impl RecurrenceExecutionManifest {
             &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "outer recurrence process",
         )?;
         validate_direct_contract(
@@ -863,6 +874,7 @@ impl RecurrenceExecutionManifest {
             color_accuracy: &self.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             role: RecurrencePlanRole::Primary,
         })?;
         self.recurrence_summary.validate()?;
@@ -925,6 +937,7 @@ struct RecurrencePlanValidation<'a> {
     color_accuracy: &'a str,
     uses_symmetric_group_fft: bool,
     has_helicity_selector_companion: bool,
+    qed_order_weighted: bool,
     role: RecurrencePlanRole,
 }
 
@@ -953,6 +966,7 @@ impl RecurrencePlanSummary {
             color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             role,
         } = validation;
         if self.kind != RECURRENCE_RUNTIME_KIND {
@@ -993,6 +1007,7 @@ impl RecurrencePlanSummary {
             color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion,
+            qed_order_weighted,
             "nested recurrence plan",
         )?;
         if self.helicity_dispatch.is_some() != (role == RecurrencePlanRole::HelicitySelector) {
@@ -1116,6 +1131,13 @@ impl RecurrenceHelicitySelectorCompanionManifest {
             color_accuracy: &primary.color_accuracy,
             uses_symmetric_group_fft,
             has_helicity_selector_companion: true,
+            qed_order_weighted: super::is_qed_order_weighted_policy(Some(
+                primary
+                    .runtime_metadata
+                    .normalization
+                    .coupling_policy
+                    .as_str(),
+            )),
             role: RecurrencePlanRole::HelicitySelector,
         })?;
 
@@ -1236,7 +1258,9 @@ impl RecurrenceHelicitySelectorColorView {
         color_accuracy: &str,
         selector_inspection: &RecurrenceInspectionSummary,
     ) -> RusticolResult<()> {
-        if self.source != "primary" || self.view != RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW {
+        let sparse = self.view == RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW;
+        if self.source != "primary" || !(sparse || self.view == RECURRENCE_PRIMARY_LOCAL_COLOR_VIEW)
+        {
             return Err(RusticolError::compatibility(
                 "unsupported recurrence helicity-selector color view",
             ));
@@ -1262,21 +1286,36 @@ impl RecurrenceHelicitySelectorColorView {
                 )
                 | ("convolution-kernels", Some("symmetric-group-fourier"))
         );
+        // One local group per physical owner sector but the certified zero
+        // colour flows.
+        let expected_local_groups = selector_inspection.sector_count.checked_sub(
+            selector_inspection
+                .structural_zero_physical_sector_certificate
+                .as_ref()
+                .map_or(0, |certificate| {
+                    certificate.certified_structural_zero_sector_count
+                }),
+        );
+        if sparse {
+            // Expanded storage with several helicity components whose
+            // per-sector blocks need not be complete.
+            if primary.storage != "expanded"
+                || factorization_kind.is_some()
+                || primary.component_count < 2
+                || primary.group_count < primary.active_sector_count
+                || Some(primary.active_sector_count) != expected_local_groups
+            {
+                return Err(RusticolError::integrity(
+                    "recurrence helicity-selector sparse primary local-color view does not match its reducer",
+                ));
+            }
+            return Ok(());
+        }
         if !supported_reducer
             || (primary.storage == "expanded" && primary.component_count != 1)
             || primary.component_count == 0
             || !primary.group_count.is_multiple_of(primary.component_count)
-            // One local group per physical owner sector but the certified
-            // zero colour flows.
-            || Some(primary.group_count / primary.component_count)
-                != selector_inspection.sector_count.checked_sub(
-                    selector_inspection
-                        .structural_zero_physical_sector_certificate
-                        .as_ref()
-                        .map_or(0, |certificate| {
-                            certificate.certified_structural_zero_sector_count
-                        }),
-                )
+            || Some(primary.group_count / primary.component_count) != expected_local_groups
         {
             return Err(RusticolError::integrity(
                 "recurrence helicity-selector primary local-color group shape or reducer mode is incompatible",
@@ -3232,6 +3271,7 @@ fn validate_capabilities(
     color_accuracy: &str,
     uses_symmetric_group_fft: bool,
     has_helicity_selector_companion: bool,
+    qed_order_weighted: bool,
     context: &str,
 ) -> RusticolResult<()> {
     let color_capability = match color_accuracy {
@@ -3249,6 +3289,9 @@ fn validate_capabilities(
     }
     if has_helicity_selector_companion {
         expected.push(RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY);
+    }
+    if qed_order_weighted {
+        expected.push(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY);
     }
     expected.sort_unstable();
     if capabilities.iter().map(String::as_str).collect::<Vec<_>>() != expected {

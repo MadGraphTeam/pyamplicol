@@ -9,6 +9,12 @@ from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from pathlib import Path
 from typing import Any, cast
 
+from pyamplicol._internal.qed_order_weights import (
+    NORMALIZATION_ALPHA_EW,
+    NORMALIZATION_ALPHA_S,
+    QED_ORDER_WEIGHT_MAX_SQUARED,
+    is_qed_order_weighted,
+)
 from pyamplicol.api.errors import ArtifactError, EvaluationError
 from pyamplicol.api.protocols import Momenta
 from pyamplicol.api.results import ResolvedEvaluation
@@ -43,6 +49,8 @@ from ._execution import (
     _evaluate_contracted_point,
     _evaluate_replay_point,
     _evaluate_union_point,
+    _factor,
+    factor_overrides,
 )
 from ._plan import _RecurrenceExactPlan
 from ._plan_v2 import (
@@ -436,54 +444,56 @@ class RecurrenceExactExecutor:
                 runtime_parameters,
                 working_precision,
             )
+            overrides = self._qed_closure_factor_overrides(runtime_parameters)
             values = []
             partials = []
             squared_count = len(self._order_pairs()) if orders else 0
-            for point in points:
-                point_values = [
-                    [_ZERO for _ in selected_colors] for _ in selected_helicities
-                ]
-                order_values = [_ZERO] * squared_count if orders else None
-                if self._plan.sections.strategy == "topology-replay":
-                    self._evaluate_replay_resolved_point(
-                        point,
-                        selected_colors,
-                        helicity_positions,
-                        helicity_records,
-                        color_records,
-                        parameters.prepared,
-                        working_precision,
-                        normalization,
-                        point_values,
-                        order_values,
-                    )
-                elif self._plan.sections.strategy == "all-flow-union":
-                    self._evaluate_union_resolved_point(
-                        point,
-                        selected_helicities,
-                        selected_colors,
-                        helicity_records,
-                        color_records,
-                        parameters.prepared,
-                        working_precision,
-                        normalization,
-                        point_values,
-                        order_values,
-                    )
-                else:
-                    self._evaluate_contracted_resolved_point(
-                        point,
-                        selected_helicities,
-                        helicity_records,
-                        parameters.prepared,
-                        working_precision,
-                        normalization,
-                        point_values,
-                        order_values,
-                    )
-                values.append(tuple(tuple(colors) for colors in point_values))
-                if order_values is not None:
-                    partials.append(order_values)
+            with factor_overrides(overrides):
+                for point in points:
+                    point_values = [
+                        [_ZERO for _ in selected_colors] for _ in selected_helicities
+                    ]
+                    order_values = [_ZERO] * squared_count if orders else None
+                    if self._plan.sections.strategy == "topology-replay":
+                        self._evaluate_replay_resolved_point(
+                            point,
+                            selected_colors,
+                            helicity_positions,
+                            helicity_records,
+                            color_records,
+                            parameters.prepared,
+                            working_precision,
+                            normalization,
+                            point_values,
+                            order_values,
+                        )
+                    elif self._plan.sections.strategy == "all-flow-union":
+                        self._evaluate_union_resolved_point(
+                            point,
+                            selected_helicities,
+                            selected_colors,
+                            helicity_records,
+                            color_records,
+                            parameters.prepared,
+                            working_precision,
+                            normalization,
+                            point_values,
+                            order_values,
+                        )
+                    else:
+                        self._evaluate_contracted_resolved_point(
+                            point,
+                            selected_helicities,
+                            helicity_records,
+                            parameters.prepared,
+                            working_precision,
+                            normalization,
+                            point_values,
+                            order_values,
+                        )
+                    values.append(tuple(tuple(colors) for colors in point_values))
+                    if order_values is not None:
+                        partials.append(order_values)
 
         with localcontext() as context:
             context.prec = precision
@@ -503,6 +513,73 @@ class RecurrenceExactExecutor:
             color_ids=tuple(color_ids[index] for index in selected_colors),
             color_accuracy=cast(Any, str(self._physics["color_accuracy"])),
         ), rounded_partials
+
+    def _qed_closure_factor_overrides(
+        self, runtime_parameters: Sequence[Decimal]
+    ) -> dict[int, tuple[Decimal, Decimal]] | None:
+        """The closure factors of a QED-order-weighted normalization, each
+        times rho^QED with rho = sqrt(2 alpha_ew / alpha_s) at the working
+        precision (as the native lane weighs them in binary64)."""
+
+        extensions = self._physics.get("extensions")
+        normalization = (
+            extensions.get("normalization") if isinstance(extensions, Mapping) else None
+        )
+        if not is_qed_order_weighted(
+            normalization if isinstance(normalization, Mapping) else None
+        ):
+            return None
+        by_name = {
+            row.runtime_name: runtime_parameters[row.runtime_slot]
+            for row in self._plan.runtime_parameter_schema
+        }
+        try:
+            alpha_s = by_name[NORMALIZATION_ALPHA_S]
+            alpha_ew = by_name[NORMALIZATION_ALPHA_EW]
+        except KeyError as exc:
+            raise ArtifactError(
+                "a QED-order-weighted recurrence lacks its normalization inputs"
+            ) from exc
+        if not (alpha_s > 0 and alpha_ew >= 0):
+            raise EvaluationError(
+                "a process whose Born has amplitudes of several coupling orders "
+                f"needs {NORMALIZATION_ALPHA_S} > 0 and {NORMALIZATION_ALPHA_EW} "
+                f">= 0, got {alpha_s} and {alpha_ew}"
+            )
+        if 2 * alpha_ew > alpha_s * QED_ORDER_WEIGHT_MAX_SQUARED:
+            # The native parameter update refuses these first; the same bound.
+            raise EvaluationError(
+                "a process whose Born has amplitudes of several coupling orders "
+                f"needs {NORMALIZATION_ALPHA_S} >= 2 {NORMALIZATION_ALPHA_EW} * 2^-52, "
+                f"got {alpha_s} and {alpha_ew}"
+            )
+        rho = (2 * alpha_ew / alpha_s).sqrt()
+        catalog = _mapping(
+            json.loads(str(self._native_runtime._amplitude_orders_json())),
+            "amplitude coupling orders",
+        )
+        names = [str(name) for name in _sequence(catalog.get("names"), "order names")]
+        components = _sequence(catalog.get("components"), "amplitude orders")
+        qed_index = next(
+            (index for index, name in enumerate(names) if name.upper() == "QED"), None
+        )
+        sections = self._plan.sections
+        if qed_index is None or len(sections.closure_amplitude_orders) != len(
+            sections.closures
+        ):
+            raise ArtifactError("recurrence amplitude coupling orders are invalid")
+        overrides: dict[int, tuple[Decimal, Decimal]] = {}
+        for closure, component in zip(
+            sections.closures, sections.closure_amplitude_orders, strict=True
+        ):
+            powers = _sequence(components[component], "amplitude order powers")
+            qed = _signed_integer(powers[qed_index], "amplitude order power")
+            if qed == 0:
+                continue
+            real, imaginary = _factor(self._plan, closure.exact_factor_id)
+            weight = rho**qed
+            overrides[closure.exact_factor_id] = (real * weight, imaginary * weight)
+        return overrides
 
     def _evaluate_replay_resolved_point(
         self,

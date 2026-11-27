@@ -112,7 +112,10 @@ from .artifact_writer import (
     _GenerationConfigProvenance,
     write_schema_v3_artifact,
 )
-from .born_orders import process_born_amplitude_orders
+from .born_orders import (
+    compiled_amplitude_orders_extension,
+    process_born_amplitude_orders,
+)
 from .contracts import (
     RuntimeExpressionSchema,
     StageCompilationInput,
@@ -7509,6 +7512,18 @@ class GenerationBackend:
             helicity_selector_executions=tuple(helicity_selector_executions),
             color_selector_executions=primary_color_selector_executions,
             zero_color_flow_count=len(lc_zero_color_sector_ids(dag)),
+            amplitude_orders=compiled_amplitude_orders_extension(
+                model,
+                {
+                    "primary": dag,
+                    **(
+                        {}
+                        if helicity_sum_execution is None
+                        or process.compiled.helicity_sum_dag is None
+                        else {"helicity_sum": process.compiled.helicity_sum_dag}
+                    ),
+                },
+            ),
         )
 
     def _process_worker_count(self, process_count: int) -> int:

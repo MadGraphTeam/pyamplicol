@@ -329,9 +329,7 @@ def test_native_profile_reports_stable_grouping_and_pooled_bypass(
         helicity_by_point=tuple(
             resolved.helicity_ids[index] for index in pooled_helicities
         ),
-        color_flow_by_point=tuple(
-            resolved.color_ids[index] for index in pooled_colors
-        ),
+        color_flow_by_point=tuple(resolved.color_ids[index] for index in pooled_colors),
     )
     assert pooled["selector_plan_kind"] == "contiguous"
     assert pooled["selector_group_sizes"] == [4, 4]
@@ -1398,18 +1396,30 @@ end program order_probe
 
 
 @pytest.fixture(scope="module")
-def order_artifact(
+def order_sm_bundle(
     madgraph_source: Path, tmp_path_factory: pytest.TempPathFactory
 ) -> Path:
-    """A mixed QCD/QED recurrence artifact of the MadGraph UFO ``sm``."""
-
     if importlib.util.find_spec("pyamplicol._rusticol") is None:
         _unavailable("the Rusticol extension has not been built")
-    root = tmp_path_factory.mktemp("runtime-order-parity")
+    root = tmp_path_factory.mktemp("runtime-order-sm")
     bundle = root / "sm.pyamplicol-model"
     ModelSource.from_path(madgraph_source / "models/sm", restriction="default").compile(
         cache_dir=root / "cache", prepared_output=bundle, evaluator=EvaluatorConfig()
     )
+    return bundle
+
+
+@pytest.fixture(scope="module", params=("recurrence", "compiled", "on-the-fly"))
+def order_artifact(
+    order_sm_bundle: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    request: pytest.FixtureRequest,
+) -> Path:
+    """A mixed QCD/QED artifact of the MadGraph UFO ``sm`` in each lane that
+    splits by coupling order."""
+
+    root = tmp_path_factory.mktemp("runtime-order-parity")
+    bundle = order_sm_bundle
     artifact = root / "uu-dd"
     config = RunConfig(
         action="generate",
@@ -1421,7 +1431,7 @@ def order_artifact(
         ),
         generation=GenerationConfig(workers=1, emit_api_bundle=False),
         evaluator=EvaluatorConfig(
-            execution_mode="recurrence",
+            execution_mode=request.param,
             optimization=EvaluatorOptimizationConfig(cores=1),
         ),
     )
@@ -1510,3 +1520,217 @@ def test_native_order_partials_match_python(
     assert partials == [
         [complex(value).real for value in point] for point in expected.values
     ]
+
+
+@pytest.fixture(scope="module", params=("recurrence", "compiled", "on-the-fly"))
+def builtin_order_artifact(
+    tmp_path_factory: pytest.TempPathFactory, request: pytest.FixtureRequest
+) -> Path:
+    """Built-in SM artifact whose Borns have several coupling orders:
+    QED-order-weighted normalization (2 -> 2 and 2 -> 3), in each lane that
+    splits by coupling order."""
+
+    if importlib.util.find_spec("pyamplicol._rusticol") is None:
+        _unavailable("the Rusticol extension has not been built")
+    artifact = tmp_path_factory.mktemp("runtime-order-parity-builtin") / "artifact"
+    config = RunConfig(
+        action="generate",
+        model=ModelConfig(cache=False),
+        color=ColorConfig(accuracy="full"),
+        process=ProcessConfig(
+            coupling_order_policy="explicit",
+            max_coupling_orders={"QCD": 3, "QED": 2},
+        ),
+        generation=GenerationConfig(workers=1, emit_api_bundle=False),
+        evaluator=EvaluatorConfig(
+            execution_mode=request.param,
+            optimization=EvaluatorOptimizationConfig(cores=1),
+        ),
+    )
+    Generator(config).generate(
+        ProcessSet.from_expressions(
+            ("u u~ > d d~", "u u~ > d d~ g"), names=("uu_dd", "uu_ddg")
+        ),
+        artifact,
+        model=ModelSource.built_in_sm(),
+    )
+    return artifact
+
+
+@pytest.mark.parametrize(
+    ("language", "source"),
+    (
+        ("c", _C_ORDER_PROBE),
+        ("cpp", _CPP_ORDER_PROBE),
+        ("fortran", _FORTRAN_ORDER_PROBE),
+        ("rust", _RUST_ORDER_PROBE),
+    ),
+)
+@pytest.mark.parametrize(
+    ("process", "name"), (("u u~ > d d~", "uu_dd"), ("u u~ > d d~ g", "uu_ddg"))
+)
+def test_native_order_partials_of_the_built_in_sm_match_python_and_madgraph(
+    language: str,
+    source: str,
+    process: str,
+    name: str,
+    builtin_order_artifact: Path,
+    native_sdk: _NativeSdk,
+    tmp_path: Path,
+) -> None:
+    """The built-in SM with Born amplitudes of several coupling orders: every
+    SDK returns the Python partials and totals bitwise, with the squared-order
+    labels of MadGraph's split orders, and the partials equal MadGraph's."""
+
+    (reference,) = (
+        entry
+        for entry in json.loads(_ORDER_REFERENCE.read_text(encoding="utf-8"))[
+            "processes"
+        ]
+        if entry["process"] == process
+    )
+    points = reference["points"]
+    binary = _compile_probe(language, source, native_sdk, tmp_path)
+    completed = subprocess.run(
+        [
+            str(binary),
+            str(builtin_order_artifact),
+            name,
+            str(len(points)),
+            *(
+                format(component, ".17g")
+                for point in points
+                for leg in point
+                for component in leg
+            ),
+        ],
+        env=_source_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert completed.returncode == 0, (
+        f"{language} order probe failed\n"
+        f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+    )
+    lines = [line.split(maxsplit=1) for line in completed.stdout.splitlines()]
+    catalog = json.loads(next(rest for key, rest in lines if key == "json"))
+    totals = [float(rest.split()[1]) for key, rest in lines if key == "total"]
+    partials = [[0.0] * len(catalog["squared"]) for _ in points]
+    for key, rest in lines:
+        if key == "partial":
+            point, order, value = rest.split()
+            partials[int(point)][int(order)] = float(value)
+
+    runtime = Runtime.load(builtin_order_artifact, process=name)
+    expected = runtime.evaluate_orders(points)
+    names = catalog["names"]
+    labels = tuple(
+        tuple(
+            (order_name, power)
+            for order_name, power in zip(names, entry["powers"], strict=True)
+            if power
+        )
+        for entry in catalog["squared"]
+    )
+    assert labels == expected.orders
+    assert totals == [complex(value).real for value in runtime.evaluate(points)]
+    assert partials == [
+        [complex(value).real for value in point] for point in expected.values
+    ]
+    madgraph = {
+        tuple(sorted((key, power) for key, power in order.items() if power)): column
+        for column, order in enumerate(reference["squared_orders"])
+    }
+    assert set(madgraph) == set(labels)
+    for point, row in enumerate(reference["partials"]):
+        scale = math.fsum(abs(value) for value in row)
+        for column, label in enumerate(labels):
+            expected_value = row[madgraph[label]]
+            assert abs(partials[point][column] - expected_value) <= 1e-12 * scale
+
+
+_C_REBOUND_ORDER_PROBE = _C_ORDER_PROBE.replace(
+    "    size_t required = 0, order_count = 0;\n",
+    "    if (rusticol_runtime_set_model_parameter(\n"
+    '            runtime, "normalization.alpha_s_me_check", 0.13, 0.0) != RUSTICOL_STATUS_OK)\n'
+    "        return 16;\n"
+    "    if (rusticol_runtime_set_model_parameter(\n"
+    '            runtime, "normalization.alpha_ew", 1.0 / 128.0, 0.0) != RUSTICOL_STATUS_OK)\n'
+    "        return 17;\n"
+    "    size_t required = 0, order_count = 0;\n",
+)
+
+
+@pytest.mark.parametrize(
+    ("process", "name"), (("u u~ > d d~", "uu_dd"), ("u u~ > d d~ g", "uu_ddg"))
+)
+def test_c_abi_rebinding_rescales_each_built_in_sm_order_partial(
+    process: str,
+    name: str,
+    builtin_order_artifact: Path,
+    native_sdk: _NativeSdk,
+    tmp_path: Path,
+) -> None:
+    """Through the C ABI, after alpha_s and alpha_ew change, every squared
+    coupling-order partial of the built-in SM is the Python runtime's at the
+    same inputs bitwise and its default value times its own coupling powers."""
+
+    assert _C_REBOUND_ORDER_PROBE != _C_ORDER_PROBE
+    (reference,) = (
+        entry
+        for entry in json.loads(_ORDER_REFERENCE.read_text(encoding="utf-8"))[
+            "processes"
+        ]
+        if entry["process"] == process
+    )
+    points = reference["points"]
+    binary = _compile_probe("c", _C_REBOUND_ORDER_PROBE, native_sdk, tmp_path)
+    completed = subprocess.run(
+        [
+            str(binary),
+            str(builtin_order_artifact),
+            name,
+            str(len(points)),
+            *(
+                format(component, ".17g")
+                for point in points
+                for leg in point
+                for component in leg
+            ),
+        ],
+        env=_source_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    lines = [line.split(maxsplit=1) for line in completed.stdout.splitlines()]
+    catalog = json.loads(next(rest for key, rest in lines if key == "json"))
+    totals = [float(rest.split()[1]) for key, rest in lines if key == "total"]
+    partials = [[0.0] * len(catalog["squared"]) for _ in points]
+    for key, rest in lines:
+        if key == "partial":
+            point, order, value = rest.split()
+            partials[int(point)][int(order)] = float(value)
+
+    default = Runtime.load(builtin_order_artifact, process=name).evaluate_orders(points)
+    rebound = Runtime.load(builtin_order_artifact, process=name)
+    rebound.set_model_parameter("normalization.alpha_s_me_check", 0.13)
+    rebound.set_model_parameter("normalization.alpha_ew", 1.0 / 128.0)
+    expected = rebound.evaluate_orders(points)
+    assert totals == [complex(value).real for value in expected.total]
+    assert partials == [
+        [complex(value).real for value in point] for point in expected.values
+    ]
+    for column, order in enumerate(default.orders):
+        powers = dict(order)
+        weight = (0.13 / 0.118) ** (powers.get("QCD", 0) / 2) * (
+            (1.0 / 128.0) * 132.507
+        ) ** (powers.get("QED", 0) / 2)
+        for point, value in enumerate(default.values):
+            assert partials[point][column] == pytest.approx(
+                weight * complex(value[column]).real, rel=1e-12, abs=1e-300
+            )

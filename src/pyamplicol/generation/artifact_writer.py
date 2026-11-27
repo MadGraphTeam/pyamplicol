@@ -44,6 +44,7 @@ from pyamplicol.config import (
     config_to_dict,
 )
 
+from .._internal.qed_order_weights import is_qed_order_weighted
 from .._internal.versions import (
     COMPILED_COLOR_CONTRACTION_WALSH_C2K_CAPABILITY,
     COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
@@ -67,6 +68,7 @@ from .._internal.versions import (
     ON_THE_FLY_RUNTIME_CAPABILITY,
     PROCESS_ARTIFACT_SCHEMA_VERSION,
     PYTHON_API_VERSION,
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_BUILDER_INPUT_ABI,
     RECURRENCE_COLOR_RUNTIME_CAPABILITY,
     RECURRENCE_CONTRACTED_COLOR_RUNTIME_CAPABILITY,
@@ -105,6 +107,7 @@ from ..models.specialization_guards import (
     guard_file_payload,
     guards_from_file_payload,
 )
+from .born_orders import COMPILED_AMPLITUDE_ORDERS_EXTENSION_KEY
 from .contracts import RuntimeExpressionSchema
 from .eager_columnar import EAGER_LOWERING_INPUT_ABI
 from .eager_lowering import EAGER_RUNTIME_KIND
@@ -274,6 +277,10 @@ class CompiledProcessArtifact:
     #: (``models.specialization_guards``); the model's own are added to every
     #: process by the writer.
     specialization_guards: tuple[SpecializationGuard, ...] = ()
+    #: The amplitude coupling order of every amplitude root of the primary
+    #: and helicity-sum executions (``born_orders.
+    #: compiled_amplitude_orders_extension``), a ``physics.json`` extension.
+    amplitude_orders: Mapping[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -2055,6 +2062,19 @@ def _write_process_payloads(
     else:
         schema = _runtime_schema_mapping(process.runtime_schema)
         physics = _mapping(schema.get("physics"))
+        if (
+            isinstance(process, CompiledProcessArtifact)
+            and process.amplitude_orders is not None
+        ):
+            physics = {
+                **physics,
+                "extensions": {
+                    **_mapping(physics.get("extensions", {})),
+                    COMPILED_AMPLITUDE_ORDERS_EXTENSION_KEY: _plain_mapping(
+                        process.amplitude_orders
+                    ),
+                },
+            }
     if physics.get("process_id") != process.process_id:
         raise ValueError(
             f"runtime physics process ID does not match {process.process_id!r}"
@@ -2655,6 +2675,11 @@ def _on_the_fly_execution_summary(
         ) from exc
 
 
+# The helicity-selector companion's view of a primary colour reducer whose
+# per-sector helicity blocks are incomplete; released readers refuse it.
+_RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW = "primary-sparse-local-color-view-v1"
+
+
 def _recurrence_helicity_selector_companion_v2_manifest(
     process: RecurrenceProcessArtifact,
     companion: RecurrenceHelicitySelectorPlanArtifact,
@@ -2741,8 +2766,19 @@ def _recurrence_helicity_selector_companion_v2_manifest(
         "recurrence primary color-contraction component count",
         minimum=1,
     )
+    # A primary that keeps only the (sector, helicity) groups with diagrams (a
+    # colour flow that vanishes for some helicities) is stored expanded with
+    # several helicity components; its local colour view is sparse: one local
+    # group per active owner sector, the colour matrix the union of the
+    # per-component entries (the runtime checks that they agree).
+    sparse_primary_view = (
+        storage == "expanded" and factorization_raw is None and component_count > 1
+    )
     supported_primary_view = (
-        (storage == "expanded" and factorization_raw is None and component_count == 1)
+        sparse_primary_view
+        or (
+            storage == "expanded" and factorization_raw is None and component_count == 1
+        )
         or (
             storage == "repeated"
             and factorization_kind
@@ -2756,23 +2792,33 @@ def _recurrence_helicity_selector_companion_v2_manifest(
     if not supported_primary_view:
         raise ValueError(
             "recurrence helicity-selector primary local-color view requires a "
-            "direct, Walsh, or symmetric-group Fourier reducer; the primary "
-            f"reducer is stored {storage!r} with {component_count} components "
-            f"and {primary_color.get('group_count')!r} groups (a colour sector "
-            "whose helicity block is incomplete, as when a flow vanishes for "
-            "some helicities only, has no local-color view)"
+            "direct, sparse, Walsh, or symmetric-group Fourier reducer; the "
+            f"primary reducer is stored {storage!r} with {component_count} "
+            f"components and {primary_color.get('group_count')!r} groups"
         )
     group_count = _nonnegative_integer(
         primary_color.get("group_count"),
         "recurrence primary color-contraction group count",
         minimum=1,
     )
-    if group_count % component_count:
-        raise ValueError(
-            "recurrence primary color-contraction groups do not form complete "
-            "local component blocks"
+    if sparse_primary_view:
+        local_group_count = _nonnegative_integer(
+            primary_color.get("active_sector_count"),
+            "recurrence primary color-contraction active sector count",
+            minimum=1,
         )
-    local_group_count = group_count // component_count
+        if group_count < local_group_count:
+            raise ValueError(
+                "recurrence primary color-contraction has fewer groups than "
+                "active sectors"
+            )
+    else:
+        if group_count % component_count:
+            raise ValueError(
+                "recurrence primary color-contraction groups do not form complete "
+                "local component blocks"
+            )
+        local_group_count = group_count // component_count
     physical_destination_count = _nonnegative_integer(
         companion.physical_destination_count,
         "recurrence helicity-selector physical destination count",
@@ -2886,7 +2932,11 @@ def _recurrence_helicity_selector_companion_v2_manifest(
         "plan": plan,
         "color_contraction": {
             "source": "primary",
-            "view": "primary-local-color-view-v1",
+            "view": (
+                _RECURRENCE_PRIMARY_SPARSE_LOCAL_COLOR_VIEW
+                if sparse_primary_view
+                else "primary-local-color-view-v1"
+            ),
         },
     }
 
@@ -2894,10 +2944,11 @@ def _recurrence_helicity_selector_companion_v2_manifest(
 def _eager_execution_summary(
     process: EagerPlanV3ProcessArtifact,
 ) -> bytes:
+    manifest = _eager_plan_v3_execution_manifest(process)
     try:
         content = (
             json.dumps(
-                _eager_plan_v3_execution_manifest(process),
+                manifest,
                 ensure_ascii=True,
                 allow_nan=False,
                 separators=(",", ":"),
@@ -2941,7 +2992,7 @@ def _eager_plan_v3_execution_manifest(
         "Rust eager runtime payload size",
         minimum=1,
     )
-    capabilities = list(_EAGER_PLAN_V3_RUNTIME_CAPABILITIES)
+    capabilities = list(_eager_plan_v3_process_runtime_capabilities(process))
     plan = {
         "kind": EAGER_RUNTIME_KIND,
         "eager_plan_abi": EAGER_PLAN_V3_ABI,
@@ -2993,16 +3044,19 @@ def _bounded_recurrence_execution_summary(
     color_contraction_record: PayloadRecord | None,
     companion_binding: Mapping[str, object] | None = None,
 ) -> bytes:
+    # A refusal of the manifest itself surfaces with its own message; only the
+    # JSON encoding is reported as such.
+    manifest = _recurrence_execution_manifest(
+        process,
+        schedule_path=schedule_path,
+        binding=binding,
+        color_contraction_record=color_contraction_record,
+        companion_binding=companion_binding,
+    )
     try:
         content = (
             json.dumps(
-                _recurrence_execution_manifest(
-                    process,
-                    schedule_path=schedule_path,
-                    binding=binding,
-                    color_contraction_record=color_contraction_record,
-                    companion_binding=companion_binding,
-                ),
+                manifest,
                 ensure_ascii=True,
                 allow_nan=False,
                 separators=(",", ":"),
@@ -3258,6 +3312,8 @@ def _execution_manifest(
         )
     if process.zero_color_flow_count:
         required_runtime_capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        required_runtime_capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return {
         "schema_version": PROCESS_ARTIFACT_SCHEMA_VERSION,
         "kind": "pyamplicol-runtime-execution",
@@ -3655,6 +3711,13 @@ def _execution_plan(schema: Mapping[str, object]) -> dict[str, object]:
             "qcd_coupling_power": int(normalization.get("qcd_coupling_power", 0)),
             "electroweak_coupling_power": int(
                 normalization.get("electroweak_coupling_power", 0)
+            ),
+            # Only a QED-order-weighted normalization names its policy, so
+            # every other execution plan keeps its bytes.
+            **(
+                {"coupling_policy": str(normalization["coupling_policy"])}
+                if is_qed_order_weighted(normalization)
+                else {}
             ),
         },
         "parameter_layout": {
@@ -5218,6 +5281,8 @@ def _compiled_process_runtime_capabilities(
         capabilities.add(COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY)
     if process.zero_color_flow_count:
         capabilities.add(COMPILED_ZERO_COLOR_FLOWS_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     if process.color_selector_executions:
         capabilities.add(COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY)
         capabilities.add(COMPILED_RUNTIME_SELECTORS_CAPABILITY)
@@ -5343,8 +5408,41 @@ def _process_runtime_capabilities(
     if isinstance(process, RecurrenceProcessArtifact):
         return _recurrence_process_runtime_capabilities(process)
     if isinstance(process, EagerPlanV3ProcessArtifact):
-        return _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
+        return _eager_plan_v3_process_runtime_capabilities(process)
     return _compiled_process_runtime_capabilities(process)
+
+
+def _process_normalization(process: ProcessArtifact) -> Mapping[str, object]:
+    """The runtime normalization payload a tree process artifact carries."""
+
+    if isinstance(process, RecurrenceProcessArtifact | OnTheFlyProcessArtifact):
+        return _mapping(process.runtime_metadata.get("normalization", {}))
+    if isinstance(process, EagerPlanV3ProcessArtifact):
+        extensions = _mapping(process.physics.get("extensions", {}))
+        return _mapping(extensions.get("normalization", {}))
+    if isinstance(process, CompiledProcessArtifact):
+        schema = _runtime_schema_mapping(process.runtime_schema)
+        return _mapping(schema.get("normalization", {}))
+    return {}
+
+
+def _process_is_qed_order_weighted(process: ProcessArtifact) -> bool:
+    return is_qed_order_weighted(_process_normalization(process))
+
+
+def _eager_plan_v3_process_runtime_capabilities(
+    process: EagerPlanV3ProcessArtifact,
+) -> tuple[str, ...]:
+    if not _process_is_qed_order_weighted(process):
+        return _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
+    return tuple(
+        sorted(
+            {
+                *_EAGER_PLAN_V3_RUNTIME_CAPABILITIES,
+                QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
+            }
+        )
+    )
 
 
 def _on_the_fly_process_runtime_capabilities(
@@ -5364,6 +5462,8 @@ def _on_the_fly_process_runtime_capabilities(
     }
     if _uses_symmetric_group_fft_color_contraction(process):
         capabilities.add(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return tuple(sorted(capabilities))
 
 
@@ -5383,6 +5483,8 @@ def _recurrence_process_runtime_capabilities(
         capabilities.add(RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY)
     if _uses_symmetric_group_fft_color_contraction(process):
         capabilities.add(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY)
+    if _process_is_qed_order_weighted(process):
+        capabilities.add(QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY)
     return tuple(sorted(capabilities))
 
 

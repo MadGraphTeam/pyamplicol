@@ -14,8 +14,147 @@
 use std::collections::BTreeMap;
 
 use crate::recurrence::direct_runtime::{DirectAmplitudeOrderSplit, DirectDestinationOrders};
-use crate::recurrence::{DirectAmplitudeOrders, RuntimeSymmetricGroupPairWorkspace};
+use crate::recurrence::{
+    DirectAmplitudeOrders, DirectRecurrencePlan, RuntimeSymmetricGroupPairWorkspace,
+};
 use crate::{RusticolError, RusticolResult};
+
+/// Closure exact factors that a QED-order-weighted normalization weighs by
+/// `rho^QED` (`model_parameters::QedOrderWeights`).
+///
+/// Every closure row of an amplitude component with QED order `e > 0`
+/// carries `rho^e`. The plan of such a process interns these closures' exact
+/// factors per QED order (`DirectRecurrenceRuntimeOptions::
+/// closure_factors_by_qed_order`), so each weighted factor ID is used by
+/// closures of one QED order only and by no other row; [`Self::for_plan`]
+/// checks this and refuses a plan that shares one.
+#[derive(Clone, Debug)]
+pub(crate) struct QedClosureFactorWeights {
+    /// (factor ID, QED order, binary64 real part, binary64 imaginary part).
+    entries: Box<[(usize, i32, f64, f64)]>,
+}
+
+impl QedClosureFactorWeights {
+    pub(crate) fn for_plan(plan: &DirectRecurrencePlan) -> RusticolResult<Self> {
+        let orders = plan.amplitude_orders();
+        let Some(qed_index) = orders
+            .names()
+            .iter()
+            .position(|name| name.eq_ignore_ascii_case("QED"))
+        else {
+            return Ok(Self {
+                entries: Box::new([]),
+            });
+        };
+        let closure_components = orders.closure_components();
+        if closure_components.len() != plan.closures().len() {
+            return Err(RusticolError::integrity(
+                "recurrence closure order components do not cover every closure",
+            ));
+        }
+        let mut weighted = BTreeMap::<usize, i32>::new();
+        let mut unweighted = std::collections::BTreeSet::<usize>::new();
+        for (closure, component) in plan.closures().iter().zip(closure_components) {
+            let qed = orders
+                .component(*component)
+                .and_then(|powers| powers.get(qed_index).copied())
+                .ok_or_else(|| {
+                    RusticolError::integrity("recurrence closure order component is absent")
+                })?;
+            let id = closure.exact_factor_id as usize;
+            if qed == 0 {
+                unweighted.insert(id);
+                continue;
+            }
+            let qed = i32::try_from(qed)
+                .map_err(|_| RusticolError::integrity("closure QED order exceeds i32"))?;
+            if *weighted.entry(id).or_insert(qed) != qed {
+                return Err(RusticolError::integrity(
+                    "a QED-order-weighted closure factor is shared by closures of different QED \
+                     orders",
+                ));
+            }
+        }
+        let shared = |id: usize| {
+            unweighted.contains(&id)
+                || plan
+                    .sources()
+                    .iter()
+                    .any(|row| row.exact_factor_id as usize == id)
+                || plan
+                    .contributions()
+                    .iter()
+                    .any(|row| row.exact_factor_id as usize == id)
+                || plan
+                    .finalizations()
+                    .iter()
+                    .any(|row| row.exact_factor_id as usize == id)
+                || plan
+                    .source_embeddings()
+                    .iter()
+                    .any(|row| row.exact_factor_id as usize == id)
+                || plan
+                    .source_dispatch_variants()
+                    .iter()
+                    .any(|row| row.crossing_exact_factor_id as usize == id)
+                || plan
+                    .replay_targets()
+                    .iter()
+                    .any(|row| row.phase_exact_factor_id as usize == id)
+                || plan.closures().iter().any(|row| {
+                    let start = row.component_factor_start as usize;
+                    (start..start + usize::from(row.component_count)).contains(&id)
+                })
+        };
+        let mut entries = Vec::with_capacity(weighted.len());
+        for (id, qed) in weighted {
+            if shared(id) {
+                return Err(RusticolError::integrity(
+                    "a QED-order-weighted closure factor is shared with another row: the plan \
+                     was not built for a QED-order-weighted normalization",
+                ));
+            }
+            let factor = plan.exact_factors().get(id).copied().ok_or_else(|| {
+                RusticolError::integrity("recurrence closure exact factor is absent")
+            })?;
+            let real = factor.real().numerator() as f64 / factor.real().denominator() as f64;
+            let imag = factor.imag().numerator() as f64 / factor.imag().denominator() as f64;
+            entries.push((id, qed, real, imag));
+        }
+        Ok(Self {
+            entries: entries.into_boxed_slice(),
+        })
+    }
+
+    /// The `(factor ID, real, imaginary)` values at weight `rho`.
+    pub(crate) fn weighted_factors(
+        &self,
+        rho: f64,
+    ) -> impl Iterator<Item = (usize, f64, f64)> + '_ {
+        self.entries.iter().map(move |(id, qed, real, imag)| {
+            let weight = rho.powi(*qed);
+            (*id, real * weight, imag * weight)
+        })
+    }
+
+    /// Writes the weighted factors into split-complex factor planes.
+    pub(crate) fn apply(&self, rho: f64, real: &mut [f64], imag: &mut [f64]) -> RusticolResult<()> {
+        for (id, weighted_real, weighted_imag) in self.weighted_factors(rho) {
+            match (real.get_mut(id), imag.get_mut(id)) {
+                (Some(re), Some(im)) => {
+                    *re = weighted_real;
+                    *im = weighted_imag;
+                }
+                _ => {
+                    return Err(RusticolError::integrity(
+                        "QED-order-weighted closure factor is outside the factor planes",
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+}
 
 /// One squared coupling order and its contributing ordered component pairs.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -60,6 +199,19 @@ impl AmplitudeOrderCatalog {
                     .ok_or_else(|| RusticolError::integrity("amplitude order component is absent"))
             })
             .collect::<RusticolResult<Box<[Box<[u32]>]>>>()?;
+        Self::from_components(orders.names().into(), components)
+    }
+
+    /// Catalog of explicit amplitude components (powers over `names`).
+    pub fn from_components(
+        names: Box<[String]>,
+        components: Box<[Box<[u32]>]>,
+    ) -> RusticolResult<Self> {
+        if components.iter().any(|powers| powers.len() != names.len()) {
+            return Err(RusticolError::artifact(
+                "amplitude order component does not match its coupling-order names",
+            ));
+        }
         let mut squared = BTreeMap::<Vec<(usize, u32)>, (Vec<u32>, Vec<(u32, u32)>)>::new();
         for (left, left_powers) in components.iter().enumerate() {
             for (right, right_powers) in components.iter().enumerate() {
@@ -86,7 +238,7 @@ impl AmplitudeOrderCatalog {
             }
         }
         Ok(Self {
-            names: orders.names().into(),
+            names,
             components,
             squared: squared
                 .into_values()
@@ -267,5 +419,35 @@ mod tests {
             ]
         );
         assert!(!catalog.is_single());
+    }
+
+    #[test]
+    fn explicit_components_give_the_plan_catalog_and_check_their_width() {
+        let orders = DirectAmplitudeOrders {
+            names: vec!["QCD".into(), "QED".into()],
+            component_count: 2,
+            powers: vec![0, 2, 2, 0],
+            closure_components: vec![0, 1],
+        };
+        let explicit = AmplitudeOrderCatalog::from_components(
+            vec!["QCD".to_owned(), "QED".to_owned()].into_boxed_slice(),
+            vec![vec![0, 2].into_boxed_slice(), vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+        )
+        .unwrap();
+        assert_eq!(explicit, AmplitudeOrderCatalog::from_plan(&orders).unwrap());
+        let single = AmplitudeOrderCatalog::from_components(
+            vec!["QCD".to_owned(), "QED".to_owned()].into_boxed_slice(),
+            vec![vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+        )
+        .unwrap();
+        assert!(single.is_single());
+        assert_eq!(single.squared_orders().len(), 1);
+        assert!(
+            AmplitudeOrderCatalog::from_components(
+                vec!["QCD".to_owned()].into_boxed_slice(),
+                vec![vec![2, 0].into_boxed_slice()].into_boxed_slice(),
+            )
+            .is_err()
+        );
     }
 }

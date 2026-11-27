@@ -1619,7 +1619,7 @@ pub unsafe extern "C" fn rusticol_runtime_coupling_orders_json(
     }
 }
 
-/// Writes the number of squared coupling orders of a recurrence runtime.
+/// Writes the number of squared coupling orders of a recurrence, compiled or on-the-fly runtime.
 ///
 /// # Safety
 ///
@@ -2141,6 +2141,7 @@ mod tests {
                 "rusticol.compiled.runtime-selectors.v1".to_string(),
                 "rusticol.compiled.zero-color-flows.v1".to_string(),
                 "rusticol.eager-runtime-layout.complex-f64.v1".to_string(),
+                "rusticol.normalization.qed-order-weights.v1".to_string(),
                 "rusticol.on-the-fly.complex-f64.v1".to_string(),
                 "rusticol.on-the-fly.contracted-color.v1".to_string(),
                 "rusticol.on-the-fly.lc-color.v1".to_string(),

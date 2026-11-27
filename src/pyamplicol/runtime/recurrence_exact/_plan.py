@@ -10,6 +10,7 @@ from pathlib import Path
 
 from pyamplicol._internal.versions import (
     PROCESS_ARTIFACT_SCHEMA_VERSION,
+    QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY,
     SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY,
 )
@@ -710,6 +711,9 @@ def _validate_execution(
     actual_capabilities = set(_sequence(capabilities, "recurrence capabilities"))
     permitted_capabilities = required_capabilities | {
         RECURRENCE_HELICITY_SELECTOR_COMPANION_RUNTIME_CAPABILITY,
+        # The executor weighs the closures of a QED-order-weighted
+        # normalization itself (``_executor._qed_closure_factor_overrides``).
+        QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
     }
     if layout == "contracted-color-union":
         permitted_capabilities.add(SYMMETRIC_GROUP_FFT_COLOR_RUNTIME_CAPABILITY)

@@ -82,8 +82,14 @@ def _run(args: list[str], cwd: Path) -> str:
     return result.stdout
 
 
-def _generate(madgraph: Path, model: str, process: str, output: Path) -> Path:
-    constraints = " ".join(f"{name}^2<=99" for name in _SPLIT_ORDER_NAMES)
+def _generate(
+    madgraph: Path,
+    model: str,
+    process: str,
+    output: Path,
+    names: tuple[str, ...] = _SPLIT_ORDER_NAMES,
+) -> Path:
+    constraints = " ".join(f"{name}^2<=99" for name in names)
     card = output.with_suffix(".mg5")
     card.write_text(
         "\n".join(
@@ -103,7 +109,25 @@ def _generate(madgraph: Path, model: str, process: str, output: Path) -> Path:
     return subprocess_dir
 
 
-def _squared_orders(matrix: str) -> list[dict[str, int]]:
+def _split_order_names(matrix: str) -> tuple[str, ...] | None:
+    """The coupling-order names of MadGraph's split-order columns, from the
+    comment MadGraph writes above the split-order tables."""
+
+    match = re.search(r"^C\s+\[((?:'\w+'(?:,\s*)?)+)\]\s*$", matrix, re.M)
+    if match is None:
+        return None
+    return tuple(re.findall(r"'(\w+)'", match.group(1)))
+
+
+def _squared_orders(
+    matrix: str, names: tuple[str, ...] = _SPLIT_ORDER_NAMES
+) -> list[dict[str, int]]:
+    recorded = _split_order_names(matrix)
+    if recorded is not None and recorded != names:
+        raise SystemExit(
+            f"MadGraph's split-order columns are {list(recorded)}, not {list(names)}; "
+            "pass them with --orders"
+        )
     rows = {
         int(index): [int(value) for value in values.split(",")]
         for index, values in _DATA_RE.findall(matrix)
@@ -111,8 +135,7 @@ def _squared_orders(matrix: str) -> list[dict[str, int]]:
     if not rows or sorted(rows) != list(range(1, len(rows) + 1)):
         raise SystemExit("MadGraph split-order table is missing or not dense")
     return [
-        dict(zip(_SPLIT_ORDER_NAMES, rows[index], strict=True))
-        for index in range(1, len(rows) + 1)
+        dict(zip(names, rows[index], strict=True)) for index in range(1, len(rows) + 1)
     ]
 
 
@@ -201,7 +224,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--colour", choices=("full", "lc"), default="full")
+    parser.add_argument(
+        "--orders",
+        default=",".join(_SPLIT_ORDER_NAMES),
+        help="comma-separated coupling-order names of the model, in the order of "
+        "MadGraph's split-order table columns (default: QCD,QED)",
+    )
     options = parser.parse_args(argv)
+    names = tuple(name.strip() for name in options.orders.split(",") if name.strip())
     points = json.loads(options.points.read_text())
     options.work.mkdir(parents=True, exist_ok=True)
     references = []
@@ -211,10 +241,11 @@ def main(argv: list[str] | None = None) -> int:
             options.model,
             process,
             options.work.resolve() / f"process-{index}",
+            names,
         )
         matrix = subprocess_dir / "matrix.f"
         source = matrix.read_text()
-        orders = _squared_orders(source)
+        orders = _squared_orders(source, names)
         source = _zero_colour_amplitudes(source)
         if options.colour == "lc":
             source = _leading_colour(source)

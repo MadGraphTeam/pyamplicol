@@ -1343,10 +1343,12 @@ selections ([Native APIs](native-apis.md)).
 
 ## Split totals by squared coupling order
 
-Recurrence artifacts record the exact coupling orders of every amplitude
-contribution. `evaluate_orders` returns, in one pass, the unchanged total and
-one partial per squared coupling order, including the interference between
-different amplitude orders:
+Recurrence, compiled and on-the-fly artifacts know the exact coupling orders
+of every amplitude contribution (a compiled artifact records the order of
+every amplitude root; an on-the-fly artifact derives them from its query
+traces). `evaluate_orders` returns the unchanged total and one partial per
+squared coupling order, including the interference between different
+amplitude orders:
 
 ```python
 split = runtime.evaluate_orders(points)
@@ -1363,7 +1365,14 @@ sum (also structurally vanishing interference) and omit zero powers.
 `sum_orders()` adds the partials explicitly; it equals `total` up to rounding.
 The global `helicities` and `color_flows` selectors and `precision` behave as
 in `evaluate`; per-point selectors (`helicity_by_point`,
-`color_flow_by_point`) are not accepted. Compiled, eager and on-the-fly
+`color_flow_by_point`) are not accepted. Recurrence, compiled and on-the-fly
+artifacts serve the split at leading and full colour and at every precision
+they evaluate (on-the-fly: binary64); the C ABI
+(`rusticol_runtime_coupling_orders_json`,
+`rusticol_runtime_evaluate_orders_f64`) and the C++, Fortran and Rust clients
+serve the same artifacts in binary64. A compiled artifact written before
+compiled artifacts recorded their amplitude orders still evaluates, but its
+`evaluate_orders` raises `CompatibilityError` (regenerate it); eager
 artifacts raise `CompatibilityError`.
 
 ### Virtual and loop-induced results by squared order

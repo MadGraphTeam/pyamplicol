@@ -365,7 +365,7 @@ pub(super) struct PendingClosure {
 /// Query-local Wick-lineage proof selected only after physical closure and
 /// complete-rectangle color-alias projection have identified a canonical
 /// root-bearing representative.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) struct ResolvedPairingOwnerV1 {
     pub(super) endpoint_pairs: Vec<[u32; 2]>,
     pub(super) proof_digest: Option<SemanticDigest>,

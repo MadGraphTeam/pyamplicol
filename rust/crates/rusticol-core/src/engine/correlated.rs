@@ -90,7 +90,21 @@ struct ProcessCatalogue {
     spin_legs: Vec<usize>,
     matrices: Vec<MatrixRecord>,
     coherent_groups: Vec<GroupRecord>,
+    /// Schema 2: the (helicity, colour sector) amplitudes certified exactly
+    /// zero at generation (a sector without diagrams at that helicity).
+    #[serde(default)]
+    zero_coherent_groups: Option<Vec<ZeroGroupRecord>>,
 }
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ZeroGroupRecord {
+    helicities: Vec<i32>,
+    color_sector_id: i64,
+}
+
+/// The correlator payload schema that lists certified zero coherent groups.
+const ZERO_GROUPS_SCHEMA_VERSION: u64 = 2;
 
 #[derive(Deserialize)]
 struct Declarations {
@@ -275,7 +289,8 @@ impl CorrelatedRuntime {
             .ok_or_else(|| {
                 RusticolError::compatibility("correlations must be declared at generation")
             })?;
-        if extension.get("schema_version").and_then(Value::as_u64) != Some(1) {
+        let version = extension.get("schema_version").and_then(Value::as_u64);
+        if version != Some(1) && version != Some(ZERO_GROUPS_SCHEMA_VERSION) {
             return Err(malformed("unsupported catalogue version"));
         }
         let path = extension
@@ -284,13 +299,18 @@ impl CorrelatedRuntime {
             .ok_or_else(|| malformed("missing catalogue path"))?;
         let mut payload: Catalogue = serde_json::from_slice(&artifact.read_payload(path)?)
             .map_err(|error| malformed(format!("catalogue: {error}")))?;
-        if payload.schema_version != 1 || !payload.complete_source_basis {
+        if Some(u64::from(payload.schema_version)) != version || !payload.complete_source_basis {
             return Err(malformed("correlations require a complete source basis"));
         }
         let process = payload
             .processes
             .remove(&native.representative_process_id)
             .ok_or_else(|| malformed("selected process is absent from catalogue"))?;
+        if process.zero_coherent_groups.is_some()
+            && u64::from(payload.schema_version) != ZERO_GROUPS_SCHEMA_VERSION
+        {
+            return Err(malformed("zero coherent groups need catalogue schema 2"));
+        }
         Self::from_process(process, &native.runtime, native.process_physics()?)
     }
 
@@ -308,8 +328,12 @@ impl CorrelatedRuntime {
                 "correlated amplitudes must not use physical-helicity reductions",
             ));
         }
-        let spin_classes: BTreeSet<_> =
-            process.declarations.spin_correlations.into_iter().collect();
+        let spin_classes: BTreeSet<_> = process
+            .declarations
+            .spin_correlations
+            .iter()
+            .cloned()
+            .collect();
         let mut spin_legs = BTreeSet::new();
         for class in &spin_classes {
             if class.is_empty()
@@ -529,15 +553,24 @@ impl CorrelatedRuntime {
             return Err(malformed("incomplete coherent amplitude coverage"));
         }
         let mut basis: BTreeMap<&str, BTreeSet<i64>> = BTreeMap::new();
+        let mut values_by_helicity: BTreeMap<&str, &Vec<i32>> = BTreeMap::new();
         for group in &groups {
             basis
                 .entry(&group.helicity_id)
                 .or_default()
                 .insert(group.sector);
+            values_by_helicity.insert(&group.helicity_id, &group.helicities);
         }
+        let zeros = certified_zero_sectors(
+            process.zero_coherent_groups.as_deref(),
+            &helicities,
+            &basis,
+            &values_by_helicity,
+            &process.declarations.spin_correlations,
+        )?;
         if matrices
             .iter()
-            .any(|matrix| basis.values().any(|sectors| sectors != &matrix.sectors))
+            .any(|matrix| !covers_matrix(&basis, &zeros, &matrix.sectors))
             || (groups.iter().any(|group| group.nc_grade != 0)
                 && matrices.iter().any(|matrix| matrix.degrees.is_none()))
         {
@@ -928,8 +961,13 @@ fn evaluate_many(
                 let degree_count = matrix.degrees.as_ref().map_or(0, Vec::len);
                 for sectors in by_helicity.values() {
                     for &(left, right, weight, power) in &matrix.entries {
-                        for &(left_grade, a) in &sectors[&left] {
-                            for &(right_grade, b) in &sectors[&right] {
+                        // A certified zero group has no amplitude: its terms vanish.
+                        let (Some(lefts), Some(rights)) = (sectors.get(&left), sectors.get(&right))
+                        else {
+                            continue;
+                        };
+                        for &(left_grade, a) in lefts {
+                            for &(right_grade, b) in rights {
                                 // A graded term enters the degree p + g_l + g_r
                                 // when the matrix reports it.
                                 let slot = match (power, matrix.degrees.as_ref()) {
@@ -1380,8 +1418,13 @@ where
                 let (mut real, mut imag) = (T::new_zero(), T::new_zero());
                 for sectors in by_helicity.values() {
                     for (left, right, power, wr, wi) in &weights[&matrix] {
-                        for &(left_grade, a) in &sectors[left] {
-                            for &(right_grade, b) in &sectors[right] {
+                        // A certified zero group has no amplitude: its terms vanish.
+                        let (Some(lefts), Some(rights)) = (sectors.get(left), sectors.get(right))
+                        else {
+                            continue;
+                        };
+                        for &(left_grade, a) in lefts {
+                            for &(right_grade, b) in rights {
                                 // A graded term enters only when the matrix
                                 // reports its degree p + g_l + g_r, as in the
                                 // binary64 contraction.
@@ -1408,6 +1451,74 @@ where
         }
     }
     Ok(values)
+}
+
+/// The certified zero groups of a process, per retained helicity: each
+/// listed (helicity, sector) amplitude is an exact zero (a sector without
+/// diagrams at that helicity). A listed group must name a helicity that has
+/// groups and a sector without one there; a replaced spin leg evaluates one
+/// placeholder helicity per spectator configuration, so its helicity must not
+/// decide which sectors vanish.
+fn certified_zero_sectors<'a>(
+    records: Option<&[ZeroGroupRecord]>,
+    helicities: &'a BTreeMap<Vec<i32>, String>,
+    basis: &BTreeMap<&str, BTreeSet<i64>>,
+    values_by_helicity: &BTreeMap<&str, &Vec<i32>>,
+    spin_classes: &[Vec<usize>],
+) -> RusticolResult<BTreeMap<&'a str, BTreeSet<i64>>> {
+    let mut zeros: BTreeMap<&str, BTreeSet<i64>> = BTreeMap::new();
+    let Some(records) = records else {
+        return Ok(zeros);
+    };
+    if records.is_empty() {
+        return Err(malformed("empty zero coherent groups"));
+    }
+    for record in records {
+        let helicity_id = helicities
+            .get(&record.helicities)
+            .filter(|id| basis.contains_key(id.as_str()))
+            .ok_or_else(|| malformed("zero coherent group of an unretained helicity"))?;
+        if basis[helicity_id.as_str()].contains(&record.color_sector_id)
+            || !zeros
+                .entry(helicity_id.as_str())
+                .or_default()
+                .insert(record.color_sector_id)
+        {
+            return Err(malformed("invalid or repeated zero coherent group"));
+        }
+    }
+    for class in spin_classes {
+        let mut patterns: BTreeMap<Vec<i32>, &BTreeSet<i64>> = BTreeMap::new();
+        for (helicity_id, sectors) in basis {
+            let spectator: Vec<i32> = values_by_helicity[helicity_id]
+                .iter()
+                .enumerate()
+                .filter(|(leg, _)| !class.contains(&(leg + 1)))
+                .map(|(_, &value)| value)
+                .collect();
+            if *patterns.entry(spectator).or_insert(sectors) != sectors {
+                return Err(malformed(
+                    "a spin-correlated leg decides which colour sectors vanish",
+                ));
+            }
+        }
+    }
+    Ok(zeros)
+}
+
+/// Whether every retained helicity's groups and certified zeros partition
+/// the matrix's sectors.
+fn covers_matrix(
+    basis: &BTreeMap<&str, BTreeSet<i64>>,
+    zeros: &BTreeMap<&str, BTreeSet<i64>>,
+    sectors: &BTreeSet<i64>,
+) -> bool {
+    let empty = BTreeSet::new();
+    basis.iter().all(|(helicity_id, present)| {
+        let zero = zeros.get(helicity_id).unwrap_or(&empty);
+        present.is_disjoint(zero)
+            && present.union(zero).copied().collect::<BTreeSet<_>>() == *sectors
+    })
 }
 
 #[cfg(test)]
@@ -1512,6 +1623,81 @@ mod tests {
             selected
                 .iter()
                 .all(|&index| runtime.groups[index].helicities == [1, -1])
+        );
+    }
+
+    fn zero_fixture() -> (
+        BTreeMap<Vec<i32>, String>,
+        BTreeMap<&'static str, BTreeSet<i64>>,
+        BTreeMap<&'static str, &'static Vec<i32>>,
+    ) {
+        // Leg 3 is a spin leg; helicity "b" lacks sector 2 (its W pairing).
+        static VALUES: std::sync::OnceLock<[Vec<i32>; 4]> = std::sync::OnceLock::new();
+        let values = VALUES.get_or_init(|| {
+            [
+                vec![-1, 1, -1],
+                vec![-1, 1, 1],
+                vec![1, 1, -1],
+                vec![1, 1, 1],
+            ]
+        });
+        let helicities = BTreeMap::from([
+            (values[0].clone(), "a".to_owned()),
+            (values[1].clone(), "a2".to_owned()),
+            (values[2].clone(), "b".to_owned()),
+            (values[3].clone(), "b2".to_owned()),
+        ]);
+        let basis = BTreeMap::from([
+            ("a", BTreeSet::from([0, 2])),
+            ("a2", BTreeSet::from([0, 2])),
+            ("b", BTreeSet::from([0])),
+            ("b2", BTreeSet::from([0])),
+        ]);
+        let values_by_helicity = BTreeMap::from([
+            ("a", &values[0]),
+            ("a2", &values[1]),
+            ("b", &values[2]),
+            ("b2", &values[3]),
+        ]);
+        (helicities, basis, values_by_helicity)
+    }
+
+    fn zero(helicities: &[i32], sector: i64) -> ZeroGroupRecord {
+        ZeroGroupRecord {
+            helicities: helicities.to_vec(),
+            color_sector_id: sector,
+        }
+    }
+
+    #[test]
+    fn certified_zero_groups_complete_the_colour_basis_and_nothing_else() {
+        let (helicities, basis, values) = zero_fixture();
+        let sectors = BTreeSet::from([0, 2]);
+        let none = certified_zero_sectors(None, &helicities, &basis, &values, &[]).unwrap();
+        assert!(!covers_matrix(&basis, &none, &sectors));
+        let records = [zero(&[1, 1, -1], 2), zero(&[1, 1, 1], 2)];
+        let zeros =
+            certified_zero_sectors(Some(&records), &helicities, &basis, &values, &[vec![3]])
+                .unwrap();
+        assert!(covers_matrix(&basis, &zeros, &sectors));
+        // One gap left undeclared.
+        let partial =
+            certified_zero_sectors(Some(&records[..1]), &helicities, &basis, &values, &[]).unwrap();
+        assert!(!covers_matrix(&basis, &partial, &sectors));
+        for invalid in [
+            vec![],
+            vec![zero(&[-1, 1, -1], 2)],
+            vec![zero(&[1, 1, -1], 2), zero(&[1, 1, -1], 2)],
+            vec![zero(&[9, 9, 9], 2)],
+        ] {
+            assert!(
+                certified_zero_sectors(Some(&invalid), &helicities, &basis, &values, &[]).is_err()
+            );
+        }
+        // A spin leg (1) whose helicity decides the vanishing sector.
+        assert!(
+            certified_zero_sectors(Some(&records), &helicities, &basis, &values, &[vec![1]])
+                .is_err()
         );
     }
 }

@@ -60,7 +60,7 @@ from pathlib import Path
 import pytest
 
 from pyamplicol import Generator, ModelSource, Runtime, TreeOrderEvaluation
-from pyamplicol.api.errors import CompatibilityError, GenerationError
+from pyamplicol.api.errors import CompatibilityError
 from pyamplicol.artifacts.process_groups import (
     initial_process_groups,
     write_process_groups,
@@ -547,30 +547,22 @@ def test_recurrence_lane_takes_flows_without_roots_as_zero(
     d-s~ pairing of u u~ > d d~ s s~ without gluons) is a zero flow, which the
     recurrence certifies (structural-zero physical-sector certificate) instead
     of refusing the request. At leading colour the lane matches MadGraph's
-    pure-electroweak export. At full colour the helicity-selector companion
-    refuses the primary colour reducer, whose per-sector helicity blocks the
-    W pairing of these lines leaves incomplete (a helicity-dependent zero, not
-    a zero flow; ``test_tree_zero_colour_flows``)."""
+    pure-electroweak export, and so it does at full colour, where the W
+    pairing of these lines exists for some helicities only (a
+    helicity-dependent zero, not a zero flow; its helicity selection reads the
+    primary colour reducer through a sparse view,
+    ``test_tree_full_colour_helicity_zeros``)."""
 
-    expected = _reference(f"{_THREE_LINE_TRIPLE_GAUGE} QCD=0", LC_REFERENCE)
-    runtime = _runtime(
-        sm_model,
-        _THREE_LINE_TRIPLE_GAUGE,
-        tmp_path / "lc",
-        accuracy="lc",
-        limits={"QCD": 0, "QED": 4},
-    )
-    _assert_total_matches_madgraph(runtime.evaluate(expected["points"]), expected)
-    with pytest.raises(
-        GenerationError,
-        match="local-color view requires a direct, Walsh, or symmetric-group",
-    ):
-        _runtime(
+    for accuracy, path in (("lc", LC_REFERENCE), ("full", REFERENCE)):
+        expected = _reference(f"{_THREE_LINE_TRIPLE_GAUGE} QCD=0", path)
+        runtime = _runtime(
             sm_model,
             _THREE_LINE_TRIPLE_GAUGE,
-            tmp_path / "full",
+            tmp_path / accuracy,
+            accuracy=accuracy,
             limits={"QCD": 0, "QED": 4},
         )
+        _assert_total_matches_madgraph(runtime.evaluate(expected["points"]), expected)
 
 
 # A chiral vertex that takes a fermion line between massive and massless
@@ -1117,7 +1109,7 @@ def test_symmetric_group_colour_partials_agree_with_exact(
     _assert_matches_exact(runtime, [runtime._backend.validation_momenta()[0]])
 
 
-def test_cli_prints_partials_and_rejects_non_recurrence_lanes(
+def test_cli_prints_partials_and_rejects_the_eager_lane(
     sm_model: ModelSource, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     reference = _reference("u u~ > d d~")
@@ -1146,7 +1138,7 @@ def test_cli_prints_partials_and_rejects_non_recurrence_lanes(
     eager = _runtime(
         sm_model, "u u~ > d d~", tmp_path / "eager", execution_mode="eager"
     )
-    with pytest.raises(CompatibilityError, match="recurrence artifact"):
+    with pytest.raises(CompatibilityError, match="eager artifacts"):
         eager.evaluate_orders(reference["points"])
 
 

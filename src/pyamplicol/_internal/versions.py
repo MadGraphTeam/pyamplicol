@@ -81,6 +81,15 @@ COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY = "rusticol.compiled.color-topology-lan
 # reduction group covers, evaluated as exact zeros (stage_planning
 # ``lc_zero_color_sector_ids``).
 COMPILED_ZERO_COLOR_FLOWS_CAPABILITY = "rusticol.compiled.zero-color-flows.v1"
+# An execution whose normalization weighs each QED order of its amplitudes by
+# sqrt(8 pi alpha_ew / (4 pi alpha_s)) at run time (a global-coupling-factor
+# model with Born amplitudes of several coupling orders;
+# ``generation.born_orders.QED_ORDER_WEIGHTED_COUPLING_POLICY``).
+QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY = "rusticol.normalization.qed-order-weights.v1"
+# The tree correlator payload (``correlators.json``) that lists certified
+# zero coherent groups: a (helicity, colour sector) amplitude without
+# diagrams. Written only when there is one; schema 1 otherwise.
+CORRELATOR_ZERO_GROUPS_SCHEMA_VERSION = 2
 COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY = (
     "rusticol.compiled.color-contraction-walsh.v1"
 )
@@ -93,6 +102,7 @@ EVALUATOR_RUNTIME_CAPABILITIES = frozenset(
         COMPILED_COLOR_CONTRACTION_WALSH_CAPABILITY,
         COMPILED_COLOR_TOPOLOGY_LANES_CAPABILITY,
         COMPILED_ZERO_COLOR_FLOWS_CAPABILITY,
+        QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY,
         COMPILED_HELICITY_DUAL_LANE_CAPABILITY,
         COMPILED_HELICITY_PRIMARY_RECURRENCE_CAPABILITY,
         COMPILED_HELICITY_SELECTOR_UNION_CAPABILITY,
@@ -1165,6 +1175,7 @@ __all__ = [
     "ON_THE_FLY_RUNTIME_CAPABILITY",
     "PROCESS_ARTIFACT_SCHEMA_VERSION",
     "PYTHON_API_VERSION",
+    "QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY",
     "RECURRENCE_BUILDER_INPUT_ABI",
     "RECURRENCE_COLOR_RUNTIME_CAPABILITY",
     "RECURRENCE_DIRECT_ARENA_RUNTIME_CAPABILITY",

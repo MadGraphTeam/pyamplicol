@@ -138,7 +138,7 @@ def _model_weyl_vertex_allowed(
     result_pdg: int,
     chirality: int,
 ) -> bool:
-    if vertex.kind == 16:
+    if vertex.kind in {16, 26}:
         return False
     if vertex.kind in {10, 11, 23, 24}:
         index = _model_fermion_coupling_index(result_pdg, chirality)
@@ -471,6 +471,26 @@ def _expr_fermion_scalar_to_fermion(
     return tuple(
         prefactor * coupling[0] * scalar[0] * component for component in fermion
     )
+
+
+def _expr_fermion_antifermion_to_scalar(
+    *,
+    fermion: tuple[Any, ...],
+    antifermion: tuple[Any, ...],
+    coupling: tuple[Any, Any],
+) -> tuple[Any, ...]:
+    """The scalar current of a Dirac fermion and antifermion through the
+    Yukawa vertex of ``_expr_fermion_scalar_to_fermion`` (the same factor,
+    the identity in Dirac space)."""
+
+    if len(fermion) != 4 or len(antifermion) != 4:
+        raise ValueError(
+            "Dirac fermion-antifermion scalar current expects dimensions 4 and 4"
+        )
+    prefactor = -_imaginary_inverse_sqrt_two(*fermion, *antifermion, *coupling)
+    f1, f2, f3, f4 = fermion
+    a1, a2, a3, a4 = antifermion
+    return (prefactor * coupling[0] * (f1 * a1 + f2 * a2 + f3 * a3 + f4 * a4),)
 
 
 def _two_gluon_to_tensor_data() -> list[complex]:
