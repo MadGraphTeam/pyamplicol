@@ -61,6 +61,7 @@ from .service import (
     _PreparedProcessConstruction,
     _ProcessSelection,
 )
+from .singlet_exchange import require_representable_singlet_exchange
 from .validation import build_validation_point
 
 CORRELATOR_PAYLOAD_PATH = "correlators.json"
@@ -275,6 +276,9 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 )
                 or limits
             )
+        require_representable_singlet_exchange(
+            process, model=model, max_coupling_orders=limits or None
+        )
         return _PreparedProcessConstruction(
             process=process,
             complete_color_plan=plan,

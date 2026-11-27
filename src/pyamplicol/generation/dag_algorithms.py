@@ -968,13 +968,31 @@ def _infer_minimal_coupling_order_limits_from_color_plan(
         process_ir,
         model=model,
         color_plan=color_plan,
-        max_coupling_orders=max_coupling_orders,
+        max_coupling_orders=minimal_policy_coupling_limits(max_coupling_orders, model),
         closure_side_mask_pruning=closure_side_mask_pruning,
         color_order_mask_pruning=color_order_mask_pruning,
         ignored_particle_ids=ignored_particle_ids,
         ignored_vertex_kinds=ignored_vertex_kinds,
     )
     return _minimal_coupling_order_limits_from_totals(totals, model=model)
+
+
+def minimal_policy_coupling_limits(
+    max_coupling_orders: Mapping[str, int] | None,
+    model: Model,
+) -> dict[str, int] | None:
+    """The upper limits the minimal coupling-order policy works within: the
+    explicit ones, and the model's ``expansion_order`` for every order the
+    request leaves open (``Model.coupling_order_expansion_orders``)."""
+
+    merged = {
+        str(name).upper(): int(value)
+        for name, value in (max_coupling_orders or {}).items()
+    }
+    expansion = getattr(model, "coupling_order_expansion_orders", None)
+    for name, cap in (expansion() if callable(expansion) else {}).items():
+        merged.setdefault(str(name).upper(), int(cap))
+    return merged or None
 
 
 def _minimal_coupling_order_limits_from_totals(

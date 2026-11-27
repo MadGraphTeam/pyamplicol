@@ -18,8 +18,12 @@ Example::
 
 ``points.json`` maps each process to a list of points, each a list of
 ``[E, px, py, pz]`` momenta in MadGraph's leg order; ``--work`` receives one
-MadGraph standalone output per process. T-channel widths are kept
-(``zerowidth_tchannel False``) so propagators match a fixed-width recursion.
+MadGraph standalone output per process. ``--orders`` names the coupling orders
+to split by (default ``QCD,QED``; ``QCD,QED,HIG`` for the ``heft`` model), and
+``--set-param BLOCK:ID=VALUE`` overrides an entry of the generated
+``param_card.dat`` before the evaluation (to match another model's inputs).
+T-channel widths are kept (``zerowidth_tchannel False``) so propagators match
+a fixed-width recursion.
 
 Colour-flow amplitudes ``JAMP`` are zeroed before MadGraph assigns them:
 MadGraph 3.7 leaves the entries no diagram feeds unset (u u~ > d d~ s s~).
@@ -40,6 +44,10 @@ import subprocess
 from pathlib import Path
 
 _SPLIT_ORDER_NAMES = ("QCD", "QED")
+# The order names of the split-order tables, as a comment in matrix.f.
+_NAMES_RE = re.compile(
+    r"following list of couplings \(and in this order\):\s*\nC\s*\[([^\]]*)\]"
+)
 _DATA_RE = re.compile(r"DATA \(SQSPLITORDERS\(\s*(\d+),I\),I=\s*1,\s*\d+\) /([^/]*)/")
 # One packed colour-matrix row and the basis element it belongs to.
 _CF_RE = re.compile(
@@ -82,8 +90,14 @@ def _run(args: list[str], cwd: Path) -> str:
     return result.stdout
 
 
-def _generate(madgraph: Path, model: str, process: str, output: Path) -> Path:
-    constraints = " ".join(f"{name}^2<=99" for name in _SPLIT_ORDER_NAMES)
+def _generate(
+    madgraph: Path,
+    model: str,
+    process: str,
+    output: Path,
+    names: tuple[str, ...] = _SPLIT_ORDER_NAMES,
+) -> Path:
+    constraints = " ".join(f"{name}^2<=99" for name in names)
     card = output.with_suffix(".mg5")
     card.write_text(
         "\n".join(
@@ -103,7 +117,41 @@ def _generate(madgraph: Path, model: str, process: str, output: Path) -> Path:
     return subprocess_dir
 
 
+def _set_parameters(card: Path, settings: list[str]) -> None:
+    """Override ``BLOCK:ID=VALUE`` entries (``DECAY:ID=VALUE`` for a width)."""
+
+    if not settings:
+        return
+    lines = card.read_text().splitlines()
+    for setting in settings:
+        key, value = setting.split("=", 1)
+        block, ident = key.split(":", 1)
+        block = block.strip().upper()
+        found = False
+        current = None
+        for index, line in enumerate(lines):
+            words = line.split()
+            if not words or line.lstrip().startswith("#"):
+                continue
+            if words[0].upper() == "BLOCK":
+                current = words[1].upper()
+                continue
+            if block == "DECAY" and words[0].upper() == "DECAY" and words[1] == ident:
+                lines[index] = f"DECAY {ident} {float(value):.10e}"
+                found = True
+            elif current == block and words[0] == ident:
+                lines[index] = f"    {ident} {float(value):.10e} # {block}:{ident}"
+                found = True
+        if not found:
+            raise SystemExit(f"param_card entry {setting!r} not found")
+    card.write_text("\n".join(lines) + "\n")
+
+
 def _squared_orders(matrix: str) -> list[dict[str, int]]:
+    match = _NAMES_RE.search(matrix)
+    if match is None:
+        raise SystemExit("MadGraph split-order names are missing")
+    names = tuple(name.strip().strip("'") for name in match.group(1).split(","))
     rows = {
         int(index): [int(value) for value in values.split(",")]
         for index, values in _DATA_RE.findall(matrix)
@@ -111,8 +159,7 @@ def _squared_orders(matrix: str) -> list[dict[str, int]]:
     if not rows or sorted(rows) != list(range(1, len(rows) + 1)):
         raise SystemExit("MadGraph split-order table is missing or not dense")
     return [
-        dict(zip(_SPLIT_ORDER_NAMES, rows[index], strict=True))
-        for index in range(1, len(rows) + 1)
+        dict(zip(names, rows[index], strict=True)) for index in range(1, len(rows) + 1)
     ]
 
 
@@ -201,7 +248,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--colour", choices=("full", "lc"), default="full")
+    parser.add_argument("--orders", default=",".join(_SPLIT_ORDER_NAMES))
+    parser.add_argument("--set-param", action="append", default=[])
     options = parser.parse_args(argv)
+    names = tuple(name.strip() for name in options.orders.split(",") if name.strip())
     points = json.loads(options.points.read_text())
     options.work.mkdir(parents=True, exist_ok=True)
     references = []
@@ -211,6 +261,11 @@ def main(argv: list[str] | None = None) -> int:
             options.model,
             process,
             options.work.resolve() / f"process-{index}",
+            names,
+        )
+        _set_parameters(
+            options.work.resolve() / f"process-{index}" / "Cards" / "param_card.dat",
+            options.set_param,
         )
         matrix = subprocess_dir / "matrix.f"
         source = matrix.read_text()
@@ -237,6 +292,7 @@ def main(argv: list[str] | None = None) -> int:
                 "kind": "pyamplicol-madgraph-split-orders-v1",
                 "madgraph": options.madgraph.name,
                 "model": options.model,
+                "parameters": options.set_param,
                 "colour": options.colour,
                 "zerowidth_tchannel": False,
                 "processes": references,

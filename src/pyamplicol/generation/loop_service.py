@@ -57,6 +57,7 @@ from .loop_artifact import (
     loop_v2_capability,
 )
 from .progress import GenerationPhaseReporter, PhaseHandle
+from .singlet_exchange import require_representable_singlet_exchange
 from .validation import build_process_validation_point
 
 _LOGGER = logging.getLogger("pyamplicol.generation")
@@ -346,6 +347,10 @@ def _prepare(
                 max_coupling_orders=limits or None,
             )
             limits = names.mapping(inferred) if inferred else limits
+        # The Born of a virtual request has the colour of its tree.
+        require_representable_singlet_exchange(
+            entry.process_ir, model=resolved.model, max_coupling_orders=limits or None
+        )
         entry_limits.append(dict(limits))
     return _LoopContext(
         resolved,

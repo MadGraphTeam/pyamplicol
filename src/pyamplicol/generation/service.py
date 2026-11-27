@@ -123,6 +123,7 @@ from .dag_algorithms import (
     filter_dag_to_color_sectors,
     has_model_supported_amplitudes,
     infer_minimal_coupling_order_limits,
+    minimal_policy_coupling_limits,
     prune_dag_to_amplitude_roots,
     prune_global_helicity_flip_equivalent_roots,
 )
@@ -239,6 +240,7 @@ from .runtime_schema import (
     build_runtime_expression_schema,
     build_runtime_schema_layout,
 )
+from .singlet_exchange import require_representable_singlet_exchange
 from .stage_compiler import (
     build_and_write_generic_stage_evaluator_artifacts,
     write_model_parameter_evaluator_artifact,
@@ -4110,6 +4112,23 @@ class GenerationBackend:
         self._validate_on_the_fly_process_selection()
         coupling_policy = str(run.process.coupling_order_policy)
         explicit_limits = self._coupling_order_limits
+        checked_limits = explicit_limits
+        if coupling_policy == "minimal":
+            # The minimal policy works within the model's expansion orders.
+            explicit_limits = MappingProxyType(
+                minimal_policy_coupling_limits(explicit_limits, model) or {}
+            )
+            checked_limits = (
+                infer_minimal_coupling_order_limits(
+                    expanded.process_ir,
+                    model=model,
+                    max_coupling_orders=explicit_limits or None,
+                )
+                or explicit_limits
+            )
+        require_representable_singlet_exchange(
+            expanded.process_ir, model=model, max_coupling_orders=checked_limits or None
+        )
         projection = project_on_the_fly_process_seed_v1(
             expanded.process_ir,
             model_inputs.catalog,
@@ -8675,6 +8694,7 @@ class GenerationBackend:
         closure_totals = None
         run = self._run_config
         if run is not None and run.process.coupling_order_policy == "minimal":
+            capped = minimal_policy_coupling_limits(limits, model)
             if (
                 selection.max_color_sectors is None
                 and selection.reference_color_order is None
@@ -8684,7 +8704,7 @@ class GenerationBackend:
                     process,
                     model=model,
                     color_plan=complete_color_plan,
-                    max_coupling_orders=limits or None,
+                    max_coupling_orders=capped,
                 )
                 inferred = _minimal_coupling_order_limits_from_totals(
                     closure_totals, model=model
@@ -8693,9 +8713,12 @@ class GenerationBackend:
                 inferred = infer_minimal_coupling_order_limits(
                     process,
                     model=model,
-                    max_coupling_orders=limits or None,
+                    max_coupling_orders=capped,
                 )
-            limits = inferred or limits
+            limits = inferred or capped or limits
+        require_representable_singlet_exchange(
+            process, model=model, max_coupling_orders=limits or None
+        )
         replay_plan = None
         materialized_sector_ids = selection.selected_color_sector_ids
         if self._nc_expansion is not None:
