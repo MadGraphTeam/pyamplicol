@@ -25,6 +25,14 @@ pub(super) fn is_qed_order_weighted_policy(policy: Option<&str>) -> bool {
     policy == Some(QED_ORDER_WEIGHTED_COUPLING_POLICY)
 }
 
+/// The largest `rho^2 = 2 alpha_ew / alpha_s` a QED-order-weighted
+/// normalization accepts: `2^52`, so `alpha_s >= 2 alpha_ew * 2^-52`. Beyond it
+/// the QED weights `rho^e` and the global factor `(4 pi alpha_s)^N` leave the
+/// binary64 range for Born orders the runtimes serve (the product
+/// `(4 pi alpha_s)^(N-e) (8 pi alpha_ew)^e` stays finite, the factors do not),
+/// and the QCD part is below the rounding of the electroweak one.
+pub(super) const QED_ORDER_WEIGHT_MAX_SQUARED: f64 = 4_503_599_627_370_496.0;
+
 /// `rho = sqrt(2 alpha_ew / alpha_s)`, the weight of one QED order of a
 /// QED-order-weighted normalization.
 pub(super) fn qed_order_weight_at(alpha_s: f64, alpha_ew: f64) -> RusticolResult<f64> {
@@ -35,7 +43,19 @@ pub(super) fn qed_order_weight_at(alpha_s: f64, alpha_ew: f64) -> RusticolResult
              {NORMALIZATION_ALPHA_EW_PARAMETER} >= 0 (finite), got {alpha_s} and {alpha_ew}"
         )));
     }
-    Ok((2.0 * alpha_ew / alpha_s).sqrt())
+    let squared = 2.0 * alpha_ew / alpha_s;
+    // Finite and not NaN here (alpha_s > 0); an overflow to infinity is refused too.
+    if squared > QED_ORDER_WEIGHT_MAX_SQUARED {
+        return Err(RusticolError::invalid_argument(format!(
+            "a process whose Born has amplitudes of several coupling orders weighs them by \
+             sqrt(2 alpha_ew / alpha_s) in binary64: it needs \
+             {NORMALIZATION_ALPHA_S_PARAMETER} >= 2 {NORMALIZATION_ALPHA_EW_PARAMETER} * 2^-52 \
+             ({:e} at {NORMALIZATION_ALPHA_EW_PARAMETER} = {alpha_ew}), got {alpha_s}; \
+             generate the purely electroweak orders (QCD = 0) for that limit",
+            2.0 * alpha_ew / QED_ORDER_WEIGHT_MAX_SQUARED
+        )));
+    }
+    Ok(squared.sqrt())
 }
 
 /// The run-time QED-order weight of one execution runtime
