@@ -1044,11 +1044,12 @@ class PointOutputs:
         floors = self._floors()
         return _bound(self.evaluation, magnitude_, floors, floors, self.rows_of(output))
 
-    def floor(self, output: Output, roundoff: Any) -> dict:
+    def floor(self, output: Output, roundoff: Any, weight: float) -> dict:
         """The estimate's floor (``StabilityEstimate.from_checks``'
         ``floor``): the change bound of the form for errors eps F of its
-        vectors b (``_perturbed``), eps1 (F^T|M||b| + |b|^T|M|F) + eps2^2
-        F^T|M|F with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u:
+        vectors b (``_perturbed``), w eps1 (F^T|M||b| + |b|^T|M|F) + eps2^2
+        F^T|M|F with eps1 = BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u and
+        w = ``weight``:
         first order in each side's floor (``induced.floor_kernel``)."""
 
         from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS, Budget
@@ -1058,7 +1059,8 @@ class PointOutputs:
         rows = self.rows_of(output)
         floors = self._floors()
         values = _absolute(self.amplitudes, evaluation.numbers.wide)
-        first, second = BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff
+        first = weight * (BILINEAR_FLOOR_UNITS * roundoff)
+        second = FLOOR_UNITS * roundoff
         parts = (
             _bound(evaluation, magnitude_, floors, values, rows),
             _bound(evaluation, magnitude_, values, floors, rows),
@@ -1077,10 +1079,19 @@ class PointOutputs:
         }
 
     def estimate(
-        self, output: Output, rotated, frame, roundoff, cross=None, not_run=None
+        self,
+        output: Output,
+        rotated,
+        frame,
+        roundoff,
+        cross=None,
+        not_run=None,
+        *,
+        floor_weight: float,
     ) -> Any:
         """The output's estimate; ``cross`` and ``not_run`` as ``budgets``'
-        and ``StabilityEstimate.from_checks``'."""
+        and ``StabilityEstimate.from_checks``', ``floor_weight`` the floor's
+        first-order weight (``StabilityChecks.floor_weight``)."""
 
         from .assemble import Laurent
         from .stability import StabilityEstimate
@@ -1093,7 +1104,8 @@ class PointOutputs:
             self.budgets(output, rotated, frame, cross),
             scale=self.scale(output),
             roundoff=roundoff,
-            floor=self.floor(output, roundoff),
+            floor=self.floor(output, roundoff, floor_weight),
+            floor_weight=floor_weight,
             not_run=not_run,
         )
 
@@ -1357,6 +1369,7 @@ class InducedColumns:
                         precision.estimate_roundoff,
                         other,
                         skipped,
+                        floor_weight=stability.floor_weight,
                     )
                 value = point_result(
                     reference, outputs[g].value(output), estimate, output.rows

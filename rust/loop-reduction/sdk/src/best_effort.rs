@@ -378,8 +378,9 @@ impl Runtime {
     /// combine (no reduction check, or the rescaled one), else the call's
     /// and the recommended set as two runs whose larger estimate counts.
     fn best_effort_checks(&self) -> RusticolResult<(Vec<StabilityChecks>, &'static str)> {
-        let recommended = StabilityChecks::with_default_rotations(1, true, true, false)?;
         let call = self.checks.without_cross_backend();
+        let recommended = StabilityChecks::with_default_rotations(1, true, true, false)?
+            .with_floor_weight(call.floor_weight())?;
         if !call.enabled() {
             return Ok((vec![recommended], "recommended-checks"));
         }
@@ -395,7 +396,10 @@ impl Runtime {
             rotations.push(rotation.clone());
         }
         Ok((
-            vec![StabilityChecks::new(rotations, true, true, false)?],
+            vec![
+                StabilityChecks::new(rotations, true, true, false)?
+                    .with_floor_weight(call.floor_weight())?,
+            ],
             "stability-and-recommended-checks",
         ))
     }

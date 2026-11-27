@@ -130,6 +130,7 @@ module rusticol_virtual
     procedure :: set_kinematics_improvement
     procedure :: set_kinematics_improvement_binary64
     procedure :: set_stability_checks
+    procedure :: set_stability_floor_weight
     procedure :: evaluate
     procedure :: evaluate_selected
     procedure :: evaluate_correlated
@@ -261,6 +262,13 @@ module rusticol_virtual
       import
       type(c_ptr), value :: handle
       real(c_double), value :: target
+      integer(c_int) :: value
+    end function
+    function c_set_stability_floor_weight(handle, weight) &
+        bind(C, name="rusticol_virtual_set_stability_floor_weight") result(value)
+      import
+      type(c_ptr), value :: handle
+      real(c_double), value :: weight
       integer(c_int) :: value
     end function
     function c_set_reduction_unchecked(handle, unchecked) &
@@ -864,6 +872,17 @@ contains
     integer(c_int), optional, intent(out) :: ierr
     character(:), allocatable, optional, intent(out) :: error_message
     call finish(c_set_reduction_target(handle_of(self),target),ierr, &
+      error_message=error_message)
+  end subroutine
+  ! Weight of a loop-induced estimate's first-order floor term (the Python
+  ! API's VirtualStabilityChecks(floor_weight=); default 2^-12, 1 the
+  ! calibrated coverage, 0 the checks alone); kept by set_stability_checks.
+  subroutine set_stability_floor_weight(self,weight,ierr,error_message)
+    class(virtual_runtime), intent(inout) :: self
+    real(c_double), intent(in) :: weight
+    integer(c_int), optional, intent(out) :: ierr
+    character(:), allocatable, optional, intent(out) :: error_message
+    call finish(c_set_stability_floor_weight(handle_of(self),weight),ierr, &
       error_message=error_message)
   end subroutine
 

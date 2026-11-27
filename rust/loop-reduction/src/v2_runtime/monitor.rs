@@ -361,6 +361,7 @@ impl V2Runtime {
                 &turned,
                 checks.reduction(),
                 other.as_ref(),
+                checks.floor_weight(),
             )?;
             let finiteness = shape.finiteness(&direct)?;
             let values = self

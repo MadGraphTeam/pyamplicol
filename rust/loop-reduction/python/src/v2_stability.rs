@@ -159,7 +159,7 @@ fn fields(estimate: Estimate) -> PyEstimate {
 /// evaluation, each rotated evaluation's, the reduction check's name, and
 /// the cross-backend check's evaluation or the reason it did not run.
 #[pyfunction]
-#[pyo3(signature = (shape, roundoff, reference, direct, rotated, reduction=None, cross=None, cross_reason=None))]
+#[pyo3(signature = (shape, roundoff, reference, direct, rotated, reduction=None, cross=None, cross_reason=None, *, floor_weight))]
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn stability_loop_induced(
     shape: (
@@ -177,6 +177,7 @@ fn stability_loop_induced(
     reduction: Option<String>,
     cross: Option<PyInduced>,
     cross_reason: Option<String>,
+    floor_weight: f64,
 ) -> PyResult<PyEstimate> {
     let _unlock = pyamplicol::unlock();
     let (size, width, gram, rows, sectors, average) = shape;
@@ -207,6 +208,7 @@ fn stability_loop_induced(
         &rotated,
         reduction.as_deref(),
         cross.as_ref(),
+        floor_weight,
     )
     .map(fields)
     .map_err(error)

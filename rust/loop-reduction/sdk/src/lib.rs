@@ -781,6 +781,7 @@ impl Runtime {
                 "reduction_direction": self.checks.reduction_direction(),
                 "rescaled": self.checks.rescaled(),
                 "cross_backend": self.checks.cross_backend(),
+                "floor_weight": self.checks.floor_weight(),
             },
             "threads": self.threads(),
             "threads_requested": self.threads_requested(),
@@ -856,6 +857,15 @@ impl Runtime {
     /// Python API's `ReductionUnavailable`).
     pub fn set_stability_checks(&mut self, checks: StabilityChecks) {
         self.checks = checks;
+    }
+    /// The weight of a loop-induced estimate's first-order floor term in
+    /// later evaluations (`VirtualStabilityChecks.floor_weight`; default
+    /// 2^-12, 1 the calibrated coverage, 0 the checks alone): a finite
+    /// non-negative number, else an invalid-argument error and nothing
+    /// changes.
+    pub fn set_stability_floor_weight(&mut self, weight: f64) -> RusticolResult<()> {
+        self.checks = self.checks.clone().with_floor_weight(weight)?;
+        Ok(())
     }
     /// The stability checks of later evaluations.
     pub fn stability_checks(&self) -> &StabilityChecks {

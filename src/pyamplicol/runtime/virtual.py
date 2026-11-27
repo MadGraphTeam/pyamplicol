@@ -481,6 +481,7 @@ def v2_public_estimate(
         # A requested check that did not run at the point, with its reason
         # (the cross-backend check where the other backend fails the point).
         not_run=tuple(getattr(estimate, "not_run", {}).items()),
+        floor_weight=getattr(estimate, "floor_weight", None),
     )
 
 

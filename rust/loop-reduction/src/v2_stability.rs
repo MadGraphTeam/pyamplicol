@@ -35,6 +35,9 @@ pub const FLOOR_UNITS: f64 = 16.0;
 /// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
 /// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
 pub const BILINEAR_FLOOR_UNITS: f64 = 16384.0;
+/// `stability.DEFAULT_FLOOR_WEIGHT`: the default weight of the first-order
+/// floor term (`StabilityChecks.floor_weight`; 1 the calibrated coverage).
+pub const DEFAULT_FLOOR_WEIGHT: f64 = 1.0 / 4096.0;
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
@@ -502,13 +505,41 @@ pub enum Frame {
 /// Which checks an evaluation runs (`stability.StabilityChecks`): rotations
 /// (any number), the reduction check (reversed, or rescaled) and the
 /// cross-backend check (with at least one other). The default runs none.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct StabilityChecks {
     rotations: Vec<Rotation>,
     reduction_direction: bool,
     rescaled: bool,
     cross_backend: bool,
+    floor_weight: f64,
 }
+
+impl Default for StabilityChecks {
+    /// No check, the default floor weight.
+    fn default() -> Self {
+        Self {
+            rotations: Vec::new(),
+            reduction_direction: false,
+            rescaled: false,
+            cross_backend: false,
+            floor_weight: DEFAULT_FLOOR_WEIGHT,
+        }
+    }
+}
+
+// The weight is finite and non-negative (`with_floor_weight`, which also
+// maps -0 to 0): its bits compare as the number.
+impl PartialEq for StabilityChecks {
+    fn eq(&self, other: &Self) -> bool {
+        self.rotations == other.rotations
+            && self.reduction_direction == other.reduction_direction
+            && self.rescaled == other.rescaled
+            && self.cross_backend == other.cross_backend
+            && self.floor_weight.to_bits() == other.floor_weight.to_bits()
+    }
+}
+
+impl Eq for StabilityChecks {}
 
 impl StabilityChecks {
     /// The checks, validated as `StabilityChecks.__post_init__`.
@@ -538,6 +569,20 @@ impl StabilityChecks {
             reduction_direction,
             rescaled,
             cross_backend,
+            floor_weight: DEFAULT_FLOOR_WEIGHT,
+        })
+    }
+
+    /// These checks with the weight `weight` of the loop-induced floor's
+    /// first-order term (`StabilityChecks.floor_weight`): a finite
+    /// non-negative number.
+    pub fn with_floor_weight(self, weight: f64) -> RusticolResult<Self> {
+        if !weight.is_finite() || weight < 0.0 {
+            return Err(invalid("floor_weight must be a finite non-negative number"));
+        }
+        Ok(Self {
+            floor_weight: weight + 0.0,
+            ..self
         })
     }
 
@@ -566,6 +611,10 @@ impl StabilityChecks {
     }
     pub fn cross_backend(&self) -> bool {
         self.cross_backend
+    }
+    /// The weight of the loop-induced floor's first-order term.
+    pub fn floor_weight(&self) -> f64 {
+        self.floor_weight
     }
     /// These checks without the cross-backend check (the evaluations of a
     /// per-point fallback, whose cross-backend check is not run: m-lit R6).
@@ -1440,9 +1489,15 @@ impl InducedShape {
 
     /// The estimate's floor (`induced.floor`): the |A|^2 first-order form of
     /// the per-row term floors S against the computed amplitude's sizes N
-    /// ([`floor_kernel`] on (value, floor) pairs; a key with only one of
-    /// them counts with a zero for the other).
-    pub fn floor(&self, point: &InducedPoint, roundoff: f64) -> RusticolResult<Budget> {
+    /// ([`floor_kernel`] on (value, floor) pairs, its first-order term
+    /// weighted by `weight`; a key with only one of them counts with a zero
+    /// for the other).
+    pub fn floor(
+        &self,
+        point: &InducedPoint,
+        roundoff: f64,
+        weight: f64,
+    ) -> RusticolResult<Budget> {
         let scales = self.row_scales(point)?;
         let values = self.row_values(point);
         let zero = vec![0.0_f64; self.width];
@@ -1454,7 +1509,7 @@ impl InducedShape {
             let (found, value) = (found.unwrap_or(&zero), value.unwrap_or(&zero));
             Some((0..self.width).map(|k| (value[k], found[k])).collect())
         };
-        Ok(self.sector_form(pairs, pairs, floor_kernel(roundoff)))
+        Ok(self.sector_form(pairs, pairs, floor_kernel(roundoff, weight)))
     }
 
     /// The point's finiteness ratio (`induced.point_finiteness` with the
@@ -1493,7 +1548,9 @@ impl InducedShape {
 /// point_estimate` of an amplitude-mode point): its rotation checks' budgets,
 /// the re-test's (named `reduction`), the cross-backend check's (or its
 /// `not_run` record), against |A|^2 per sector (`reference`), with the term
-/// floor's scale.
+/// floor's scale and the floor's first-order term weighted by
+/// `floor_weight` (`StabilityChecks::floor_weight`).
+#[allow(clippy::too_many_arguments)]
 pub fn induced_estimate(
     shape: &InducedShape,
     roundoff: f64,
@@ -1502,6 +1559,7 @@ pub fn induced_estimate(
     rotated: &[InducedPoint],
     reduction: Option<&str>,
     cross: Option<&CrossRun<InducedPoint>>,
+    floor_weight: f64,
 ) -> RusticolResult<Estimate> {
     let mut budgets = Vec::with_capacity(rotated.len() + 2);
     for (k, run) in rotated.iter().enumerate() {
@@ -1520,17 +1578,21 @@ pub fn induced_estimate(
         reference,
         budgets,
         shape.scale(direct)?,
-        Some(shape.floor(direct, roundoff)?),
+        Some(shape.floor(direct, roundoff, floor_weight)?),
         roundoff,
         not_run,
     )
 }
 
 /// The floor's bilinear kernel on (value, floor) pairs of the two sides
-/// (`induced.floor_kernel`): eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 =
-/// BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u.
-pub fn floor_kernel(roundoff: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
-    let (first, second) = (BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff);
+/// (`induced.floor_kernel`): w eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 =
+/// BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u and w the first-order
+/// term's weight.
+pub fn floor_kernel(roundoff: f64, weight: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
+    let (first, second) = (
+        weight * (BILINEAR_FLOOR_UNITS * roundoff),
+        FLOOR_UNITS * roundoff,
+    );
     move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| {
         first * (x * t + s * y) + second * (second * s * t)
     }

@@ -362,6 +362,12 @@ public:
             handle_.get(), rotation_count, rotations ? rotations->c_str() : nullptr,
             reduction_direction ? 1u : 0u, rescaled ? 1u : 0u, cross_backend ? 1u : 0u));
     }
+    // Weight of a loop-induced estimate's first-order floor term (the Python
+    // API's VirtualStabilityChecks(floor_weight=); default 2^-12, 1 the
+    // calibrated coverage, 0 the checks alone); kept by set_stability_checks.
+    void set_stability_floor_weight(double weight) {
+        virtual_detail::check(rusticol_virtual_set_stability_floor_weight(handle_.get(), weight));
+    }
     std::uint64_t update_parameters(const std::string &exact_json) {
         std::uint64_t revision = 0;
         virtual_detail::check(rusticol_virtual_update_parameters(handle_.get(), exact_json.c_str(), &revision));

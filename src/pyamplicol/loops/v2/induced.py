@@ -1402,10 +1402,11 @@ def row_values(evaluation: Any) -> dict:
     }
 
 
-def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
+def floor_kernel(roundoff: Any, weight: float) -> Callable[[Any, Any], Any]:
     """The floor's bilinear kernel on (value, floor) pairs of the two sides:
-    eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 = BILINEAR_FLOOR_UNITS u and
-    eps2 = FLOOR_UNITS u. With |delta a| <= eps1 S per side to first order
+    w eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 = BILINEAR_FLOOR_UNITS u,
+    eps2 = FLOOR_UNITS u and w the first-order term's weight
+    (``StabilityChecks.floor_weight``). With |delta a| <= eps1 S per side to first order
     (the errors no check samples, a calibrated model, ``stability``), the form
     a^dag G a' of the rounded vectors moves by at most that (x, y the
     computed sizes): first order in each side's floor against the other
@@ -1415,7 +1416,8 @@ def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
 
     from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS
 
-    first, second = BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff
+    first = weight * (BILINEAR_FLOOR_UNITS * roundoff)
+    second = FLOOR_UNITS * roundoff
 
     def kernel(left: Any, right: Any) -> Any:
         (x, s), (y, t) = left, right
@@ -1444,14 +1446,15 @@ def scale(evaluation: Any) -> dict:
     )
 
 
-def floor(evaluation: Any) -> dict:
+def floor(evaluation: Any, weight: float) -> dict:
     """The estimate's floor per sector and coefficient
     (``StabilityEstimate.from_checks``' ``floor``): the |A|^2-level
     first-order form of the per-row term floors S_{l,h} (``row_scales``)
     against the computed amplitude's sizes N_{l,h} (``row_values``),
     sum_pairs kappa sum_h sum_{i+j=k} (eps1 (N_{l,h,i} S_{l',h,j} + S_{l,h,i}
     N_{l',h,j}) + eps2^2 S_{l,h,i} S_{l',h,j}) / avg, eps1 =
-    BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u (``floor_kernel``). An
+    BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u, the first-order term
+    weighted by ``weight`` (``floor_kernel``). An
     amplitude whose terms cancel by a factor r gets a floor linear in r, as
     its roundings are (the product of the two
     sides' term floors, ``scale``, grows like r^2); a numerical zero (N ~ u
@@ -1476,18 +1479,18 @@ def floor(evaluation: Any) -> dict:
         rows_of(evaluation),
         pairs,
         pairs,
-        floor_kernel(evaluation.numbers.precision.estimate_roundoff),
+        floor_kernel(evaluation.numbers.precision.estimate_roundoff, weight),
     )
 
 
-def stability_floor(evaluation: Any) -> dict:
-    """``floor`` of a point, formed on first use (``stability_scale``'s
-    term scale)."""
+def stability_floor(evaluation: Any, weight: float) -> dict:
+    """``floor`` of a point at the weight ``weight``, formed on first use
+    (``stability_scale``'s term scale)."""
 
     found = getattr(evaluation, "floor_cache", None)
-    if found is None:
-        found = evaluation.floor_cache = floor(evaluation)
-    return found
+    if found is None or found[0] != weight:
+        found = evaluation.floor_cache = (weight, floor(evaluation, weight))
+    return found[1]
 
 
 def stability_scale(evaluation: Any) -> dict:

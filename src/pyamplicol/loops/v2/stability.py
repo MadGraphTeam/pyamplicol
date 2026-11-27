@@ -145,6 +145,17 @@ FLOOR_UNITS = 16
 # (ESTIMATE_MARGIN) and fewer than 1 in 10^4 of them exceed E. Its
 # second-order term keeps FLOOR_UNITS.
 BILINEAR_FLOOR_UNITS = 2**14
+# The default weight w of that first-order term (``StabilityChecks.
+# floor_weight``, the runtime setting ``stability_checks.floor_weight``):
+# the owner's choice, a typical one-digit overestimate of the true error on
+# the hard loop-induced g g > z z g g g (NinjaRS, binary64, 18 campaign points
+# with a double-double value: true digits 9.62 / 10.71 / 11.95 min / median /
+# max; the floor at w = 1 is 5.4e4 times the true error at the median, and
+# the weight that makes it 10 times the true error has median 1.97e-4 =
+# 2^-12.3, quartiles 3.6e-5 .. 3.5e-4). At w = 2^-12 the estimate there is
+# 8.56 digits at the median; even w = 0 leaves 2 x checks, 212 times the
+# true error. w = 1 restores the calibrated coverage of BILINEAR_FLOOR_UNITS.
+DEFAULT_FLOOR_WEIGHT = 2.0**-12
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"
@@ -448,6 +459,17 @@ def _determinant(m) -> Fraction:
     )
 
 
+def checked_floor_weight(value: object) -> float:
+    """``value`` as a floor weight (``StabilityChecks.floor_weight``): a
+    finite non-negative number, as a float (-0 is 0)."""
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("floor_weight must be a number")
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("floor_weight must be a finite non-negative number")
+    return float(value) + 0.0
+
+
 @dataclass(frozen=True, slots=True)
 class StabilityChecks:
     """Which checks an evaluation runs: rotations (any number) and/or one
@@ -460,8 +482,15 @@ class StabilityChecks:
     reduction_direction: bool = False
     rescaled: bool = False
     cross_backend: bool = False
+    # The weight of a loop-induced estimate's first-order floor term
+    # (``DEFAULT_FLOOR_WEIGHT``; 1: the calibrated coverage, 0: the checks
+    # and the second-order term alone).
+    floor_weight: float = DEFAULT_FLOOR_WEIGHT
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "floor_weight", checked_floor_weight(self.floor_weight)
+        )
         rotations = tuple(self.rotations)
         if any(not isinstance(r, Rotation) for r in rotations):
             raise TypeError("rotation checks take Rotation records")
@@ -701,6 +730,9 @@ class StabilityEstimate:
     families: Mapping[Any, Any] | None = field(default=None, repr=False)
     not_run: Mapping[str, str] = field(default_factory=dict)
     floor: Mapping[Any, Budget] | None = field(default=None, repr=False)
+    # The first-order weight ``floor`` was formed with (None: no
+    # loop-induced floor).
+    floor_weight: float | None = None
 
     @property
     def finite(self) -> float:
@@ -718,6 +750,7 @@ class StabilityEstimate:
         families: Mapping[Any, Any] | None = None,
         not_run: Mapping[str, str] | None = None,
         floor: Mapping[Any, Any] | None = None,
+        floor_weight: float | None = None,
     ) -> StabilityEstimate:
         """Combine the absolute budgets of named checks (``ROTATION``,
         ``REDUCTION`` and ``ADDITIVE`` names) for the reference Laurent values
@@ -772,6 +805,7 @@ class StabilityEstimate:
             families,
             dict(not_run or {}),
             None if floor is None else dict(floor),
+            None if floor is None else floor_weight,
         )
 
     def subset(self, names: Iterable[str], *, floor: bool = True) -> StabilityEstimate:
@@ -792,6 +826,7 @@ class StabilityEstimate:
             families=self.families if set(names) & set(FRAMES) else None,
             not_run=self.not_run,
             floor=self.floor if floor else None,
+            floor_weight=self.floor_weight,
         )
 
 
@@ -1052,6 +1087,7 @@ def _native_induced_estimate(
         checks.reduction,
         cross,
         reason,
+        floor_weight=checks.floor_weight,
     )
     relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
     names = [sector for sector, _pairs in sectors]
@@ -1073,6 +1109,7 @@ def _native_induced_estimate(
         _deviations(reference),
         dict(not_run),
         None if floor is None else budget(floor),
+        None if floor is None else checks.floor_weight,
     )
 
 
@@ -1086,6 +1123,7 @@ __all__ = [
     "ADDITIVE",
     "BILINEAR_FLOOR_UNITS",
     "CROSS",
+    "DEFAULT_FLOOR_WEIGHT",
     "DEFAULT_RESCUE",
     "FLOOR_UNITS",
     "FRAMES",

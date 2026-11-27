@@ -1537,6 +1537,11 @@ class EvaluationStabilityChecksConfig:
     # The reduction-direction check at rescaled inputs (master integrals
     # evaluated again); requires reduction_direction.
     rescaled: bool = field(default=False, metadata=_setting("bool"))
+    # The weight of a loop-induced estimate's first-order floor term
+    # (``VirtualStabilityChecks.floor_weight``; None: the default 2^-12).
+    floor_weight: float | None = field(
+        default=None, metadata=_setting("float", nullable=True)
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -1544,6 +1549,17 @@ class EvaluationStabilityChecksConfig:
             "rotations",
             _tuple_of_strings(self.rotations, "evaluation.stability_checks.rotations"),
         )
+        if self.floor_weight is not None:
+            from pyamplicol.loops.v2.stability import checked_floor_weight
+
+            try:
+                weight = checked_floor_weight(self.floor_weight)
+            except (TypeError, ValueError):
+                raise ConfigurationError(
+                    "evaluation.stability_checks.floor_weight must be a finite "
+                    "non-negative number"
+                ) from None
+            object.__setattr__(self, "floor_weight", weight)
         _integer(
             self.rotation_count, "evaluation.stability_checks.rotation_count", minimum=0
         )
@@ -1567,6 +1583,11 @@ class EvaluationStabilityChecksConfig:
                 self.rotations or self.rotation_count,
                 self.reduction_direction,
                 self.rescaled,
+                **(
+                    {}
+                    if self.floor_weight is None
+                    else {"floor_weight": self.floor_weight}
+                ),
             )
         except (TypeError, ValueError, ZeroDivisionError) as error:
             raise ConfigurationError(f"evaluation.stability_checks: {error}") from error

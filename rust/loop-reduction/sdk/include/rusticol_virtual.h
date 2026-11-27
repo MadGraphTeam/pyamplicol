@@ -302,6 +302,15 @@ int rusticol_virtual_set_kinematics_improvement_binary64(
 int rusticol_virtual_set_stability_checks(rusticol_virtual_handle *handle,
   uint64_t rotation_count, const char *rotations, uint32_t reduction_direction,
   uint32_t rescaled, uint32_t cross_backend);
+/* Weight of a loop-induced estimate's first-order floor term in later
+ * evaluations (the Python API's VirtualStabilityChecks(floor_weight=);
+ * additive, ABI version 2 kept): default 2^-12, 1 the calibrated coverage,
+ * 0 the checks and the second-order term alone; kept by
+ * rusticol_virtual_set_stability_checks. A value that is not a finite
+ * non-negative number is RUSTICOL_VIRTUAL_INVALID_ARGUMENT and nothing
+ * changes. */
+int rusticol_virtual_set_stability_floor_weight(rusticol_virtual_handle *handle,
+  double weight);
 /* Native threads of later evaluations (the run card's evaluation.threads,
  * the Python API's Runtime.load(threads=); additive, ABI version 2 kept):
  * every executor of the handle runs on at most `threads` workers, clamped to
