@@ -14,6 +14,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from pyamplicol._internal.threads import start_auxiliary
+
 
 class ResourceProbeError(RuntimeError):
     """Raised when resident-memory information cannot be collected."""
@@ -328,12 +330,9 @@ class ResourceUsageMonitor:
         if self._thread is not None:
             return
         self._sample_once()
-        self._thread = threading.Thread(
-            target=self._run,
-            name="pyamplicol-resource-monitor",
-            daemon=True,
-        )
-        self._thread.start()
+        # Bounded start: a monitor that cannot start leaves the usage of the
+        # first sample and never blocks the work it watches.
+        self._thread = start_auxiliary(self._run, name="pyamplicol-resource-monitor")
 
     def close(self) -> None:
         self._stop.set()
