@@ -265,6 +265,109 @@ def test_only_a_numerical_zero_is_not_escalated():
     assert record.level == 3 and record.met
 
 
+class _Signed(_Fake):
+    """A level evaluator whose estimates carry E / S and the absolute
+    estimate: ``table[level][point]`` is (relative estimate, value, E,
+    E / S)."""
+
+    def __call__(self, indices, level) -> VirtualEvaluation:
+        from pyamplicol.api.virtual_results import LaurentCoefficients
+
+        k = self.policy.levels.index(level)
+        self.calls.append((k, indices))
+        values, diagnostics, estimates = [], [], []
+        for point in indices:
+            relative, value, error, scale = self.table[k][point]
+            if level.arithmetic != "double":
+                value = Decimal(repr(value))
+            values.append(((value, value, value),))
+            diagnostics.append(
+                VirtualLaneDiagnostic(
+                    "success", level.arithmetic, level.precision_bits, False
+                )
+            )
+            estimates.append(
+                VirtualStabilityEstimate(
+                    relative,
+                    relative,
+                    relative,
+                    relative,
+                    (("rotation-0", relative),),
+                    scale=scale,
+                    absolute=(LaurentCoefficients(error, error, error),),
+                    magnitude=(
+                        LaurentCoefficients(
+                            error / scale, error / scale, error / scale
+                        ),
+                    ),
+                )
+            )
+        return VirtualEvaluation(
+            tuple((v[0][0],) for v in values),
+            tuple(values),
+            BORN_ORDERS,
+            SECTORS,
+            tuple(diagnostics),
+            R2,
+            stability=tuple(estimates),
+        )
+
+
+@pytest.mark.loop_fast
+def test_a_value_within_its_estimate_whose_e_over_s_falls_quadratically_stops():
+    """The stopping rule's second criterion (``rescue._vanishing``): with a
+    floor first order in each side's term floor a numerical zero's relative
+    estimate is flat (value and E both fall like u^2), so the growth
+    criterion cannot see it; its E / S falls like u^2 where a real or a
+    ruined point's falls like u. A point is kept "not escalated" when its
+    value is within its estimate (|value| <= E) at the latest level and at
+    the next lower precision AND its E / S fell by at least the levels'
+    unit-roundoff ratio to the power 3/2 (binary64 -> double-double: 2^76.5).
+
+    0: a zero (flat relative estimate 10, E / S falls by 2^102): kept at
+       double-double by the second criterion;
+    1: a ruined point (within its estimate at both levels, E / S falls like
+       u, 2^51): escalated, 57 digits serve it;
+    2: a real point (outside its estimate at double-double), whatever the
+       fall: escalated;
+    3: within at double-double only (the lower level outside): escalated."""
+
+    u64, u128 = 2.0**-53, 2.0**-104
+    zero = (10.0, 1e-30, 1e-29, 1e-30)
+    table = (
+        (
+            zero,
+            (10.0, 1e-2, 1e-1, 1e-17),
+            (1e-2, 1.0, 1e-2, 1e-13),
+            (1e-2, 1.0, 1e-2, 1e-13),
+        ),
+        (
+            (
+                10.0,
+                1e-30 * (u128 / u64) ** 2,
+                1e-29 * (u128 / u64) ** 2,
+                1e-30 * (u128 / u64) ** 2,
+            ),
+            (10.0, 1e-2 * u128 / u64, 1e-1 * u128 / u64, 1e-17 * u128 / u64),
+            (1e-4, 1.0, 1e-4, 1e-13 * (u128 / u64) ** 2),
+            (10.0, 1e-30, 1e-29, 1e-13 * (u128 / u64) ** 2),
+        ),
+        ((1e-9, 0.0, 0.0, 1e-9),) * 4,
+    )
+    fake = _Signed(THREE, table)
+    result = rescue(THREE, 4, fake)
+    assert [record.level for record in result.rescue] == [1, 2, 2, 2]
+    assert [record.met for record in result.rescue] == [False, True, True, True]
+    detail = result.diagnostics[0].detail
+    assert "not escalated: the value is zero within its estimate here and at" in detail
+    assert "(at least 1.1e+23, their unit-roundoff ratio to the power 3/2)" in detail
+    assert all("not escalated" not in item.detail for item in result.diagnostics[1:])
+    # Without E / S (the estimates of other runtimes) the criterion is inert.
+    fake = _Fake(THREE, ((10.0,), (10.0,), (1e-9,)))
+    (record,) = rescue(THREE, 1, fake).rescue
+    assert record.level == 2
+
+
 @pytest.mark.loop_fast
 def test_a_point_failing_at_every_level_is_failed_and_raises_only_on_request():
     table = ((1e-9, FAIL), (None, FAIL), (None, FAIL))

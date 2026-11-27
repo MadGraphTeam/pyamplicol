@@ -186,7 +186,13 @@ def test_g_g_to_z_is_zero_within_its_estimate(li, carrier):
             scale = estimate.scale[sector].coefficients
             for k, value in enumerate(laurent.coefficients):
                 assert abs(float(value)) <= ESTIMATE_MARGIN * absolute[k], (index, k)
-                assert floor <= absolute[k] / scale[k] <= ESTIMATE_MARGIN * floor
+                # Replaced the band floor <= E / S <= 10 floor, which pinned the
+                # old floor FLOOR_UNITS u S: the floor is first order in each
+                # side's term floor, zero at an exact zero up to rounding, and
+                # its second-order term eps^2 S S' (eps = FLOOR_UNITS u) is what
+                # keeps the zero within its estimate.
+                assert floor**2 <= absolute[k] / scale[k], (index, k)
+                assert abs(float(value)) <= absolute[k], (index, k)
                 assert absolute[k] / scale[k] <= RESCUE_TARGET
         assert estimate.relative > 1 / RESCUE_TARGET
 
@@ -256,14 +262,92 @@ def test_the_rescue_of_g_g_to_z_terminates_under_either_metric(li, tmp_path):
     assert record.level == 0 and record.met and len(record.attempts) == 1
     (estimate,) = scaled.stability
     floor = FLOOR_UNITS * Precision.double().unit_roundoff
-    assert floor <= estimate.scale <= ESTIMATE_MARGIN * floor
+    # Replaced the band floor <= E / S <= 10 floor, which pinned the old floor
+    # FLOOR_UNITS u S: the floor is first order in each side's term floor,
+    # zero at an exact zero up to rounding, and its second-order term
+    # eps^2 S S' (eps = FLOOR_UNITS u) is what keeps the zero within its
+    # estimate.
+    assert floor**2 <= estimate.scale
     assert record.attempts[0].estimate == estimate.scale <= ladder.levels[0].target
     (value,) = scaled.values[0]
     (error,) = estimate.absolute
     assert abs(value.finite) <= ESTIMATE_MARGIN * error.finite
+    assert abs(value.finite) <= error.finite
     unchecked = runtime.evaluate([point], mu_r2=[str(scale)])
     assert scaled.values == unchecked.values
     assert scaled.contribution == "loop-induced"
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize(
+    ("name", "expression"), [("li_gg_z", "g g > z"), ("li_z_gg", "z > g g")]
+)
+def test_an_integrated_zero_stops_where_its_e_over_s_fell_quadratically(
+    li, tmp_path, name, expression
+):
+    """The stopping rule's second criterion on the default stack
+    (``rescue._vanishing``): a Landau-Yang zero's relative estimate is flat
+    with the first-order floor (value and estimate both fall like u^2), so
+    the growth criterion does not keep it; its value is zero within its
+    estimate (|value| <= E) at binary64 and at double-double and its E / S
+    fell by more than the unit-roundoff ratio to the power 3/2 between
+    them: kept at double-double, the target not met, by the second
+    criterion (its detail names it)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescuePolicy
+
+    output = _generate(tmp_path, (("p", expression),), _fixture(name))
+    point, scale, parameters = li.point(name)
+    runtime = Runtime.load(output, process="p", model_parameters=parameters)
+    result = runtime.evaluate(
+        [point], mu_r2=[str(scale)], stability=VirtualRescuePolicy()
+    )
+    (record,) = result.rescue
+    assert not record.met and record.arithmetic == "double-double"
+    detail = result.diagnostics[0].detail
+    assert "not escalated: the value is zero within its estimate here" in detail
+    (estimate,) = result.stability
+    for value, error in zip(result.values[0], estimate.absolute, strict=True):
+        assert abs(value.finite) <= error.finite
+
+
+@pytest.mark.loop_physics
+def test_a_real_point_is_never_kept_as_a_zero(li, tmp_path):
+    """g g > z z (amplitudes cancelling between their terms, a real |A|^2):
+    a ladder whose binary64 target no binary64 estimate meets serves the
+    point from double-double, where it meets its target; a ladder whose
+    double-double target is out of reach too climbs on to 57 digits, which
+    serve it: at double-double its value is far outside its estimate and
+    its estimate fell like u, so neither stopping criterion keeps it."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+
+    output = _generate(tmp_path, (("p", "g g > z z"),), _fixture("li_gg_zz"))
+    point, scale, parameters = li.point("li_gg_zz")
+    runtime = Runtime.load(output, process="p", model_parameters=parameters)
+    served = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=1e-20),
+            VirtualRescueLevel("double-double", target=1e-20),
+        )
+    )
+    climbed = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=1e-40),
+            VirtualRescueLevel("double-double", target=1e-40),
+            VirtualRescueLevel("arbitrary", 57, target=1e-40),
+        )
+    )
+    for policy, level in ((served, 1), (climbed, 2)):
+        result = runtime.evaluate([point], mu_r2=[str(scale)], stability=policy)
+        (record,) = result.rescue
+        assert record.level == level and record.met, (record, result.diagnostics)
+        assert "not escalated" not in result.diagnostics[0].detail
+        (estimate,) = result.stability
+        for value, error in zip(result.values[0], estimate.absolute, strict=True):
+            assert abs(value.finite) > error.finite
 
 
 # The 500-digit evaluations below run in a child process: an evaluation at
@@ -510,3 +594,156 @@ def test_calibration_points_are_exact(name):
             assert energy * energy - sum(x * x for x in space) == mass * mass
         for mu in range(4):
             assert point[0][mu] + point[1][mu] == sum(p[mu] for p in point[2:])
+
+
+# ------------------------------------------------------- the floor's form
+
+# One loop order, one helicity row and a two-element amplitude basis with
+# an identity colour metric: the smallest point the floor's form reads.
+_ORDER = (("QCD", 2), ("QED", 2))
+_ROW = ((0, 1), (1, 1))
+_SECTOR = (("QCD", 4), ("QED", 4))
+_U = 2.0**-53
+
+
+def _constructed(amplitude, terms):
+    """A finite-part loop-induced point (the fields ``induced.scale`` and
+    ``induced.floor`` read): amplitude cells a_t and term sizes T_t."""
+
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    key = (_ORDER, _ROW)
+    precision = SimpleNamespace(estimate_roundoff=_U, unit_roundoff=_U)
+    numbers = SimpleNamespace(wide=False, precision=precision, scope=nullcontext)
+    return SimpleNamespace(
+        gram=((1, 0), (0, 1)),
+        numbers=numbers,
+        slice=SimpleNamespace(
+            amplitude=(0, 1), sectors=((_SECTOR, frozenset({(_ORDER, _ORDER)})),)
+        ),
+        average=1,
+        poles=False,
+        amplitude_rows=(_ROW,),
+        amplitude_vectors={key: [[complex(a)] for a in amplitude]},
+        term_cache={key: [[float(t)] for t in terms]},
+        counterterm_vectors={},
+    )
+
+
+def _largest_change(amplitude, terms, epsilon):
+    """The largest |(|a + d|^2 - |a|^2)| over the corners |d_t| = epsilon
+    T_t with phases +-1, +-i (exact rationals): the bound the floor must
+    hold for roundings of at most epsilon T_t per component."""
+
+    from itertools import product
+
+    a = [complex(x) for x in amplitude]
+    base = [(Fraction(z.real), Fraction(z.imag)) for z in a]
+    sizes = [Fraction(epsilon) * Fraction(t) for t in terms]
+    phases = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    worst = Fraction(0)
+    for corner in product(phases, repeat=len(a)):
+        moved = [
+            (re + p * size, im + q * size)
+            for (re, im), (p, q), size in zip(base, corner, sizes, strict=True)
+        ]
+        change = sum(re * re + im * im for re, im in moved) - sum(
+            re * re + im * im for re, im in base
+        )
+        worst = max(worst, abs(change))
+    return worst
+
+
+@pytest.mark.loop_fast
+def test_the_loop_induced_floor_is_first_order_in_each_sides_floor():
+    """The floor of |A|^2 = a^dag G a (``induced.floor``) is eps (N S + S N
+    + eps S S), eps = FLOOR_UNITS u, N = sum_t |a_t| sqrt(G_tt) and S the
+    term floor: for an amplitude whose terms cancel to N / S = 3.5e-5 it is
+    2 N / S = 7e-5 of FLOOR_UNITS u times the product of the two sides'
+    term floors (``induced.scale``, the scale S of the estimate, which is
+    unchanged), linear in the cancellation where the product is quadratic,
+    and it bounds the form's change for every rounding of at most eps T_t
+    per component (exact rationals over the corners)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.stability import FLOOR_UNITS
+
+    epsilon = FLOOR_UNITS * _U
+    amplitude, terms = (3e-5, 4e-5), (1.0, 1.0)
+    point = _constructed(amplitude, terms)
+    (scale,) = induced.scale(point)[_SECTOR].coefficients
+    (floor,) = induced.floor(point)[_SECTOR].coefficients
+    size, term = 3e-5 + 4e-5, 2.0
+    assert scale == term * term
+    assert floor == epsilon * (size * term + term * size + epsilon * term * term)
+    assert floor / (epsilon * scale) == pytest.approx(2 * size / term, rel=1e-9)
+    assert _largest_change(amplitude, terms, epsilon) <= Fraction(floor)
+
+
+@pytest.mark.loop_fast
+def test_a_vanishing_loop_induced_amplitude_keeps_its_floor():
+    """The floor must still dominate where nothing survives the
+    cancellation (RULED Q13: a numerical zero is "zero within the
+    estimate"): an exactly vanishing amplitude keeps the second-order term
+    (eps S)^2, and an amplitude that is pure rounding of up to eps T_t per
+    component has |A|^2 within its floor."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.stability import FLOOR_UNITS
+
+    epsilon = FLOOR_UNITS * _U
+    terms = (1.0, 3.0)
+    (floor,) = induced.floor(_constructed((0.0, 0.0), terms))[_SECTOR].coefficients
+    assert floor == epsilon * (epsilon * 4.0 * 4.0) > 0
+    for noise in ((epsilon, 0.0), (epsilon, 3 * epsilon), (0.0, 3j * epsilon)):
+        point = _constructed(noise, terms)
+        (floor,) = induced.floor(point)[_SECTOR].coefficients
+        value = sum(abs(complex(x)) ** 2 for x in noise)
+        assert value <= floor, (noise, value, floor)
+        assert _largest_change(noise, terms, epsilon) <= Fraction(floor)
+
+
+@pytest.mark.loop_fast
+def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
+    """The native estimate (``stability_loop_induced``, the SDK's Rust
+    implementation) forms the constructed point's floor, scale and estimate
+    bitwise as the Python oracle (``induced.floor``, ``induced.scale``,
+    ``StabilityEstimate.from_checks``)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import Budget, StabilityEstimate
+
+    for amplitude, terms in (
+        ((3e-5, 4e-5 - 1e-9j), (1.0, 1.0)),
+        ((0.0, 0.0), (1.0, 3.0)),
+        ((0.7, -0.2 + 0.1j), (0.9, 0.4)),
+    ):
+        point = _constructed(amplitude, terms)
+        cells = [((0, 0), [[(complex(a).real, complex(a).imag)] for a in amplitude])]
+        native = (cells, cells, [], None, [((0, 0), [[float(t)] for t in terms])])
+        value = sum(abs(complex(a)) ** 2 for a in amplitude)
+        shape = (
+            2,
+            1,
+            [(1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (1.0, 0.0)],
+            [0],
+            [[(0, 0)]],
+            1.0,
+        )
+        found = loop_native.stability_loop_induced(
+            shape, _U, [[value]], native, [native], None, None, None
+        )
+        relative, _coefficients, _relatives, absolute, budgets, scale, _, floor = found
+        assert floor == [list(induced.floor(point)[_SECTOR].coefficients)]
+        assert scale == [list(induced.scale(point)[_SECTOR].coefficients)]
+        oracle = StabilityEstimate.from_checks(
+            {_SECTOR: Laurent(value)},
+            {name: {_SECTOR: Budget(tuple(row[0]))} for name, row in budgets},
+            scale={_SECTOR: Budget(tuple(scale[0]))},
+            roundoff=_U,
+            floor=induced.floor(point),
+        )
+        assert absolute == [list(oracle.absolute[_SECTOR].coefficients)]
+        assert relative == oracle.relative
