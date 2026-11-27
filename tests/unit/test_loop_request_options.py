@@ -393,3 +393,26 @@ def test_a_twice_stored_process_is_ambiguous_in_every_spelling(tmp_path, model_c
             Runtime.load(artifact, process=spelling)
         assert "again, uugg" in str(error.value)
     assert _values(artifact, "again") == _values(artifact, "uugg")
+
+
+# F7: a dry run on a model it cannot load -------------------------------------
+
+
+def test_one_loop_dry_run_on_an_uncompiled_model_fails_as_the_tree_one(tmp_path):
+    from pyamplicol.api.errors import ModelError
+
+    empty = tmp_path / "empty-cache"
+    card = _card(tmp_path, empty, expression="u u~ > g g", name="uugg")
+    tree = _card(tmp_path, empty, expression="u u~ > g g", name="tree")
+    tree.write_text(tree.read_text().replace('loop_coupling_orders = ["QCD"]', ""))
+    for request in (card, tree):
+        code, stdout, stderr = _cli(
+            "generate", "--card", str(request), "--dry-run", "--json"
+        )
+        assert code == 2, stdout
+        assert "dry-run does not compile external model sources" in stderr
+    with pytest.raises(ModelError, match="dry-run does not compile"):
+        Generator(resolve_config(card)).plan(
+            ProcessRequest.parse("u u~ > g g", name="uugg")
+        )
+    assert not empty.exists() or not any(empty.rglob("*.json"))

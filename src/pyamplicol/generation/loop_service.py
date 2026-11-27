@@ -223,14 +223,16 @@ def _prepare(
     *,
     planning,
     phase,
+    resolved=None,
 ):
     license_state = backend._detect_symbolica_license()
     backend._apply_symbolica_resource_policy(license_state)
-    resolved = (
-        backend._resolve_model_for_plan(source)
-        if planning
-        else backend._resolve_model(source)
-    )
+    if resolved is None:
+        resolved = (
+            backend._resolve_model_for_plan(source)
+            if planning
+            else backend._resolve_model(source)
+        )
     compiled = backend._artifact_model(resolved)
     if compiled.raw_loop_model is None:
         from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
@@ -1528,12 +1530,25 @@ def _plan_v2(backend, processes, blockers, *, model=None):
 
     blockers = blockers + _v2_blockers(backend)
     context, coverage, skipped = None, [], ()
+    resolved = None
+    if not blockers:
+        source = model or backend._configured_model_source()
+        try:
+            resolved = backend._resolve_model_for_plan(source)
+        except PyAmpliColError as e:
+            # A listed refusal of the model source is the plan's blocker; a
+            # model the dry run cannot load (one it would have to compile)
+            # fails the plan with its reason, as the tree dry run does.
+            if getattr(e, "key", None) is None:
+                raise
+            blockers = (str(keyed_error(e)),)
     if not blockers:
         try:
             context = _prepare(
                 backend,
                 processes,
-                model or backend._configured_model_source(),
+                source,
+                resolved=resolved,
                 planning=True,
                 phase=PhaseHandle(
                     "loop-generation-plan", backend._progress, len(processes.requests)
