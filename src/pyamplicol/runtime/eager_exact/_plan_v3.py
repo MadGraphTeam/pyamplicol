@@ -469,10 +469,9 @@ def _validate_plan_v3_execution_header(execution: Mapping[str, object]) -> None:
     expected = _EAGER_PLAN_V3_RUNTIME_CAPABILITIES
     # A QED-order-weighted normalization: the native runtime's coupling slots
     # already carry its weights, which the exact executor reads.
-    if execution.get("required_runtime_capabilities") == sorted(
-        [*expected, QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY]
-    ):
-        expected = execution["required_runtime_capabilities"]
+    weighted = sorted([*expected, QED_ORDER_WEIGHTED_COUPLINGS_CAPABILITY])
+    if execution.get("required_runtime_capabilities") == weighted:
+        expected = weighted
     if execution.get("required_runtime_capabilities") != expected:
         raise CompatibilityError(
             "unsupported compact eager runtime capability contract"
