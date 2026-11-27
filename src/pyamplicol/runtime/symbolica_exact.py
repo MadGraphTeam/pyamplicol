@@ -755,7 +755,9 @@ class SymbolicaExactExecutor:
         orders = _compiled_amplitude_orders(self._representative_physics)
         if len(orders.squared) == 1:
             # One amplitude component: its one partial is the total.
-            return resolved, tuple((total,) for total in resolved.total())
+            return resolved, tuple(
+                (cast(Decimal, total),) for total in resolved.total()
+            )
         # The helicity-sum execution, when there is one, serves every global
         # selection through its resolved reduction (as natively).
         self._activate_execution(None)
@@ -997,11 +999,11 @@ class SymbolicaExactExecutor:
                     )
                 )
         partials = [[_ZERO for _ in orders.squared] for _ in range(point_count)]
-        for column, values in enumerate(per_order):
-            resolved_values: Sequence[tuple[tuple[Decimal, ...], ...]] = values
+        for column, column_values in enumerate(per_order):
+            resolved_values: Sequence[tuple[tuple[Decimal, ...], ...]] = column_values
             if self._lc_replay is not None:
                 resolved_values, _, _ = _apply_lc_replay_resolved(
-                    tuple(values),
+                    tuple(column_values),
                     self._lc_replay,
                     point_count,
                     tuple(helicity_ids[index] for index in selected_h),
