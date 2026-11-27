@@ -3,6 +3,9 @@
 use super::sources::RuntimeSourceState;
 use super::*;
 
+#[path = "helicity_orders.rs"]
+mod orders;
+
 #[derive(Clone, Debug)]
 pub(super) struct CompiledHelicitySelectorSchedule {
     pub(super) selector_domain_id: usize,

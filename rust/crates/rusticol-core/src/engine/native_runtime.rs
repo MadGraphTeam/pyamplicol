@@ -3252,6 +3252,7 @@ impl NativeRuntime {
         self.point_selector_scratch = selector_scratch;
         result?;
         self.apply_process_group_factor(partials);
+        check_partials_sum_to_totals(totals, partials, squared_count)?;
         Ok(())
     }
 
@@ -3285,11 +3286,6 @@ impl NativeRuntime {
             None,
             totals,
         )?;
-        if squared_count == 1 {
-            // One amplitude component: its one partial is the total.
-            partials.copy_from_slice(totals);
-            return Ok(());
-        }
         let color_ids = self.execution_color_ids(color_ids);
         let crossing_lookup = std::mem::take(&mut self.input_crossing_map);
         let mut selector_scratch = std::mem::take(&mut self.point_selector_scratch);
@@ -3323,6 +3319,13 @@ impl NativeRuntime {
         self.point_selector_scratch = selector_scratch;
         result?;
         self.apply_process_group_factor(partials);
+        check_partials_sum_to_totals(totals, partials, squared_count)?;
+        if squared_count == 1 {
+            // Every closure of the selection was proven to carry the one
+            // amplitude order (the order split refuses any other): the one
+            // partial is the total, bit for bit.
+            partials.copy_from_slice(totals);
+        }
         Ok(())
     }
 
@@ -5970,3 +5973,37 @@ mod runtime_capability_cutover_tests {
         }
     }
 }
+
+/// The run-time invariant of squared coupling-order partials: per point their
+/// sum is the total within a rounding bound (`1e-9` of the larger of the
+/// total and the sum of the partials' magnitudes). A violation is a typed
+/// integrity error, never columns that do not add up.
+pub(super) fn check_partials_sum_to_totals(
+    totals: &[f64],
+    partials: &[f64],
+    squared_count: usize,
+) -> RusticolResult<()> {
+    if squared_count == 0 {
+        return Ok(());
+    }
+    for (point, (total, row)) in totals
+        .iter()
+        .zip(partials.chunks_exact(squared_count))
+        .enumerate()
+    {
+        let sum = row.iter().sum::<f64>();
+        let scale = row
+            .iter()
+            .map(|value| value.abs())
+            .sum::<f64>()
+            .max(total.abs());
+        if !(sum - total).abs().le(&(1e-9 * scale)) {
+            return Err(RusticolError::integrity(format!(
+                "squared coupling-order partials do not sum to the total at point {point} \
+                 ({sum:e} against {total:e})"
+            )));
+        }
+    }
+    Ok(())
+}
+

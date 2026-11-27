@@ -381,6 +381,228 @@ impl AmplitudeRuntime {
         ))
     }
 
+    /// Order-resolved counterpart of `reduce_scratch_f64_for_materialized_helicity`.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn reduce_scratch_f64_order_resolved_for_materialized_helicity(
+        &self,
+        batch_size: usize,
+        physics: &PhysicsRuntime,
+        normalization_factor: f64,
+        helicity_index: usize,
+        root_factors: &[Option<Complex<f64>>],
+        selected_color_ids: Option<&BTreeSet<String>>,
+        catalog: &AmplitudeOrderCatalog,
+        root_components: &[u32],
+    ) -> RusticolResult<Vec<ResolvedValues<f64>>> {
+        let samples = RowMajorAmplitudeSamples::new(
+            &self.output_scratch_f64,
+            batch_size,
+            self.output_length,
+        )?;
+        self.reduce_samples_f64_order_resolved_for_materialized_helicity(
+            samples,
+            batch_size,
+            physics,
+            normalization_factor,
+            helicity_index,
+            root_factors,
+            selected_color_ids,
+            catalog,
+            root_components,
+        )
+    }
+
+    /// Plane-native counterpart of
+    /// [`Self::reduce_scratch_f64_order_resolved_for_materialized_helicity`].
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn reduce_planes_f64_order_resolved_for_materialized_helicity(
+        &self,
+        amplitudes: crate::direct_arena::DirectAmplitudePlanes<'_>,
+        physics: &PhysicsRuntime,
+        normalization_factor: f64,
+        helicity_index: usize,
+        root_factors: &[Option<Complex<f64>>],
+        selected_color_ids: Option<&BTreeSet<String>>,
+        catalog: &AmplitudeOrderCatalog,
+        root_components: &[u32],
+    ) -> RusticolResult<Vec<ResolvedValues<f64>>> {
+        let plane_count = usize::try_from(amplitudes.component_count()?)
+            .map_err(|_| RusticolError::invalid_argument("amplitude plane count exceeds usize"))?;
+        if plane_count != self.output_length {
+            return Err(RusticolError::invalid_argument(format!(
+                "direct amplitude plane count is {plane_count}, expected {}",
+                self.output_length
+            )));
+        }
+        self.reduce_samples_f64_order_resolved_for_materialized_helicity(
+            amplitudes,
+            amplitudes.point_count() as usize,
+            physics,
+            normalization_factor,
+            helicity_index,
+            root_factors,
+            selected_color_ids,
+            catalog,
+            root_components,
+        )
+    }
+
+    /// The materialized physical-helicity reducer
+    /// (`reduce_amplitude_samples_f64_for_materialized_helicity`) per squared
+    /// order: the same active groups and root factors, with the left and right
+    /// group amplitudes restricted to the components of each ordered pair.
+    #[allow(clippy::too_many_arguments)]
+    fn reduce_samples_f64_order_resolved_for_materialized_helicity<S: AmplitudeSamples>(
+        &self,
+        amplitudes: S,
+        batch_size: usize,
+        physics: &PhysicsRuntime,
+        normalization_factor: f64,
+        helicity_index: usize,
+        root_factors: &[Option<Complex<f64>>],
+        selected_color_ids: Option<&BTreeSet<String>>,
+        catalog: &AmplitudeOrderCatalog,
+        root_components: &[u32],
+    ) -> RusticolResult<Vec<ResolvedValues<f64>>> {
+        validate_root_components(root_components, self.output_length, catalog)?;
+        if root_factors.len() != self.output_length {
+            return Err(RusticolError::integrity(format!(
+                "helicity recurrence route table has {} roots, expected {}",
+                root_factors.len(),
+                self.output_length
+            )));
+        }
+        if helicity_index >= physics.manifest.helicities.len() {
+            return Err(RusticolError::selector(format!(
+                "runtime helicity index {helicity_index} is out of range"
+            )));
+        }
+        let component_count = catalog.components().len();
+        let squared = catalog.squared_orders();
+        let groups = &self.raw_sum_groups;
+        let color_count = physics.manifest.color_components.len();
+        let color_indices = physics.selected_color_indices(selected_color_ids)?;
+        let mut full_values = vec![vec![0.0; batch_size * color_count]; squared.len()];
+        let mut sums = vec![c64(0.0, 0.0); groups.len() * component_count];
+        let mut group_active = vec![false; groups.len()];
+        let mut group_color_weights = vec![Vec::new(); groups.len()];
+        for (group_index, group) in groups.iter().enumerate() {
+            let reduction = physics
+                .numeric_reduction_by_group_id
+                .get(&group.id)
+                .ok_or_else(|| {
+                    RusticolError::invalid_argument(format!(
+                        "resolved metadata is missing coherent group {}",
+                        group.id
+                    ))
+                })?;
+            group_active[group_index] = reduction.contains_helicity(helicity_index)
+                && group
+                    .indices
+                    .iter()
+                    .any(|index| root_factors[*index].is_some());
+            group_color_weights[group_index] = reduction.normalized_color_weights.clone();
+        }
+        let factored_sums = |row: usize, sums: &mut [Complex<f64>]| {
+            sums.fill(c64(0.0, 0.0));
+            for (group_index, group) in groups.iter().enumerate() {
+                if !group_active[group_index] {
+                    continue;
+                }
+                let base = group_index * component_count;
+                for &output in &group.indices {
+                    if let Some(factor) = root_factors[output] {
+                        sums[base + root_components[output] as usize] +=
+                            amplitudes.value(row, output, self.output_length) * factor;
+                    }
+                }
+            }
+        };
+        if let Some(contraction) = self.color_contraction.as_ref() {
+            if contraction.is_symmetric_group() {
+                return Err(RusticolError::compatibility(
+                    "compiled symmetric-group FFT diagnostic does not support squared \
+                     coupling-order partials; use the direct colour contraction",
+                ));
+            }
+            if groups.len() != contraction.group_count {
+                return Err(RusticolError::invalid_argument(
+                    "colour contraction group count does not match coherent groups",
+                ));
+            }
+            let entry_colors = contraction.entry_color_indices(physics)?;
+            let entries = contraction.logical_entries().collect::<Vec<_>>();
+            for row in 0..batch_size {
+                factored_sums(row, &mut sums);
+                for (entry, entry_color) in entries.iter().zip(&entry_colors) {
+                    if !group_active[entry.left_group_index]
+                        || !group_active[entry.right_group_index]
+                    {
+                        continue;
+                    }
+                    for (order_values, order) in full_values.iter_mut().zip(squared) {
+                        let product = ordered_pair_product(
+                            &sums,
+                            entry.left_group_index,
+                            entry.right_group_index,
+                            component_count,
+                            order.pairs(),
+                        );
+                        order_values[row * color_count + entry_color] += normalization_factor
+                            * entry.symmetry_factor
+                            * (entry.weight_re * product.re - entry.weight_im * product.im);
+                    }
+                }
+            }
+        } else {
+            if !self.has_coherent_groups {
+                return Err(RusticolError::invalid_argument(
+                    "materialized helicity reduction requires coherent amplitude-group metadata",
+                ));
+            }
+            for row in 0..batch_size {
+                factored_sums(row, &mut sums);
+                for (group_index, group) in groups.iter().enumerate() {
+                    if !group_active[group_index] {
+                        continue;
+                    }
+                    for (order_values, order) in full_values.iter_mut().zip(squared) {
+                        let product = ordered_pair_product(
+                            &sums,
+                            group_index,
+                            group_index,
+                            component_count,
+                            order.pairs(),
+                        );
+                        let contribution =
+                            normalization_factor * group.all_sector_weight * product.re;
+                        for (color_index, weight) in &group_color_weights[group_index] {
+                            order_values[row * color_count + *color_index] +=
+                                contribution * *weight;
+                        }
+                    }
+                }
+            }
+        }
+        Ok(full_values
+            .into_iter()
+            .map(|full| {
+                let mut values = Vec::with_capacity(batch_size * color_indices.len());
+                for row in 0..batch_size {
+                    for color_index in &color_indices {
+                        values.push(full[row * color_count + *color_index]);
+                    }
+                }
+                ResolvedValues {
+                    values,
+                    point_count: batch_size,
+                    helicity_indices: vec![helicity_index],
+                    color_indices: color_indices.clone(),
+                }
+            })
+            .collect())
+    }
+
     /// Start an order-resolved colour topology replay of `batch_size` points.
     pub(crate) fn begin_color_topology_replay_orders(
         &self,

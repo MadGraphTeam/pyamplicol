@@ -874,9 +874,9 @@ class SymbolicaExactExecutor:
         with localcontext() as context:
             context.prec = precision
             context.rounding = ROUND_HALF_EVEN
-            return resolved, tuple(
-                tuple(+value for value in point) for point in partials
-            )
+            rounded = tuple(tuple(+value for value in point) for point in partials)
+        _check_partials_sum_to_totals(resolved.total(), rounded)
+        return resolved, rounded
 
     def _activate_execution(self, helicities: Sequence[str] | None) -> None:
         primary_execution = getattr(self, "_primary_execution", self._execution)
@@ -4439,6 +4439,25 @@ def _reduce_resolved(
         tuple(helicity_ids[index] for index in selected_h),
         tuple(color_ids[index] for index in selected_c),
     )
+
+
+def _check_partials_sum_to_totals(
+    totals: Sequence[complex | Decimal], partials: Sequence[Sequence[Decimal]]
+) -> None:
+    """The run-time invariant of the native lanes: per point the partials sum
+    to the total within ``1e-9`` of the larger of the total and the partials'
+    magnitudes; a violation is an integrity error, never wrong columns."""
+
+    for point, (total, row) in enumerate(zip(totals, partials, strict=True)):
+        value = (
+            Decimal(complex(total).real) if not isinstance(total, Decimal) else total
+        )
+        scale = max(abs(value), sum((abs(entry) for entry in row), Decimal(0)))
+        if not abs(sum(row, Decimal(0)) - value) <= Decimal("1e-9") * scale:
+            raise ArtifactError(
+                "squared coupling-order partials do not sum to the total at point "
+                f"{point}"
+            )
 
 
 @dataclass(frozen=True, slots=True)

@@ -124,14 +124,43 @@ fn insert_pareto_order(orders: &mut Vec<Box<[u32]>>, candidate: Vec<u32>) -> boo
     true
 }
 
+/// Which coupling-order vectors a sweep keeps per structural state.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum OrderRetention {
+    /// The componentwise Pareto-minimal vectors (the minimal policy).
+    Pareto,
+    /// Every vector within the limits (the amplitude-order catalogue).
+    All,
+}
+
+fn insert_order(
+    orders: &mut Vec<Box<[u32]>>,
+    candidate: Vec<u32>,
+    retention: OrderRetention,
+) -> bool {
+    match retention {
+        OrderRetention::Pareto => insert_pareto_order(orders, candidate),
+        OrderRetention::All => match orders.binary_search_by(|existing| {
+            existing.as_ref().cmp(candidate.as_slice())
+        }) {
+            Ok(_) => false,
+            Err(position) => {
+                orders.insert(position, candidate.into_boxed_slice());
+                true
+            }
+        },
+    }
+}
+
 fn insert_topology_order(
     nodes: &mut Vec<GlobalTopologyNode>,
     node_ids: &mut BTreeMap<GlobalTopologyKey, usize>,
     key: GlobalTopologyKey,
     orders: Vec<u32>,
+    retention: OrderRetention,
 ) -> RusticolResult<()> {
     if let Some(id) = node_ids.get(&key).copied() {
-        insert_pareto_order(&mut nodes[id].orders, orders);
+        insert_order(&mut nodes[id].orders, orders, retention);
         return Ok(());
     }
     let id = nodes.len();
@@ -224,6 +253,7 @@ fn insert_all_sources(
     grammar: &PreparedOnTheFlyGrammarV1,
     nodes: &mut Vec<GlobalTopologyNode>,
     node_ids: &mut BTreeMap<GlobalTopologyKey, usize>,
+    retention: OrderRetention,
 ) -> RusticolResult<u64> {
     let zero_orders = vec![0_u32; seed.explicit_coupling_limits().len()];
     let mut source_topology_count = 0_u64;
@@ -247,7 +277,7 @@ fn insert_all_sources(
                 pairing_lineage: PendingPairingLineage::source(seed, anchor.source_slot),
             };
             let previous = nodes.len();
-            insert_topology_order(nodes, node_ids, key, zero_orders.clone())?;
+            insert_topology_order(nodes, node_ids, key, zero_orders.clone(), retention)?;
             if nodes.len() != previous {
                 checked_increment(&mut source_topology_count, "source topology count")?;
             }
@@ -268,6 +298,7 @@ fn apply_transition(
     nodes: &mut Vec<GlobalTopologyNode>,
     node_ids: &mut BTreeMap<GlobalTopologyKey, usize>,
     census: &mut OnTheFlyCouplingPolicyCensusV1,
+    retention: OrderRetention,
 ) -> RusticolResult<()> {
     let Some(parents) = ordered_transition_parents(prepared, &left.key, &right.key) else {
         return Ok(());
@@ -352,7 +383,7 @@ fn apply_transition(
                     else {
                         continue;
                     };
-                    insert_topology_order(nodes, node_ids, key.clone(), orders)?;
+                    insert_topology_order(nodes, node_ids, key.clone(), orders, retention)?;
                 }
             }
         }
@@ -365,12 +396,14 @@ fn build_global_topologies(
     seed: &OnTheFlyProcessSeedV1,
     grammar: &PreparedOnTheFlyGrammarV1,
     census: &mut OnTheFlyCouplingPolicyCensusV1,
+    retention: OrderRetention,
 ) -> RusticolResult<Vec<GlobalTopologyNode>> {
     let source_count = seed.source_anchors.len();
     let hard_limits = seed.explicit_coupling_limits();
     let mut nodes = Vec::new();
     let mut node_ids = BTreeMap::new();
-    census.source_topology_count = insert_all_sources(seed, grammar, &mut nodes, &mut node_ids)?;
+    census.source_topology_count =
+        insert_all_sources(seed, grammar, &mut nodes, &mut node_ids, retention)?;
 
     for target_size in 2..source_count {
         // New nodes produced at this stage have support `target_size`, so a
@@ -408,6 +441,7 @@ fn build_global_topologies(
                         &mut nodes,
                         &mut node_ids,
                         census,
+                        retention,
                     )?;
                 }
             }
@@ -434,6 +468,7 @@ fn collect_viable_total_orders(
     grammar: &PreparedOnTheFlyGrammarV1,
     nodes: &[GlobalTopologyNode],
     census: &mut OnTheFlyCouplingPolicyCensusV1,
+    retention: OrderRetention,
 ) -> RusticolResult<Vec<Box<[u32]>>> {
     let source_count = seed.source_anchors.len();
     let mut totals = Vec::new();
@@ -546,7 +581,7 @@ fn collect_viable_total_orders(
                                 else {
                                     continue;
                                 };
-                                insert_pareto_order(&mut totals, total);
+                                insert_order(&mut totals, total, retention);
                             }
                         }
                     }
@@ -554,13 +589,17 @@ fn collect_viable_total_orders(
             }
         }
     }
-    refuse_dirac_weyl_orders_outside_the_envelope(
-        &dirac_weyl,
-        states,
-        &totals,
-        &dirac_weyl_totals,
-        seed.coupling_hierarchies(),
-    )?;
+    // The minimal policy's check of the Dirac-Weyl pairs against its
+    // envelope; the complete catalogue sweep follows a policy already checked.
+    if retention == OrderRetention::Pareto {
+        refuse_dirac_weyl_orders_outside_the_envelope(
+            &dirac_weyl,
+            states,
+            &totals,
+            &dirac_weyl_totals,
+            seed.coupling_hierarchies(),
+        )?;
+    }
     census.viable_total_order_count = u64::try_from(totals.len())
         .map_err(|_| invalid("global viable-total-order count exceeds u64"))?;
     Ok(totals)
@@ -748,8 +787,16 @@ pub(super) fn resolve_on_the_fly_coupling_policy_from_grammar_v1(
         });
     }
     let mut census = OnTheFlyCouplingPolicyCensusV1::default();
-    let nodes = build_global_topologies(templates, seed, grammar, &mut census)?;
-    let totals = collect_viable_total_orders(templates, seed, grammar, &nodes, &mut census)?;
+    let nodes =
+        build_global_topologies(templates, seed, grammar, &mut census, OrderRetention::Pareto)?;
+    let totals = collect_viable_total_orders(
+        templates,
+        seed,
+        grammar,
+        &nodes,
+        &mut census,
+        OrderRetention::Pareto,
+    )?;
     let effective_limits = minimal_envelope(&totals, seed.coupling_hierarchies())?
         .unwrap_or_else(|| seed.explicit_coupling_limits().to_vec());
     Ok(OnTheFlyResolvedCouplingPolicyV1 {
@@ -759,13 +806,11 @@ pub(super) fn resolve_on_the_fly_coupling_policy_from_grammar_v1(
     })
 }
 
-/// The total coupling orders of the diagrams the process admits, within
-/// `limits`: the cold global sweep of the minimal policy (whatever the
-/// policy), ascending. Every order a tree of the process carries is one of
-/// these: the sweep keeps the componentwise Pareto-minimal orders per
-/// structural state, and the trees of one process all carry the same number
-/// of coupling powers per state (each vertex adds its own), so no order of a
-/// tree is dominated by another.
+/// Every total coupling order of the diagrams the process admits within
+/// `limits`, ascending: the cold global sweep of the minimal policy, keeping
+/// every order vector per structural state and every closure total (no
+/// Pareto pruning), so an order a vertex with extra coupling powers adds is
+/// listed even where a smaller order exists.
 pub(super) fn viable_amplitude_orders_v1(
     templates: &ValidatedRecurrenceTemplateInput,
     seed: &OnTheFlyProcessSeedV1,
@@ -773,8 +818,16 @@ pub(super) fn viable_amplitude_orders_v1(
     limits: &[Option<u32>],
 ) -> RusticolResult<Vec<Box<[u32]>>> {
     let mut census = OnTheFlyCouplingPolicyCensusV1::default();
-    let nodes = build_global_topologies(templates, seed, grammar, &mut census)?;
-    let mut totals = collect_viable_total_orders(templates, seed, grammar, &nodes, &mut census)?;
+    let nodes =
+        build_global_topologies(templates, seed, grammar, &mut census, OrderRetention::All)?;
+    let mut totals = collect_viable_total_orders(
+        templates,
+        seed,
+        grammar,
+        &nodes,
+        &mut census,
+        OrderRetention::All,
+    )?;
     if totals.iter().any(|orders| orders.len() != limits.len()) {
         return Err(invalid(
             "viable coupling orders do not match the coupling-order limits",

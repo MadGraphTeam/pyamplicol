@@ -231,6 +231,20 @@ impl ExecutionRuntime {
                 selected_color_ids,
             );
         }
+        if self.has_compiled_helicity_execution_plan() {
+            // The plain amplitude stage computes only the representative
+            // helicities: every physical helicity runs its own schedule, as in
+            // the ordinary resolved evaluation.
+            return self.order_resolved_with_helicity_schedules_f64(
+                catalog,
+                root_components,
+                batch,
+                &physics,
+                selected_helicity_ids,
+                selected_color_ids,
+                None,
+            );
+        }
         self.order_resolved_materialized_f64(
             catalog,
             root_components,
@@ -401,15 +415,32 @@ impl ExecutionRuntime {
                 } else {
                     batch
                 };
-                let materialized = self.order_resolved_materialized_f64(
-                    catalog,
-                    root_components,
-                    evaluation_view,
-                    physics,
-                    Some(&source_group.helicity_ids),
-                    Some(&source_group.color_ids),
-                    Some(&materialized_sector_ids),
-                )?;
+                // As the ordinary replay: a helicity selection with a
+                // compiled helicity plan runs the selected helicities'
+                // schedules; otherwise the materialized amplitude stage.
+                let materialized = if self.has_compiled_helicity_execution_plan()
+                    && selected_helicity_ids.is_some()
+                {
+                    self.order_resolved_with_helicity_schedules_f64(
+                        catalog,
+                        root_components,
+                        evaluation_view,
+                        physics,
+                        Some(&source_group.helicity_ids),
+                        Some(&source_group.color_ids),
+                        Some(&materialized_sector_ids),
+                    )?
+                } else {
+                    self.order_resolved_materialized_f64(
+                        catalog,
+                        root_components,
+                        evaluation_view,
+                        physics,
+                        Some(&source_group.helicity_ids),
+                        Some(&source_group.color_ids),
+                        Some(&materialized_sector_ids),
+                    )?
+                };
                 for (target, values) in full_values.iter_mut().zip(&materialized) {
                     accumulate_selected_lc_replay_resolved_f64(
                         target,
