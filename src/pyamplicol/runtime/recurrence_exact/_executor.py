@@ -573,7 +573,7 @@ class RecurrenceExactExecutor:
             sections.closures, sections.closure_amplitude_orders, strict=True
         ):
             powers = _sequence(components[component], "amplitude order powers")
-            qed = int(powers[qed_index])
+            qed = _signed_integer(powers[qed_index], "amplitude order power")
             if qed == 0:
                 continue
             real, imaginary = _factor(self._plan, closure.exact_factor_id)

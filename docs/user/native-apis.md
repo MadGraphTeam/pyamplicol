@@ -1106,6 +1106,27 @@ additive: `rusticol_virtual_abi_version` stays 2 and `RUSTICOL_ABI_VERSION`
 1 (the project's rule: additive symbols keep the version; the packaged UMAMI
 header is unchanged).
 
+## Built-in SM artifacts from earlier releases
+
+The built-in Standard Model's tree values were corrected in November 2026.
+An artifact generated with an earlier built-in SM source keeps the values of
+that source. The Python `Runtime.load` compares the artifact's recorded
+built-in SM source digest with the installed one and warns ("was generated
+with another built-in SM source"). The C, C++, Fortran and Rust clients make
+no such check: they open the artifact and return its old values without a
+message.
+
+In 1.0.3, the values changed for processes with a Higgs propagator attached
+to a top-quark line: two top lines (`t t~ > t t~`, `t t > t t`,
+`t t~ > t t~ h`), or one top line with a Higgs to a W, Z or Higgs vertex
+(`t w- > t w- d d~`, `t a > t z u u~`). Their old values could be too small
+or too large; see
+[the 1.0.3 release notes](release-and-support.md#103-release).
+
+Regenerate such artifacts with the installed pyAmpliCol before using them
+from a native client. To check an existing one, load it once from Python
+(`Runtime.load`), which emits the warning.
+
 ## Common setup failures
 
 | Symptom | Resolution |
