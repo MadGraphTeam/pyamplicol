@@ -102,3 +102,89 @@ def test_generated_correlated_born_matches_inherited_accuracy(
         assert ordinary > 0
         assert abs(correlated.real / ordinary - 1) < Decimal("1e-27")
         assert abs(correlated.imag / ordinary) < Decimal("1e-27")
+
+
+_ACCURACY_PROCESSES = (
+    ("g g > g g", _POINT),
+    ("d d~ > u u~ g", _THREE_BODY_POINT),
+    ("u u~ > g g g", _THREE_BODY_POINT),
+)
+
+
+@pytest.mark.parametrize("accuracy", ("lc", "nlc"))
+@pytest.mark.parametrize(
+    ("expression", "point"),
+    _ACCURACY_PROCESSES,
+    ids=("gluons", "two-pairs-and-gluon", "pair-and-three-gluons"),
+)
+def test_a_correlated_artifact_has_one_colour_accuracy(
+    tmp_path, expression, point, accuracy
+):
+    """Every evaluation of a correlated artifact generated at LC or NLC is at
+    that accuracy: the ordinary value (plain, extended precision, resolved,
+    per helicity and, at LC, per colour flow) equals an independently
+    generated ordinary artifact of that accuracy, compiled and recurrence,
+    and equals its own correlated Born."""
+
+    pytest.importorskip("pyamplicol._rusticol")
+    config = _configuration(accuracy)
+    model = ModelSource.built_in_sm()
+    correlated_path = tmp_path / "correlated"
+    Generator(config).generate(
+        expression,
+        correlated_path,
+        model=model,
+        correlators=CorrelatorConfig(
+            color_correlations=(ColorCorrelator.dipole("T12", 1, 2),)
+        ),
+    )
+    ordinary_path = tmp_path / "ordinary"
+    Generator(config).generate(expression, ordinary_path, model=model)
+    recurrence_path = tmp_path / "recurrence"
+    Generator(
+        RunConfig(
+            action="generate",
+            color=ColorConfig(accuracy=accuracy),
+            generation=config.generation,
+            evaluator=EvaluatorConfig(execution_mode="recurrence"),
+        )
+    ).generate(expression, recurrence_path, model=model)
+    correlated = Runtime.load(correlated_path)
+    ordinary = Runtime.load(ordinary_path)
+    recurrence = Runtime.load(recurrence_path)
+    assert str(correlated.physics.color_accuracy) == accuracy
+    expected = complex(ordinary.evaluate((point,))[0]).real
+    assert expected > 0
+    for value in (
+        complex(correlated.evaluate((point,))[0]).real,
+        float(complex(correlated.evaluate((point,), precision=32)[0]).real),
+        float(
+            sum(
+                complex(item).real
+                for row in correlated.evaluate_resolved((point,)).values[0]
+                for item in row
+            )
+        ),
+        float(correlated.evaluate_correlated((point,))[0].real),
+        complex(recurrence.evaluate((point,))[0]).real,
+    ):
+        assert value == pytest.approx(expected, rel=1e-12)
+    for helicity in ordinary.physics.helicities:
+        assert complex(
+            correlated.evaluate((point,), helicities=[helicity.id])[0]
+        ).real == pytest.approx(
+            complex(ordinary.evaluate((point,), helicities=[helicity.id])[0]).real,
+            rel=1e-12,
+            abs=1e-15 * expected,
+        )
+    if accuracy == "lc":
+        flows = {flow.id for flow in correlated.physics.color_flows}
+        assert flows == {flow.id for flow in ordinary.physics.color_flows}
+        for flow in sorted(flows):
+            assert complex(
+                correlated.evaluate((point,), color_flows=[flow])[0]
+            ).real == pytest.approx(
+                complex(ordinary.evaluate((point,), color_flows=[flow])[0]).real,
+                rel=1e-12,
+                abs=1e-15 * expected,
+            )
