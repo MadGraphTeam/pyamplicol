@@ -132,7 +132,7 @@ carry a `ValueError` message instead of a code; they are marked below.
 | Counterterms and decays | ignored | counterterm parameters are ordinary parameters, `CTVertex` objects are dropped, the decays block is never read. |
 | Coupling records | supported | any expression in the parameters, any number of coupling-order names per coupling. |
 | Coupling matrix | supported | one row per colour structure and one column per Lorentz structure; `None` entries are skipped; each cell becomes its own term and pieces with different orders are counted separately. |
-| Coupling orders | conditional | `hierarchy` weights the minimal coupling-order policy; `expansion_order` is stored but has no effect; undeclared order names default to weight 1. |
+| Coupling orders | conditional | `hierarchy` weights the minimal coupling-order policy; an `expansion_order` below 99 caps that order per amplitude under the minimal policy (an explicit `max_coupling_orders` entry overrides it), as in MadGraph; undeclared order names default to weight 1. |
 | Coupling-order policies | supported | `minimal` (default) keeps the lowest hierarchy-weighted order; `explicit` applies only `--max-coupling-order NAME=N`, and misspelled names are not detected. |
 | Runtime parameter cards | supported | flat JSON objects of finite real or `[re, im]` values via `--model-parameters`, `Runtime.load(model_parameters=...)` or `set_model_parameters`; an invalid batch leaves the runtime unchanged. |
 | Runtime mutability | conditional | only surviving external parameters are mutable; derived parameters and couplings are recomputed and read-only. In recurrence mode an external parameter that the process never uses may be rejected as not used. |

@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from ..api.errors import GenerationError
 from ..color.plan import GenericColorPlan, LCColorSector
 from ..models._physics_ir import ContractionIR
-from ..models.base import Model
+from ..models.base import Model, Vertex
 from ..processes.ir import CanonicalProcessIR
 from .dag_types import CurrentIndex
 
@@ -43,6 +43,91 @@ class DiracWeylClosureUnsupported(GenerationError, ValueError):
     callers handle. The message starts with ``key``."""
 
     key = "dirac-weyl-closure"
+
+
+class VertexOrientationUnavailable(GenerationError, ValueError):
+    """The compiled and eager lanes' refusal of a merge whose input order the
+    model does not provide (``key`` ``vertex-orientation-unavailable``).
+
+    The DAG compiler meets every pair of currents in both input orders and
+    looks a vertex up by its ordered inputs; the colour engine keeps one
+    order of a merge (``ColorEngine.ordered_combination_labels``). When the
+    order it keeps has no model vertex while the other order has one, the
+    term would be dropped without a trace, so the lane refuses instead. The
+    recurrence and on-the-fly lanes pair parents in both orders and are not
+    affected. Merges of a fermion with an antifermion are exempt: their
+    vertices are listed in the fermion-flow order, and the reversed order is
+    another colour term, not this one. So are vertices with an auxiliary
+    particle (a contact vertex split into two merges, whose orders are
+    decided together) and the loop-block DAG, whose colour engine keeps one
+    order of a merge by its own rules for exactly the vertices the loop model
+    lists (``ColorEngine._loop_block_trace_orientation_allowed``). A
+    ``ValueError`` as the untyped refusal its callers handle. The message
+    starts with ``key``."""
+
+    key = "vertex-orientation-unavailable"
+
+
+def _has_auxiliary_role(model: Model, particle_id: int) -> bool:
+    """Whether the model marks the particle auxiliary (a contact or
+    projection line of the DAG, not an external state); unknown is not."""
+
+    try:
+        return model.auxiliary_kind(int(particle_id)) is not None
+    except (KeyError, NotImplementedError, TypeError, ValueError):
+        return False
+
+
+def _refuse_unavailable_vertex_orientation(
+    model: Model,
+    color_engine: ColorEngine,
+    left: CurrentIndex,
+    right: CurrentIndex,
+    vertex: Vertex,
+    *,
+    color_accuracy: str,
+) -> None:
+    """Refuse a merge rejected for its input order alone.
+
+    ``vertex`` joins ``left`` and ``right`` in this order and the colour
+    engine refused the order. If the model lists the vertex with its inputs
+    exchanged, the other split of the same mask yields the term; if it does
+    not and the colour engine would keep the exchanged order, no split
+    yields it and the amplitude would silently lose it.
+    """
+
+    first, second, result = vertex.particles
+    if first == second or color_engine.builds_loop_blocks:
+        return
+    if any(_has_auxiliary_role(model, particle) for particle in vertex.particles):
+        return
+    if any(
+        candidate.particles[2] == result
+        for candidate in model.vertices_accepting(
+            second, first, color_accuracy=color_accuracy
+        )
+    ):
+        return
+    first_fermion = _known_fermion_statistics(model, first)
+    second_fermion = _known_fermion_statistics(model, second)
+    if first_fermion is None or second_fermion is None:
+        return
+    if first_fermion and second_fermion:
+        return
+    exchanged = Vertex(vertex.kind, (second, first, result), vertex.coupling)
+    if color_engine.ordered_combination_labels(right, left, exchanged) is None:
+        return
+    raise VertexOrientationUnavailable(
+        f"{VertexOrientationUnavailable.key}: the model lists vertex kind "
+        f"{vertex.kind} with inputs ({first}, {second}) -> {result} but not "
+        f"with the inputs exchanged ({second}, {first}) -> {result}, and the "
+        "colour-ordered merge of the currents with external labels "
+        f"{tuple(right.ordered_external_labels)} and "
+        f"{tuple(left.ordered_external_labels)} needs that order: the compiled "
+        "and eager lanes would drop these diagrams. Use the recurrence or "
+        "on-the-fly execution mode, or a model that lists the vertex in both "
+        "input orders"
+    )
 
 
 #: The contraction a loop Born DAG records for a Dirac current closing on a
@@ -596,10 +681,13 @@ def _lc_color_order_reachable_masks(
             return None
         if set(sector.singlet_labels) != singlet_labels:
             return None
-        if sector.kind == "open-lines":
-            for singlet_submask in _submasks_for_labels(sector.singlet_labels):
-                if singlet_submask:
-                    allowed.add(singlet_submask)
+        # A current of colour singlets alone: on open lines a boson exchanged
+        # between them, in a trace or singlet sector a singlet that a
+        # colour-identity vertex joins to two gluons (the HEFT H g g with an
+        # internal Higgs, g g > z z, g g > h h).
+        for singlet_submask in _submasks_for_labels(sector.singlet_labels):
+            if singlet_submask:
+                allowed.add(singlet_submask)
         for raw_word in sector.admissible_traversal_words:
             word = tuple(label for label in raw_word if label in colored_labels)
             for start in range(len(word)):

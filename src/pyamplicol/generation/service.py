@@ -130,6 +130,7 @@ from .dag_algorithms import (
     infer_minimal_coupling_order_limits,
     prune_dag_to_amplitude_roots,
     prune_global_helicity_flip_equivalent_roots,
+    request_coupling_order_limits,
 )
 from .dag_compiler import _restrict_color_plan, compile_generic_dag
 from .dag_equivalence import (
@@ -244,6 +245,10 @@ from .runtime_schema import (
     RuntimeSchemaLayout,
     build_runtime_expression_schema,
     build_runtime_schema_layout,
+)
+from .singlet_exchange import (
+    SingletExchangeColourError,
+    require_representable_singlet_exchange,
 )
 from .stage_compiler import (
     build_and_write_generic_stage_evaluator_artifacts,
@@ -2858,6 +2863,10 @@ class _ProjectedOnTheFlyProcess:
     index: int
     expanded: _ExpandedProcess
     projection: OnTheFlyGenerationProjectionV1
+    # The request's bounds (``request_coupling_order_limits``: explicit, else
+    # the capped default) the seed's minimal inference works within, as the
+    # plan and the artifact record them.
+    coupling_order_limits: Mapping[str, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -3281,6 +3290,17 @@ def _shutdown_process_executor(
     executor.shutdown(wait=not interrupted, cancel_futures=True)
 
 
+def _process_phase_error(
+    phase_name: str, process_name: str, exc: Exception
+) -> GenerationError:
+    """The error of a failed process phase; a typed refusal keeps its type."""
+
+    message = f"{phase_name} failed for process {process_name!r}: {exc}"
+    if isinstance(exc, SingletExchangeColourError):
+        return SingletExchangeColourError(message)
+    return GenerationError(message)
+
+
 def _map_process_phase(
     items: Sequence[_ProcessInput],
     operation: Callable[[_ProcessInput], _ProcessOutput],
@@ -3300,9 +3320,7 @@ def _map_process_phase(
             try:
                 results.append(operation(item))
             except Exception as exc:
-                raise GenerationError(
-                    f"{phase_name} failed for process {item_name(item)!r}: {exc}"
-                ) from exc
+                raise _process_phase_error(phase_name, item_name(item), exc) from exc
         return tuple(results)
 
     ordered: list[_ProcessOutput | object] = [_MISSING_PROCESS_RESULT for _ in items]
@@ -3343,9 +3361,7 @@ def _map_process_phase(
                 wait(tuple(active))
             index, exc = min(failures, key=lambda failure: failure[0])
             item = items[index]
-            raise GenerationError(
-                f"{phase_name} failed for process {item_name(item)!r}: {exc}"
-            ) from exc
+            raise _process_phase_error(phase_name, item_name(item), exc) from exc
         while next_index < len(items) and len(active) < max_in_flight:
             submit_one(next_index)
             next_index += 1
@@ -4131,8 +4147,28 @@ class GenerationBackend:
         if run is None:  # pragma: no cover - guarded by execution mode
             raise GenerationError("on-the-fly generation requires RunConfig")
         self._validate_on_the_fly_process_selection()
-        coupling_policy = str(run.process.coupling_order_policy)
-        explicit_limits = self._coupling_order_limits
+        coupling_policy = self._coupling_order_policy
+        # The bounds the seed's own minimal inference works within (explicit,
+        # else the capped default) and the request's limits within them.
+        explicit_limits = MappingProxyType(
+            request_coupling_order_limits(
+                self._coupling_order_limits, model, policy=coupling_policy
+            )
+        )
+        checked_limits = request_coupling_order_limits(
+            self._coupling_order_limits,
+            model,
+            policy=coupling_policy,
+            infer=lambda bounds: infer_minimal_coupling_order_limits(
+                expanded.process_ir, model=model, max_coupling_orders=bounds or None
+            ),
+        )
+        require_representable_singlet_exchange(
+            expanded.process_ir,
+            model=model,
+            max_coupling_orders=checked_limits or None,
+            execution_mode="on-the-fly",
+        )
         projection = project_on_the_fly_process_seed_v1(
             expanded.process_ir,
             model_inputs.catalog,
@@ -4149,6 +4185,7 @@ class GenerationBackend:
             index=index,
             expanded=expanded,
             projection=projection,
+            coupling_order_limits=explicit_limits,
         )
 
     def _validate_on_the_fly_process_selection(self) -> None:
@@ -4210,7 +4247,7 @@ class GenerationBackend:
             )
         selection = self._process_selection
         coupling_policy = str(run.process.coupling_order_policy)
-        explicit_limits = self._coupling_order_limits
+        explicit_limits = projected.coupling_order_limits
         process_seed_identity = _invoke_rust_on_the_fly_seed_inspector_v1(seed_payload)
         _bind_on_the_fly_process_seed_identity_v1(
             process_seed_identity,
@@ -4740,13 +4777,16 @@ class GenerationBackend:
                         from ..models.external import CompiledUFOModel
 
                         model = CompiledUFOModel(cast(_CompiledModelPayload, compiled))
-                    limits = (
-                        infer_minimal_coupling_order_limits(
+                    active = model
+                    limits = request_coupling_order_limits(
+                        explicit,
+                        active,
+                        policy="minimal",
+                        infer=lambda bounds: infer_minimal_coupling_order_limits(
                             representative_ir,
-                            model=model,
-                            max_coupling_orders=explicit or None,
-                        )
-                        or explicit
+                            model=active,
+                            max_coupling_orders=bounds or None,
+                        ),
                     )
                 limits_by_representative[representative.process_id] = limits
             return symmetry.relation_warning(
@@ -5660,7 +5700,12 @@ class GenerationBackend:
                             model.lc_trace_reflection_equivalence_is_proven(process)
                         ),
                     ),
-                    max_coupling_orders=self._coupling_order_limits or None,
+                    max_coupling_orders=request_coupling_order_limits(
+                        self._coupling_order_limits,
+                        model,
+                        policy=self._coupling_order_policy,
+                    )
+                    or None,
                 )
             )
             results.append(
@@ -7998,6 +8043,11 @@ class GenerationBackend:
         }
 
     @property
+    def _coupling_order_policy(self) -> str:
+        run = self._run_config
+        return "explicit" if run is None else str(run.process.coupling_order_policy)
+
+    @property
     def _flavor_blind(self) -> bool:
         run = self._run_config
         return run is not None and run.process.flavor_blind
@@ -8567,7 +8617,14 @@ class GenerationBackend:
             and not process.antifundamental_labels
             and len(process.adjoint_labels) >= 2
             and adjoint_tree_color_basis_is_proven(
-                model, process, max_coupling_orders=self._coupling_order_limits or None
+                model,
+                process,
+                max_coupling_orders=request_coupling_order_limits(
+                    self._coupling_order_limits,
+                    model,
+                    policy=self._coupling_order_policy,
+                )
+                or None,
             )
         )
         return best_general_fft_basis(process, ddm_proven=ddm_proven).actual_basis
@@ -8695,7 +8752,15 @@ class GenerationBackend:
             ),
             "color_diagnostics": tuple(color_plan.diagnostics),
             **self._fft_basis_metadata(color_plan),
-            "coupling_order_limits": self._coupling_order_limits,
+            "coupling_order_limits": (
+                self._coupling_order_limits
+                if model is None
+                else request_coupling_order_limits(
+                    self._coupling_order_limits,
+                    model,
+                    policy=self._coupling_order_policy,
+                )
+            ),
             "dag_compilation_deferred": True,
         }
 
@@ -8724,7 +8789,7 @@ class GenerationBackend:
                 () if color_plan is None else tuple(color_plan.diagnostics)
             ),
             **self._fft_basis_metadata(color_plan),
-            "coupling_order_limits": self._coupling_order_limits,
+            "coupling_order_limits": dict(projected.coupling_order_limits),
             "color_plan_materialized": color_plan is not None,
             "source_projection_validated": True,
             "native_seed_construction_deferred": True,
@@ -8930,10 +8995,11 @@ class GenerationBackend:
             raise GenerationError(
                 f"process {process.process!r} has no usable color plan: {detail}"
             )
-        limits = self._coupling_order_limits
         closure_totals = None
         run = self._run_config
-        if run is not None and run.process.coupling_order_policy == "minimal":
+
+        def infer(bounds: dict[str, int]) -> Mapping[str, int] | None:
+            nonlocal closure_totals
             if (
                 selection.max_color_sectors is None
                 and selection.reference_color_order is None
@@ -8943,18 +9009,31 @@ class GenerationBackend:
                     process,
                     model=model,
                     color_plan=complete_color_plan,
-                    max_coupling_orders=limits or None,
+                    max_coupling_orders=bounds or None,
                 )
-                inferred = _minimal_coupling_order_limits_from_totals(
+                return _minimal_coupling_order_limits_from_totals(
                     closure_totals, model=model
                 )
-            else:
-                inferred = infer_minimal_coupling_order_limits(
-                    process,
-                    model=model,
-                    max_coupling_orders=limits or None,
-                )
-            limits = inferred or limits
+            return infer_minimal_coupling_order_limits(
+                process,
+                model=model,
+                max_coupling_orders=bounds or None,
+            )
+
+        limits = request_coupling_order_limits(
+            self._coupling_order_limits,
+            model,
+            policy=self._coupling_order_policy,
+            infer=infer,
+        )
+        require_representable_singlet_exchange(
+            process,
+            model=model,
+            max_coupling_orders=limits or None,
+            execution_mode=(
+                str(run.evaluator.execution_mode) if run is not None else "compiled"
+            ),
+        )
         replay_plan = None
         materialized_sector_ids = selection.selected_color_sector_ids
         if self._nc_expansion is not None:

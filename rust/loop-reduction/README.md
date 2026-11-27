@@ -31,8 +31,9 @@ Dependencies use ordinary pinned Git revisions and Cargo's lockfile. No ignored
 reference directory or `upstream` symlink is needed. The standalone workspace
 aligns Symbolica with the application's shared core and uses:
 
-- NinjaRS `1f3d9d0ef34a423f9a9843dcdf99962b70236560` (main after PR #24: `e1d94412` with its oneloopmaster pin moved to
-  `cdbc912`, the revision TIRust pins; `e1d94412` = main after PR #23:
+- NinjaRS `41e21234740802cf367bca9b0eb1cd36f88edc4a` (main after PR #25: its oneloopmaster pin moved to
+  `a4b16f70`, the revision TIRust pins; on `1f3d9d0e` = PR #24, oneloopmaster
+  `cdbc912`, on `e1d94412` = main after PR #23:
   the local cancellation rescue the checked reduction drives, and PR #22,
   on top of `a2546170`, main after PR #20:
   `f7f5e165` + `ninjars_symbolica::reserve`, the history-independent exact
@@ -50,7 +51,8 @@ aligns Symbolica with the application's shared core and uses:
   symbolica-dev/symbolica `community` (main `238dc613`, the author's
   state-omitting evaluator saves, plus his community-only commits; see
   `dependencies/README.md`).
-- TIRust `c20d0be2` (main after PRs #76, a relation's constant denominator
+- TIRust main after PR #83 (its oneloopmaster pin moved to `a4b16f70`), on
+  `c20d0be2` (main after PRs #76, a relation's constant denominator
   identity held to the inputs' rounding, and #77, exactly dependent triangles
   kept on their relation at a stability threshold of 0; on `6ba4b531` = PR #70,
   refusal texts that name the failed
@@ -73,7 +75,9 @@ aligns Symbolica with the application's shared core and uses:
   `pyamplicol-community`: alphal00p/gammaloop `d1904bf2`, the owner's coherent
   dependency revision recorded by NinjaRS, plus Spenso's `conj` in Numerica
   3.1's numeric trait).
-- oneloopmaster `cdbc912ab7b8327a23fe5fc08ddb0c58b9d55a21` (main: `07fc754f` + #21, a cancellation-free
+- oneloopmaster `a4b16f70f113202b491761a7c3da0b8f1e09ac60` (main after #25, a soft three-mass box at a
+  vanishing channel that keeps its labelling, and #23, the small-momentum C0
+  series at extreme mass ratios, on `cdbc912` = `07fc754f` + #21, a cancellation-free
   series of the native binary64 / double-double C0 at small external momenta;
   `07fc754f` = branch `symbolica-community-2`: `3b6f229f`'s sources, per-evaluator
   `PoleSelection`, TIRust's oneloop patches incl. #17/#18, the 0BSD relicence,

@@ -1356,7 +1356,7 @@ mod tests {
             } else {
                 let dm = DoubleFloat::from(m);
                 vec![
-                    ext_dirac_massive_generic(&w, h, dm.clone(), false).unwrap(),
+                    ext_dirac_massive_generic(&w, h, dm, false).unwrap(),
                     ext_dirac_massive_generic(&w, h, dm, true).unwrap(),
                 ]
             };
@@ -1587,29 +1587,19 @@ mod tests {
 
         let dd = DoubleFloat::from;
         let norm = |wave: &[Complex<DoubleFloat>]| {
-            wave.iter().fold(dd(0.0), |sum, z| {
-                sum + z.re.clone() * z.re.clone() + z.im.clone() * z.im.clone()
-            })
+            wave.iter()
+                .fold(dd(0.0), |sum, z| sum + z.re * z.re + z.im * z.im)
         };
         let relative = |value: DoubleFloat, reference: DoubleFloat| {
-            ((value - reference.clone()) / reference).to_f64().abs()
+            ((value - reference) / reference).to_f64().abs()
         };
         for (mass, pt) in [(173.0, 6.9e-12), (0.0, 4.85e-8)] {
             let (px, py, pz) = (dd(0.6 * pt), dd(0.8 * pt), dd(485.0));
-            let energy = (px.clone() * px.clone()
-                + py.clone() * py.clone()
-                + pz.clone() * pz.clone()
-                + dd(mass) * dd(mass))
-            .sqrt();
+            let energy = (px * px + py * py + pz * pz + dd(mass) * dd(mass)).sqrt();
             for axis in [-1.0, 1.0] {
                 for energy_sign in [-1.0, 1.0] {
                     let sign = dd(energy_sign);
-                    let momentum = [
-                        sign.clone() * energy.clone(),
-                        sign.clone() * px.clone(),
-                        sign.clone() * py.clone(),
-                        sign * dd(axis) * pz.clone(),
-                    ];
+                    let momentum = [sign * energy, sign * px, sign * py, sign * dd(axis) * pz];
                     for helicity in [-1, 1] {
                         let waves = if mass == 0.0 {
                             vec![
@@ -1631,7 +1621,7 @@ mod tests {
                                 .to_vec()
                         };
                         for wave in waves {
-                            let error = relative(norm(&wave), dd(2.0) * energy.clone());
+                            let error = relative(norm(&wave), dd(2.0) * energy);
                             assert!(
                                 error < 1.0e-28,
                                 "mass {mass} axis {axis} energy sign {energy_sign} \
@@ -1672,8 +1662,8 @@ mod tests {
                 .iter()
                 .zip(double)
                 .map(|(a, b)| {
-                    let re = (DoubleFloat::from(a.re) - b.re.clone()).to_f64();
-                    let im = (DoubleFloat::from(a.im) - b.im.clone()).to_f64();
+                    let re = (DoubleFloat::from(a.re) - b.re).to_f64();
+                    let im = (DoubleFloat::from(a.im) - b.im).to_f64();
                     re.hypot(im) / scale
                 })
                 .fold(0.0, f64::max)
@@ -1738,13 +1728,8 @@ mod tests {
                                 let m = DoubleFloat::from(mass);
                                 errors.push(error(
                                     &ext_quark_dirac_massive(p, helicity, mass),
-                                    &ext_dirac_massive_generic(
-                                        &wide(p),
-                                        helicity,
-                                        m.clone(),
-                                        false,
-                                    )
-                                    .unwrap(),
+                                    &ext_dirac_massive_generic(&wide(p), helicity, m, false)
+                                        .unwrap(),
                                 ));
                                 errors.push(error(
                                     &ext_antiquark_dirac_massive(p, helicity, mass),
