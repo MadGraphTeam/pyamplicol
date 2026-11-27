@@ -284,11 +284,14 @@ def _appended_alias_names(destination: Path) -> tuple[str, ...]:
         manifest = load_manifest(destination)
     except Exception:  # the writer reports an unreadable artifact
         return ()
-    return tuple(
-        str(alias["id"])
-        for record in manifest.processes
-        for alias in record.get("aliases", ())
-    )
+    names: list[str] = []
+    for record in manifest.processes:
+        aliases = record.get("aliases", ())
+        if isinstance(aliases, Iterable) and not isinstance(aliases, str | bytes):
+            names.extend(
+                str(alias["id"]) for alias in aliases if isinstance(alias, Mapping)
+            )
+    return tuple(names)
 
 
 def _validate_progress(progress: ProgressSink | None) -> None:
