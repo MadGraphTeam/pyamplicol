@@ -212,14 +212,32 @@ def _sqrt(value: Decimal, context: str) -> Decimal:
     return value.sqrt()
 
 
+# A leg whose transverse momentum is at most 2^-500 of its scale (|p| of a
+# massive, |E| of a massless leg) is on the axis: its sources take the
+# on-axis branch, in every carrier (binary64, double-double, MPFR and these
+# exact sources decide alike). Above it pT and pT² keep the normal binary64
+# range for any physical scale, so no carrier's reciprocal overflows; below
+# it the previous release's sources found the cancelling sum exactly zero.
+_LIGHT_CONE_AXIS_TILT2 = Decimal(2) ** -1000
+
+
+def _on_the_axis(pt2: Decimal, scale: Decimal) -> bool:
+    """Whether ``sqrt(pt2) <= 2^-500 scale`` (`_LIGHT_CONE_AXIS_TILT2`)."""
+
+    return pt2 <= scale * scale * _LIGHT_CONE_AXIS_TILT2
+
+
 def _light_cone_sum(pp: Decimal, signed_pz: Decimal, pt2: Decimal) -> Decimal:
     """``|p| + pz`` of a three-momentum with ``|p|² = pt2 + pz²``, without
     the cancellation near the -z axis: for ``pz < 0`` the identity
     ``|p| + pz = pt2 / (|p| - pz)`` (``|p|`` is a rounded square root, so
-    the direct sum keeps only the digits of ``|p|`` beyond ``|pz|``)."""
+    the direct sum keeps only the digits of ``|p|`` beyond ``|pz|``); zero
+    on the axis (`_on_the_axis`)."""
 
     if signed_pz >= 0:
         return pp + signed_pz
+    if _on_the_axis(pt2, pp):
+        return pp * 0
     return pt2 / (pp - signed_pz)
 
 
@@ -231,11 +249,15 @@ def _massless_light_cone(
     ``E + pz = pT² / (E - pz)``. The direct sum depends on the point's
     residual ``p²`` (zero only to the carrier's precision, also after the
     kinematics improvement) amplified by ``E² / pT²``, which a beam whose
-    transverse momentum is a rounding residue makes arbitrarily large."""
+    transverse momentum is a rounding residue makes arbitrarily large. Zero
+    on the axis (`_on_the_axis`)."""
 
     if energy * pz >= 0:
         return energy + pz
-    return (px * px + py * py) / (energy - pz)
+    pt2 = px * px + py * py
+    if _on_the_axis(pt2, energy):
+        return energy * 0
+    return pt2 / (energy - pz)
 
 
 def _fortran_sign(value: Decimal, sign_source: Decimal) -> Decimal:

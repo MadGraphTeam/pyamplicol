@@ -76,13 +76,28 @@ where
 #[cfg(feature = "symbolica-runtime")]
 pub(super) fn light_cone_sum_generic<T>(pp: &T, signed_pz: &T, pt2: T) -> T
 where
-    T: Real + RealLike + PartialOrd + Clone,
+    T: Real + RealLike + PartialOrd + Clone + From<f64>,
 {
     if *signed_pz >= T::new_zero() {
         pp.clone() + signed_pz.clone()
+    } else if on_the_axis_generic(&pt2, pp) {
+        T::new_zero()
     } else {
         pt2 / (pp.clone() - signed_pz.clone())
     }
+}
+
+/// Whether a leg is on the axis: `pT <= LIGHT_CONE_AXIS_TILT * scale` (as
+/// `pT² <= 2^-1000 scale²`), the same decision as the binary64 sources and
+/// the exact runtime's `_on_the_axis`, so that every carrier takes the
+/// on-axis branch at the same momenta.
+#[cfg(feature = "symbolica-runtime")]
+pub(super) fn on_the_axis_generic<T>(pt2: &T, scale: &T) -> bool
+where
+    T: Real + RealLike + PartialOrd + Clone + From<f64>,
+{
+    let tilt2 = T::from(LIGHT_CONE_AXIS_TILT * LIGHT_CONE_AXIS_TILT);
+    *pt2 <= scale.clone() * scale.clone() * tilt2
 }
 
 /// `E + pz` of a massless momentum without the cancellation near the -z
@@ -94,12 +109,16 @@ where
 #[cfg(feature = "symbolica-runtime")]
 pub(super) fn massless_light_cone_generic<T>(energy: &T, px: &T, py: &T, pz: &T) -> T
 where
-    T: Real + RealLike + PartialOrd + Clone,
+    T: Real + RealLike + PartialOrd + Clone + From<f64>,
 {
     if energy.clone() * pz.clone() >= T::new_zero() {
-        energy.clone() + pz.clone()
+        return energy.clone() + pz.clone();
+    }
+    let pt2 = px.clone() * px.clone() + py.clone() * py.clone();
+    if on_the_axis_generic(&pt2, &energy.norm()) {
+        T::new_zero()
     } else {
-        (px.clone() * px.clone() + py.clone() * py.clone()) / (energy.clone() - pz.clone())
+        pt2 / (energy.clone() - pz.clone())
     }
 }
 
@@ -115,6 +134,17 @@ where
         magnitude
     }
 }
+
+/// A leg whose transverse momentum is at most this fraction (2^-500) of its
+/// scale (`|p|` of a massive, `|E|` of a massless leg) is on the axis: the
+/// fermion sources take their on-axis branch, the same decision in every
+/// carrier (binary64, double-double, MPFR and the exact runtime's
+/// `_on_the_axis`). Above it `pT` and `pT²` stay in the normal binary64
+/// range for any physical scale, so no reciprocal overflows (a tilt of
+/// 1e-156 made the binary64 Weyl root's reciprocal infinite); below it the
+/// previous release's sources found the cancelling sum exactly zero.
+pub(super) const LIGHT_CONE_AXIS_TILT: f64 =
+    3.054_936_363_499_604_682_051_979_393_213_617_699_789_402_740_572_326_663_893e-151;
 
 /// The two-component helicity spinor chi of a massive Dirac state (HELAS
 /// ixxxxx/oxxxxx) from its signed three-momentum (`pp` = `|p|`, rounded),
@@ -152,16 +182,18 @@ pub(super) fn massive_helicity_spinor(
         };
         return [chi1, chi2];
     }
-    let pt2 = signed_px * signed_px + signed_py * signed_py;
-    if pt2 == 0.0 {
+    // From pT and the direction (px, py) / pT, both bounded: no reciprocal of
+    // a squared small quantity, so nothing overflows however small pT is.
+    let pt = signed_px.hypot(signed_py);
+    if pt <= LIGHT_CONE_AXIS_TILT * pp {
         return [c64(0.0, 0.0), c64(-(nh as f64), 0.0)];
     }
     let q = pp - signed_pz;
-    let chi1 = c64((pt2 * 0.5 / (pp * q)).sqrt(), 0.0);
-    let reciprocal = (q / (2.0 * pp * pt2)).sqrt();
+    let chi1 = c64(pt / (2.0 * pp * q).sqrt(), 0.0);
+    let scale = (q / (2.0 * pp)).sqrt();
     let chi2 = c64(
-        (nh as f64) * signed_px * reciprocal,
-        imag_sign * signed_py * reciprocal,
+        (nh as f64) * (signed_px / pt) * scale,
+        imag_sign * (signed_py / pt) * scale,
     );
     [chi1, chi2]
 }
@@ -191,12 +223,14 @@ pub(super) fn massless_light_cone_root(
         };
         return (root, None);
     }
-    let pt2 = px * px + py * py;
-    if pt2 == 0.0 {
+    // pT / sqrt(q) and its reciprocal sqrt(q) / pT (the caller multiplies it
+    // by px or py, at most pT): neither overflows above the axis tilt.
+    let pt = px.hypot(py);
+    if pt <= LIGHT_CONE_AXIS_TILT * energy.abs() {
         return (0.0, None);
     }
-    let q = (energy - pz).abs();
-    ((pt2 / q).sqrt(), Some((q / pt2).sqrt()))
+    let root_q = (energy - pz).abs().sqrt();
+    (pt / root_q, Some(root_q / pt))
 }
 
 pub(super) fn ext_quark_dirac(momentum: [f64; 4], helicity: i32) -> [Complex<f64>; 4] {
@@ -1183,6 +1217,141 @@ where
 #[cfg(test)]
 mod tests {
     use super::{Complex, ext_massive_vector, negate};
+
+    /// A tilt far below the binary64 range of pT² (1e-156 made the Weyl
+    /// root's reciprocal infinite and a tree value NaN) and down to the
+    /// smallest subnormal and exactly zero: every source is finite with norm
+    /// 2|E|, takes the on-axis branch at or below LIGHT_CONE_AXIS_TILT and
+    /// the general one above it, like the double-double sources at the same
+    /// momenta, and is continuous across the switch up to its phase (the
+    /// projector u u^dagger, phase-free, agrees on both sides).
+    #[cfg(feature = "symbolica-runtime")]
+    #[test]
+    fn extreme_tilts_take_the_axis_branch_in_every_carrier() {
+        use super::{
+            LIGHT_CONE_AXIS_TILT, ext_antiquark_dirac, ext_antiquark_dirac_generic,
+            ext_antiquark_dirac_massive, ext_dirac_massive_generic, ext_quark_dirac,
+            ext_quark_dirac_generic, ext_quark_dirac_massive,
+        };
+        use symbolica::domains::float::{DoubleFloat, RealLike};
+
+        assert_eq!(LIGHT_CONE_AXIS_TILT, 2f64.powi(-500));
+        let narrow_waves = |p: [f64; 4], h: i32, m: f64| -> Vec<[Complex<f64>; 4]> {
+            if m == 0.0 {
+                vec![ext_quark_dirac(p, h), ext_antiquark_dirac(p, h)]
+            } else {
+                vec![
+                    ext_quark_dirac_massive(p, h, m),
+                    ext_antiquark_dirac_massive(p, h, m),
+                ]
+            }
+        };
+        let wide_waves = |p: [f64; 4], h: i32, m: f64| -> Vec<[Complex<f64>; 4]> {
+            let w = p.map(DoubleFloat::from);
+            let waves = if m == 0.0 {
+                vec![
+                    ext_quark_dirac_generic(&w, h),
+                    ext_antiquark_dirac_generic(&w, h),
+                ]
+            } else {
+                let dm = DoubleFloat::from(m);
+                vec![
+                    ext_dirac_massive_generic(&w, h, dm.clone(), false).unwrap(),
+                    ext_dirac_massive_generic(&w, h, dm, true).unwrap(),
+                ]
+            };
+            waves
+                .into_iter()
+                .map(|wave| wave.map(|z| Complex::new(z.re.to_f64(), z.im.to_f64())))
+                .collect()
+        };
+        let projector = |u: &[Complex<f64>; 4]| {
+            let mut out = [[Complex::new(0.0, 0.0); 4]; 4];
+            for (i, row) in out.iter_mut().enumerate() {
+                for (j, entry) in row.iter_mut().enumerate() {
+                    *entry = Complex::new(
+                        u[i].re * u[j].re + u[i].im * u[j].im,
+                        u[i].im * u[j].re - u[i].re * u[j].im,
+                    );
+                }
+            }
+            out
+        };
+        let tau = LIGHT_CONE_AXIS_TILT;
+        let tilts = [
+            1.0e-140,
+            tau * (1.0 + 1.0e-6),
+            tau * (1.0 - 1.0e-6),
+            1.0e-155,
+            1.0e-156,
+            1.0e-160,
+            1.0e-300,
+            0.0,
+        ];
+        for (mass, q) in [(0.0, 485.0), (4.7, 485.0), (173.0, 485.0), (173.0, 1.0e-3)] {
+            for axis in [1.0, -1.0] {
+                for sign in [1.0, -1.0] {
+                    let point = |tilt: f64, smallest: bool| {
+                        let (px, py) = if smallest {
+                            (f64::from_bits(1), 0.0)
+                        } else {
+                            (q * tilt * 0.6, q * tilt * 0.8)
+                        };
+                        let energy = (q * q + mass * mass).sqrt();
+                        [sign * energy, sign * px, sign * py, sign * axis * q]
+                    };
+                    let mut cases: Vec<(f64, [f64; 4])> =
+                        tilts.iter().map(|&t| (t, point(t, false))).collect();
+                    cases.push((0.0, point(0.0, true)));
+                    for helicity in [-1, 1] {
+                        for (tilt, p) in &cases {
+                            let energy = p[0].abs();
+                            let narrow = narrow_waves(*p, helicity, mass);
+                            let wide = wide_waves(*p, helicity, mass);
+                            for (u, v) in narrow.iter().zip(&wide) {
+                                assert!(
+                                    u.iter().all(|z| z.re.is_finite() && z.im.is_finite()),
+                                    "tilt {tilt:e} mass {mass} axis {axis} sign {sign}: {u:?}"
+                                );
+                                let norm: f64 = u.iter().map(|z| z.re * z.re + z.im * z.im).sum();
+                                assert!(
+                                    (norm / (2.0 * energy) - 1.0).abs() < 1.0e-14,
+                                    "tilt {tilt:e} mass {mass} axis {axis} sign {sign}: norm {norm}"
+                                );
+                                let scale = (2.0 * energy).sqrt();
+                                for (a, b) in u.iter().zip(v) {
+                                    assert!(
+                                        (a.re - b.re).hypot(a.im - b.im) <= 1.0e-15 * scale,
+                                        "tilt {tilt:e} mass {mass} axis {axis} sign {sign}: \
+                                         binary64 {u:?} double-double {v:?}"
+                                    );
+                                }
+                            }
+                        }
+                        // Across the switch the projector is continuous.
+                        let above =
+                            narrow_waves(point(tau * (1.0 + 1.0e-6), false), helicity, mass);
+                        let below =
+                            narrow_waves(point(tau * (1.0 - 1.0e-6), false), helicity, mass);
+                        let energy = (q * q + mass * mass).sqrt();
+                        for (u, v) in above.iter().zip(&below) {
+                            let (pu, pv) = (projector(u), projector(v));
+                            for i in 0..4 {
+                                for j in 0..4 {
+                                    assert!(
+                                        (pu[i][j].re - pv[i][j].re)
+                                            .hypot(pu[i][j].im - pv[i][j].im)
+                                            <= 1.0e-14 * 2.0 * energy,
+                                        "mass {mass} axis {axis} sign {sign}: {u:?} / {v:?}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     fn assert_complex_close(left: Complex<f64>, right: Complex<f64>) {
         assert!((left.re - right.re).abs() < 1.0e-13);

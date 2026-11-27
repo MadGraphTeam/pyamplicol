@@ -433,3 +433,106 @@ def test_loop_binary64_forward_massive_fermion(loop_native, tmp_path: Path) -> N
         float(abs(a - b) / abs(b)) for a, b in zip(values, reference, strict=True) if b
     )
     assert worst < 1e-12, worst
+
+
+# Extreme tilts: a transverse momentum far below the binary64 range of pT²
+# (1e-156 of the scale made the binary64 Weyl root's reciprocal infinite and
+# a tree value NaN), the smallest values and exactly zero. Every carrier takes
+# the on-axis branch at or below 2^-500 of the leg's scale (the previous
+# release found the cancelling sum exactly zero there) and the general one
+# above it; across the switch the spinor is continuous up to its phase.
+TILT = Decimal(2) ** -500
+TILTS = (Decimal("1e-140"), Decimal("1e-156"), Decimal("1e-300"), Decimal("1e-400"))
+
+
+def _projector(wave) -> list[list[complex]]:
+    u = [complex(re, im) for re, im in wave]
+    return [[a * b.conjugate() for b in u] for a in u]
+
+
+@pytest.mark.parametrize("mass", ["0", "4.7", "173"])
+def test_exact_sources_at_extreme_tilts(mass: str) -> None:
+    with localcontext() as context:
+        context.prec = 40
+        m, q = Decimal(mass), Decimal(485)
+        energy = (q * q + m * m).sqrt()
+        for axis in (-1, 1):
+            for sign in (-1, 1):
+
+                def momentum(tilt, axis=axis, sign=sign):
+                    pt = q * tilt
+                    return (
+                        sign * energy,
+                        sign * pt * Decimal("0.6"),
+                        sign * pt * Decimal("0.8"),
+                        sign * axis * q,
+                    )
+
+                for helicity in (-1, 1):
+                    for source in (_quark_dirac, _antiquark_dirac):
+                        on_axis = source(momentum(Decimal(0)), helicity, m)
+                        for tilt in (*TILTS, Decimal(0)):
+                            wave = source(momentum(tilt), helicity, m)
+                            error = abs(_norm(wave) / (2 * energy) - 1)
+                            assert error < Decimal("1e-35"), (tilt, axis, sign, error)
+                            # The switch acts where the light-cone sum
+                            # cancels: the -z side (its signed pz < 0).
+                            if axis == -1 and tilt < TILT:
+                                assert wave == on_axis, (tilt, axis, sign)
+                        above = _projector(
+                            source(momentum(TILT * Decimal("1.000001")), helicity, m)
+                        )
+                        below = _projector(
+                            source(momentum(TILT * Decimal("0.999999")), helicity, m)
+                        )
+                        worst = max(
+                            abs(a - b)
+                            for ra, rb in zip(above, below, strict=True)
+                            for a, b in zip(ra, rb, strict=True)
+                        )
+                        assert worst <= 1e-14 * 2 * float(energy), (axis, sign, worst)
+
+
+def _tilted_point(masses: list[float], tilt: float, sign: int) -> list:
+    sqrt_s = 1000.0
+    m1, m2, m3, m4 = masses
+    s = sqrt_s**2
+    beam = math.sqrt((s - (m1 + m2) ** 2) * (s - (m1 - m2) ** 2)) / (2 * sqrt_s)
+    q = math.sqrt((s - (m3 + m4) ** 2) * (s - (m3 - m4) ** 2)) / (2 * sqrt_s)
+    p3 = [math.hypot(q, m3), q * tilt * 0.6, q * tilt * 0.8, sign * q]
+    return [
+        [math.hypot(beam, m1), 0.0, 0.0, beam],
+        [math.hypot(beam, m2), 0.0, 0.0, -beam],
+        p3,
+        [math.hypot(q, m4), -p3[1], -p3[2], -p3[3]],
+    ]
+
+
+@pytest.mark.parametrize("lane", (*LANES, "on-the-fly"))
+@pytest.mark.parametrize("process", ["u u~ > t t~", "e+ e- > u u~"])
+def test_binary64_final_state_at_extreme_tilts(
+    process: str, lane: str, tmp_path: Path
+) -> None:
+    """Finite, equal to the exact runtime at 100 digits on the same points and
+    to the value exactly on the axis."""
+
+    from pyamplicol.models import BuiltinSMModel
+
+    Generator(_config(lane)).generate(
+        [process], tmp_path / "artifact", model=ModelSource.built_in_sm()
+    )
+    runtime = Runtime.load(tmp_path / "artifact")
+    sm = BuiltinSMModel()
+    masses = [sm.mass(leg.pdg_id) for leg in runtime.physics.external_particles]
+    tilts = (1e-140, 1e-156, 1e-300, 5e-324, 0.0)
+    for sign in (1, -1):
+        points = [_tilted_point(masses, tilt, sign) for tilt in tilts]
+        binary64 = [complex(value).real for value in runtime.evaluate(points)]
+        assert all(math.isfinite(value) and value > 0 for value in binary64)
+        on_axis = binary64[-1]
+        assert max(abs(v / on_axis - 1) for v in binary64) < 1e-13
+        if lane != "on-the-fly":
+            wide = runtime.evaluate(
+                points, precision=REFERENCE_PRECISION, kinematics_improvement="off"
+            )
+            assert _relative([repr(x) for x in binary64], wide) < 1e-13
