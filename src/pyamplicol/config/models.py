@@ -1572,7 +1572,10 @@ class EvaluationStabilityChecksConfig:
         self.to_checks()
 
     def to_checks(self) -> VirtualStabilityChecks | None:
-        """The requested checks, or None when none is requested."""
+        """The requested checks, or None when neither a check nor a floor
+        weight is requested: a floor weight alone gives checks that run
+        nothing but carry the weight to every estimate the evaluation forms
+        (the best-effort pass's recommended checks, a rescue's levels)."""
         from pyamplicol.api.virtual_results import VirtualStabilityChecks
 
         if self.rotations and self.rotation_count:
@@ -1588,7 +1591,7 @@ class EvaluationStabilityChecksConfig:
             )
         except (TypeError, ValueError, ZeroDivisionError) as error:
             raise ConfigurationError(f"evaluation.stability_checks: {error}") from error
-        return checks if checks.enabled else None
+        return checks if checks.enabled or self.floor_weight is not None else None
 
 
 @dataclass(frozen=True, slots=True)

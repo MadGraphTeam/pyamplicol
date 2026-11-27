@@ -952,3 +952,181 @@ def test_a_point_failing_only_in_its_check_rows_keeps_its_unchecked_value(heavy)
         assert entry["uncertainty"] is None and entry["source"] == "none", p
     for p in without:
         assert policy["statuses"][p] == FAILED_STATUS, p
+
+
+# --------------------------------------------------- the floor weight's routes
+
+FLOOR_WEIGHT = 1024.0
+
+
+def _weighted_python(artifact, points, scales, way, explicit):
+    """One TIRust call on g g > a a g with the floor weight ``FLOOR_WEIGHT``
+    set by ``way``: the runtime-options card, the CLI (its flag resolved to
+    the checks ``evaluate`` passes), or the Python object; with one rotation
+    (``explicit``) or no check (the best-effort pass's recommended checks
+    only)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+    from pyamplicol.cli import parse_cli
+
+    call = dict(mu_r2=scales, poles="none", reduction="tirust")
+    count = 1 if explicit else 0
+    if way == "card":
+        card = "[evaluation.stability_checks]\n" + (
+            "rotation_count = 1\n" if explicit else ""
+        )
+        card += f"floor_weight = {FLOOR_WEIGHT}\n"
+        runtime = Runtime.load(artifact, process="p", options=card)
+        return runtime.evaluate(points, **call)
+    if way == "cli":
+        flags = ["evaluate", "artifact", "--stability-floor-weight", str(FLOOR_WEIGHT)]
+        flags += ["--stability-rotations", "1"] if explicit else []
+        resolved = parse_cli(tuple(flags)).resolve().effective
+        checks = resolved.evaluation.stability_checks.to_checks()
+        assert checks == VirtualStabilityChecks(count, floor_weight=FLOOR_WEIGHT)
+    else:
+        checks = VirtualStabilityChecks(count, floor_weight=FLOOR_WEIGHT)
+    runtime = Runtime.load(artifact, process="p")
+    return runtime.evaluate(points, stability_checks=checks, **call)
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("explicit", [False, True], ids=["implicit", "explicit"])
+def test_the_floor_weight_reaches_every_estimate_by_every_route(aag, explicit):
+    """A floor weight is a setting of the estimate, whichever checks run: set
+    by the runtime-options card, the CLI flag or the Python object, with an
+    explicit rotation or with no check (the best-effort pass then runs its
+    recommended checks), it gives the refused points the same best-effort
+    uncertainty, and the checked points the same estimates reporting it; the
+    default weight gives another uncertainty (the setting acts). Review r1:
+    the card's weight without checks was dropped and the best-effort pass ran
+    with the default."""
+
+    from pyamplicol import Runtime
+
+    artifact, points, scales = aag
+    found = {
+        way: _weighted_python(artifact, points, scales, way, explicit)
+        for way in ("object", "card", "cli")
+    }
+    reference = found["object"]
+    refused = [p for p, s in enumerate(reference.statuses) if s == "best-effort"]
+    assert refused
+
+    def uncertainties(result):
+        return [result.diagnostics[p].best_effort.uncertainty for p in refused]
+
+    for way, result in found.items():
+        assert result.statuses == reference.statuses, way
+        assert result.values == reference.values, way
+        assert uncertainties(result) == uncertainties(reference), way
+        if explicit:
+            served = [e for e in result.stability if e is not None]
+            assert served and {e.floor_weight for e in served} == {FLOOR_WEIGHT}
+            assert [e.relative for e in served] == [
+                e.relative for e in reference.stability if e is not None
+            ], way
+        else:
+            assert result.stability is None or not any(result.stability), way
+    default = Runtime.load(artifact, process="p").evaluate(
+        points, mu_r2=scales, poles="none", reduction="tirust"
+    )
+    assert uncertainties(default) != uncertainties(reference)
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("explicit", [False, True], ids=["implicit", "explicit"])
+@pytest.mark.parametrize("route", ["card", "setter"])
+def test_the_sdk_floor_weight_reaches_its_best_effort_checks(
+    aag, loop_native, explicit, route
+):
+    """The C ABI the same: a floor weight from the runtime-options TOML or
+    from ``rusticol_virtual_set_stability_floor_weight``, with one rotation
+    or no check, gives the refused points the Python API's best-effort
+    uncertainty at that weight."""
+
+    import ctypes
+
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import _open
+
+    artifact, exact_points, exact_scales = aag
+    points = [[[float(c) for c in leg] for leg in point] for point in exact_points]
+    scales = [float(Fraction(s)) for s in exact_scales]
+    python = _weighted_python(artifact, exact_points, exact_scales, "object", explicit)
+    refused = [p for p, s in enumerate(python.statuses) if s == "best-effort"]
+    sdk = _sdk()
+    sdk.rusticol_virtual_set_stability_floor_weight.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_double,
+    ]
+    handle = _open(sdk, artifact)
+    try:
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"tirust") == 0
+        if route == "card":
+            card = "[evaluation.stability_checks]\n" + (
+                "rotation_count = 1\n" if explicit else ""
+            )
+            card += f"floor_weight = {FLOOR_WEIGHT}\n"
+            assert sdk.rusticol_virtual_set_options(handle, card.encode()) == 0, _error(
+                sdk
+            )
+        else:
+            if explicit:
+                assert (
+                    sdk.rusticol_virtual_set_stability_checks(handle, 1, None, 0, 0, 0)
+                    == 0
+                )
+            assert (
+                sdk.rusticol_virtual_set_stability_floor_weight(handle, FLOOR_WEIGHT)
+                == 0
+            )
+        uncertainties = _uncertainties(sdk, handle, points, scales)
+    finally:
+        sdk.rusticol_virtual_free(handle)
+    mine = [python.diagnostics[p].best_effort.uncertainty for p in refused]
+    assert [uncertainties[p] for p in refused] == pytest.approx(mine, rel=1e-12)
+
+
+@pytest.mark.loop_physics
+def test_a_rescue_level_takes_the_floor_weight_it_sets_or_the_cards(aag):
+    """A rescue policy owns its levels' checks: a level's own floor weight
+    applies to its estimates, and the runtime-options card's weight reaches
+    every level that sets none (per call and at load time), reported on the
+    estimates; a level's own weight wins over the card's."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none")
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+
+    def level(weight=None):
+        return VirtualRescuePolicy(
+            (VirtualRescueLevel("double", reduction="ninjars", floor_weight=weight),)
+        )
+
+    own = Runtime.load(artifact, process="p").evaluate(
+        points, stability=level(FLOOR_WEIGHT), **call
+    )
+    per_call = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, stability=level(), **call
+    )
+    at_load = Runtime.load(
+        artifact, process="p", options=card, stability=level()
+    ).evaluate(points, **call)
+    wins = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, stability=level(2.0), **call
+    )
+    for result in (own, per_call, at_load):
+        assert result.values == own.values
+        assert {e.floor_weight for e in result.stability if e is not None} == {
+            FLOOR_WEIGHT
+        }
+        assert [e.relative for e in result.stability] == [
+            e.relative for e in own.stability
+        ]
+    assert {e.floor_weight for e in wins.stability if e is not None} == {2.0}

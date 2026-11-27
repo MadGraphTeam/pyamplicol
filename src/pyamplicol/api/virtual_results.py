@@ -806,6 +806,21 @@ class VirtualRescuePolicy:
             )
         object.__setattr__(self, "levels", levels)
 
+    def with_floor_weight(self, weight: float | None) -> VirtualRescuePolicy:
+        """This policy with the floor weight ``weight`` on every level that
+        sets none (``VirtualRescueLevel.floor_weight``; None: unchanged)."""
+
+        if weight is None:
+            return self
+        return VirtualRescuePolicy(
+            tuple(
+                level
+                if level.floor_weight is not None
+                else replace(level, floor_weight=weight)
+                for level in self.levels
+            )
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class VirtualKinematics:

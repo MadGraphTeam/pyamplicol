@@ -665,11 +665,16 @@ class Runtime:
             if threads is None:
                 threads = given.get("threads")
             calls = {name: given[name] for name in CALL_OPTIONS if name in given}
-            if stability is not None and calls.get("stability_checks") is not None:
-                raise ConfigurationError(
-                    "the runtime options' stability_checks and a load-time "
-                    "stability policy are exclusive"
-                )
+            card = calls.get("stability_checks")
+            if stability is not None and card is not None:
+                if card.enabled:
+                    raise ConfigurationError(
+                        "the runtime options' stability_checks and a load-time "
+                        "stability policy are exclusive"
+                    )
+                # A floor weight alone: the policy's levels that set none
+                # take it (``VirtualRescuePolicy.with_floor_weight``).
+                stability = stability.with_floor_weight(card.floor_weight)
         path = Path(os.fspath(artifact)).expanduser().resolve(strict=False)
         parameters = dict(model_parameters) if model_parameters is not None else None
         loads: dict[str, object] = {}
@@ -1177,6 +1182,12 @@ class Runtime:
         if stability is not None:
             if not isinstance(stability, VirtualRescuePolicy):
                 raise TypeError("stability requires a VirtualRescuePolicy")
+            # The runtime options' floor weight reaches the levels that set
+            # none (the policy owns its checks, not its weight's default).
+            card = self._call_defaults.get("stability_checks")
+            weight = getattr(card, "floor_weight", None)
+            if weight is not None:
+                stability = stability.with_floor_weight(weight)
             options["stability"] = stability
         if not self._virtual and (
             mu_r2 is not None or r2_strategy is not None or stability is not None
