@@ -32,6 +32,9 @@ use symbolica::domains::rational::Rational;
 /// `stability.SAFETY`, `stability.FLOOR_UNITS`.
 pub const SAFETY: f64 = 2.0;
 pub const FLOOR_UNITS: f64 = 16.0;
+/// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
+/// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
+pub const BILINEAR_FLOOR_UNITS: f64 = 65536.0;
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
@@ -1523,17 +1526,19 @@ pub fn induced_estimate(
 }
 
 /// The floor's bilinear kernel on (value, floor) pairs of the two sides
-/// (`induced.floor_kernel`): eps (x S' + S y + eps S S'), eps = FLOOR_UNITS
-/// u, the form's change bound for roundings of at most eps S per side.
+/// (`induced.floor_kernel`): eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 =
+/// BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u.
 pub fn floor_kernel(roundoff: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
-    let epsilon = FLOOR_UNITS * roundoff;
-    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| epsilon * (x * t + s * y + epsilon * s * t)
+    let (first, second) = (BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff);
+    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| {
+        first * (x * t + s * y) + second * (second * s * t)
+    }
 }
 
 /// The floor of one loop-induced output (`induced_observables.
-/// PointOutputs.floor`): eps (F^T|M||b| + |b|^T|M|F + eps F^T|M|F) per
-/// record sector and Laurent coefficient, eps = FLOOR_UNITS u
-/// (`InducedShape::magnitude_form` of the term floors F and the output's
+/// PointOutputs.floor`): eps1 (F^T|M||b| + |b|^T|M|F) + eps2 (eps2 F^T|M|F)
+/// per record sector and Laurent coefficient ([`floor_kernel`]'s units;
+/// `InducedShape::magnitude_form` of the term floors F and the output's
 /// absolute vectors b).
 pub fn output_floor(
     shape: &InducedShape,
@@ -1542,7 +1547,7 @@ pub fn output_floor(
     values: &Keyed<ErrorCells>,
     roundoff: f64,
 ) -> Budget {
-    let epsilon = FLOOR_UNITS * roundoff;
+    let (one, two) = (BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff);
     let first = shape.magnitude_form(magnitude, floors, values);
     let second = shape.magnitude_form(magnitude, values, floors);
     let third = shape.magnitude_form(magnitude, floors, floors);
@@ -1554,7 +1559,7 @@ pub fn output_floor(
             a.iter()
                 .zip(b)
                 .zip(c)
-                .map(|((a, b), c)| epsilon * (a + b + epsilon * c))
+                .map(|((a, b), c)| one * (a + b) + two * (two * c))
                 .collect()
         })
         .collect()

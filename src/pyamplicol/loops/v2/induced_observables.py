@@ -1051,14 +1051,14 @@ class PointOutputs:
         eps (F^T|M||b| + |b|^T|M|F + eps F^T|M|F): first order in each
         side's floor (``induced.floor_kernel``)."""
 
-        from .stability import FLOOR_UNITS, Budget
+        from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS, Budget
 
         evaluation = self.evaluation
         _h, _k, magnitude_ = self.forms(output.metric)
         rows = self.rows_of(output)
         floors = self._floors()
         values = _absolute(self.amplitudes, evaluation.numbers.wide)
-        epsilon = FLOOR_UNITS * roundoff
+        first, second = BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff
         parts = (
             _bound(evaluation, magnitude_, floors, values, rows),
             _bound(evaluation, magnitude_, values, floors, rows),
@@ -1067,7 +1067,7 @@ class PointOutputs:
         return {
             sector: Budget(
                 tuple(
-                    epsilon * (x + y + epsilon * z)
+                    first * (x + y) + second * (second * z)
                     for x, y, z in zip(
                         *(part[sector].coefficients for part in parts), strict=True
                     )

@@ -1412,13 +1412,13 @@ def floor_kernel(roundoff: Any) -> Callable[[Any, Any], Any]:
     second-order term keeps a vanishing value "zero within the estimate"
     (RULED Q13): there x ~ u S."""
 
-    from .stability import FLOOR_UNITS
+    from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS
 
-    epsilon = FLOOR_UNITS * roundoff
+    first, second = BILINEAR_FLOOR_UNITS * roundoff, FLOOR_UNITS * roundoff
 
     def kernel(left: Any, right: Any) -> Any:
         (x, s), (y, t) = left, right
-        return epsilon * (x * t + s * y + epsilon * s * t)
+        return first * (x * t + s * y) + second * (second * s * t)
 
     return kernel
 

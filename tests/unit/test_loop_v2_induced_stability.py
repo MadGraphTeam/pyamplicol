@@ -3,10 +3,12 @@
 §2.a.8 with DECISIONS 2026-11-06 ~09:00 (1)).
 
 The estimate of a loop-induced |A|^2 is E = SAFETY x (max over rotations +
-reduction re-test) + FLOOR_UNITS x u x S, with budgets quadratic in the
-colour-metric norm (``induced.quadratic_budget``, the rotation budget after
-removing each helicity row's little-group phase) and S the |A|^2-level
-product of the per-row pre-reduction term floors (``induced.scale``). On
+reduction re-test) + floor, with budgets quadratic in the colour-metric
+norm (``induced.quadratic_budget``, the rotation budget after removing each
+helicity row's little-group phase), S the |A|^2-level product of the
+per-row pre-reduction term floors (``induced.scale``) and the floor first
+order in each side's term floor, eps (N S' + S N' + eps S S') with eps =
+FLOOR_UNITS u (``induced.floor``). On
 the two calibration rows, g g > h h (large cancellations) and g g > z
 (Landau-Yang: every family integrates to zero by itself), on the stored
 runtime's route (native point inputs) against Float(256):
@@ -16,7 +18,8 @@ runtime's route (native point inputs) against Float(256):
   double-double (``ESTIMATE_MARGIN``, DESIGN §10.4);
 * g g > z is served as "zero within its estimate" (RULED Q13: no
   Landau-Yang declaration): |A|^2 <= 10 E in binary64 and double-double;
-  its E / S is the floor's 16 u, so the opt-in rescue metric "scale" (E <=
+  its E / S is at least the floor's (16 u)^2 and far below every target,
+  so the opt-in rescue metric "scale" (E <=
   target x S, PLAN §2.a.8, ``VirtualRescueLevel.metric``) accepts it at the
   first level, while its relative estimate exceeds every target and the
   default rescue keeps it at the last level with the target not met (both
@@ -163,8 +166,9 @@ def test_double_double_estimate_shrinks_with_the_unit_roundoff(li):
 def test_g_g_to_z_is_zero_within_its_estimate(li, carrier):
     """g g > z (Landau-Yang) is evaluated numerically, never declared zero
     (RULED Q13): on every fixture point |A|^2 lies within ten times E per
-    Laurent coefficient. E rests on the term floor (E / S is the floor's
-    FLOOR_UNITS x u): E / S meets the default rescue target, so the opt-in
+    Laurent coefficient (and within E itself). E rests on the floor (E / S
+    is at least its second-order (FLOOR_UNITS x u)^2): E / S meets the
+    default rescue target, so the opt-in
     rescue metric "scale" (E <= target x S) accepts it, whereas the
     relative estimate (E against the value, itself rounding) exceeds it by
     far."""
@@ -194,7 +198,12 @@ def test_g_g_to_z_is_zero_within_its_estimate(li, carrier):
                 assert floor**2 <= absolute[k] / scale[k], (index, k)
                 assert abs(float(value)) <= absolute[k], (index, k)
                 assert absolute[k] / scale[k] <= RESCUE_TARGET
-        assert estimate.relative > 1 / RESCUE_TARGET
+        # Replaced relative > 1 / RESCUE_TARGET, which pinned the old floor
+        # (a zero's relative estimate ~ 16 / u): with the floor first order in
+        # each side's term floor it is of order one to a few thousand, still
+        # above 1 (no correct digit claimed, so every relative target is
+        # missed).
+        assert estimate.relative > 1
 
 
 @pytest.mark.loop_physics
@@ -210,8 +219,8 @@ def test_the_rescue_of_g_g_to_z_terminates_under_either_metric(li, tmp_path):
     the rescue terminates; before the rule, at the cost of every level;
     at 500 digits its estimate would underflow binary64). The opt-in
     "scale" metric (E <= target x S, ``VirtualRescueLevel.metric``) on the
-    same ladder accepts it at the first level, its E / S
-    the floor's FLOOR_UNITS x u, its value the binary64 one and within its
+    same ladder accepts it at the first level, its E / S at least the
+    floor's second-order (FLOOR_UNITS x u)^2, its value the binary64 one and within its
     absolute estimate (Q13: zero within the estimate)."""
 
     from dataclasses import replace
@@ -300,9 +309,9 @@ def test_an_integrated_zero_stops_where_its_e_over_s_fell_quadratically(
     output = _generate(tmp_path, (("p", expression),), _fixture(name))
     point, scale, parameters = li.point(name)
     runtime = Runtime.load(output, process="p", model_parameters=parameters)
-    result = runtime.evaluate(
-        [point], mu_r2=[str(scale)], stability=VirtualRescuePolicy()
-    )
+    # mu_R^2 as exact decimal text (the fixture's mu_R is a terminating decimal).
+    mu_r2 = str(Decimal(scale.numerator) / Decimal(scale.denominator))
+    result = runtime.evaluate([point], mu_r2=[mu_r2], stability=VirtualRescuePolicy())
     (record,) = result.rescue
     assert not record.met and record.arithmetic == "double-double"
     detail = result.diagnostics[0].detail
@@ -326,6 +335,7 @@ def test_a_real_point_is_never_kept_as_a_zero(li, tmp_path):
 
     output = _generate(tmp_path, (("p", "g g > z z"),), _fixture("li_gg_zz"))
     point, scale, parameters = li.point("li_gg_zz")
+    scale = Decimal(scale.numerator) / Decimal(scale.denominator)
     runtime = Runtime.load(output, process="p", model_parameters=parameters)
     served = VirtualRescuePolicy(
         (
@@ -384,8 +394,8 @@ def test_g_g_to_z_reads_right_in_arbitrary_precision(li, tmp_path, digits):
     exponent range (the default 500 digits: unit roundoff ~5e-500, |A|^2 ~
     1e-1039): the estimate's sizes are exponent-safe (``loops.v2.wide``), so
     its relative estimate exceeds the target (the value is rounding; it read
-    0.0, "met", through 0 / 0 in binary64 floats) while its E / S, the
-    floor's FLOOR_UNITS x u, meets the "scale" metric; the value is zero
+    0.0, "met", through 0 / 0 in binary64 floats) while its E / S meets
+    the "scale" metric; the value is zero
     within its absolute estimate."""
 
     import json
@@ -667,18 +677,19 @@ def test_the_loop_induced_floor_is_first_order_in_each_sides_floor():
     per component (exact rationals over the corners)."""
 
     from pyamplicol.loops.v2 import induced
-    from pyamplicol.loops.v2.stability import FLOOR_UNITS
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS
 
-    epsilon = FLOOR_UNITS * _U
+    first, second = BILINEAR_FLOOR_UNITS * _U, FLOOR_UNITS * _U
     amplitude, terms = (3e-5, 4e-5), (1.0, 1.0)
     point = _constructed(amplitude, terms)
     (scale,) = induced.scale(point)[_SECTOR].coefficients
     (floor,) = induced.floor(point)[_SECTOR].coefficients
     size, term = 3e-5 + 4e-5, 2.0
     assert scale == term * term
-    assert floor == epsilon * (size * term + term * size + epsilon * term * term)
-    assert floor / (epsilon * scale) == pytest.approx(2 * size / term, rel=1e-9)
-    assert _largest_change(amplitude, terms, epsilon) <= Fraction(floor)
+    assert floor == first * (size * term + term * size) + second * (second * term * term)
+    assert floor / (first * scale) == pytest.approx(2 * size / term, rel=1e-6)
+    # It bounds the form's change for roundings of eps1 T_t per component.
+    assert _largest_change(amplitude, terms, first) <= Fraction(floor)
 
 
 @pytest.mark.loop_fast

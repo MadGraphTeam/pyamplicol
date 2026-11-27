@@ -121,6 +121,14 @@ from .wide import Wide, is_wide, magnitude, ratio
 
 SAFETY = 2
 FLOOR_UNITS = 16
+# The first-order term of a loop-induced output's floor, eps1 (|A| S' + S
+# |A'|) with eps1 = BILINEAR_FLOOR_UNITS u (``induced.floor_kernel``): the
+# unsampled rounding of an amplitude against its term floor S, calibrated on
+# the loop-induced rows against double-double (binary64 g g > z z, g g > z z
+# g, g g > z z g g on both backends; g g > h h, g g > z z helicity rows),
+# where the checks under-measure the reduction's own error by up to ~180x.
+# Its second-order term keeps FLOOR_UNITS.
+BILINEAR_FLOOR_UNITS = 2**16
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"
@@ -1057,6 +1065,7 @@ def _at(budget: Any, k: int) -> Any:
 
 __all__ = [
     "ADDITIVE",
+    "BILINEAR_FLOOR_UNITS",
     "CROSS",
     "DEFAULT_RESCUE",
     "FLOOR_UNITS",
