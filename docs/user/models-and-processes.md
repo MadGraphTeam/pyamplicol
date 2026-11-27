@@ -174,6 +174,48 @@ supports the `jit`, `asm`, and `cpp` evaluator backends. Explicitly prepared
 HEFT bundles can likewise use any of those backends. `builtin_sm_heft`,
 `sm-heft`, and `sm_heft` are accepted as configuration aliases.
 
+A Higgs between the effective gluon vertex and the rest of a tree:
+
+- Gluons fusing into an internal Higgs that decays into colour singlets
+  (`g g > z z`, `g g > h h`) are served in every execution mode. Earlier
+  versions refused them in the compiled and eager modes ("no model-supported
+  tree-level amplitudes").
+- A colour singlet exchanged between a part of the tree that holds only
+  gluons and a part that holds a quark line is refused in every mode with a
+  typed `GenerationError` that names a closed gluon trace. Examples:
+  `g g > t t~` or `t g > t g g` with `HIG >= 1`, `u u~ > z g g`,
+  `g g > h t t~`. The colour of such a tree is an open colour line times a
+  separate closed trace of the gluons, `delta_ij tr(T^a T^b)`, and no
+  colour-flow sector of this version carries it.
+  - Earlier versions served these trees silently with wrong values: the
+    compiled and eager modes projected them onto the open-line flows, and the
+    recurrence and on-the-fly modes dropped them.
+  - `max_coupling_orders = { HIG = 0 }` serves these processes without the
+    effective vertex. The default (minimal) coupling-order policy works
+    within each order's UFO `expansion_order` (HIG at most 1 per amplitude),
+    as MadGraph does, so a default `t g > t g g` is its QCD tree.
+  - Two closed traces, a Higgs between two groups of gluons through two
+    effective vertices (`g g > g g` with `HIG = 2`): refused alike.
+- A colour singlet that the effective vertex joins, through gluons of quark
+  lines, to another quark line (`d d~ > t t~ g`, `s t~ > s t~ g` with
+  `HIG >= 1`; also with no external gluon, two virtual gluons of two lines
+  fusing into the Higgs that a top pair absorbs, `u u~ > d d~ t t~`,
+  `u d > u d t t~`) is served by the recurrence and on-the-fly modes, equal to
+  MadGraph's `heft` with its split orders, also after a run-time change of
+  `ymt`. The compiled and eager modes do not
+  build these trees and refuse the request. Earlier versions gave their
+  value without these trees.
+- Leftover gaps, refused with "no model-supported tree-level amplitudes" by
+  the compiled and eager modes only: a colourless pair that the Higgs turns
+  into gluons when the tree closes on a gluon (`z z > g g`, `w- w+ > g g`,
+  `h h > g g`, `ta+ ta- > g g`, `g g > ta+ ta-`, `ta+ g > ta+ g`). The
+  recurrence and on-the-fly modes serve these (`ta+ ta- > g g` checked against
+  MadGraph's `heft`).
+- Processes whose effective vertex attaches to an external Higgs
+  (`g g > H g g`), or through a gluon to a quark line (`u u~ > H g`,
+  `u u~ > h g g`, `t t~ > h g`), are unchanged and equal MadGraph's `heft`,
+  also after a run-time change of `MH` or `ymt`.
+
 The canonical selector is also available through the typed API:
 
 ```python

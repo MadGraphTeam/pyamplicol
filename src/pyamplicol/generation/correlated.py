@@ -47,7 +47,10 @@ from pyamplicol.reporting import ProgressSink
 
 from .artifact_writer import ApiBundleHook, ArtifactWriteResult
 from .contracts import RuntimeExpressionSchema
-from .dag_algorithms import _infer_minimal_coupling_order_limits_from_color_plan
+from .dag_algorithms import (
+    _infer_minimal_coupling_order_limits_from_color_plan,
+    request_coupling_order_limits,
+)
 from .dag_compiler import compile_generic_dag
 from .dag_types import GenericDAG
 from .numerical_current_warmup import generic_dag_numerical_current_opt_out_report
@@ -61,6 +64,7 @@ from .service import (
     _PreparedProcessConstruction,
     _ProcessSelection,
 )
+from .singlet_exchange import require_representable_singlet_exchange
 from .validation import build_validation_point
 
 CORRELATOR_PAYLOAD_PATH = "correlators.json"
@@ -263,18 +267,22 @@ class CorrelatedGenerationBackend(GenerationBackend):
             raise GenerationError(
                 f"process {process.process!r} has no complete colour plan"
             )
-        limits = self._coupling_order_limits
-        run = self._run_config
-        if run is not None and run.process.coupling_order_policy == "minimal":
-            limits = (
-                _infer_minimal_coupling_order_limits_from_color_plan(
-                    process,
-                    model=model,
-                    color_plan=plan,
-                    max_coupling_orders=limits or None,
-                )
-                or limits
-            )
+        # Within the model's expansion orders, also when nothing is inferred
+        # (no tree within them: the request then has no Born).
+        limits = request_coupling_order_limits(
+            self._coupling_order_limits,
+            model,
+            policy=self._coupling_order_policy,
+            infer=lambda bounds: _infer_minimal_coupling_order_limits_from_color_plan(
+                process,
+                model=model,
+                color_plan=plan,
+                max_coupling_orders=bounds or None,
+            ),
+        )
+        require_representable_singlet_exchange(
+            process, model=model, max_coupling_orders=limits or None
+        )
         return _PreparedProcessConstruction(
             process=process,
             complete_color_plan=plan,

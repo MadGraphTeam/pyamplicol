@@ -629,6 +629,13 @@ class ExternalModelCatalogMixin:
             for order in self.compiled.ir.orders
         }
 
+    def coupling_order_expansion_orders(self) -> dict[str, int]:
+        return {
+            str(order.name).upper(): int(order.expansion_order)
+            for order in self.compiled.ir.orders
+            if 0 <= int(order.expansion_order) < 99
+        }
+
     def vertex_color_weight(
         self,
         vertex: Vertex,
