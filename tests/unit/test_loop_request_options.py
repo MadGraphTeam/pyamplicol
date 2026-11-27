@@ -9,7 +9,7 @@ import json
 import numpy as np
 import pytest
 
-from pyamplicol.api import Generator, ProcessRequest, Runtime
+from pyamplicol.api import Generator, ProcessRequest, ProcessSet, Runtime
 from pyamplicol.api.errors import GenerationError
 from pyamplicol.cli import run_cli
 from pyamplicol.config import resolve_config
@@ -257,7 +257,6 @@ def test_cli_append_of_a_compatible_one_loop_request_succeeds(
 
 
 def test_python_append_of_another_process_count_succeeds(one_loop_artifact):
-    from pyamplicol.api import ProcessSet
 
     card, artifact = one_loop_artifact
     # generation.workers = "auto" resolves to the appended request's process
@@ -297,3 +296,58 @@ def test_incompatible_append_names_the_setting_before_generating(
         )
     assert '"lc" in this request but "full" in the artifact' in str(error.value)
     assert _digest(artifact) == before
+
+
+# F9: refusals before any process is generated --------------------------------
+
+
+def test_a_refused_entry_is_refused_before_any_entry_is_generated(
+    tmp_path, model_cache, monkeypatch
+):
+    import pyamplicol.loops.v2.artifact as loop_artifact
+
+    # The second entry tags a final-state photon in a request with the QED
+    # correction on a model without the alpha(0) conversion counterterm.
+    card = tmp_path / "photons.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = "loop_qcd_qed_sm"
+cache_dir = {json.dumps(str(model_cache))}
+[process]
+entries = [{{ expression = "a u > u g", name = "first" }},
+           {{ expression = "u u~ > a g", name = "second" }}]
+loop_coupling_orders = ["QCD", "QED"]
+coupling_order_policy = "explicit"
+max_coupling_orders = {{ QCD = 2, QED = 2 }}
+[loop.preparation]
+fixed_parameters = {{ WT = "0", WZ = "0", WW = "0", WH = "0" }}
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    _compiled(card)
+    plan = _plan(card)
+    (blocker,) = plan["unsupported_features"]
+    assert blocker.startswith("external-photon-scheme: 'u u~ > A G'")
+    # Every entry's members or none: none, as generation refuses them all.
+    assert plan["estimated_coverage"]["processes"] == []
+    assert plan["estimated_coverage"]["process_count"] == 0
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("a refused request must not generate any process")
+
+    monkeypatch.setattr(loop_artifact, "generate_process", forbidden)
+    with pytest.raises(GenerationError, match="external-photon-scheme") as error:
+        Generator(resolve_config(card)).generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("a u > u g", name="first"),
+                    ProcessRequest.parse("u u~ > a g", name="second"),
+                )
+            ),
+            tmp_path / "artifact",
+        )
+    assert error.value.key == "external-photon-scheme"
+    assert not (tmp_path / "artifact").exists()

@@ -1452,6 +1452,23 @@ def _born_members(backend, context, memo=None):
     )
 
 
+def _check_requests(context, requests, dags=None, memo=None) -> None:
+    """The refusals of every slice request of ``context`` that need only the
+    model and the Born DAG, before any process is generated: its model
+    preparation (``prepare_request_model``, ``memo`` shares it with the
+    generation) and ``_plan_policy_checks``. The dry run and generation
+    both run them, so they refuse the same requests at the same stage."""
+
+    from pyamplicol.loops.v2.assemble import prepare_request_model
+
+    compiled = context.resolved.compiled
+    for index, request in enumerate(requests):
+        prepared = prepare_request_model(compiled, request, memo=memo)
+        _plan_policy_checks(
+            compiled, request, prepared, None if dags is None else dags[index]
+        )
+
+
 def _plan_policy_checks(compiled, request, model, dag):
     """The dry run's checks of an electroweak request that need only the
     model and the Born DAG (``LoopSlice.generate`` makes them again on the
@@ -1500,7 +1517,6 @@ def _plan_v2(backend, processes, blockers, *, model=None):
     (``preparation_cache.store_for``): a dry run fills it when the compiled
     model is available (it never compiles one)."""
     from pyamplicol.loops.preparation_cache import PreparationMemo, store_for
-    from pyamplicol.loops.v2.assemble import prepare_request_model
     from pyamplicol.loops.v2.native_trees import NATIVE_EXPORT_REFUSALS
     from pyamplicol.loops.v2.refusals import (
         LOOP_ADMISSION_REFUSALS,
@@ -1525,13 +1541,13 @@ def _plan_v2(backend, processes, blockers, *, model=None):
             )
             memo = PreparationMemo(store_for(backend._run_config.model))
             context, requests, dags, skipped = _born_members(backend, context, memo)
-            for entry, request, dag, zero in zip(
-                context.expanded, requests, dags, context.colour_zero, strict=True
+            # Every request's refusals before any record: the dry run lists
+            # every member, or none with the refusal (as generation refuses
+            # before generating any process).
+            _check_requests(context, requests, dags, memo)
+            for entry, request, zero in zip(
+                context.expanded, requests, context.colour_zero, strict=True
             ):
-                prepared = prepare_request_model(
-                    context.resolved.compiled, request, memo=memo
-                )
-                _plan_policy_checks(context.resolved.compiled, request, prepared, dag)
                 record = (
                     _loop_induced_coverage(backend, context, entry, request, zero)
                     if request.contribution == "loop-induced"
@@ -1561,8 +1577,9 @@ def _plan_v2(backend, processes, blockers, *, model=None):
                 coverage.append(record)
             _LOGGER.debug("loop preparation: %s", json.dumps(memo.report()))
         except (ValueError, TypeError, RuntimeError, ImportError, PyAmpliColError) as e:
-            # A listed key first (``refusals.keyed_error``).
-            blockers = (str(keyed_error(e)),)
+            # A listed key first (``refusals.keyed_error``); no process is
+            # listed with a refusal, which generation raises before any.
+            blockers, coverage = (str(keyed_error(e)),), []
     # Plain texts (a ``ListedBlocker`` is a ``str`` that also carries its key).
     result = _plan_result(
         backend,
@@ -1869,6 +1886,9 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                     backend, context, memo
                 )
             del _released
+            # Every request's refusals before the first process is generated.
+            with step("checks", "Checking the requests"):
+                _check_requests(context, requests, memo=memo)
             phase.summary = _plural(len(context.expanded), "process")
         native = load_loop_native()
         compiled = context.resolved.compiled
