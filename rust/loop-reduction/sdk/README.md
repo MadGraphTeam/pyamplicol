@@ -50,6 +50,22 @@ crate's `Runtime::evaluate_refined` and `evaluate_decimal`) evaluates at `moment
 momentum_count + i]`, exactly; the momenta must be the binary64 roundings of the refined point (an invalid
 argument otherwise, naming the point, leg and component). Examples: `examples/refined_v4.{cpp,f90}`.
 
+**Process selection.** `rusticol_virtual_open(path, process, ...)` takes a
+stable process ID, an alias ID or expression, a stored expression in another
+order within each side, or a process-group member (an exact species
+substitution of a `--flavor-blind` one-loop artifact, basis
+`exact-loop-flavor`), with the artifact selector's precedence
+(`rusticol_core::ArtifactSelection`), as the Python runtime does. A mapped
+process is evaluated by its stored process at the permuted momenta: momenta,
+helicity IDs and rows, spin-source legs and resolved rows are in the caller's
+leg order, the helicity rows in the Python runtime's order, the correlated
+outputs the histories and spin classes it serves (`V2Runtime::
+mapped_correlations`), values bitwise the Python runtime's. Another
+process-group relation is refused (typed `Selector`), as an unmatched
+selector is. `capabilities_json` names the selected process (`process_id`,
+`process`), the stored one (`representative_process_id`) and
+`external_permutation`.
+
 **Selections (loop-induced, F1; Born-interfered, lit-fc-hel).** `rusticol_virtual_evaluate_selected(handle,
 request, selection, &result)` (C++ `evaluate_selected` with a
 `VirtualSelection`, Fortran `evaluate_selected`, the packaged Rust wrapper's

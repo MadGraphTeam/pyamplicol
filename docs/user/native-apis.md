@@ -415,6 +415,28 @@ rusticol_runtime_process_group_relation(runtime, &numerator, &denominator, &conj
 Selections other than non-generated members report `1/1` and `0`. See
 [Process-group members](process-selection-and-permutations.md#process-group-members).
 
+The one-loop SDK (`rusticol_virtual_open` and the C++, Fortran, Rust and UMAMI
+wrappers built on it) resolves the same selectors with the same rules: a
+stable ID, an alias, a stored expression in another order within each side
+(with multiparticle labels the stored order is the expansion's canonical one,
+so `g u > g u` opens the stored `u G > u G`) and an exact process-group
+member of a `--flavor-blind` one-loop artifact (basis `exact-loop-flavor`;
+any other relation is refused with a selector error naming its basis). The
+caller's momenta, helicity IDs and per-point helicity rows, spin-source legs
+and resolved rows are in the order the caller named; the stored process is
+evaluated at the permuted momenta, and the values are the Python runtime's
+for the same selector bit for bit (the kinematics improvement runs in the
+caller's legs, as in Python). The helicity rows are those the Python
+runtime lists (`physics.helicities`); the correlated outputs are the colour
+histories and spin classes the Python runtime serves the mapped process
+(`available_color_correlations()`); a spin source is accepted only on the
+caller's legs of a class the handle serves (`spin_correlation_classes`),
+checked before the legs are mapped to the stored process.
+`rusticol_virtual_capabilities_json`
+reports `process_id`, `process`, `representative_process_id` and
+`external_permutation` (the caller's leg of each stored leg). A selector
+nothing matches is refused with a selector error.
+
 ## Custom kinematics
 
 All five drivers accept `--kinematics PATH`. The file contains exactly one

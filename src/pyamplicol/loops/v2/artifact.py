@@ -246,6 +246,8 @@ OPTIONAL_REQUEST_FIELD = "selection"
 # bytes, and records written before a field existed keep their meaning.
 OPTIONAL_REQUEST_DEFAULTS: dict[str, object] = {
     OPTIONAL_REQUEST_FIELD: None,
+    # The card's leading-colour selectors, named only when the card sets one.
+    "colour_selectors": None,
     "external_photons": "final",
     "alpha0_conversion": "eCoup_DGmua0_UV_EW",
     "alpha0_inverse": None,
@@ -1397,6 +1399,7 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
 
     from dataclasses import replace
 
+    from pyamplicol.api.errors import ProcessSelectionError
     from pyamplicol.artifacts.process_groups import read_process_groups
 
     from .mapping import permuted_expression, side_permutation
@@ -1408,8 +1411,9 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         elif len(records) == 1:
             return records[0], None
         else:
-            raise EvaluationError(
-                "this artifact holds several processes; select one with process="
+            raise ProcessSelectionError(
+                "this artifact holds several processes; select one with process=",
+                key="process-ambiguous",
             )
     for record in records:
         if record["id"] == process:
@@ -1432,9 +1436,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         ]
         if fold and len(matches) > 1:
             choices = ", ".join(sorted(str(record["id"]) for record in matches))
-            raise EvaluationError(
+            raise ProcessSelectionError(
                 f"process expression {process!r} is ambiguous; select one of "
-                f"these stable ids: {choices}"
+                f"these stable ids: {choices}",
+                key="process-ambiguous",
             )
         if matches:
             return matches[0], None
@@ -1446,9 +1451,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         ]
         if len(aliases) > 1:
             choices = ", ".join(sorted(str(alias["id"]) for _r, alias in aliases))
-            raise EvaluationError(
+            raise ProcessSelectionError(
                 f"process expression {process!r} is ambiguous; select one of "
-                f"these alias ids: {choices}"
+                f"these alias ids: {choices}",
+                key="process-ambiguous",
             )
         if aliases:
             return aliases[0][0], _alias_member(*aliases[0])
@@ -1465,9 +1471,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         permuted = [item for item in permuted if _displacement(item[1]) == least]
     if len(permuted) > 1:
         choices = ", ".join(sorted(str(record["id"]) for record, _p in permuted))
-        raise EvaluationError(
+        raise ProcessSelectionError(
             f"process expression {process!r} is permutation-ambiguous; select "
-            f"one of these stable ids: {choices}"
+            f"one of these stable ids: {choices}",
+            key="process-ambiguous",
         )
     if permuted:
         return permuted[0][0], _permuted_member(*permuted[0])
@@ -1498,7 +1505,7 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
                 permutation=tuple(permutation[m] for m in member.permutation),
             )
             return _group_record(records, representative, composed, process)
-    raise EvaluationError(f"artifact has no process {process!r}")
+    raise ProcessSelectionError(f"artifact has no process {process!r}")
 
 
 def _group_record(
@@ -1514,7 +1521,9 @@ def _group_record(
         or member.factor != 1
         or (member.conjugated)
     ):
-        raise EvaluationError(
+        from pyamplicol.api.errors import ProcessSelectionError
+
+        raise ProcessSelectionError(
             f"process {process!r} is a process-group member of basis "
             f"{str(member.basis)!r} (factor {member.factor}"
             + (", charge-conjugated" if member.conjugated else "")
@@ -1735,6 +1744,7 @@ class V2VirtualRuntime:
 
         from .native_process import AdmittedPlan
         from .rescue import rescue_policy
+        from .selection import outgoing_colours
 
         # A default policy owns the carriers: refused with load-time ones.
         self._rescue = rescue_policy(
@@ -1882,6 +1892,57 @@ class V2VirtualRuntime:
             )
         if group_member is not None:
             self._member = _stored_member(group_member, str(selected["expression"]))
+        # The stored legs' outgoing colour representations: a mapped
+        # process's leading-colour flows are read on its own labels in the
+        # tree engine's spelling and plan order (``selection.member_flows``).
+        self._colours = outgoing_colours(
+            [(int(leg["pdg"]), bool(leg["incoming"])) for leg in physics["state_legs"]],
+            {
+                int(record.pdg_code): int(record.color)
+                for record in compiled.ir.particles
+            },
+        )
+        # A mapped process of a request whose colour selectors shape the flow
+        # list (``reference_color_order``, ``max_color_sectors``,
+        # ``selected_color_sector_ids``): a fresh artifact of the mapped
+        # spelling generated with the same card applies them to the plan of
+        # ITS legs (the reference names the legs of the spelling it is written
+        # for; a cap and a sector id count positions in that plan). The card's
+        # selectors are the artifact's effective configuration's (the stored
+        # request keeps a cap only where it removed a stored flow); the fresh
+        # flow list is rebuilt as generation builds it
+        # (``loop_service._slice_selection``: ``selection.leading_colour_plan``
+        # with the reference and the cap, ``plan_flows``, kept by sector id).
+        # ``_public_flows`` lists the mapped flows in that order when the two
+        # lists hold the same flows; otherwise ordinals are refused.
+        self._fresh_flow_order: tuple[str, ...] | None = None
+        card = self._card_selectors = _card_colour_selectors(
+            manifest, execution["request"]
+        )
+        if (
+            group_member is not None
+            and self._member is not None
+            and self._member.alias
+            and physics["metadata"]["color_accuracy"] == "lc"
+            and card
+        ):
+            from .selection import leading_colour_plan, plan_flows
+
+            try:
+                plan = leading_colour_plan(
+                    compiled,
+                    str(group_member.expression),
+                    max_sectors=card.get("max_color_sectors"),
+                    reference_color_order=card.get("reference_color_order"),
+                )
+                wanted = card.get("selected_color_sector_ids")
+                self._fresh_flow_order = tuple(
+                    flow.id
+                    for flow in plan_flows(plan, ())
+                    if wanted is None or flow.sector in wanted
+                )
+            except (ValueError, KeyError, TypeError):
+                self._fresh_flow_order = None
         record = self._native_process.record
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
@@ -2359,6 +2420,8 @@ class V2VirtualRuntime:
                     found,
                     member=self._member,
                     mapping=self._mapping,
+                    flows=None if self._induced else self._public_flows(),
+                    flow_reference=self._ordinals_refused(),
                     arithmetic=self._load_request[0] or self.default_arithmetic,
                     precision=self._load_request[1],
                     **self._thread_options(),
@@ -2471,11 +2534,9 @@ class V2VirtualRuntime:
             contribution_kind=self.contribution_kind,
             reduction=PhysicsReduction(kind, ()),
             model_parameters=(),
-            # Selection of a mapped process is refused (``_refuse_member_
-            # selection``).
-            selector_capabilities=("helicity", "color_flow")
-            if anchors and member is None
-            else (),
+            # A mapped process selects its own helicity rows and flows
+            # (``V2ObservablesRuntime.selection_catalogue``).
+            selector_capabilities=("helicity", "color_flow") if anchors else (),
         )
 
     def _helicity_rows(self) -> list[tuple[int, ...]]:
@@ -2499,21 +2560,56 @@ class V2VirtualRuntime:
     def _public_flows(self) -> tuple[Any, ...]:
         """The stored leading-colour flows on the selected process's legs: a
         permuted mapped process reads each word through its member legs
-        (representative label ``legs[i] + 1`` is its label ``i + 1``)."""
+        (representative label ``legs[i] + 1`` is its label ``i + 1``), in
+        the spelling and order a single-process artifact of its own
+        expression gives them (``selection.member_flows``)."""
 
-        from dataclasses import replace
-
-        from .selection import flow_id
+        from .selection import member_flows
 
         flows = self._flows()
         if self._member is None or not self._member.alias:
             return flows
-        public = {rep + 1: leg + 1 for leg, rep in enumerate(self._member.legs)}
-        out = []
-        for flow in flows:
-            word = tuple(public.get(label, label) for label in flow.word)
-            out.append(replace(flow, id=flow_id(word), word=word))
-        return tuple(out)
+        if not self._color_reference():
+            return member_flows(flows, self._member.legs, self._colours)
+        # Colour selectors that shape the flow list: the order of the
+        # spelling's own plan with the card's selectors (``_fresh_flow_order``),
+        # when it lists exactly these flows; else the stored order, selected by
+        # ID only (``_ordinals_refused``).
+        found = member_flows(flows, self._member.legs, self._colours, keep_order=True)
+        order = self._fresh_flow_order
+        if order is None or sorted(order) != sorted(flow.id for flow in found):
+            return found
+        position = {identifier: k for k, identifier in enumerate(order)}
+        return tuple(sorted(found, key=lambda flow: position[flow.id]))
+
+    def _color_reference(self) -> bool:
+        """Whether the card's colour selectors may shape the flow list (a
+        reference colour order, a sector cap or fixed sector ids, from the
+        artifact's verified effective configuration), or cannot be
+        established (no verified configuration): the mapped process's flows
+        then keep the stored order and are selected by ID
+        (``_ordinals_refused``)."""
+
+        if self._card_selectors is None:
+            return True
+        return bool(self._card_selectors)
+
+    def _ordinals_refused(self) -> bool:
+        """Whether a mapped process's flow ordinals are refused: its
+        request's colour selectors shape the flow list and the plan of its
+        own spelling with those selectors does not list exactly the stored
+        flows (they keep other flows on its legs), so no listing reproduces
+        a fresh artifact's ordinals; flows are then selected by ID
+        (``selection.Catalogue.ordinals``)."""
+
+        if self._member is None or not self._member.alias:
+            return False
+        if not self._color_reference():
+            return False
+        order = self._fresh_flow_order
+        return order is None or sorted(order) != sorted(
+            flow.id for flow in self._public_flows()
+        )
 
     def inspect(self) -> Mapping[str, object]:
         with self._lock:
@@ -3697,6 +3793,66 @@ class V2VirtualRuntime:
 
     def unmute_warnings(self) -> None:
         """No effect: v2 runtimes emit no runtime warnings."""
+
+
+def _card_colour_selectors(
+    manifest: Any, request: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The card's leading-colour selectors (``reference_color_order``,
+    ``max_color_sectors``, ``selected_color_sector_ids``, those that are
+    set): the request record's ``colour_selectors`` (written by this build
+    whenever the card sets one; the record is covered by the artifact's
+    identity); for a record without it, the artifact's effective
+    configuration as the manifest declares it (the ``configuration-
+    effective`` payload at the manifest's ``configuration.effective_path``,
+    read only after its size and digest match the manifest's record,
+    ``artifacts.manifest.verify_payload``). None when that payload is not
+    declared, cannot be read, differs from
+    its record or does not parse: the card's selectors cannot be
+    established then (a mapped process's ordinals are refused)."""
+
+    import tomllib
+
+    from pyamplicol.artifacts.manifest import verify_payload
+
+    recorded = request.get("colour_selectors")
+    if isinstance(recorded, Mapping):
+        return _colour_selectors(recorded)
+    # The manifest names its effective configuration's path; the payload
+    # declared there must be the configuration-effective record.
+    path_name = (manifest.configuration or {}).get("effective_path")
+    records = [
+        item
+        for item in manifest.payloads
+        if item.role == "configuration-effective" and item.path == path_name
+    ]
+    if not isinstance(path_name, str) or len(records) != 1:
+        return None
+    record = records[0]
+    try:
+        path = verify_payload(manifest, record)
+        process = tomllib.loads(path.read_text()).get("process", {})
+    except (OSError, ArtifactError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(process, dict):
+        return None
+    return _colour_selectors(process)
+
+
+def _colour_selectors(process: Mapping[str, Any]) -> dict[str, Any]:
+    """The set leading-colour selectors of a ``[process]`` table or of a
+    request record's ``colour_selectors``."""
+
+    out: dict[str, Any] = {}
+    order = process.get("reference_color_order")
+    if order:
+        out["reference_color_order"] = tuple(int(x) for x in order)
+    if process.get("max_color_sectors") is not None:
+        out["max_color_sectors"] = int(process["max_color_sectors"])
+    wanted = process.get("selected_color_sector_ids")
+    if wanted:
+        out["selected_color_sector_ids"] = frozenset(int(x) for x in wanted)
+    return out
 
 
 def _mapping_kind(record: Mapping[str, Any], group_member: Any) -> str:

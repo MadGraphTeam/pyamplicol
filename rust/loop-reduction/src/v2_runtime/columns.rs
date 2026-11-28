@@ -661,6 +661,129 @@ impl V2Runtime {
             .collect())
     }
 
+    /// The colour histories and spin classes the selected process is served
+    /// (`loops/v2/mapping.py` `mapped_histories` and `mapped_spin_classes`,
+    /// the Python runtime's rule): per correlated output id its stored
+    /// history (`born` serves `born`; a declared history read on the
+    /// selected process's labels and relabelled onto the stored process's is
+    /// served by the stored history of equal bra and ket, one without such
+    /// an image is not served), and the declared spin classes whose legs,
+    /// relabelled onto the stored process, form a stored class. A stored
+    /// process selected as itself is served every one by itself.
+    #[allow(clippy::type_complexity)]
+    pub fn mapped_correlations(
+        &mut self,
+    ) -> RusticolResult<(Vec<(String, String)>, Vec<Vec<usize>>)> {
+        let histories = self.correlation_histories()?;
+        let classes = self.spin_correlation_classes()?;
+        if self.public.iter().enumerate().all(|(r, &p)| r == p) {
+            return Ok((
+                histories.into_iter().map(|id| (id.clone(), id)).collect(),
+                classes,
+            ));
+        }
+        // The stored label of each selected label (1-based).
+        let mut stored = vec![0; self.public.len()];
+        for (r, &p) in self.public.iter().enumerate() {
+            stored[p] = r + 1;
+        }
+        let relabel = |label: &serde_json::Value| -> serde_json::Value {
+            match label.as_u64() {
+                Some(l) if l >= 1 && (l as usize) <= stored.len() => {
+                    serde_json::Value::from(stored[l as usize - 1] as u64)
+                }
+                _ => label.clone(),
+            }
+        };
+        let steps = |item: &serde_json::Value, side: &str, mapped: bool| -> serde_json::Value {
+            let list = item
+                .get(side)
+                .and_then(serde_json::Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            serde_json::Value::Array(
+                list.into_iter()
+                    .map(|step| match step {
+                        serde_json::Value::Object(fields) if mapped => serde_json::Value::Object(
+                            fields
+                                .into_iter()
+                                .map(|(key, value)| {
+                                    let value = if key == "kind" {
+                                        value
+                                    } else {
+                                        relabel(&value)
+                                    };
+                                    (key, value)
+                                })
+                                .collect(),
+                        ),
+                        other => other,
+                    })
+                    .collect(),
+            )
+        };
+        let declared: Vec<serde_json::Value> = self
+            .artifact
+            .request
+            .get("correlators")
+            .and_then(|c| c.get("color_correlations"))
+            .and_then(serde_json::Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let id_of = |item: &serde_json::Value| {
+            item.get("id")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default()
+                .to_owned()
+        };
+        let by_structure: Vec<((serde_json::Value, serde_json::Value), String)> = declared
+            .iter()
+            .map(|item| {
+                (
+                    (steps(item, "bra", false), steps(item, "ket", false)),
+                    id_of(item),
+                )
+            })
+            .collect();
+        let mut served = BTreeMap::new();
+        for item in &declared {
+            let image = (steps(item, "bra", true), steps(item, "ket", true));
+            if let Some((_, id)) = by_structure.iter().find(|(key, _)| *key == image) {
+                served.insert(id_of(item), id.clone());
+            }
+        }
+        let mapped = histories
+            .into_iter()
+            .filter_map(|id| {
+                if id == INCLUSIVE {
+                    Some((id.clone(), id))
+                } else {
+                    served.get(&id).map(|found| (id, found.clone()))
+                }
+            })
+            .collect();
+        let stored_classes: BTreeSet<Vec<usize>> = classes
+            .iter()
+            .map(|class| {
+                let mut class = class.clone();
+                class.sort_unstable();
+                class
+            })
+            .collect();
+        let classes = classes
+            .into_iter()
+            .filter(|class| {
+                let mut image: Vec<usize> = class
+                    .iter()
+                    .map(|&leg| stored.get(leg - 1).copied().unwrap_or(0))
+                    .collect();
+                image.sort_unstable();
+                stored_classes.contains(&image)
+            })
+            .collect();
+        Ok((mapped, classes))
+    }
+
     /// The declared joint spin-correlation classes (1-based legs).
     pub fn spin_correlation_classes(&mut self) -> RusticolResult<Vec<Vec<usize>>> {
         if self.induced.is_some() {

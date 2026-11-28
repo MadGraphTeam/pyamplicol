@@ -83,6 +83,16 @@ effective configuration records, validation momenta, timing, the
 `process-groups.json` map of subprocesses with equal matrix elements, and
 report-only metadata.
 
+A one-loop artifact records the leading-colour selectors of its card
+(`reference_color_order`, `max_color_sectors`, `selected_color_sector_ids`,
+when the card sets one) with each process's runtime-bearing request: they
+decide how a process served through a leg mapping numbers its colour flows,
+so two artifacts that differ only in them differ in identity. An artifact
+written before they were recorded there reads them from its declared
+effective configuration, after checking that payload's digest; if it cannot
+be verified, a mapped process's flow ordinals are refused (flow IDs keep
+working).
+
 ```python
 from pyamplicol import Runtime
 

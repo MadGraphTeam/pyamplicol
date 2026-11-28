@@ -911,6 +911,19 @@ def _validate_target_compatibility(
             )
 
 
+def verify_payload(manifest: ArtifactManifest, record: PayloadRecord) -> Path:
+    """The path of one declared payload after checking its size and digest
+    against its record (``validate_payloads``' check of every payload):
+    ``ArtifactError`` when it differs, ``OSError`` when it cannot be read."""
+
+    path = confined_path(manifest.root, record.path)
+    if path.stat().st_size != record.size_bytes:
+        raise ArtifactError(f"artifact payload size mismatch: {record.path}")
+    if sha256_file(path) != record.sha256:
+        raise ArtifactError(f"artifact payload digest mismatch: {record.path}")
+    return path
+
+
 def validate_payloads(
     manifest: ArtifactManifest,
     *,
@@ -921,11 +934,7 @@ def validate_payloads(
     _validate_target_compatibility(manifest, expected_target=expected_target)
     seen = {record.path for record in manifest.payloads}
     for record in manifest.payloads:
-        path = confined_path(manifest.root, record.path)
-        if path.stat().st_size != record.size_bytes:
-            raise ArtifactError(f"artifact payload size mismatch: {record.path}")
-        if sha256_file(path) != record.sha256:
-            raise ArtifactError(f"artifact payload digest mismatch: {record.path}")
+        path = verify_payload(manifest, record)
         actual_executable = executable_bit(path)
         if actual_executable != record.executable:
             raise ArtifactError(
