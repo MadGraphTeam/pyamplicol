@@ -63,7 +63,7 @@ toolchain. A Fortran compiler is required only for Fortran consumers.
 
 Contributor setup defaults to published Python dependencies from
 `pyproject.toml`, including Symbolica 3.0.3 and ufo-model-loader 1.0.1, and the
-release-mode native build with SymJIT 2.28.3.
+release-mode native build with SymJIT 2.28.4.
 Building a new release wheel requires a clean Git checkpoint and complete
 release assets; the dependency mode does not relax publication guards.
 
@@ -398,7 +398,7 @@ Read the complete [pyAmpliCol documentation](https://madgraph.org/pyamplicol/).
 ## Dependencies and license
 
 Release builds use pinned published Python dependencies (Symbolica 3.0.3,
-ufo-model-loader 1.0.1) and, in the native code, SymJIT 2.28.3 and pinned
+ufo-model-loader 1.0.1) and, in the native code, SymJIT 2.28.4 and pinned
 revisions of Symbolica (symbolica-dev/symbolica's `community` branch),
 NinjaRS, oneloopmaster and [TIRust](https://github.com/huashengshao/TIRust);
 see [dependencies/README.md](dependencies/README.md).
