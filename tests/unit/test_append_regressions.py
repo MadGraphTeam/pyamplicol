@@ -966,3 +966,267 @@ output = {json.dumps(str(tmp_path / "unused"))}
         with pytest.raises(ProcessIdCollisionError):
             generator.generate(batch, artifact, mode="append")
         assert _digest(artifact) == before
+
+
+# The invariant, by the runtime's own loaders (r8) ------------------------------
+
+
+def _resolution_table(artifact):
+    """Every public ID and addressable expression of ``artifact`` -> what
+    ``Runtime.load`` serves for it (process ID and expression), or the
+    error it raises."""
+
+    manifest = json.loads((artifact / "artifact.json").read_text())
+    keys = []
+    for record in manifest["processes"]:
+        keys += [record["id"], record["expression"]]
+        for alias in record.get("aliases", ()):
+            keys += [alias["id"], alias["expression"]]
+    groups_path = artifact / "process-groups.json"
+    if groups_path.is_file():
+        for group in json.loads(groups_path.read_text())["groups"]:
+            for member in group["members"]:
+                if not member["generated"]:
+                    keys += [member["process_id"], member["process"]]
+    table = {}
+    for key in dict.fromkeys(keys):
+        try:
+            physics = Runtime.load(artifact, process=key).physics
+            table[key] = (physics.process_id, physics.process)
+        except Exception as error:
+            table[key] = f"error: {type(error).__name__}"
+    return table
+
+
+def _check_invariant(base, artifact, generator, batch):
+    """Append ``batch`` to a copy of ``base``: admitted, every key of the
+    result names one process and every key of ``base`` the same as before;
+    refused, the artifact is byte-identical."""
+
+    import shutil
+
+    shutil.copytree(base, artifact)
+    before_digest, before = _digest(artifact), _resolution_table(artifact)
+    try:
+        generator.generate(batch, artifact, mode="append")
+    except GenerationError:
+        assert _digest(artifact) == before_digest
+        return "refused"
+    after = _resolution_table(artifact)
+    assert all(not str(value).startswith("error") for value in after.values()), after
+    assert all(after[key] == value for key, value in before.items()), (before, after)
+    return "admitted"
+
+
+def _tree_generator(tmp_path):
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[process]
+entries = [{{ expression = "u g > u g", name = "unused" }}]
+flavor_blind = true
+[evaluator]
+execution_mode = "compiled"
+[generation]
+output = {json.dumps(str(tmp_path / "unused"))}
+"""
+    )
+    return Generator(resolve_config(card))
+
+
+def _swap_alias_base(generator, root, first, swap):
+    from pyamplicol.api import ProcessAlias
+
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse(first, name="first"),),
+            (ProcessAlias("first_swap", "first", swap),),
+        ),
+        root,
+    )
+
+
+@pytest.mark.parametrize("route", ["tree", "one-loop"])
+def test_an_alias_cannot_take_an_expression_another_alias_serves(
+    tmp_path, model_cache, route
+):
+    # u g > u g with alias first_swap serving g u > u g; appending u g > g u
+    # with alias second_swap serving g u > u g too is refused (the
+    # expression would select two aliases), in both orders.
+    from pyamplicol.api import ProcessAlias
+
+    generator = (
+        _tree_generator(tmp_path)
+        if route == "tree"
+        else Generator(
+            resolve_config(
+                _card(tmp_path, model_cache, expression="u g > u g", name="unused")
+            )
+        )
+    )
+    for index, (first, swap, second, second_swap) in enumerate(
+        (
+            ("u g > u g", (1, 0, 2, 3), "u g > g u", (1, 0, 3, 2)),
+            ("u g > g u", (1, 0, 3, 2), "u g > u g", (1, 0, 2, 3)),
+        )
+    ):
+        base = tmp_path / f"base{index}"
+        _swap_alias_base(generator, base, first, swap)
+        served = Runtime.load(base, process="g u > u g").physics.process_id
+        outcome = _check_invariant(
+            base,
+            tmp_path / f"after{index}",
+            generator,
+            ProcessSet(
+                (ProcessRequest.parse(second, name="second"),),
+                (ProcessAlias("second_swap", "second", second_swap),),
+            ),
+        )
+        assert outcome == "refused"
+        assert served == "first_swap"
+
+
+def test_appends_keep_the_resolution_invariant_on_a_compiled_tree(tmp_path):
+    from pyamplicol.api import ProcessAlias
+
+    generator = _tree_generator(tmp_path)
+    base = tmp_path / "base"
+    generator.generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("u g > u g", name="ug"),
+                ProcessRequest.parse("c g > c g", name="cg"),
+                ProcessRequest.parse("e- u > e- u"),
+                ProcessRequest.parse("e+ u > e+ u"),
+            ),
+            (ProcessAlias("first_swap", "ug", (1, 0, 2, 3)),),
+        ),
+        base,
+    )
+    candidates = {
+        "second alias of an aliased expression": (
+            ProcessSet(
+                (ProcessRequest.parse("u g > g u", name="second"),),
+                (ProcessAlias("second_swap", "second", (1, 0, 3, 2)),),
+            ),
+            "refused",
+        ),
+        "identical retry under a suffixed ID": (
+            ProcessRequest.parse("e+ u > e+ u"),
+            "refused",
+        ),
+        "a held process next to a new one": (
+            ProcessSet(
+                (
+                    ProcessRequest.parse("e- u > e- u"),
+                    ProcessRequest.parse("e+ c > e+ c"),
+                )
+            ),
+            "refused",
+        ),
+        "the process of an alias": (ProcessRequest.parse("g u > u g"), "refused"),
+        "a served member's ID for another process": (
+            ProcessRequest.parse("d g > d g", name="cg"),
+            "refused",
+        ),
+        "a served member's process under a new ID": (
+            ProcessRequest.parse("c g > c g", name="cg2"),
+            "refused",
+        ),
+        "a held process under a new name": (
+            ProcessRequest.parse("e+ u > e+ u", name="positron2"),
+            "refused",
+        ),
+        "two new targets whose aliases serve one expression": (
+            ProcessSet(
+                (
+                    ProcessRequest.parse("d g > d g", name="dg"),
+                    ProcessRequest.parse("d g > g d", name="dg_crossed"),
+                ),
+                (
+                    ProcessAlias("dg_swap", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_crossed_swap", "dg_crossed", (1, 0, 3, 2)),
+                ),
+            ),
+            "refused",
+        ),
+        "a new target with its own aliases": (
+            ProcessSet(
+                (ProcessRequest.parse("u u~ > g g", name="jets"),),
+                (
+                    ProcessAlias("swap_jets", "jets", (0, 1, 3, 2)),
+                    ProcessAlias("nickname", "jets"),
+                ),
+            ),
+            "admitted",
+        ),
+        "an unnamed new process": (ProcessRequest.parse("u u~ > e+ e-"), "admitted"),
+    }
+    for index, (name, (batch, expected)) in enumerate(candidates.items()):
+        outcome = _check_invariant(base, tmp_path / f"after{index}", generator, batch)
+        assert outcome == expected, name
+
+
+def test_appends_keep_the_resolution_invariant_at_one_loop(tmp_path, model_cache):
+    from pyamplicol.api import ProcessAlias
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u g > u g",
+        name="unused",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    base = tmp_path / "base"
+    generator.generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("u g > u g", name="ug"),
+                ProcessRequest.parse("c g > c g", name="cg"),
+            ),
+            (ProcessAlias("first_swap", "ug", (1, 0, 2, 3)),),
+        ),
+        base,
+    )
+    candidates = {
+        "second alias of an aliased expression": (
+            ProcessSet(
+                (ProcessRequest.parse("u g > g u", name="second"),),
+                (ProcessAlias("second_swap", "second", (1, 0, 3, 2)),),
+            ),
+            "refused",
+        ),
+        "the process of an alias": (ProcessRequest.parse("g u > u g"), "refused"),
+        "a served member's process under a new ID": (
+            ProcessRequest.parse("c g > c g", name="cg2"),
+            "refused",
+        ),
+        "two new targets whose aliases serve one expression": (
+            ProcessSet(
+                (
+                    ProcessRequest.parse("d g > d g", name="dg"),
+                    ProcessRequest.parse("d g > g d", name="dg_crossed"),
+                ),
+                (
+                    ProcessAlias("dg_swap", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_crossed_swap", "dg_crossed", (1, 0, 3, 2)),
+                ),
+            ),
+            "refused",
+        ),
+        "a new target with its own aliases": (
+            ProcessSet(
+                (ProcessRequest.parse("u u~ > g g", name="jets"),),
+                (
+                    ProcessAlias("swap_jets", "jets", (0, 1, 3, 2)),
+                    ProcessAlias("nickname", "jets"),
+                ),
+            ),
+            "admitted",
+        ),
+    }
+    for index, (name, (batch, expected)) in enumerate(candidates.items()):
+        outcome = _check_invariant(base, tmp_path / f"after{index}", generator, batch)
+        assert outcome == expected, name
