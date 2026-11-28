@@ -343,6 +343,82 @@ def _evaluate_artifact(artifact: Path, momenta: Sequence[Sequence[float]]) -> co
     return complex(values[0])
 
 
+def reused_code_pages_check(
+    artifact: Path,
+    momenta: Sequence[Sequence[float]],
+    *,
+    process: str = DEFAULT_PROCESS_ID,
+    cycles: int = 20,
+    kernels: int = 40,
+) -> dict[str, int]:
+    """Compiled code on pages that earlier code freed computes what it should.
+
+    SymJIT frees the pages of dropped machine code and the allocator reuses
+    them for the next kernel; on aarch64 the instruction cache must then be
+    flushed, or the core may run the previous kernel's instructions (stale
+    values, SIGILL). Two cycles that free and recompile code: ``kernels``
+    distinct small kernels (a different constant each) compiled, evaluated
+    and dropped through the plane-application bridge, every value equal bit
+    for bit to Symbolica's own evaluation of the same expression (dyadic
+    inputs: exact); and ``cycles`` load-evaluate-drop cycles of ``artifact``,
+    every value equal bit for bit to the first cycle's."""
+
+    import gc
+
+    import numpy as np
+    from symbolica import Expression, S
+
+    from pyamplicol import Runtime, _rusticol
+    from pyamplicol.evaluators.symbolica_helpers import (
+        _symbolica_instruction_program_repr,
+    )
+
+    x, y = S("pyamplicol_reused_pages_x"), S("pyamplicol_reused_pages_y")
+    rows = np.array(
+        [[1.5, 2.25], [0.5 - 1.0j, 3.0], [-4.0, 0.125j], [2.0 + 0.5j, -1.5]],
+        dtype=np.complex128,
+    )
+    flat_rows = rows.view(np.float64).ravel().tolist()
+    for index in range(kernels):
+        constant = Expression.num(index + 1) / 8
+        evaluator = Expression.evaluator_multiple(
+            [constant * x * x + y, x - constant * y],
+            [x, y],
+            jit_compile=False,
+            n_cores=1,
+        )
+        program = _symbolica_instruction_program_repr(evaluator.get_instructions())
+        application = _rusticol._compile_symjit_plane_application_v2(
+            program, 2, 2, 2, False
+        )
+        flat = _rusticol._evaluate_symjit_plane_application_v2(
+            application, 2, 2, flat_rows, len(rows)
+        )
+        values = np.asarray(flat, dtype=np.float64).view(np.complex128)
+        expected = np.asarray(evaluator.evaluate_complex(rows), dtype=np.complex128)
+        if values.tobytes() != expected.reshape(-1).tobytes():
+            raise PortabilityError(
+                f"reused code pages: kernel {index} computed {values.tolist()!r}, "
+                f"expected {expected.reshape(-1).tolist()!r}"
+            )
+        del application, evaluator
+        gc.collect()
+    first: list[complex] | None = None
+    for cycle in range(cycles):
+        runtime = Runtime.load(artifact, process=process)
+        values_now = [complex(v) for v in runtime.evaluate((momenta,), precision=16)]
+        del runtime
+        gc.collect()
+        if first is None:
+            first = values_now
+        elif values_now != first:
+            raise PortabilityError(
+                f"reused code pages: load cycle {cycle} gave {values_now!r}, "
+                f"the first gave {first!r}"
+            )
+    return {"kernels": kernels, "load_cycles": cycles}
+
+
 def _close(actual: complex, expected: complex, *, rtol: float, atol: float) -> bool:
     return abs(actual - expected) <= atol + rtol * abs(expected)
 
@@ -1127,6 +1203,9 @@ def consume_transfer(
             )
             with _temporary_environment(environment):
                 actual = _evaluate_artifact(artifact, momenta)
+                # Freed and reused code pages on this architecture (aarch64
+                # needs an instruction-cache flush for them).
+                reused_code_pages_check(artifact, momenta)
             if marker.exists() and marker.stat().st_size:
                 invocations = marker.read_text(encoding="utf-8", errors="replace")
                 raise PortabilityError(

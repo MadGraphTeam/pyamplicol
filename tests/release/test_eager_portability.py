@@ -1046,10 +1046,16 @@ def test_consumer_finishes_generation_before_native_parent_work(
         events.append("evaluate")
         return 1 + 0j
 
+    def reused_code_pages(*_args, **_kwargs):
+        assert events[-1] == "evaluate"
+        events.append("reused-code-pages")
+        return {"kernels": 40, "load_cycles": 20}
+
     monkeypatch.setattr(portability, "_run", child)
     monkeypatch.setattr(portability, "_preflight_all_prepared_applications", preflight)
     monkeypatch.setattr(portability, "verify_consumer_artifact", verify)
     monkeypatch.setattr(portability, "_evaluate_artifact", evaluate)
+    monkeypatch.setattr(portability, "reused_code_pages_check", reused_code_pages)
 
     portability.consume_transfer(
         transfer,
@@ -1059,7 +1065,13 @@ def test_consumer_finishes_generation_before_native_parent_work(
         expected_machine="x86_64",
     )
 
-    assert events == ["generation", "preflight", "verify", "evaluate"]
+    assert events == [
+        "generation",
+        "preflight",
+        "verify",
+        "evaluate",
+        "reused-code-pages",
+    ]
 
 
 def test_compiler_guard_records_and_denies_external_tool_execution() -> None:
