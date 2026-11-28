@@ -673,3 +673,49 @@ max_coupling_orders = { QCD = 2, QED = 2 }""",
     assert record["id"] == "sample_1"
     assert [alias["id"] for alias in record["aliases"]] == ["twophotons"]
     assert Runtime.load(tmp_path / "artifact", process="twophotons").physics.process
+
+
+@pytest.mark.parametrize("direction", ["member-then-record", "record-then-member"])
+def test_the_arrow_is_part_of_a_process_identity(tmp_path, model_cache, direction):
+    # Z > g s s~ (a decay) and Z g > s s~ (a scattering) list the same PDGs in
+    # the same order; they are different processes, so neither may take the
+    # other's ID.
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="z > s s~ g",
+        name="base",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    if direction == "member-then-record":
+        # `take` is served through `base` (a side permutation of it).
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("z > s s~ g", name="base"),
+                    ProcessRequest.parse("z > g s s~", name="take"),
+                )
+            ),
+            artifact,
+        )
+        incoming = ProcessRequest.parse("z g > s s~", name="take")
+        kept = "Z > G s s~"
+    else:
+        generator.generate(ProcessRequest.parse("z g > s s~", name="take"), artifact)
+        incoming = ProcessSet(
+            (
+                ProcessRequest.parse("z > s s~ g", name="base"),
+                ProcessRequest.parse("z > g s s~", name="take"),
+            )
+        )
+        kept = "Z G > s s~"
+    before = _digest(artifact)
+    assert Runtime.load(artifact, process="take").physics.process == kept
+    with pytest.raises(ProcessIdCollisionError, match="'take'"):
+        generator.generate(incoming, artifact, mode="append")
+    assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="take").physics.process == kept
