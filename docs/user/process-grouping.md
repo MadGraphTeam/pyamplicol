@@ -173,7 +173,9 @@ electroweak vertex breaks charge conjugation.
 
 `--no-consider-charge-conjugation` (`process.consider_charge_conjugation =
 false`) disables conjugated relations. The setting only matters together with
-`--flavor-blind` or the numerical analysis.
+`--flavor-blind` or the numerical analysis, and only at tree level: one-loop
+flavour grouping does not relate charge-conjugate subprocesses yet (see
+[One-loop artifacts](#one-loop-virtual-artifacts)).
 
 ## Flavour-blind generation
 
@@ -389,6 +391,19 @@ The numerical analysis is refused for one-loop requests
 (`process-group-analysis`), and a loaded one-loop artifact refuses a
 process-group member of any other basis.
 
+The one-loop dry run decides the same grouping without generating: each
+process record of `estimated_coverage.processes` that a generation serves
+through an earlier one names it under `served_by`, and
+`stored_process_count` / `served_process_count` count both kinds
+(`pyamplicol model processes` lists them as `entries` and `served`).
+
+Charge conjugation is not among the one-loop relations yet: a
+charge-conjugate subprocess (`u~ g > u~ g` of `u g > u g`) is generated on its
+own, whatever `process.consider_charge_conjugation` says, and its value is its
+own generation's. With `--flavor-blind` and the setting on (its default) the
+dry run reports this in `estimated_coverage.charge_conjugate_grouping` and the
+generation logs it once.
+
 ## Conserved charges in UFO expansion
 
 When generating with a UFO or other compiled model, a multiparticle request is
@@ -425,8 +440,9 @@ external quark lines than the limit (colour triplet-antitriplet pairs, every
 leg counted as outgoing) is dropped, the other processes keep their names, and
 a request it empties is refused with an error that names the setting. The
 built-in SM also keeps its own catalogue prefilter `flavor_scheme`.
-`pyamplicol model processes` applies the same charge filter, but not the
-colour and amplitude checks. See
+`pyamplicol model processes` lists exactly what generation stores, with
+these filters and the amplitude checks (see
+[Models and Processes](models-and-processes.md#multiparticles)). See
 [Models and Processes](models-and-processes.md#multiparticles)
 for the expansion syntax.
 

@@ -446,6 +446,24 @@ def _quark_line_cut(
     return kept
 
 
+# process.consider_charge_conjugation with one-loop flavour grouping
+# (process.flavor_blind): the one-loop grouping relates exact species
+# substitutions and side permutations only, so charge-conjugate subprocesses
+# are generated on their own; the dry run and the generation say so.
+CHARGE_CONJUGATION_NOTE = (
+    "at one loop, charge-conjugate subprocesses are generated separately: "
+    "process.consider_charge_conjugation has no effect on one-loop flavour "
+    "grouping (process.flavor_blind) yet; their values are unaffected"
+)
+
+
+def _charge_conjugation_unused(run: Any) -> bool:
+    """Whether the request asks for charge-conjugate grouping, which the
+    one-loop flavour grouping does not apply (``CHARGE_CONJUGATION_NOTE``)."""
+
+    return bool(run.process.flavor_blind and run.process.consider_charge_conjugation)
+
+
 def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     """``preparation`` with the width parameters of every external particle
     of ``processes`` fixed to zero (``loops.external_widths``), logged."""
@@ -1487,7 +1505,7 @@ def _check_requests(
     requests: Sequence[Any],
     dags: Sequence[Any] | None = None,
     memo: Any = None,
-) -> None:
+) -> list[Any]:
     """The refusals of every slice request of ``context`` that need only the
     model and the Born DAG, before any process is generated: its model
     preparation (``prepare_request_model``, ``memo`` shares it with the
@@ -1497,11 +1515,78 @@ def _check_requests(
     from pyamplicol.loops.v2.assemble import prepare_request_model
 
     compiled = context.resolved.compiled
+    models = []
     for index, request in enumerate(requests):
         prepared = prepare_request_model(compiled, request, memo=memo)
         _plan_policy_checks(
             compiled, request, prepared, None if dags is None else dags[index]
         )
+        models.append(prepared)
+    return models
+
+
+def _planned_members(
+    context: _LoopContext, requests: Sequence[Any], models: Sequence[Any]
+) -> dict[int, str]:
+    """The dry run's exact flavour grouping (``process.flavor_blind``): for
+    each expanded process a generation serves through an earlier generated
+    one, that representative's name (by index). The same admission as the
+    generation's (``_v2_member``: ``observables.admit_member`` on what it
+    reads of the representative's slice, the request recipe, the permutation
+    invariance of its leg-keyed fields); a dry run declares no correlators,
+    so every declared correlation is closed under a permutation."""
+
+    from pyamplicol.loops.v2.artifact import request_record
+    from pyamplicol.loops.v2.assemble import resolve_request
+    from pyamplicol.loops.v2.observables import MemberAdmission, admit_member
+    from pyamplicol.processes.model import build_model_process_ir
+
+    def recipe(record: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in record.items()
+            if key not in ("process", "correlators")
+        }
+
+    compiled = context.resolved.compiled
+    representatives: list[tuple[str, Any, Any]] = []
+    served: dict[int, str] = {}
+    for index, (entry, request, model) in enumerate(
+        zip(context.expanded, requests, models, strict=True)
+    ):
+        if not entry.aliases:
+            wanted = recipe(request_record(request))
+            for name, record, view in representatives:
+                if recipe(record) != wanted:
+                    continue
+                try:
+                    member = admit_member(view, entry.request.expression)
+                except (ValueError, NotImplementedError):
+                    continue
+                if not (member.alias or member.species):
+                    continue
+                if member.alias and not _permutation_invariant(request, member.legs):
+                    continue
+                served[index] = name
+                break
+            if index in served:
+                continue
+        resolved = resolve_request(compiled, request)
+        # What ``admit_member`` reads of the representative's slice, from the
+        # dry run's model preparation of its request.
+        view = MemberAdmission(
+            build_model_process_ir(
+                resolved.process, compiled.ir, color_accuracy="full"
+            ),
+            compiled.ir,
+            model.prepared.structure,
+            model.prepared.counterterms,
+            tuple(rule.name for rule in model.prepared.structure.native.vertex_rules),
+            tuple(resolved.corrections),
+            model.continuation,
+        )
+        representatives.append((entry.request.name, request_record(request), view))
+    return served
 
 
 def _plan_policy_checks(compiled, request, model, dag):
@@ -1592,9 +1677,14 @@ def _plan_v2(backend, processes, blockers, *, model=None):
             # Every request's refusals before any record: the dry run lists
             # every member, or none with the refusal (as generation refuses
             # before generating any process).
-            _check_requests(context, requests, dags, memo)
-            for entry, request, zero in zip(
-                context.expanded, requests, context.colour_zero, strict=True
+            models = _check_requests(context, requests, dags, memo)
+            served = (
+                _planned_members(context, requests, models)
+                if backend._run_config.process.flavor_blind
+                else {}
+            )
+            for index, (entry, request, zero) in enumerate(
+                zip(context.expanded, requests, context.colour_zero, strict=True)
             ):
                 record = (
                     _loop_induced_coverage(backend, context, entry, request, zero)
@@ -1622,6 +1712,10 @@ def _plan_v2(backend, processes, blockers, *, model=None):
                 )
                 # The process's runtime: from its request's contribution.
                 record["runtime_capability"] = loop_v2_capability(request.contribution)
+                if index in served:
+                    # Served through an earlier generated process (exact
+                    # flavour grouping), not generated on its own.
+                    record["served_by"] = served[index]
                 coverage.append(record)
             _LOGGER.debug("loop preparation: %s", json.dumps(memo.report()))
         except (ValueError, TypeError, RuntimeError, ImportError, PyAmpliColError) as e:
@@ -1644,6 +1738,15 @@ def _plan_v2(backend, processes, blockers, *, model=None):
         resolved=True,
         correlations=True,
         exact_flavor_grouping=backend._run_config.process.flavor_blind,
+        # Of ``process_count``: the processes generated and stored, and those
+        # served through one of them (``served_by``, exact flavour grouping).
+        stored_process_count=sum("served_by" not in row for row in coverage),
+        served_process_count=sum("served_by" in row for row in coverage),
+        **(
+            {"charge_conjugate_grouping": CHARGE_CONJUGATION_NOTE}
+            if _charge_conjugation_unused(backend._run_config)
+            else {}
+        ),
         api_bundle=False,
         # The runtimes the planned artifact requires (its manifest's union,
         # sorted), and the one runtime when every process shares it (None for
@@ -1945,6 +2048,8 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     )
     started = time.perf_counter()
     grouping = backend._run_config.process.flavor_blind
+    if _charge_conjugation_unused(backend._run_config):
+        notice(_LOGGER, "grouping", "%s", CHARGE_CONJUGATION_NOTE)
     memo = PreparationMemo(store_for(backend._run_config.model))
     stack = ExitStack()
     try:

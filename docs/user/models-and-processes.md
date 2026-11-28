@@ -579,12 +579,44 @@ and quark or lepton numbers per generation whenever the vertices conserve
 them (quark numbers reduce to baryon number with a non-diagonal CKM matrix).
 With the shipped serialized Standard Model (`sm.json`, default
 restriction) this leaves exactly the 385 tree-level subprocesses of
-`p p > j j j j`. `model processes` applies the same filter, but not the
-colour and amplitude checks. `max_quark_lines` bounds the external quark lines
+`p p > j j j j`. `max_quark_lines` bounds the external quark lines
 of every concrete process on every model, at tree level and at one loop (and in
 `model processes`); the built-in SM also keeps its catalogue prefilter
 `flavor_scheme`. See
 [Conserved charges in UFO expansion](process-grouping.md#conserved-charges-in-ufo-expansion).
+
+`pyamplicol model processes` lists exactly what a generation of the same
+request does, in its order and under its names. It runs the generator's own
+planning for the request as given: its execution mode, colour accuracy,
+selections, coupling-order limits and grouping, and every filter of the
+expansion (the built-in SM's catalogue, conserved charges, `max_quark_lines`).
+The listing has two parts:
+
+- `entries` are the processes the generation stores (`n_stored`; `n_entries`
+  is the same number). Each entry lists under `serves` the IDs served through
+  it.
+- `served` are the processes a generation with flavour grouping
+  (`process.flavor_blind`) serves through a stored one (`n_served`). Each
+  names its stored process under `served_by`.
+
+Every listed name loads from the generated artifact (`n_addressable` =
+`n_stored` + `n_served`).
+
+For a tree-level request the listing leaves out the members without a
+tree-level diagram, which generation skips. For a one-loop request
+(`--loop-coupling-order`) it is the one-loop dry run's list, with the
+Born-less members its `process.loop_induced` policy skips under `skipped`. A
+request generation refuses (a colour selection it cannot serve, a closed
+gluon trace times an open colour line, a missing prepared kernel pack for the
+mode) is refused with the same error. For a tree-level request the listing
+runs the stages of the requested execution mode's own generation that
+decide what it stores, short of code generation and writing (compiled: each
+process's DAG construction; recurrence: its compact recurrence construction
+when the request fixes or caps colour sectors or fixes helicities), so a
+selection the mode serves is listed and one it refuses is refused with that
+mode's error. A model that is not compiled or cached yet is prepared on
+demand, as generation prepares it (into the model cache, or in memory with
+`model.cache = false`); `generate --dry-run` itself never compiles one.
 
 ## Permutation-equivalent processes
 

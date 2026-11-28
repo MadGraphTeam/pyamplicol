@@ -54,9 +54,7 @@ def _compiled(card):
     """The shipped model compiled into the card's cache (a dry run never
     compiles one)."""
 
-    code, _, stderr = _cli(
-        "model", "processes", "u u~ > g g", "--card", str(card), "--json"
-    )
+    code, _, stderr = _cli("model", "inspect", "--card", str(card), "--json")
     assert code == 0, stderr
 
 
@@ -182,7 +180,22 @@ def test_max_quark_lines_generation_keeps_the_values_of_the_kept_processes(
 
 @pytest.mark.parametrize(
     ("model", "expected"),
-    [(("--model", "loop_sm", "--restriction", "no_b_mass"), 21), ((), None)],
+    [
+        (
+            (
+                "--model",
+                "loop_sm",
+                "--restriction",
+                "no_b_mass",
+                # A tree request on a UFO without a prepared kernel pack is
+                # generated (so listed) by the compiled mode.
+                "--set",
+                "evaluator.execution_mode=compiled",
+            ),
+            21,
+        ),
+        ((), None),
+    ],
 )
 def test_model_processes_applies_max_quark_lines(model, expected):
     def listed(*extra):
@@ -192,6 +205,9 @@ def test_model_processes_applies_max_quark_lines(model, expected):
         assert code == 0, stderr
         return json.loads(stdout)
 
+    # As a dry run, the listing compiles no model: fill the cache first.
+    code, _, stderr = _cli("model", "inspect", *model[:4], "--json")
+    assert code == 0, stderr
     full = listed()
     cut = listed("--max-quark-lines", "1")
     lines = {
@@ -202,7 +218,6 @@ def test_model_processes_applies_max_quark_lines(model, expected):
     assert {entry["key"] for entry in cut["entries"]} == kept
     assert cut["n_entries"] == len(kept) < full["n_entries"]
     assert cut["max_quark_lines"] == 1
-    assert cut["n_dropped_by_max_quark_lines"] == full["n_entries"] - len(kept)
     if expected is not None:
         assert len(kept) == expected
 
@@ -430,3 +445,55 @@ max_coupling_orders = { QCD = 2, QED = 2 }""",
     assert record["id"] == "sample_1"
     assert [alias["id"] for alias in record["aliases"]] == ["twophotons"]
     assert Runtime.load(tmp_path / "artifact", process="twophotons").physics.process
+
+
+# process.consider_charge_conjugation at one loop -----------------------------
+
+
+@pytest.mark.parametrize(
+    ("extra", "reported"),
+    [
+        ("flavor_blind = true", True),
+        ("flavor_blind = true\nconsider_charge_conjugation = false", False),
+        ("", False),
+    ],
+)
+def test_the_plan_says_charge_conjugates_are_generated_separately(
+    tmp_path, model_cache, extra, reported
+):
+    from pyamplicol.generation.loop_service import CHARGE_CONJUGATION_NOTE
+
+    card = _card(tmp_path, model_cache, expression="u g > u g", name="ug", extra=extra)
+    _compiled(card)
+    coverage = _plan(card)["estimated_coverage"]
+    if reported:
+        assert coverage["charge_conjugate_grouping"] == CHARGE_CONJUGATION_NOTE
+    else:
+        assert "charge_conjugate_grouping" not in coverage
+
+
+def test_the_generation_says_it_once(tmp_path, model_cache, caplog):
+    import logging
+
+    from pyamplicol.generation.loop_service import CHARGE_CONJUGATION_NOTE
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u u~ > g g",
+        name="uugg",
+        extra="flavor_blind = true",
+    )
+    with caplog.at_level(logging.INFO, logger="pyamplicol"):
+        Generator(resolve_config(card)).generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("u u~ > g g", name="uugg"),
+                    ProcessRequest.parse("s s~ > g g", name="ssgg"),
+                )
+            ),
+            tmp_path / "artifact",
+        )
+    said = [r for r in caplog.records if r.getMessage() == CHARGE_CONJUGATION_NOTE]
+    assert len(said) == 1
+    assert said[0].name.startswith("pyamplicol")
