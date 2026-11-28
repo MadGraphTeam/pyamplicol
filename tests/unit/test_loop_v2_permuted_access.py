@@ -891,6 +891,14 @@ def old_format(loop_sm_compiled_model, loop_native, tmp_path_factory):
     }
 
 
+# The 2 -> 2 cards of REFERENCED (the checks below read 2 -> 2 spellings).
+_REFERENCED_2TO2 = sorted(
+    key for key, (stored, _single, _option) in REFERENCED.items()
+    if len(stored[1].split()) == 5
+)
+
+
+@pytest.mark.parametrize("referenced", _REFERENCED_2TO2, indirect=True)
 def test_new_artifacts_record_the_card_selectors(subset, referenced, tmp_path):
     """A new artifact records the card's colour selectors with its request
     (covered by its identity): its mapped ordinals follow them and no edit,
@@ -899,8 +907,6 @@ def test_new_artifacts_record_the_card_selectors(subset, referenced, tmp_path):
     import json
 
     stored, _single, (_name, spelling), stored_name = referenced
-    if len(spelling.split()) != 5:
-        pytest.skip("2 -> 2 cases")
     request = json.loads(
         (stored / "processes" / stored_name / "execution.json").read_text()
     )["request"]
