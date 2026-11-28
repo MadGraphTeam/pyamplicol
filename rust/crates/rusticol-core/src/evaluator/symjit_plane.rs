@@ -242,9 +242,11 @@ impl std::ops::Deref for SymjitPlaneKernel {
 /// again: concurrent loaders of the same key wait for the one build and
 /// share it (a second, concurrent compile would leak its pages), loaders of
 /// other keys compile in parallel (no lock is held across a compile). A
-/// failed build is returned to every loader that waited for it, and the
-/// next loader tries again; a builder that panics releases its waiters with
-/// an error.
+/// failed build leaves the key unbuilt, so the next loader tries again, and a
+/// builder that panics settles its build as failed. A waiter receives the
+/// outcome the slot holds when it wakes: normally its own build's kernel or
+/// error, but a waiter overtaken by a retry that completed before it woke
+/// receives that retry's kernel or its error.
 type PlaneCodeKey = ([u8; 32], SymjitPlaneLayout);
 
 #[derive(Default)]
@@ -372,6 +374,7 @@ fn shared_plane_code(
 }
 
 /// Distinct P-kernel applications compiled in this process so far.
+#[cfg(feature = "python-generation-bridge")]
 pub(crate) fn plane_code_cache_len() -> usize {
     plane_code_cache()
         .lock()
@@ -391,6 +394,7 @@ pub(crate) fn plane_code_cache_len() -> usize {
 
 /// P-kernel builds started in this process so far (each compiles a kernel:
 /// with the cache, one per distinct application, plus retries of failures).
+#[cfg(feature = "python-generation-bridge")]
 pub(crate) fn plane_code_builds() -> usize {
     PLANE_CODE_BUILDS.load(Ordering::Relaxed)
 }
@@ -3451,10 +3455,7 @@ mod tests {
         });
         assert_eq!(builds.load(Ordering::Relaxed), 1);
         for outcome in &outcomes {
-            let error = outcome
-                .as_ref()
-                .err()
-                .expect("every waiter sees the failure");
+            let error = outcome.as_ref().expect_err("every waiter sees the failure");
             assert_eq!(error.kind(), RusticolErrorKind::Compatibility);
             assert_eq!(error.message(), "the bytes do not load");
         }

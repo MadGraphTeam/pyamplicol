@@ -1866,6 +1866,7 @@ fn _symjit_host_cpu() -> (Vec<&'static str>, bool) {
 /// copy per distinct application, shared by every load).
 #[pyfunction]
 fn _symjit_plane_code_cache_len() -> usize {
+    let _unlock = pyamplicol::unlock();
     symjit_plane_code_cache_len()
 }
 
@@ -1873,6 +1874,7 @@ fn _symjit_plane_code_cache_len() -> usize {
 /// application, whatever the concurrency of the loads).
 #[pyfunction]
 fn _symjit_plane_code_builds() -> usize {
+    let _unlock = pyamplicol::unlock();
     symjit_plane_code_builds()
 }
 
