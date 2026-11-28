@@ -111,12 +111,56 @@ the largest physical component magnitude over the sectors
   per-lane rotation budget 1.6 times the physical scale, the virtual
   2e-12 of it before and after the rotation). An evaluation without the
   reduction check has no binary64 criterion (``passed`` None).
+
+**Combination** (``combined_verdict``): every level (coefficient, row,
+check) combines its parts by one rule: a proved failure fails, else an
+undecided part (inconclusive numerical evidence) leaves it undecided (None),
+else it passes. An undecided row never hides a failing one.
+
+**Vanishing coefficients** (``scale_floor``, ``vanishing_coefficients``):
+a pole coefficient that vanishes physically (the double pole of a QED
+correction with massive emitters) has a physical scale of the size of its
+own rounding. Where the physical evaluation carries Catani's prediction
+(``PointResult.ir_poles``, an executor with ``catani``) and it is exactly
+zero for that coefficient in every sector, the coefficient's scale is at
+least |physical Born| x alpha / (2 pi) (alpha = ``SCALE_FLOOR_COUPLING``,
+the fine-structure constant; ``row["scale_floor"]`` marks where it set the
+scale). Every other coefficient, the finite one always and a small but
+nonzero pole too, is judged against its own physical size; without a
+prediction there is no floor.
+
+**Unstable external legs: a hint, never a verdict** (``unstable_external_legs``,
+``unstable_hint``). In the real on-shell mass scheme (zero widths) an
+external particle that can decay at its own mass keeps the absorptive part
+of its self-energy: the mass counterterm renormalises Re Sigma only, so
+i Im Sigma(m^2) stays on the external leg. The Ward identity of the
+renormalised amplitude then has a physical violation in the absorptive part
+of the one-loop finite coefficient, by about Gamma / m, while the values a
+run serves are unaffected (g g > t t~ [QED] with MT > MW + MB: the c = 1
+finite part 8.6e-3 of the physical scale, zero below the t -> W b
+threshold; MadLoop, Recola and OpenLoops agree with the served values).
+Such a failure cannot be told from an implementation error in the same
+coefficient, so every cell is judged as always and a failing finite cell
+FAILS; ``row["hint"]`` then names the unstable leg and its open channel and
+how to check on a stable spectrum (the benchmark's ``ward_parameters``: MW =
+180, MZ = 200 for a top). The detection is per substituted leg: an external
+leg charged under that leg's boson (coloured for a gluon, electrically
+charged for a photon), massive, of zero width at the check's parameters,
+with an open tree-level two-body channel among the model's three-point
+vertices (ghosts excluded) that carries a coupling order of a requested
+correction and whose coupling does not vanish at the check's parameters
+(``COUPLING_ZERO`` at ``MASS_DIGITS`` digits: t -> W+ d with a diagonal CKM
+is no channel), m > m_a + m_b at the evaluated masses. Masses and couplings
+are evaluated at the point the check evaluates (``slice_values``: the
+run-time parameters given to ``ward_check``, over the request's fixed
+parameters and the model's defaults). The hint changes no verdict.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
 
@@ -142,6 +186,13 @@ BINARY64_FLOOR = 1e-12
 RESOLUTION_UNITS = {"double": 2.0**-53, "double-double": 2.0**-104}
 # The stability check the binary64 criterion reads.
 WARD_CHECKS = StabilityChecks(reduction_direction=True)
+# The coupling of a vanishing coefficient's scale floor (module docstring,
+# "Vanishing coefficients"): alpha(0).
+SCALE_FLOOR_COUPLING = 1 / 137.035999
+# Digits of the masses and couplings the instability test evaluates, and
+# the magnitude below which a channel's coupling counts as zero there.
+MASS_DIGITS = 30
+COUPLING_ZERO = 1e-24
 
 
 def ward_slice(compiled: Any, request: Any, native: Any, **options: Any) -> LoopSlice:
@@ -243,6 +294,331 @@ def gauge_legs(slice_: Any) -> tuple[int, ...]:
         if int(entry["spin"]) == 3 and entry.get("mass") in (None, "ZERO", "0"):
             out.append(int(leg.label))
     return tuple(out)
+
+
+@dataclass(frozen=True)
+class UnstableLeg:
+    """An external leg that can decay at its own mass (module docstring,
+    "Unstable external legs"): its label and particle, its mass, the open
+    channel's decay products (the lowest open threshold, a physical channel
+    preferred to a Goldstone one of the same threshold) and that
+    threshold."""
+
+    leg: int
+    particle: str
+    mass: float
+    channel: tuple[str, str]
+    threshold: float
+
+    def describe(self) -> str:
+        a, b = self.channel
+        return (
+            f"leg {self.leg} ({self.particle}, mass {self.mass:.6g}) decays to "
+            f"{a} {b} (threshold {self.threshold:.6g})"
+        )
+
+
+def slice_values(slice_: Any, parameters: Mapping[str, str] | None = None) -> Any:
+    """The slice's parameter evaluator at ``parameters`` (the caller's runtime
+    parameters, validated as an evaluation validates them, with the fixed
+    ones): parameter or coupling name -> complex value, an external
+    parameter its value, a derived one or a coupling its definition at
+    ``MASS_DIGITS`` digits (as
+    ``assemble._model_masses`` evaluates masses, a vanishing one included),
+    ZERO -> 0."""
+
+    from decimal import Decimal as _Decimal
+
+    from .assemble import (
+        Precision,
+        _definition_value,
+        _kernel_parameters,
+        _substitutions,
+    )
+
+    compiled = slice_.compiled
+    values = slice_._point_parameters(
+        dict(parameters or {}), Fraction(1), Precision.double()
+    )
+    known = _kernel_parameters(compiled, values)
+    definitions = {
+        record.name: record.resolved_expression
+        for record in compiled.ir.parameters
+        if record.nature == "internal"
+    }
+    # Couplings, by name, the same way (their resolved definitions).
+    for record in getattr(compiled.ir, "couplings", ()) or ():
+        definitions.setdefault(record.name, record.resolved_expression)
+    found: dict[str, complex] = {}
+    substitutions: list[Any] = []
+
+    def value(name: str) -> complex:
+        name = str(name)
+        if name in ("ZERO", "0"):
+            return 0j
+        if name in known:
+            return complex(known[name])
+        if name not in found:
+            if name not in definitions:
+                raise KeyError(f"{name!r} is no model parameter")
+            if not substitutions:
+                external = {
+                    record.name: _Decimal(
+                        values.get(
+                            record.name,
+                            str(compiled.parameter_defaults[record.name][0]),
+                        )
+                    )
+                    for record in compiled.ir.parameters
+                    if record.nature == "external"
+                    and record.name in compiled.parameter_defaults
+                }
+                substitutions.append(_substitutions(compiled, external, MASS_DIGITS))
+            real, imaginary = _definition_value(
+                definitions[name], substitutions[0], MASS_DIGITS
+            )
+            found[name] = complex(float(real), float(imaginary))
+        return found[name]
+
+    return value
+
+
+def slice_masses(slice_: Any, parameters: Mapping[str, str] | None = None) -> Any:
+    """``slice_values`` as magnitudes: parameter name -> |value| (a float)."""
+
+    value = slice_values(slice_, parameters)
+
+    def magnitude(name: str) -> float:
+        return abs(value(name))
+
+    return magnitude
+
+
+def _particle_records(compiled: Any) -> tuple[dict[int, Any], dict[str, Any]]:
+    by_pdg: dict[int, Any] = {}
+    by_name: dict[str, Any] = {}
+    for record in compiled.ir.particles:
+        by_pdg[int(record.pdg_code)] = record
+        by_name[str(record.name)] = record
+    return by_pdg, by_name
+
+
+def _leg_record(by_pdg: Mapping[int, Any], pdg: int) -> Any:
+    return by_pdg.get(int(pdg)) or by_pdg.get(-int(pdg))
+
+
+def _substituted_kinds(
+    by_pdg: Mapping[int, Any], slice_: Any, legs: Sequence[int]
+) -> set[str]:
+    """What the substituted legs constrain: "colour" (a gluon leg), "charge"
+    (a photon leg: a massless colour-singlet neutral vector)."""
+
+    pdgs = {int(leg.label): int(leg.pdg) for leg in slice_.blocks.process.legs}
+    kinds = set()
+    for label in legs:
+        record = _leg_record(by_pdg, pdgs[int(label)])
+        if record is None:
+            continue
+        kinds.add("colour" if abs(int(record.color)) != 1 else "charge")
+    return kinds
+
+
+def unstable_external_legs(
+    slice_: Any,
+    legs: Sequence[int] | None = None,
+    parameters: Mapping[str, str] | None = None,
+    *,
+    masses: Callable[[str], float] | None = None,
+) -> tuple[UnstableLeg, ...]:
+    """The external legs of ``slice_`` that the Ward check of the substituted
+    ``legs`` (default: ``gauge_legs``) constrains and that can decay at their
+    own mass at ``parameters`` (module docstring, "Unstable external legs"):
+    coloured legs for a gluon leg, charged legs for a photon leg; massive,
+    of zero width, with an open tree-level two-body channel among the
+    model's three-point vertices (ghosts excluded) whose coupling does not
+    vanish at ``parameters`` (``_vanishing_coupling``). ``masses`` (default:
+    ``slice_masses``) maps a parameter name to its value. A stored process's
+    view (no model) has none it can name."""
+
+    compiled = getattr(slice_, "compiled", None)
+    blocks = getattr(slice_, "blocks", None)
+    if compiled is None or blocks is None:
+        return ()
+    legs = tuple(gauge_legs(slice_) if legs is None else legs)
+    if not legs:
+        return ()
+    value = masses or slice_masses(slice_, parameters)
+    by_pdg, by_name = _particle_records(compiled)
+    kinds = _substituted_kinds(by_pdg, slice_, legs)
+    # Only a channel whose vertex the requested corrections' loops carry
+    # opens a cut of the leg's self-energy (t -> W b is no cut of a QCD loop).
+    request = getattr(slice_, "request", None)
+    orders = None
+    if request is not None:
+        from .ew_policy import request_corrections
+
+        orders = set(request_corrections(compiled, request))
+    three = [
+        (
+            tuple(str(name) for name in term.particles),
+            getattr(term, "coupling", None),
+        )
+        for term in compiled.ir.vertex_terms
+        if len(term.particles) == 3
+        and (
+            orders is None
+            or any(str(order) in orders for order, _ in term.coupling_orders)
+        )
+    ]
+    found = []
+    for leg in sorted(blocks.process.legs, key=lambda x: x.label):
+        record = _leg_record(by_pdg, int(leg.pdg))
+        if record is None or int(leg.label) in legs:
+            continue
+        charged = ("colour" in kinds and abs(int(record.color)) != 1) or (
+            "charge" in kinds and float(record.charge) != 0
+        )
+        if not charged:
+            continue
+        mass = value(str(record.mass))
+        if mass == 0 or value(str(record.width)) != 0:
+            continue
+        name = (
+            str(record.name)
+            if int(leg.pdg) == int(record.pdg_code)
+            else str(record.antiname)
+        )
+        conjugate = (
+            str(record.antiname) if name == str(record.name) else str(record.name)
+        )
+        channels = []
+        for particles, coupling in three:
+            rest = list(particles)
+            if name in rest:
+                # Incoming parent: the others are the conjugates of the
+                # decay products.
+                rest.remove(name)
+                products = [
+                    str(by_name[x].antiname) if x in by_name else x for x in rest
+                ]
+            elif conjugate in rest:
+                rest.remove(conjugate)
+                products = rest
+            else:
+                continue
+            records = [by_name.get(x) for x in rest]
+            if any(
+                r is None or int(getattr(r, "ghost_number", 0) or 0) for r in records
+            ):
+                continue
+            threshold = sum(value(str(r.mass)) for r in records)
+            # A channel whose vertex coupling vanishes at the requested point
+            # (t -> W+ d with a diagonal CKM) does not exist.
+            if mass > threshold * (1 + 1e-12) + 1e-300 and not _vanishing_coupling(
+                value, coupling
+            ):
+                goldstone = any(
+                    bool(getattr(r, "goldstoneboson", False)) for r in records
+                )
+                channels.append((threshold, goldstone, tuple(sorted(products))))
+        if channels:
+            threshold, _goldstone, products = min(channels)
+            found.append(
+                UnstableLeg(
+                    int(leg.label), name, mass, (products[0], products[1]), threshold
+                )
+            )
+    return tuple(found)
+
+
+def _vanishing_coupling(value: Callable[[str], float], coupling: Any) -> bool:
+    """Whether a vertex term's coupling vanishes at the requested point
+    (``value``: ``slice_masses``, its magnitude to ``MASS_DIGITS`` digits);
+    a term without a named coupling counts as coupled."""
+
+    if not coupling:
+        return False
+    try:
+        return value(str(coupling)) < COUPLING_ZERO
+    except KeyError:
+        return False
+
+
+def hint_legs(
+    slice_: Any, legs: Sequence[int], parameters: Mapping[str, str] | None = None
+) -> dict[int, tuple[UnstableLeg, ...]]:
+    """Per substituted leg its unstable external legs
+    (``unstable_external_legs``), for the hint alone: a detection that
+    cannot run (a stored process's view, an evaluation refusing the
+    parameters) gives none, never a different verdict."""
+
+    out = {}
+    for leg in legs:
+        try:
+            out[leg] = unstable_external_legs(slice_, [leg], parameters)
+        except (AttributeError, KeyError, TypeError, ValueError, ArithmeticError):
+            out[leg] = ()
+    return out
+
+
+def unstable_hint(unstable: Sequence[UnstableLeg]) -> str:
+    """The hint of a failing finite Ward cell with an unstable external leg
+    (module docstring, "Unstable external legs: a hint, never a verdict")."""
+
+    legs = "; ".join(
+        f"external leg {leg.leg} ({leg.particle}) is unstable at these parameters "
+        f"(open channel {leg.channel[0]} {leg.channel[1]})"
+        for leg in unstable
+    )
+    return (
+        f"{legs}: in the real on-shell scheme the finite part of this Ward "
+        "identity then has a physical absorptive violation, so this failure may "
+        "not be an error; check on a spectrum where the leg is stable (for "
+        "instance MW and MZ above MT)"
+    )
+
+
+def scale_floor(physical: Any) -> float:
+    """The floor of every coefficient's scale (module docstring, "Vanishing
+    coefficients"): |physical Born| x alpha / (2 pi); 0 without a Born."""
+
+    born = getattr(physical, "born", None) or {}
+    total = abs(sum(complex(value) for value in born.values())) if born else 0.0
+    return total * SCALE_FLOOR_COUPLING / (2 * math.pi)
+
+
+def vanishing_coefficients(physical: Any, width: int) -> list[bool]:
+    """Per Laurent coefficient whether it vanishes physically (module
+    docstring, "Vanishing coefficients"): a pole coefficient whose Catani
+    prediction (``physical.ir_poles``, (single, double) per sector) is
+    exactly zero in every virtual sector; never the finite one, and nothing
+    without a prediction for every sector."""
+
+    out = [False] * width
+    poles = getattr(physical, "ir_poles", None)
+    virtual = physical.components.get("virtual", {}) if physical.components else {}
+    if not poles or not virtual or any(sector not in poles for sector in virtual):
+        return out
+    for k in range(1, width):
+        try:
+            out[k] = all(complex(poles[sector][k - 1]) == 0 for sector in virtual)
+        except (ArithmeticError, IndexError, TypeError, ValueError):
+            out[k] = False
+    return out
+
+
+def combined_verdict(values: Sequence[Any]) -> bool | None:
+    """THE COMBINATION RULE of every Ward verdict (per coefficient, row, leg
+    and check): False if one is a proved failure, else None if one is
+    undecided (None, "none": inconclusive, not applicable or unavailable),
+    else True. An undecided part can turn a pass into an inconclusive, never
+    a failure into anything else."""
+
+    if False in values:
+        return False
+    if None in values or "none" in values:
+        return None
+    return True
 
 
 def ward_scales(physical: Any) -> list[float]:
@@ -348,7 +724,12 @@ def judged(residual: float, allowed: float, uncertain: float) -> bool | None:
     return None
 
 
-def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
+def ward_row(
+    physical: Any,
+    result: Any,
+    carrier: str,
+    unstable: Sequence[UnstableLeg] = (),
+) -> dict[str, Any]:
     """The criterion of one Ward evaluation (module docstring): ``physical``
     and ``result`` are the ``PointResult`` of the same point without and with
     the Ward value, ``carrier`` "double" or "double-double". Returns the
@@ -365,7 +746,13 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
 
     if carrier not in BORN_BOUNDS:
         raise ValueError(f"no Ward criterion for the carrier {carrier!r}")
-    scale = ward_scales(physical)
+    measured = ward_scales(physical)
+    floor = scale_floor(physical)
+    vanishing = vanishing_coefficients(physical, len(measured))
+    scale = [
+        max(s, floor) if zero else s
+        for s, zero in zip(measured, vanishing, strict=True)
+    ]
     width = len(scale)
     parts = {
         name: [_ratio(v, s) for v, s in zip(largest(result, name), scale, strict=True)]
@@ -376,6 +763,9 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
         "born": born,
         "born_passed": born <= BORN_BOUNDS[carrier],
         "parts": parts,
+        "scale_floor": [
+            zero and s < floor for s, zero in zip(measured, vanishing, strict=True)
+        ],
         "estimate": None,
         "estimate_over": None,
         "uncertified": None,
@@ -481,6 +871,7 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
     # everywhere (``allowed`` grows with the scale); anything else, or no
     # finite interval, is inconclusive.
     verdicts = []
+    finite_failed = False
     for sector, laurent in virtual.items():
         for k in range(width):
             least = allowed(sector, k, low[k])
@@ -493,6 +884,7 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
                 verdicts.append(True)
             elif judged(value, most, uncertain[sector][k]) is False:
                 verdicts.append(False)
+                finite_failed = finite_failed or k == 0
             else:
                 verdicts.append(None)
     scope_low = scope_high = True
@@ -531,9 +923,10 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
     else:
         virtual_passed = True
     row["virtual_passed"] = virtual_passed
-    row["passed"] = (
-        None if virtual_passed is None else bool(virtual_passed and row["born_passed"])
-    )
+    row["passed"] = combined_verdict([row["born_passed"], virtual_passed])
+    if unstable and finite_failed:
+        # Module docstring, "Unstable external legs": a hint, never a verdict.
+        row["hint"] = unstable_hint(unstable)
     return row
 
 
@@ -563,7 +956,12 @@ def ward_check(
     (``ward_row`` plus ``leg`` and ``factor``) and ``passed`` (every row;
     None if a row has no criterion). ``judge`` False: ``rows`` hold ``leg``
     and ``factor`` alone and ``passed`` is None (``pyamplicol check`` judges
-    the results itself, ``checks._ward_measures``)."""
+    the results itself, ``checks._ward_measures``). ``unstable`` lists the
+    external legs that can decay at their own mass, per substituted leg in
+    ``unstable_by_leg`` (module docstring, "Unstable external legs"): a
+    failing finite cell of such a leg's row carries ``row["hint"]``, its
+    verdict unchanged. ``passed`` combines the rows by ``combined_verdict``:
+    a failing row fails the check whatever the others are."""
 
     from .assemble import Precision
 
@@ -588,16 +986,23 @@ def ward_check(
         stability=WARD_CHECKS if checked else None,
     )
     physical, results = results[0], results[1:]
+    by_leg = hint_legs(executor.slice, legs, parameters)
     rows = []
     for (leg, factor), result in zip(labels, results, strict=True):
-        judged = ward_row(physical, result, carrier) if judge else {"passed": None}
+        judged = (
+            ward_row(physical, result, carrier, by_leg[leg])
+            if judge
+            else {"passed": None}
+        )
         rows.append({**judged, "leg": leg, "factor": factor})
     verdicts = [row["passed"] for row in rows]
     return {
         "physical": physical,
         "results": results,
         "rows": rows,
-        "passed": None if None in verdicts else all(verdicts),
+        "unstable": tuple(dict.fromkeys(u for found in by_leg.values() for u in found)),
+        "unstable_by_leg": by_leg,
+        "passed": None if not judge else combined_verdict(verdicts),
     }
 
 
@@ -605,15 +1010,21 @@ __all__ = [
     "BINARY64_FLOOR",
     "BINARY64_SCOPE",
     "BORN_BOUNDS",
+    "COUPLING_ZERO",
     "ESTIMATE_FACTOR",
+    "MASS_DIGITS",
     "PARTS",
     "RESOLUTION_UNITS",
+    "SCALE_FLOOR_COUPLING",
     "VIRTUAL_BOUNDS",
     "WARD_CHECKS",
     "WARD_FACTORS",
+    "UnstableLeg",
     "born_ratio",
+    "combined_verdict",
     "gauge_legs",
     "gauge_ward",
+    "hint_legs",
     "judged",
     "lane_scales",
     "largest",
@@ -621,7 +1032,13 @@ __all__ = [
     "point_wards",
     "require_full_kernels",
     "rotated_ward",
+    "scale_floor",
+    "slice_masses",
+    "slice_values",
     "uncertified_bounds",
+    "unstable_external_legs",
+    "unstable_hint",
+    "vanishing_coefficients",
     "ward_check",
     "ward_leg",
     "ward_row",

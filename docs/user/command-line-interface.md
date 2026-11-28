@@ -1640,13 +1640,36 @@ kinematics_improvement`, default `z-shift`) in its own carrier, exactly as
 beam axis at twice the rung's digits already, so this moves them by about
 the rung's rounding, and
 each row records it (`CheckRow.kinematics`: the producing variant, `exact` or
-`not-improved`). The Ward rows of a request whose loop corrections include an
-electroweak one (any correction other than the model's strong one) and with
-an on-shell zero-width external massive quark (a top or a massive b, quark or
-antiquark) read "not applicable" and are not evaluated: the Ward identity of
-the asymmetric check is not guaranteed with electroweak corrections there;
-Ward rows are not split by squared-order sector, so that request's QCD-loop
-sectors are not Ward-checked either. A sector Catani's operators
+`not-improved`). A Born-interfered Ward pole coefficient that vanishes
+physically (Catani's prediction is exactly zero: the double pole of a QED
+correction with massive emitters) has a value and parts of the size of its own
+rounding: it is judged as a known zero against its terms, with T at least
+|physical Born| x alpha / (2 pi). Every other coefficient, the finite one and
+a small but nonzero pole included, is judged against its own size.
+
+**Unstable external legs: a hint.** In the real on-shell mass scheme (zero
+widths) an external particle that can decay at its own mass keeps the
+absorptive part of its self-energy (the mass counterterm renormalises its
+real part only). The finite part of the Ward identity then has a physical
+absorptive violation, of about Gamma / m, although the values a run serves
+are unaffected: with electroweak corrections a top above MW + MB decays to
+W b, and `g g > t t~` [QED] has a c = 1 Ward residue of about 1 % of its
+physical scale while its values equal MadLoop, Recola and OpenLoops. Such a
+violation cannot be told from an implementation error in the same
+coefficient, so `check` judges every Ward cell as always and such a finite
+cell FAILS. Where an external leg charged under the substituted boson
+(colour for a gluon, electric charge for a photon) is massive, of zero width
+and has an open tree-level two-body decay whose coupling does not vanish at
+the check's parameters (t -> W+ d with a diagonal CKM is no decay), the
+failing row's reason adds a hint: the leg, its open channel, that the
+failure may not be an error, and how to check on a stable spectrum, for
+example with `MW` and `MZ` above the top mass in `fixed_parameters` (the
+benchmark's Ward rows use MW = 180, MZ = 200). The hint changes no verdict,
+status or exit code. This replaces the earlier rule, under which the Ward
+rows of every request with electroweak corrections and an external
+zero-width massive quark read "not applicable" without being evaluated:
+they are evaluated now, and such a request's check fails on those cells
+unless run on a stable spectrum. A sector Catani's operators
 do not predict (a QCD correction of a process with photon-exchange Borns,
 ...) is listed as "no prediction" with its reason; a sector they predict
 that got no pole row at a point reads "not run" (exit 3: an applicable

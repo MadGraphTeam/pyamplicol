@@ -95,12 +95,17 @@ nothing.
   (the poles, k >= 1: a known zero), T = the vector row's floor plus M/E
   times the Goldstone row's, over the union of both sides' rows
   (``goldstone.probe``); otherwise a "not applicable" row with the reason.
-* **Ward rows not applicable** (``ward_applicability``, USER 2026-11-10
-  ~00:17): a request whose corrections include one other than the model's
-  strong correction and with an on-shell zero-width external massive quark
-  has one "not applicable" Ward row (the Ward identity of the asymmetric
-  check is not guaranteed there), nothing evaluated; Ward rows are not split
-  by squared-order sector, so its QCD-loop sectors are not checked either.
+* **Unstable external legs: a hint** (``ward.hint_legs``, ``ward.
+  unstable_hint``; replaces the earlier skip of the Ward rows of an
+  electroweak request with an external zero-width massive quark, USER
+  2026-11-10 ~00:17): every Ward cell is judged as always. In the real
+  on-shell scheme an external leg that can decay at its own mass (the top
+  above MW + MB with electroweak corrections) gives the finite part of the
+  Ward identity a physical absorptive violation, which cannot be told from
+  an implementation error in the same coefficient: such a cell FAILS, and
+  the row's reason then names the unstable leg, its open channel and how
+  to check on a stable spectrum (MW and MZ above MT, as the benchmark's
+  ``ward_parameters``). The hint changes no verdict, status or exit code.
 
 Carriers (``induced.probe_carriers``): binary64 first and double-double
 only for a row binary64 does not decide (a failure, an inconclusive or
@@ -1049,69 +1054,6 @@ def _unpredicted_rows(
     return rows
 
 
-def ward_applicability(target: Any) -> str | None:
-    """None where the Ward rows of a probe slice are checked, else why they
-    are not applicable (USER 2026-11-10 ~00:17: with EW corrections and an
-    on-shell zero-width external top "it may break some EW gauge relations
-    ... ignore ward check there"). One rule on the request's own data,
-    decided before any Ward evaluation: its corrections include one other
-    than the model's strong correction (``ew_policy.correction_orders``,
-    identified by the gluon's vertices, never by an order's name) AND an
-    external leg is a massive quark with zero width at the check's
-    parameters: a fermion (``ew_policy.FERMION_SPIN``) of colour triplet or
-    anti-triplet (|colour| = 3; an antiquark's record carries -3) whose mass
-    parameter is not zero and whose width parameter is (``ew_policy.
-    is_zero`` on the probe request's fixed parameters: outside the
-    complex-mass scheme the probe zeroes every width, ``ew_policy.
-    probe_widths``). Every external leg is on shell at a check point
-    (``induced.probe_point``). Ward rows are not split by squared-order
-    sector, so a pure-QCD-loop sector of such a request is not checked
-    either."""
-
-    from .ew_policy import FERMION_SPIN, correction_orders, is_zero, request_corrections
-
-    compiled, request = target.compiled, target.request
-    fixed = request.fixed_parameters
-    strong = correction_orders(compiled, fixed).strong
-    others = sorted(set(request_corrections(compiled, request)) - {strong})
-    if not others:
-        return None
-    particles = {int(record.pdg_code): record for record in compiled.ir.particles}
-    parameters = {record.name: record for record in compiled.ir.parameters}
-    quarks = [
-        int(leg.label)
-        for leg in sorted(target.blocks.process.legs, key=lambda x: x.label)
-        if (record := particles.get(int(leg.pdg))) is not None
-        and int(record.spin) == FERMION_SPIN
-        and abs(int(record.color)) == 3
-        and not is_zero(str(record.mass), parameters, fixed)
-        and is_zero(str(record.width), parameters, fixed)
-    ]
-    if not quarks:
-        return None
-    return (
-        f"EW corrections ({', '.join(others)}) with an on-shell zero-width "
-        f"external massive quark ({_legs(quarks)}): the "
-        "gluon / photon Ward identity of the asymmetric check is not "
-        "guaranteed there (USER 2026-11-10); not evaluated, every "
-        "squared-order sector alike"
-    )
-
-
-def _not_applicable_ward(legs: Sequence[int], reason: str) -> CheckRow:
-    """The one Ward row of a process whose Ward rows are not applicable
-    (``ward_applicability``), naming the legs not checked."""
-
-    return CheckRow(
-        "ward",
-        "external gluons and photons",
-        None,
-        None,
-        NOT_APPLICABLE,
-        reason=f"{_legs(legs)} not checked: {reason}",
-    )
-
-
 def _legs(labels: Sequence[int]) -> str:
     return ("leg " if len(labels) == 1 else "legs ") + ", ".join(map(str, labels))
 
@@ -1155,7 +1097,7 @@ def born_interfered_rows(
     executor = NativeExecutor(target, inputs="native", forward=False, catani=True)
     tolerance_ = tolerance()
     legs = ward.gauge_legs(target)
-    excluded = ward_applicability(target) if legs else None
+    hints = ward.hint_legs(target, legs) if legs else {}
     stages = _stages(carriers, rung)
     # ``out``: the caller's list, which keeps the rows of an interrupted
     # check.
@@ -1244,11 +1186,13 @@ def born_interfered_rows(
             _unpredicted_rows(target, sectors, formed, index, {key[0] for key in cells})
         )
         # Ward identities on every gluon and photon leg.
-        if legs and excluded is None:
+        if legs:
             status(f"{_point_text(index, points)}: Ward identities, {_legs(legs)}")
-            rows.extend(_born_ward_rows(executor, index, stages, at, legs, tolerance_))
-    if excluded is not None:
-        rows.append(_not_applicable_ward(legs, excluded))
+            rows.extend(
+                _born_ward_rows(
+                    executor, index, stages, at, legs, tolerance_, hints=hints
+                )
+            )
     if not legs:
         rows.append(
             CheckRow(
@@ -1374,11 +1318,21 @@ def _ward_measures(physical: Any, result: Any) -> dict[Any, Measure]:
     |V_k| of the substituted evaluation, P = |V_k| of the physical one (E_P:
     its estimate where the physical evaluation ran its checks), T = the
     physical evaluation's largest part (``_largest_part``), E the
-    substituted evaluation's estimate. Every sector and coefficient of
-    either evaluation is required: one only one of them has is a missing
-    operand (incomplete: inconclusive), never skipped or vacuous."""
+    substituted evaluation's estimate. A pole coefficient whose Catani
+    prediction is exactly zero (``_predicted_zero``: it vanishes physically,
+    the double pole of a QED correction with massive emitters, and its value
+    and parts are of their own rounding's size) is a known-zero reference
+    judged term-relative, T at least the Born x alpha / (2 pi) floor
+    (``ward.scale_floor``); every other coefficient keeps its own P and T.
+    Every sector and coefficient of either evaluation is required: one only
+    one of them has is a missing operand (incomplete: inconclusive), never
+    skipped or vacuous."""
+
+    from . import ward
 
     out: dict[Any, Measure] = {}
+    floor = ward.scale_floor(physical)
+    predicted = getattr(physical, "ir_poles", None) or {}
     loop_born = result.loop_born
     born = physical.born or {}
     if loop_born is None:
@@ -1421,18 +1375,35 @@ def _ward_measures(physical: Any, result: Any) -> dict[Any, Measure]:
                 physical_error = magnitude(
                     physical_estimate.absolute[sector].coefficients[k]
                 )
+            terms = _largest_part(physical.components, sector, k)
+            zero = _predicted_zero(predicted, sector, k)
             out[label] = Measure(
                 label,
                 magnitude(laurent.coefficients[k]),
                 magnitude(mine.coefficients[k]),
-                _largest_part(physical.components, sector, k),
+                None if terms is None else (max(terms, floor) if zero else terms),
                 error,
                 physical_error,
+                zero_reference=zero,
             )
     return out
 
 
 COEFFICIENT_NAMES = ("finite", "1/eps", "1/eps^2")
+
+
+def _predicted_zero(predicted: Mapping[Any, Any], sector: Any, k: int) -> bool:
+    """Whether Catani's prediction (``PointResult.ir_poles``: (single,
+    double) per sector) is exactly zero for pole coefficient ``k`` of
+    ``sector``: the coefficient vanishes physically (never the finite one,
+    never without a prediction)."""
+
+    if k < 1 or sector not in predicted:
+        return False
+    try:
+        return complex(predicted[sector][k - 1]) == 0
+    except (ArithmeticError, IndexError, TypeError, ValueError):
+        return False
 
 
 def _ward_subject(leg: int, factor: Any) -> str:
@@ -1495,13 +1466,18 @@ def _born_ward_rows(
     at: Callable[[Any], tuple[Any, Any, Any]],
     legs: Sequence[int],
     tolerance_: float,
+    *,
+    hints: Mapping[int, Sequence[Any]] | None = None,
 ) -> list[CheckRow]:
     """The Ward rows of one point, per (leg, factor) and per required row
     (Born sector, virtual sector and coefficient) up the ladder of
     ``stages`` (``ladder_step``): each row keeps its first decision, a
     pending row absent from a later carrier is inconclusive, a refusal
     leaves the next carrier to try; one check row per (leg, factor) from
-    its rows' final verdicts (``row_from_cells``)."""
+    its rows' final verdicts (``row_from_cells``). A row of a leg with
+    unstable external legs (``hints``, ``ward.hint_legs``) whose finite cell
+    fails carries ``ward.unstable_hint`` in its reason, its verdict
+    unchanged (module docstring, "Unstable external legs: a hint")."""
 
     from . import ward
     from .plan_export import FailedPoints
@@ -1555,17 +1531,26 @@ def _born_ward_rows(
                 )
             )
             continue
-        rows.append(
-            row_from_cells(
-                "ward",
-                _ward_subject(*key),
-                index,
-                finished(cells[key]),
-                tolerance_,
-                improvements,
-                stages,
-            )
+        final = finished(cells[key])
+        row = row_from_cells(
+            "ward",
+            _ward_subject(*key),
+            index,
+            final,
+            tolerance_,
+            improvements,
+            stages,
         )
+        unstable = (hints or {}).get(key[0])
+        if unstable and any(
+            cell.verdict == FAIL
+            and str(label).endswith(f" {COEFFICIENT_NAMES[0]}")
+            and not str(label).startswith("Born")
+            for label, cell in final.items()
+        ):
+            note = ward.unstable_hint(unstable)
+            row = _with(row, reason=note if not row.reason else f"{row.reason}; {note}")
+        rows.append(row)
     return rows
 
 
@@ -1605,8 +1590,7 @@ def induced_rows(
         out.extend(zero)
         return out
     legs = induced.probe_legs(target)
-    excluded = ward_applicability(target) if legs else None
-    probed = legs if excluded is None else []
+    probed = legs
     executor = NativeExecutor(
         target,
         forward=False,
@@ -1675,8 +1659,6 @@ def induced_rows(
                 reason="the process has no external gluon or photon",
             )
         )
-    if excluded is not None:
-        rows.append(_not_applicable_ward(legs, excluded))
     if applicability is not None:
         rows.append(
             CheckRow(
@@ -1929,5 +1911,4 @@ __all__ = [
     "threshold",
     "tolerance",
     "tolerating",
-    "ward_applicability",
 ]
