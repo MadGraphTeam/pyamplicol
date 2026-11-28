@@ -4,7 +4,8 @@
 Since SymJIT 2.28.4 the pages of dropped machine code are freed and reused
 for the next kernel; on aarch64 that needs an instruction-cache flush
 (SymJIT 2.28.5), or the core may run the previous kernel's instructions.
-The check compiles, evaluates and drops distinct kernels and reloads an
+The check compiles, executes and drops distinct kernels outside the kernel
+cache (requiring that some of them ran on vacated pages) and reloads an
 on-the-fly artifact, comparing every value bit for bit. CI runs the same
 check on each architecture's consumer job (``tools/ci/eager_portability.py
 consume``, macOS arm64 included).
@@ -36,4 +37,6 @@ def test_kernels_on_reused_code_pages_keep_their_values(artifact: Path) -> None:
     counts = reused_code_pages_check(
         artifact, on_shell_points(PROCESS)[0], process="e_e_to_mu_mu"
     )
-    assert counts == {"kernels": 40, "load_cycles": 20}
+    assert counts["kernels"] == 400 and counts["load_cycles"] == 20
+    # Kernels ran on addresses that earlier, executed kernels had vacated.
+    assert counts["reused"] > 0

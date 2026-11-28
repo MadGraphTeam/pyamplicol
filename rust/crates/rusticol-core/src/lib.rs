@@ -50,6 +50,7 @@ pub mod source_scalar;
 pub mod specialization_guards;
 #[cfg(feature = "symbolica-runtime")]
 pub mod symbol_order;
+mod symjit_huge_pages;
 
 pub use artifact::{
     ArtifactKind, ArtifactManifest, ArtifactProcess, ArtifactSelection, Payload, PayloadRole,
@@ -227,6 +228,18 @@ pub mod __private {
     #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
     pub fn symjit_plane_code_builds() -> usize {
         crate::engine::plane_code_builds()
+    }
+
+    /// Unstable diagnostic bridge: `rounds` SymJIT kernels compiled,
+    /// executed and dropped in turn outside the kernel cache, each on pages
+    /// an earlier one may have vacated; `(rounds, reused)` or the error of a
+    /// wrong value or of no observed reuse.
+    #[doc(hidden)]
+    #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
+    pub fn symjit_reused_code_pages_selftest(
+        rounds: usize,
+    ) -> crate::RusticolResult<(usize, usize)> {
+        crate::engine::reused_code_pages_selftest(rounds)
     }
 
     /// Unstable cold-path bridge: evaluate a stored complex plane application

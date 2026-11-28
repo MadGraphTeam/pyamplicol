@@ -1049,7 +1049,7 @@ def test_consumer_finishes_generation_before_native_parent_work(
     def reused_code_pages(*_args, **_kwargs):
         assert events[-1] == "evaluate"
         events.append("reused-code-pages")
-        return {"kernels": 40, "load_cycles": 20}
+        return {"kernels": 400, "reused": 399, "load_cycles": 20}
 
     monkeypatch.setattr(portability, "_run", child)
     monkeypatch.setattr(portability, "_preflight_all_prepared_applications", preflight)

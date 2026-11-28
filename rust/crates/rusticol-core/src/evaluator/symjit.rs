@@ -70,7 +70,9 @@ impl SymjitApplicationEvaluator {
         // `$SYMJIT_TOML` and panics on an unreadable or malformed file.
         let mut loader_config = super::symjit_plane::explicit_loader_config()?;
         loader_config.set_defuns(Defuns::new());
-        let mut input = bytes;
+        // Never on huge pages (`crate::symjit_huge_pages`).
+        let stored = crate::symjit_huge_pages::without_huge_pages(bytes);
+        let mut input = stored.as_ref();
         let application = guard_symjit_panic(
             || Application::load(&mut input, &loader_config),
             |detail| {
@@ -700,6 +702,23 @@ mod tests {
         evaluator.evaluate_batch(2, &params, &mut outputs).unwrap();
         assert_eq!(outputs[0], Complex::new(4.0, 6.0));
         assert_eq!(outputs[1], Complex::new(3.0, 1.0));
+        let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn an_application_that_asks_for_huge_pages_loads_on_ordinary_pages() {
+        // SymJIT 2.28.5 frees huge pages through the wrong allocator: the
+        // stored option is cleared before the load (`crate::symjit_huge_pages`).
+        let bytes = crate::symjit_huge_pages::with_huge_pages(&application_bytes());
+        assert!(crate::symjit_huge_pages::asks_for_huge_pages(&bytes));
+        let path = write_application(&bytes, "huge");
+        let mut evaluator = SymjitApplicationEvaluator::load(&path, metadata(&[])).unwrap();
+        assert!(!evaluator.applet.config.huge());
+        let params = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut outputs = [Complex::new(0.0, 0.0); 1];
+        evaluator.evaluate_batch(1, &params, &mut outputs).unwrap();
+        assert_eq!(outputs[0], Complex::new(4.0, 6.0));
+        drop(evaluator);
         let _ = fs::remove_file(path);
     }
 

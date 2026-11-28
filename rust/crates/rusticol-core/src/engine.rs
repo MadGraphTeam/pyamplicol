@@ -5108,7 +5108,7 @@ pub(crate) use evaluator::symjit_plane::{
 };
 #[cfg(feature = "python-generation-bridge")]
 pub(crate) use evaluator::symjit_plane::{
-    plane_code_builds, plane_code_cache_len, symjit_cpu_features,
+    plane_code_builds, plane_code_cache_len, reused_code_pages_selftest, symjit_cpu_features,
 };
 use evaluator::*;
 #[cfg(feature = "symbolica-runtime")]

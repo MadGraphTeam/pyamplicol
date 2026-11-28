@@ -2601,6 +2601,15 @@ fn unsupported_capability(capability: &str) -> RusticolError {
     )
 }
 
+/// The saved JIT settings with SymJIT's huge pages off: a compilation with
+/// them starts from `Config::default()` (`./symjit.toml`, `$SYMJIT_TOML`) and
+/// applies the saved options, either of which could ask for huge pages
+/// (`crate::symjit_huge_pages`).
+#[cfg(feature = "symbolica-runtime")]
+pub(crate) fn without_huge_page_option(settings: JITCompilationSettings) -> JITCompilationSettings {
+    settings.with_option("huge", "false")
+}
+
 #[cfg(feature = "symbolica-runtime")]
 type LoadedEvaluatorState = (
     JITCompilationSettings,
@@ -2663,15 +2672,19 @@ fn load_evaluator_state_bytes(
     } else {
         symbolica::state::StateMap::default()
     };
+    // Decoding the JIT members loads their stored SymJIT applications: never
+    // on huge pages (`crate::symjit_huge_pages`), neither these nor a later
+    // compilation with the saved settings.
+    let payload = crate::symjit_huge_pages::without_huge_pages(payload);
     let ((_, settings, evaluator, _, jit_complex), consumed) =
         bincode::decode_from_slice_with_context::<_, SavedEvaluator, _>(
-            payload,
+            &payload,
             bincode::config::standard(),
             state_map,
         )
         .map_err(|error| incompatible(&error))?;
     ensure_evaluator_state_consumed(display_name, payload.len(), consumed)?;
-    Ok((settings, evaluator, jit_complex))
+    Ok((without_huge_page_option(settings), evaluator, jit_complex))
 }
 
 /// The leading bytes of Python Symbolica's `Evaluator.save()`; the envelope
@@ -2833,8 +2846,11 @@ pub(crate) fn canonical_saved_evaluator(bytes: &[u8]) -> RusticolResult<Option<V
         Ok::<_, RusticolError>((section.len() - rest.len(), state_map))
     };
     let decode = |payload: &[u8], state_map: &StateMap| {
+        // The JIT members' stored applications load at decode: never on huge
+        // pages (`crate::symjit_huge_pages`).
+        let payload = crate::symjit_huge_pages::without_huge_pages(payload);
         bincode::decode_from_slice_with_context::<_, SavedEvaluator, _>(
-            payload,
+            &payload,
             bincode::config::standard(),
             BorrowedStateMap(state_map),
         )
@@ -3998,5 +4014,89 @@ mod aosoa_tests {
             pack_f64_parameters_aosoa(&source[..7], 2, 4, 2, 4, Some(&[0, 1]), &mut scratch)
                 .is_err()
         );
+    }
+}
+
+#[cfg(all(test, feature = "symbolica-runtime"))]
+mod huge_page_tests {
+    //! A saved Symbolica evaluator whose JIT member or settings ask for huge
+    //! pages loads and compiles on ordinary pages (`crate::symjit_huge_pages`:
+    //! SymJIT 2.28.5 would free huge pages through the wrong allocator).
+    use super::*;
+    use symbolica::{atom::AtomCore, parse};
+
+    fn evaluator() -> ExpressionEvaluator<Complex<Rational>> {
+        parse!("pyamplicol_huge_pages::x * pyamplicol_huge_pages::y + 3")
+            .evaluator(&[
+                parse!("pyamplicol_huge_pages::x"),
+                parse!("pyamplicol_huge_pages::y"),
+            ])
+            .build()
+            .unwrap()
+    }
+
+    /// A version 2 save without a state section (no symbolic data).
+    fn save(
+        settings: JITCompilationSettings,
+        jit: Option<JITCompiledEvaluator<Complex<f64>>>,
+    ) -> Vec<u8> {
+        let payload = bincode::encode_to_vec(
+            (
+                true,
+                settings,
+                &evaluator(),
+                None::<JITCompiledEvaluator<f64>>,
+                jit,
+            ),
+            bincode::config::standard(),
+        )
+        .unwrap();
+        let mut bytes = SAVED_EVALUATOR_MAGIC.to_vec();
+        bytes.extend([SAVED_EVALUATOR_V2, 1, 0]);
+        bytes.extend_from_slice(&payload);
+        bytes
+    }
+
+    fn value(jit: &mut JITCompiledEvaluator<Complex<f64>>) -> Complex<f64> {
+        let mut output = [Complex::new(0.0, 0.0)];
+        jit.evaluate(
+            &[Complex::new(1.5, 0.0), Complex::new(-2.0, 0.5)],
+            &mut output,
+        );
+        output[0]
+    }
+
+    fn a_stored_jit_member_that_asks_for_huge_pages_loads_on_ordinary_pages() {
+        let jit = evaluator()
+            .jit_compile::<Complex<f64>>(JITCompilationSettings::default())
+            .unwrap();
+        let (bytes, embedded) = crate::symjit_huge_pages::with_embedded_huge_pages(&save(
+            JITCompilationSettings::default(),
+            Some(jit),
+        ));
+        assert!(embedded >= 1, "the JIT member stores a SymJIT application");
+        let (_, _, jit) = load_evaluator_state_bytes(&bytes, "huge-pages member").unwrap();
+        let mut jit = jit.expect("the JIT member is kept");
+        assert_eq!(value(&mut jit), Complex::new(0.0, 0.75));
+    }
+
+    fn saved_settings_that_ask_for_huge_pages_compile_on_ordinary_pages() {
+        let bytes = save(
+            JITCompilationSettings::default().with_option("huge", "true"),
+            None,
+        );
+        let (settings, exact, jit) =
+            load_evaluator_state_bytes(&bytes, "huge-pages settings").unwrap();
+        assert!(jit.is_none());
+        let mut jit = exact.jit_compile::<Complex<f64>>(settings).unwrap();
+        assert_eq!(value(&mut jit), Complex::new(0.0, 0.75));
+    }
+
+    /// One test for both routes: an unlicensed Symbolica admits one thread
+    /// per process.
+    #[test]
+    fn saved_evaluators_that_ask_for_huge_pages_run_on_ordinary_pages() {
+        a_stored_jit_member_that_asks_for_huge_pages_loads_on_ordinary_pages();
+        saved_settings_that_ask_for_huge_pages_compile_on_ordinary_pages();
     }
 }

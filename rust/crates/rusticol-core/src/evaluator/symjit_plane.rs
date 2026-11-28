@@ -392,6 +392,101 @@ pub(crate) fn plane_code_cache_len() -> usize {
         .count()
 }
 
+/// Kernels on pages that earlier, executed kernels vacated run their own
+/// code (the self-test of SymJIT's instruction-cache flush for reused code
+/// pages, which matters on aarch64; x86-64 is coherent and passes with or
+/// without it).
+///
+/// Bypasses the process-wide kernel cache: each round compiles a kernel
+/// with SymJIT's own translator (four shapes in turn, a different constant
+/// each round, as upstream's `reused_code_pages` test), executes it,
+/// compares its value bit for bit with the exact one (dyadic inputs) and
+/// drops it, which frees its pages for the next round's kernel. Returns
+/// `(rounds, reused)`, `reused` = the rounds whose kernel ran at an address
+/// an earlier, executed and dropped kernel had used; an error when a value
+/// differs, or when no round ran on a vacated address (then the self-test
+/// would prove nothing).
+#[cfg(any(test, feature = "python-generation-bridge"))]
+pub(crate) fn reused_code_pages_selftest(rounds: usize) -> RusticolResult<(usize, usize)> {
+    use num_complex::Complex;
+    use symjit::{Composer, Slot, Translator};
+
+    let (x, y) = (1.25_f64, -3.5_f64);
+    let mut addresses = std::collections::HashSet::new();
+    let mut reused = 0;
+    for round in 0..rounds {
+        let shape = round % 4;
+        let c = round as f64 + 0.5;
+        let expected = match shape {
+            0 => x * c,
+            1 => x + c,
+            2 => x * y + c,
+            _ => (x + c) * y,
+        };
+        let config = explicit_loader_config()?;
+        let application = guard_symjit_panic(
+            || -> Result<Application, String> {
+                let text = |error: &dyn std::fmt::Display| error.to_string();
+                let mut translator = Translator::new(config);
+                translator.set_num_params(2);
+                let k = Slot::Const(
+                    translator
+                        .append_constant(Complex::new(c, 0.0))
+                        .map_err(|e| text(&e))?,
+                );
+                let (p, q) = (Slot::Param(0), Slot::Param(1));
+                let built = match shape {
+                    0 => translator.append_mul(&Slot::Out(0), &[p, k], 0),
+                    1 => translator.append_add(&Slot::Out(0), &[p, k], 0),
+                    2 => translator
+                        .append_mul(&Slot::Temp(0), &[p, q], 0)
+                        .and_then(|()| {
+                            translator.append_add(&Slot::Out(0), &[Slot::Temp(0), k], 0)
+                        }),
+                    _ => translator
+                        .append_add(&Slot::Temp(0), &[p, k], 0)
+                        .and_then(|()| {
+                            translator.append_mul(&Slot::Out(0), &[Slot::Temp(0), q], 0)
+                        }),
+                };
+                built.map_err(|e| text(&e))?;
+                translator.compile().map_err(|e| text(&e))
+            },
+            || format!("compile reused-code-pages kernel {round}"),
+        )?
+        .map_err(|error| {
+            RusticolError::internal(format!(
+                "could not compile reused-code-pages kernel {round}: {error}"
+            ))
+        })?;
+        let address = application
+            .as_applet()
+            .scalar_ptr()
+            .map(|kernel| kernel as usize)
+            .ok_or_else(|| {
+                RusticolError::internal("reused-code-pages kernel has no machine code")
+            })?;
+        if !addresses.insert(address) {
+            reused += 1;
+        }
+        let got = application.evaluate_single(&[x, y]);
+        if got.to_bits() != expected.to_bits() {
+            return Err(RusticolError::evaluation(format!(
+                "kernel {round} (shape {shape}) at {address:#x} computed {got:e}, \
+                 expected {expected:e}: stale instructions on a reused code page?"
+            )));
+        }
+        drop(application);
+    }
+    if reused == 0 {
+        return Err(RusticolError::internal(format!(
+            "no reused-code-pages kernel ran at an address an earlier kernel had \
+             vacated ({rounds} rounds): the self-test proved nothing"
+        )));
+    }
+    Ok((rounds, reused))
+}
+
 /// P-kernel builds started in this process so far (each compiles a kernel:
 /// with the cache, one per distinct application, plus retries of failures).
 #[cfg(feature = "python-generation-bridge")]
@@ -452,7 +547,9 @@ impl SymjitPlaneKernel {
         let display_path = display_path.to_path_buf();
         let mut loader_config = explicit_loader_config()?;
         loader_config.set_defuns(scalar_primitive_defuns()?);
-        let mut input = bytes;
+        // Never on huge pages (`crate::symjit_huge_pages`).
+        let stored = crate::symjit_huge_pages::without_huge_pages(bytes);
+        let mut input = stored.as_ref();
         let mut application = guard_symjit_panic(
             || Application::load(&mut input, &loader_config),
             || format!("load plane application {}", display_path.display()),
@@ -3520,5 +3617,35 @@ mod tests {
                 .iter()
                 .all(|kernel| Arc::ptr_eq(&kernel.code, &kernels[0].code))
         );
+    }
+
+    #[test]
+    fn a_plane_application_that_asks_for_huge_pages_loads_on_ordinary_pages() {
+        let bytes = crate::symjit_huge_pages::with_huge_pages(&application_bytes(false, 2));
+        assert!(crate::symjit_huge_pages::asks_for_huge_pages(&bytes));
+        let kernel =
+            SymjitPlaneKernel::load_bytes(&bytes, "huge.symjit", SymjitPlaneLayout::real(2, 1))
+                .unwrap();
+        assert!(!kernel.applet.config.huge());
+        let len = 5;
+        let mut x = guarded_plane(len, |i| i as f64 + 0.5);
+        let mut y = guarded_plane(len, |i| 2.0 * i as f64);
+        let mut out = guarded_plane(len, |_| 0.0);
+        let table = kernel
+            .build_table(vec![&mut x[1..=len], &mut y[1..=len], &mut out[1..=len]])
+            .unwrap();
+        execute_forced_scalar(&kernel, &table, len);
+        drop(table);
+        for i in 0..len {
+            let xi = i as f64 + 0.5;
+            assert_eq!(out[i + 1], xi * xi + 2.0 * i as f64);
+        }
+    }
+
+    #[test]
+    fn kernels_on_reused_code_pages_run_their_own_code() {
+        let (rounds, reused) = reused_code_pages_selftest(400).unwrap();
+        assert_eq!(rounds, 400);
+        assert!(reused > 0);
     }
 }
