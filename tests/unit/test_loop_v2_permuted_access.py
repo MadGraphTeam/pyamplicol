@@ -38,6 +38,7 @@ import pytest
 from tests.unit.test_loop_v2_mapping import (
     PARAMETERS,
     POINTS,
+    POINTS_5,
     SCALES,
     _generate,
     mapped,  # noqa: F401  (the mapping artifact fixture)
@@ -545,22 +546,44 @@ def test_the_native_sdk_serves_mapped_correlations(mapped):  # noqa: F811
 
 # -- a reference colour order -----------------------------------------------
 
-# (stored process, its spelling, the reference colour order of the card)
+# (stored process, its spelling, the colour selectors of the card)
 REFERENCED = {
-    "gluon": (("ug", "u g > u g"), ("gu", "g u > g u"), [3, 4, 2, 1]),
-    "quarks": (("du", "d u > d u"), ("ud", "u d > u d"), [3, 1, 4, 2]),
+    "gluon": (
+        ("ug", "u g > u g"),
+        ("gu", "g u > g u"),
+        "reference_color_order = [3, 4, 2, 1]",
+    ),
+    "quarks": (
+        ("du", "d u > d u"),
+        ("ud", "u d > u d"),
+        "reference_color_order = [3, 1, 4, 2]",
+    ),
+    "fixed": (
+        ("ug", "u g > u g"),
+        ("gu", "g u > g u"),
+        "reference_color_order = [4, 1, 3, 2]\nselected_color_sector_ids = [0]",
+    ),
+    "reference-cap": (
+        ("ug", "u g > u g"),
+        ("gu", "g u > g u"),
+        "reference_color_order = [3, 4, 2, 1]\nmax_color_sectors = 1",
+    ),
+    "two-sectors": (
+        ("uuxggg", "u u~ > g g g"),
+        ("uxuggg", "u~ u > g g g"),
+        "selected_color_sector_ids = [1, 3]",
+    ),
 }
 
 
 @pytest.fixture(scope="module", params=sorted(REFERENCED))
 def referenced(request, loop_sm_compiled_model, loop_native, tmp_path_factory):
-    """At leading colour, a card with ``process.reference_color_order``:
-    the stored process, and the spelling generated on its own with the same
-    card."""
+    """At leading colour, a card with colour selectors (a reference colour
+    order, fixed sector ids): the stored process, and the spelling generated
+    on its own with the same card."""
 
     del loop_native
-    stored_entry, single_entry, order = REFERENCED[request.param]
-    option = f"reference_color_order = {order}"
+    stored_entry, single_entry, option = REFERENCED[request.param]
     artifacts = [
         _generate(
             loop_sm_compiled_model,
@@ -573,38 +596,121 @@ def referenced(request, loop_sm_compiled_model, loop_native, tmp_path_factory):
         )
         for which, entry in (("stored", stored_entry), ("single", single_entry))
     ]
-    return (*artifacts, single_entry)
+    return (*artifacts, single_entry, stored_entry[0])
 
 
-def test_a_reference_colour_order_keeps_the_fresh_spellings_ordinals(referenced):
+def test_colour_selectors_keep_the_fresh_spellings_ordinals(referenced):
     """A reference colour order names the legs of the spelling it is written
-    for: a mapped process lists its flows as the spelling generated on its
-    own with the same card does (the plan of that spelling with the card's
-    reference), so every ordinal and every ID selects the flow the fresh
-    artifact's ordinal and ID select (the reference sector first), with its
-    value; the stored spelling keeps its own ordinals."""
+    for and a sector id a position in that spelling's plan. One rule: where
+    the spelling generated on its own with the same card publishes the same
+    flows as the mapped process, the mapped process lists them in its order
+    and every ordinal selects what the fresh ordinal selects, none beyond
+    its length; where they differ, every ordinal is refused typed. Every ID
+    the two share selects the same value; the stored spelling keeps its
+    ordinals."""
 
-    stored, single, (name, spelling) = referenced
+    from pyamplicol.api.errors import CompatibilityError, EvaluationError
+
+    stored, single, (name, spelling), stored_name = referenced
     mapped_, own = _load(stored, spelling), _load(single, name)
-    flows = [a.id for a in mapped_.physics.born_anchored_color_components]
-    assert flows == [a.id for a in own.physics.born_anchored_color_components]
-    scale = _scale(mapped_.evaluate(POINTS, mu_r2=SCALES))
-    for ordinal, flow in enumerate(flows, start=1):
-        for selector in (flow, str(ordinal)):
-            left = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[selector])
-            right = own.evaluate(POINTS, mu_r2=SCALES, color_flows=[selector])
-            _close(left, right, scale, selector)
-        by_id = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[flow])
-        by_ordinal = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[str(ordinal)])
-        assert _numbers(by_id) == _numbers(by_ordinal)
-    stored_name = next(
-        entry[0][0] for entry in REFERENCED.values() if entry[1][1] == spelling
+    points, scales = (
+        (POINTS_5, SCALES[:1]) if len(spelling.split()) == 6 else (POINTS, SCALES)
     )
+    flows = [a.id for a in mapped_.physics.born_anchored_color_components]
+    fresh = [a.id for a in own.physics.born_anchored_color_components]
+    scale = _scale(own.evaluate(points, mu_r2=scales))
+    for flow in set(flows) & set(fresh):
+        left = mapped_.evaluate(points, mu_r2=scales, color_flows=[flow])
+        right = own.evaluate(points, mu_r2=scales, color_flows=[flow])
+        _close(left, right, scale, flow)
+    if sorted(flows) == sorted(fresh):
+        assert flows == fresh
+        for ordinal, flow in enumerate(flows, start=1):
+            left = mapped_.evaluate(points, mu_r2=scales, color_flows=[str(ordinal)])
+            right = own.evaluate(points, mu_r2=scales, color_flows=[str(ordinal)])
+            _close(left, right, scale, ordinal)
+            by_id = mapped_.evaluate(points, mu_r2=scales, color_flows=[flow])
+            assert _numbers(by_id) == _numbers(left)
+    else:
+        for ordinal in range(1, len(flows) + 1):
+            with pytest.raises(CompatibilityError) as error:
+                mapped_.evaluate(points, mu_r2=scales, color_flows=[str(ordinal)])
+            assert "select the flow by its ID" in str(error.value)
+    # No ordinal beyond the fresh list (out of range, or refused typed).
+    with pytest.raises((EvaluationError, CompatibilityError)):
+        mapped_.evaluate(points, mu_r2=scales, color_flows=[str(len(fresh) + 1)])
     stored_runtime = _load(stored, stored_name)
     first = stored_runtime.physics.born_anchored_color_components[0].id
     assert _numbers(
-        stored_runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=["1"])
-    ) == _numbers(stored_runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=[first]))
+        stored_runtime.evaluate(points, mu_r2=scales, color_flows=["1"])
+    ) == _numbers(stored_runtime.evaluate(points, mu_r2=scales, color_flows=[first]))
+
+
+SUBSETS = {"cap": "max_color_sectors = 1", "fixed": "selected_color_sector_ids = [0]"}
+SWAP = ("uugg_swap", "uugg", (0, 1, 3, 2))
+
+
+@pytest.fixture(scope="module")
+def complete_uugg(loop_sm_compiled_model, loop_native, tmp_path_factory):
+    del loop_native
+    return _generate(
+        loop_sm_compiled_model,
+        tmp_path_factory.mktemp("complete-uugg"),
+        (("uugg", "u u~ > g g"),),
+        histories=[],
+        spin=[],
+        accuracy="lc",
+    )
+
+
+@pytest.fixture(scope="module", params=sorted(SUBSETS))
+def subset(request, loop_sm_compiled_model, loop_native, tmp_path_factory):
+    """u u~ > g g at leading colour with one sector kept (a cap of 1, or the
+    fixed sector 0), and its alias exchanging the outgoing gluons."""
+
+    del loop_native
+    return _generate(
+        loop_sm_compiled_model,
+        tmp_path_factory.mktemp(f"subset-{request.param}"),
+        (("uugg", "u u~ > g g"),),
+        (SWAP,),
+        process=SUBSETS[request.param],
+        histories=[],
+        spin=[],
+        accuracy="lc",
+    )
+
+
+def test_a_subset_that_keeps_other_flows_on_the_mapped_legs_refuses_ordinals(
+    subset, complete_uugg
+):
+    """With one sector kept and no reference, the alias exchanging the
+    outgoing gluons is served flow:2,4,3,1 (the stored flow:2,3,4,1 on its
+    legs), while a fresh artifact of its spelling with the same card keeps
+    flow:2,3,4,1: its ordinal is refused typed (never the fresh ordinal's
+    other flow), and its ID keeps its meaning (the complete artifact's
+    flow:2,4,3,1)."""
+
+    from pyamplicol.api.errors import CompatibilityError
+
+    alias, stored = _load(subset, "uugg_swap"), _load(subset, "uugg")
+    assert [a.id for a in stored.physics.born_anchored_color_components] == [
+        "flow:2,3,4,1"
+    ]
+    assert [a.id for a in alias.physics.born_anchored_color_components] == [
+        "flow:2,4,3,1"
+    ]
+    with pytest.raises(CompatibilityError) as error:
+        alias.evaluate(POINTS, mu_r2=SCALES, color_flows=["1"])
+    assert "select the flow by its ID" in str(error.value)
+    complete = _load(complete_uugg, "uugg")
+    left = alias.evaluate(POINTS, mu_r2=SCALES, color_flows=["flow:2,4,3,1"])
+    right = complete.evaluate(POINTS, mu_r2=SCALES, color_flows=["flow:2,4,3,1"])
+    _close(left, right, _scale(complete.evaluate(POINTS, mu_r2=SCALES)), "swap")
+    # The stored spelling keeps its ordinal.
+    assert _numbers(stored.evaluate(POINTS, mu_r2=SCALES, color_flows=["1"])) == (
+        _numbers(stored.evaluate(POINTS, mu_r2=SCALES, color_flows=["flow:2,3,4,1"]))
+    )
 
 
 def test_ordinals_no_listing_reproduces_are_refused():

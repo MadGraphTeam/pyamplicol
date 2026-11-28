@@ -635,9 +635,10 @@ class Catalogue:
             raise CompatibilityError(
                 f"colour-flow ordinal {name!r} is not available for this process: "
                 "it is served by a stored process through a leg mapping, its "
-                "request carries a reference colour order and the plan of this "
-                "spelling with that reference lists other flows than the stored "
-                "process's, so its flows are not numbered as a single-process "
+                "request's colour selectors (a reference colour order, a sector "
+                "cap or fixed sector ids) applied to this spelling keep other "
+                "flows than the stored process's, so its flows are not numbered "
+                "as a single-process "
                 "artifact of this spelling numbers them; select the flow by its ID "
                 "(flow:<word>, physics.born_anchored_color_components)"
             )

@@ -1900,22 +1900,27 @@ class V2VirtualRuntime:
                 for record in compiled.ir.particles
             },
         )
-        # A mapped process of a request with a reference colour order: the
-        # reference names the legs of the spelling it was written for, so a
-        # fresh artifact of the mapped spelling generated with the same card
-        # puts first the sector the reference names on ITS legs. Its flow
-        # order is the tree engine's plan of that spelling with the card's
-        # reference and sector cap (``selection.leading_colour_plan``,
-        # ``plan_flows``: how generation numbers a fresh artifact's flows),
-        # built here from the stored model (``_public_flows``).
+        # A mapped process of a request whose colour selectors shape the flow
+        # list (``reference_color_order``, ``max_color_sectors``,
+        # ``selected_color_sector_ids``): a fresh artifact of the mapped
+        # spelling generated with the same card applies them to the plan of
+        # ITS legs (the reference names the legs of the spelling it is written
+        # for; a cap and a sector id count positions in that plan). The card's
+        # selectors are the artifact's effective configuration's (the stored
+        # request keeps a cap only where it removed a stored flow); the fresh
+        # flow list is rebuilt as generation builds it
+        # (``loop_service._slice_selection``: ``selection.leading_colour_plan``
+        # with the reference and the cap, ``plan_flows``, kept by sector id).
+        # ``_public_flows`` lists the mapped flows in that order when the two
+        # lists hold the same flows; otherwise ordinals are refused.
         self._fresh_flow_order: tuple[str, ...] | None = None
-        chosen = execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
+        card = self._card_selectors = _card_colour_selectors(manifest)
         if (
             group_member is not None
             and self._member is not None
             and self._member.alias
-            and chosen.get("color_order") is not None
             and physics["metadata"]["color_accuracy"] == "lc"
+            and card
         ):
             from .selection import leading_colour_plan, plan_flows
 
@@ -1923,11 +1928,14 @@ class V2VirtualRuntime:
                 plan = leading_colour_plan(
                     compiled,
                     str(group_member.expression),
-                    max_sectors=chosen.get("max_sectors"),
-                    reference_color_order=tuple(chosen["color_order"]),
+                    max_sectors=card.get("max_color_sectors"),
+                    reference_color_order=card.get("reference_color_order"),
                 )
+                wanted = card.get("selected_color_sector_ids")
                 self._fresh_flow_order = tuple(
-                    flow.id for flow in plan_flows(plan, None)
+                    flow.id
+                    for flow in plan_flows(plan, ())
+                    if wanted is None or flow.sector in wanted
                 )
             except (ValueError, KeyError, TypeError):
                 self._fresh_flow_order = None
@@ -2559,10 +2567,10 @@ class V2VirtualRuntime:
             return flows
         if not self._color_reference():
             return member_flows(flows, self._member.legs, self._colours)
-        # A reference colour order: the order of the spelling's own plan with
-        # the card's reference (``_fresh_flow_order``), when it lists exactly
-        # these flows; else the stored order, selected by ID only
-        # (``_ordinals_refused``).
+        # Colour selectors that shape the flow list: the order of the
+        # spelling's own plan with the card's selectors (``_fresh_flow_order``),
+        # when it lists exactly these flows; else the stored order, selected by
+        # ID only (``_ordinals_refused``).
         found = member_flows(flows, self._member.legs, self._colours, keep_order=True)
         order = self._fresh_flow_order
         if order is None or sorted(order) != sorted(flow.id for flow in found):
@@ -2571,18 +2579,22 @@ class V2VirtualRuntime:
         return tuple(sorted(found, key=lambda flow: position[flow.id]))
 
     def _color_reference(self) -> bool:
-        """Whether the request carries a reference colour order."""
+        """Whether the card's colour selectors may shape the flow list (a
+        reference colour order, a sector cap or fixed sector ids; the
+        artifact's effective configuration, else the stored request)."""
 
+        if self._card_selectors is not None:
+            return bool(self._card_selectors)
         chosen = self._execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
-        return chosen.get("color_order") is not None
+        return chosen.get("color_order") is not None or chosen.get("flows") is not None
 
     def _ordinals_refused(self) -> bool:
-        """Whether a mapped process's flow ordinals are refused: its request
-        carries a reference colour order and the plan of its own spelling
-        with that reference does not list exactly the stored flows (a
-        sector cap or a flow selection that keeps other flows on its legs),
-        so no listing reproduces a fresh artifact's ordinals; flows are then
-        selected by ID (``selection.Catalogue.ordinals``)."""
+        """Whether a mapped process's flow ordinals are refused: its
+        request's colour selectors shape the flow list and the plan of its
+        own spelling with those selectors does not list exactly the stored
+        flows (they keep other flows on its legs), so no listing reproduces
+        a fresh artifact's ordinals; flows are then selected by ID
+        (``selection.Catalogue.ordinals``)."""
 
         if self._member is None or not self._member.alias:
             return False
@@ -3762,6 +3774,32 @@ class V2VirtualRuntime:
 
     def unmute_warnings(self) -> None:
         """No effect: v2 runtimes emit no runtime warnings."""
+
+
+def _card_colour_selectors(manifest: Any) -> dict[str, Any] | None:
+    """The card's leading-colour selectors (``[process]``
+    ``reference_color_order``, ``max_color_sectors``,
+    ``selected_color_sector_ids``, those that are set) from the artifact's
+    effective configuration (``config/effective.toml``), or None when it
+    cannot be read."""
+
+    import tomllib
+
+    try:
+        text = (manifest.root / "config" / "effective.toml").read_text()
+        process = tomllib.loads(text).get("process", {})
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    out: dict[str, Any] = {}
+    order = process.get("reference_color_order")
+    if order:
+        out["reference_color_order"] = tuple(int(x) for x in order)
+    if process.get("max_color_sectors") is not None:
+        out["max_color_sectors"] = int(process["max_color_sectors"])
+    wanted = process.get("selected_color_sector_ids")
+    if wanted:
+        out["selected_color_sector_ids"] = frozenset(int(x) for x in wanted)
+    return out
 
 
 def _mapping_kind(record: Mapping[str, Any], group_member: Any) -> str:
