@@ -28,6 +28,24 @@ pyamplicol inspect artifacts/pp_zjj
 pyamplicol inspect artifacts/pp_zjj --process p_p_to_z_j_j_3
 ```
 
+An unnamed request is named after its expression (`~` becomes `bar`, `>`
+becomes `_to_`, other punctuation `_`). That readable name drops charge signs,
+so two requests of one call can share it (`u mu- > u mu-` and
+`u mu+ > u mu+` both read `u_mu_to_u_mu`). Such requests, and an unnamed
+request whose readable name is already taken by an explicitly named request, a
+process alias, or another process or alias of the artifact an `append` extends,
+are named
+`<readable name>_<first ten hexadecimal digits of the SHA-256 of the
+expression>` instead, for example `u_mu_to_u_mu_cfd36ea45d`. Every other
+request keeps its readable name. A request is unnamed however it is passed: an
+expression, `ProcessRequest.parse(expression)` without a name (its
+`automatic_name` is true), a list of them or a `ProcessSet`, including
+`ProcessSet.from_expressions`. Name requests explicitly (a run-card
+`process.entries` name, `ProcessRequest.parse(..., name=...)`) to choose the
+IDs yourself; an explicit name is never changed, and one that is already taken
+(also an explicit alias name) is an error (`ProcessIdCollisionError`), raised
+before anything is written.
+
 The same process can be selected with a readable expression:
 
 ```console
@@ -272,6 +290,19 @@ process.
 
 Those seven evaluators cover all 18 ordered tree-level channels, including
 public orderings not stored as explicit aliases.
+
+Expanded processes are named `<request>_<k>`, numbered in the order of the
+expansion. Concrete processes without a tree-level diagram within the active
+coupling-order limits are dropped (with a warning) when other members of the
+request have one, in every mode and in plans, before flavour-blind grouping;
+the others keep their numbers. `max_quark_lines` differs by catalogue: a UFO
+model applies it after expansion, so the processes it keeps keep the numbers
+they have without it, while the built-in model applies it in its enumeration,
+so its numbers count only the processes the bound leaves (changing the bound
+can renumber them). An alias of a request names its one concrete process after
+these filters: its ID is that process's number on a UFO model. A request with
+an alias that keeps several concrete processes is refused before anything is
+written.
 
 With `--flavor-blind`, expansion keeps one representative per flavour class
 as well (see

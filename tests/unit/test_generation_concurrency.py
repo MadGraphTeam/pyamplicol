@@ -305,10 +305,16 @@ def test_licensed_multiparticle_expansion_drives_workers_and_provenance(
     def track_expansion(
         request: object,
         resolved_model: object,
+        *,
+        tree_refusal: bool = False,
     ) -> object:
         nonlocal expansion_calls
         expansion_calls += 1
-        return expand_request(request, resolved_model)  # type: ignore[arg-type]
+        return expand_request(
+            request,  # type: ignore[arg-type]
+            resolved_model,  # type: ignore[arg-type]
+            tree_refusal=tree_refusal,
+        )
 
     monkeypatch.setattr(backend, "_expand_request", track_expansion)
     monkeypatch.setattr(
@@ -455,7 +461,7 @@ def test_generation_prunes_unsupported_multiparticle_tree_channel(
     monkeypatch.setattr(
         backend,
         "_expand_request",
-        lambda _request, _resolved: (
+        lambda _request, _resolved, **_kwargs: (
             build_process_ir("d d~ > z"),
             build_process_ir("g g > z g g"),
         ),

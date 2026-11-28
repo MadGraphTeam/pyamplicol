@@ -2412,9 +2412,41 @@ class FlavourMember:
         )
 
 
-def admit_member(slice_: LoopSlice, process: str) -> FlavourMember:
+@dataclass(frozen=True)
+class MemberAdmission:
+    """What ``admit_member`` reads of a representative's slice: its process,
+    its model's IR, the structure, counterterms and vertex rules of its
+    prepared request model, its corrections and its source-colour
+    continuation. A multiprocess generation keeps this record of a written
+    representative instead of its slice, which it releases
+    (``generation.loop_service._generate_v2``)."""
+
+    process: Any
+    model_ir: Any
+    structure: Any
+    counterterms: Any
+    vertex_rules: tuple[str, ...]
+    corrections: tuple[str, ...]
+    continuation: Any
+
+    @classmethod
+    def of(cls, slice_: LoopSlice) -> MemberAdmission:
+        prepared = slice_.prepared
+        return cls(
+            slice_.blocks.process,
+            slice_.compiled.ir,
+            prepared.structure,
+            prepared.counterterms,
+            tuple(rule.name for rule in prepared.structure.native.vertex_rules),
+            tuple(slice_.request.corrections),
+            slice_.continuation,
+        )
+
+
+def admit_member(slice_: LoopSlice | MemberAdmission, process: str) -> FlavourMember:
     """Admit ``process`` as an identity-port member or a permutation alias of
-    the slice's process, or raise ``ValueError``.
+    the slice's process, or raise ``ValueError``. ``slice_`` is the
+    representative's slice or its ``MemberAdmission`` record.
 
     The species substitution, if any, is proved exactly on the slice's
     retained source plan (``prove_flavor_relabeling``); a leg permutation
@@ -2429,12 +2461,14 @@ def admit_member(slice_: LoopSlice, process: str) -> FlavourMember:
     )
     from pyamplicol.processes.model import build_model_process_ir
 
-    representative = slice_.blocks.process
-    member = build_model_process_ir(process, slice_.compiled.ir, color_accuracy="full")
+    admission = (
+        slice_ if isinstance(slice_, MemberAdmission) else MemberAdmission.of(slice_)
+    )
+    representative = admission.process
+    member = build_model_process_ir(process, admission.model_ir, color_accuracy="full")
     rep_legs, mem_legs = representative.legs, member.legs
     if [leg.side for leg in rep_legs] != [leg.side for leg in mem_legs]:
         raise ValueError("a flavour member keeps the initial and final leg counts")
-    prepared = slice_.prepared
     plan = None
     candidates = []
     for order in _member_orders(rep_legs, mem_legs):
@@ -2452,11 +2486,11 @@ def admit_member(slice_: LoopSlice, process: str) -> FlavourMember:
         if species:
             if plan is None:
                 plan = RetainedFlavorPlan(
-                    prepared.structure,
-                    prepared.counterterms,
-                    tuple(rule.name for rule in prepared.structure.native.vertex_rules),
-                    tuple(slice_.request.corrections),
-                    slice_.continuation,
+                    admission.structure,
+                    admission.counterterms,
+                    admission.vertex_rules,
+                    admission.corrections,
+                    admission.continuation,
                 )
             try:
                 symmetry = prove_flavor_relabeling(plan, species)
@@ -2593,6 +2627,7 @@ __all__ = [
     "ColumnSeeds",
     "DirectedColour",
     "FlavourMember",
+    "MemberAdmission",
     "MemberObservables",
     "NativeObservables",
     "ObservableSlice",
