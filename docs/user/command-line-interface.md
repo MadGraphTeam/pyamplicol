@@ -1644,55 +1644,38 @@ rounding: it is judged as a known zero against its terms, with T at least
 |physical Born| x alpha / (2 pi). Every other coefficient, the finite one and
 a small but nonzero pole included, is judged against its own size.
 
-**Unstable external legs.** In the real on-shell mass scheme (zero widths)
-an external particle that can decay at its own mass keeps the absorptive
-part of its self-energy (the mass counterterm renormalises its real part
-only), so the Ward identity fails in the absorptive part of the one-loop
-finite coefficient by about Gamma / m, although the values a run serves are
-unaffected: with electroweak corrections, a top above MW + MB decays to W b,
-and `g g > t t~` [QED] has a c = 1 Ward residue of about 1 % of its physical
-scale while its values equal MadLoop, Recola and OpenLoops. `check` decides
-this per substituted leg, from the request itself: an external leg charged
-under that leg's boson (colour for a gluon, electric charge for a photon),
-massive, of zero width, with an open tree-level two-body channel among the
-three-point vertices of a requested correction's order. An external W, for
-example, does not affect a gluon's Ward rows.
-
-Such a leg's Ward rows have two scopes. At the requested spectrum the Born
-and every pole coefficient are judged as always: a failure there fails the
-row. Only a failing FINITE coefficient is the unstable leg's: it reads
-inconclusive at the requested spectrum and is decided by the same
-coefficient on a stabilised spectrum, where the rows are evaluated again.
-The stabilised spectrum scales every mass input of a massive vector boson by
-one common factor (the weak mixing angle kept), the smallest multiple of 0.01
-that closes every open channel with a 4 % margin: for the top at 173.3 GeV,
-MW = 180.94275 and MZ = 205.173. It must be an admissible point of the model:
-every such input must be free (one fixed at generation, such as MZ in
-`fixed_parameters`, makes the comparison unavailable), no external mass may
-move, and every real derived parameter must stay real (MW above MZ would
-make sin(theta_W) imaginary). Any failure on the stabilised spectrum fails
-the row, so a broken amplitude still fails. The row's reason names each
-scope ("requested spectrum: Born, poles: pass; finite: inconclusive
-(unstable external leg); stabilised spectrum: pass"), the leg, its channel,
-the moved inputs and the derived inputs the move changes and keeps (in the
-G_mu scheme alpha is recomputed, from 0.00754677 to 0.0382055, with G_F and
-sin^2(theta_W) kept). A pass on the stabilised spectrum does not show that
-the requested finite part is right (a defect confined to the open channel
-would close with it): it is reported as such. Where no admissible
-stabilised spectrum exists (a fixed vector-boson mass, or an external W,
-whose decays to massless fermions are always open), the Born and poles are
-still judged and a failing finite coefficient makes its row "not
-applicable" with the reason, never a pass. The stabilised spectrum serves
-the Ward rows only: every evaluation takes its parameters per call, the
-pole rows and every value keep the requested inputs, and nothing is written
-to an artifact. Cost: one more Ward evaluation set per point for the
-unstable legs' rows, only for a request with such a leg. This refines the
-earlier rule, under which every request with electroweak corrections and an
-external zero-width massive quark read "not applicable" for every Ward row
-without evaluating it: a stable top (below MW + MB) is now checked as any
-process, and an unstable one as above. The loop-induced Ward probes take no
-stabilised spectrum: a leg with an unstable external leg charged under its
-boson reads "not applicable" there. A sector Catani's operators
+**Unstable external legs.** In the real on-shell mass scheme (zero widths) an
+external particle that can decay at its own mass keeps the absorptive part of
+its self-energy (the mass counterterm renormalises its real part only). The
+Ward identity then fails in the absorptive part of the one-loop finite
+coefficient of the squared-order sectors that decay reaches, by about
+Gamma / m, although the values a run serves are unaffected. With electroweak
+corrections a top above MW + MB decays to W b: `g g > t t~` [QED] has a c = 1
+Ward residue of about 1 % of its physical scale in the QCD^4 QED^2 sector,
+while its values equal MadLoop, Recola and OpenLoops. `check` decides this per
+substituted leg, from the request itself: an external leg charged under that
+leg's boson (colour for a gluon, electric charge for a photon), massive, of
+zero width, with an open tree-level two-body channel among the three-point
+vertices of a requested correction's order. The decay reaches a sector whose
+power of the channel vertex's coupling order exceeds the Born's by at least
+two insertions of it (t -> W b, a QED vertex: QCD^4 QED^2, not QCD^6). In
+that leg's Ward rows the finite cell of a reached sector reads "not
+applicable" and the reason names the unstable leg and its open channel. It is
+measured and shown, never a pass and never a failure. The Born, every pole
+coefficient and the finite coefficient of every other sector are judged as
+always: a pure QCD^6 failure stays a failure when QED corrections are
+requested alongside, and an external W does not affect a gluon's rows. A
+failure anywhere fails the row and the process; with nothing failed, the
+process passes, its not-applicable cells shown. To check that finite part
+anyway, run the check on a spectrum where the leg is stable, for example
+with `MW` and `MZ` above the top mass in `fixed_parameters` (the benchmark's
+Ward rows use MW = 180, MZ = 200). This refines the earlier rule, under which
+every request with electroweak corrections and an external zero-width massive
+quark read "not applicable" for every Ward row without evaluating it: a
+stable top (below MW + MB) is now checked in full, and an unstable one in
+everything its decay cannot reach. The loop-induced Ward probes are
+amplitude-level, not split by sector: a leg whose boson sees an unstable
+external leg reads "not applicable" there. A sector Catani's operators
 do not predict (a QCD correction of a process with photon-exchange Borns,
 ...) is listed as "no prediction" with its reason; a sector they predict
 that got no pole row at a point reads "not run" (exit 3: an applicable
