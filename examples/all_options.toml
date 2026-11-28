@@ -64,7 +64,10 @@ coupling_order_policy = "explicit"
 # process.max_color_sectors: Optional cap on generated color sectors. Default null.
 max_color_sectors = 32
 # process.reference_color_order: Optional external-leg ordering used to identify
-# a reference LC sector. Default is an empty list.
+# a reference LC sector, which the colour plan lists first (it orders, it
+# selects nothing). Each coloured leg exactly once; colourless legs may stand
+# in it and are ignored; anything else is a configuration error. An open line
+# may be read from either end. Default is an empty list.
 reference_color_order = [1, 2, 3, 4, 5]
 # process.selected_color_sector_ids: Optional generated-sector subset. Default
 # is an empty list, which keeps every generated sector.

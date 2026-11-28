@@ -786,19 +786,29 @@ def test_public_colour_subset_selectors_are_the_tree_engines(
         assert [flow.id for flow in lc.request_flows(compiled, request, ())] == list(
             tree.physics.color_ids
         )
-    # A truncated plan (the tree engine's recurrence route refuses it, its
-    # plan keeps the reference sector and then enumerates up to the cap): the
-    # reference sector (1 3 2 4 5, folded with its reflection) and the first
-    # enumerated one (1 2 3 4 5 and its reflection).
+    # A truncated plan (the tree engine's recurrence route refuses it; the
+    # reference relabels the plan, so a cap of one keeps the reference sector
+    # alone): 1 3 2 4 5, folded with its reflection.
     assert chosen(
         "g g > g g g", max_color_sectors=1, reference_color_order=(1, 3, 2, 4, 5)
-    ).flows == ((1, 2, 3, 4, 5), (1, 3, 2, 4, 5), (1, 5, 4, 2, 3), (1, 5, 4, 3, 2))
+    ).flows == ((1, 3, 2, 4, 5), (1, 5, 4, 2, 3))
     assert chosen("u u~ > d d~ g", max_color_sectors=2).flows == (
         (2, 1, 3, 5, 4),
         (2, 5, 1, 3, 4),
     )
     with pytest.raises(GenerationError, match="did not materialize"):
         chosen("g g > g g g", selected_color_sector_ids=[99])
+    # A reference is an ordering of the coloured legs, as in the tree engine:
+    # a malformed one is a configuration error before any generation.
+    from pyamplicol.config import ConfigurationError
+
+    for word, problem in (
+        ((1, 2, 2, 4, 5), r"repeats the labels \[2\]"),
+        ((1, 2, 3, 4), r"leaves out the coloured legs \[5\]"),
+        ((1, 2, 3, 4, 5, 91), r"names labels \[91\]"),
+    ):
+        with pytest.raises(ConfigurationError, match=problem):
+            chosen("g g > g g g", reference_color_order=word, max_color_sectors=1)
     # Selected helicities name legs and helicities the process has (the
     # tree engine's source states), before any generation.
     with pytest.raises(GenerationError, match=r"legs \[9\] the process does not"):

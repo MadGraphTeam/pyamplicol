@@ -3286,6 +3286,16 @@ impl NativeRuntime {
             None,
             totals,
         )?;
+        if squared_count == 1 {
+            // Every closure of the selection was proven to carry the one
+            // amplitude order (the order split refuses any other): the one
+            // partial is the total, bit for bit, as in the compiled lane. A
+            // second evaluation in another summation order would only compare
+            // roundoff, which for a vanishing selection (a helicity whose
+            // amplitudes cancel) is the whole value.
+            partials.copy_from_slice(totals);
+            return Ok(());
+        }
         let color_ids = self.execution_color_ids(color_ids);
         let crossing_lookup = std::mem::take(&mut self.input_crossing_map);
         let mut selector_scratch = std::mem::take(&mut self.point_selector_scratch);
@@ -3320,12 +3330,6 @@ impl NativeRuntime {
         result?;
         self.apply_process_group_factor(partials);
         check_partials_sum_to_totals(totals, partials, squared_count)?;
-        if squared_count == 1 {
-            // Every closure of the selection was proven to carry the one
-            // amplitude order (the order split refuses any other): the one
-            // partial is the total, bit for bit.
-            partials.copy_from_slice(totals);
-        }
         Ok(())
     }
 

@@ -655,6 +655,7 @@ def _v2_selection(backend, compiled, process: str, label: str):
         if chosen.reference_color_order
         else None
     )
+    lc.require_reference_order(compiled, process, order)
     flows = None
     if (
         chosen.max_color_sectors is not None
