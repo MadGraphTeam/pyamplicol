@@ -95,23 +95,17 @@ nothing.
   (the poles, k >= 1: a known zero), T = the vector row's floor plus M/E
   times the Goldstone row's, over the union of both sides' rows
   (``goldstone.probe``); otherwise a "not applicable" row with the reason.
-* **Unstable external legs** (``ward_groups``, ``ward.unstable_external_legs``;
-  refines the USER ruling 2026-11-10 ~00:17, "ignore ward check there"): in
-  the real on-shell scheme an external leg that can decay at its own mass
-  (the top above MW + MB with electroweak corrections) leaves the Ward
-  identity violated in the absorptive part of the one-loop FINITE
-  coefficient of the squared-order sectors its open decay reaches
-  (``ward.affected_sector``), while the served values are unaffected.
-  Decided per substituted leg (an external leg charged under that leg's
-  boson) and per sector, that finite coefficient is "not applicable" in the
-  leg's Ward rows (the reason names the leg and its open channel): measured
-  and reported, never a pass and never a failure. The Born, every pole
-  coefficient and the finite coefficient of every other sector are judged
-  as always (a pure QCD^6 sector stays decisive when QED corrections are
-  requested alongside). To check the reached finite part, use a spectrum
-  where the leg is stable (the benchmark's ``ward_parameters``). The
-  loop-induced probes are amplitude-level, not split by sector: a leg with
-  an unstable external leg charged under its boson is not applicable there.
+* **Unstable external legs: a hint** (``ward.hint_legs``, ``ward.
+  unstable_hint``; replaces the earlier skip of the Ward rows of an
+  electroweak request with an external zero-width massive quark, USER
+  2026-11-10 ~00:17): every Ward cell is judged as always. In the real
+  on-shell scheme an external leg that can decay at its own mass (the top
+  above MW + MB with electroweak corrections) gives the finite part of the
+  Ward identity a physical absorptive violation, which cannot be told from
+  an implementation error in the same coefficient: such a cell FAILS, and
+  the row's reason then names the unstable leg, its open channel and how
+  to check on a stable spectrum (MW and MZ above MT, as the benchmark's
+  ``ward_parameters``). The hint changes no verdict, status or exit code.
 
 Carriers (``induced.probe_carriers``): binary64 first and double-double
 only for a row binary64 does not decide (a failure, an inconclusive or
@@ -1060,52 +1054,6 @@ def _unpredicted_rows(
     return rows
 
 
-def ward_groups(
-    target: Any, legs: Sequence[int]
-) -> list[tuple[list[int], tuple[Any, ...]]]:
-    """The substituted ``legs`` grouped by the unstable external legs their
-    boson sees (``ward.unstable_external_legs`` per substituted leg: an
-    external W does not affect a gluon leg), each group with that tuple."""
-
-    from . import ward
-
-    groups: dict[tuple[Any, ...], list[int]] = {}
-    for leg in legs:
-        groups.setdefault(ward.unstable_external_legs(target, [leg]), []).append(leg)
-    return [(members, unstable) for unstable, members in groups.items()]
-
-
-def ward_applicability(target: Any) -> str | None:
-    """None where every Ward row of a probe slice is checked in full, else
-    which legs' rows leave the finite coefficient of the sectors an unstable
-    external leg's open decay reaches not applicable, and why (module
-    docstring, "Unstable external legs"; the USER ruling 2026-11-10 ~00:17,
-    refined: the Born, the poles and every other sector are checked)."""
-
-    from . import ward
-
-    found = [
-        f"{_legs(members)}: {ward.unstable_reason(unstable)}"
-        for members, unstable in ward_groups(target, ward.gauge_legs(target))
-        if unstable
-    ]
-    return "; ".join(found) or None
-
-
-def _not_applicable_ward(legs: Sequence[int], reason: str) -> CheckRow:
-    """The one Ward row of a process whose Ward rows are not applicable
-    (``ward_applicability``), naming the legs not checked."""
-
-    return CheckRow(
-        "ward",
-        "external gluons and photons",
-        None,
-        None,
-        NOT_APPLICABLE,
-        reason=f"{_legs(legs)} not checked: {reason}",
-    )
-
-
 def _legs(labels: Sequence[int]) -> str:
     return ("leg " if len(labels) == 1 else "legs ") + ", ".join(map(str, labels))
 
@@ -1149,7 +1097,7 @@ def born_interfered_rows(
     executor = NativeExecutor(target, inputs="native", forward=False, catani=True)
     tolerance_ = tolerance()
     legs = ward.gauge_legs(target)
-    groups = ward_groups(target, legs) if legs else []
+    hints = ward.hint_legs(target, legs) if legs else {}
     stages = _stages(carriers, rung)
     # ``out``: the caller's list, which keeps the rows of an interrupted
     # check.
@@ -1238,11 +1186,11 @@ def born_interfered_rows(
             _unpredicted_rows(target, sectors, formed, index, {key[0] for key in cells})
         )
         # Ward identities on every gluon and photon leg.
-        for members, unstable in groups:
-            status(f"{_point_text(index, points)}: Ward identities, {_legs(members)}")
+        if legs:
+            status(f"{_point_text(index, points)}: Ward identities, {_legs(legs)}")
             rows.extend(
                 _born_ward_rows(
-                    executor, index, stages, at, members, tolerance_, unstable=unstable
+                    executor, index, stages, at, legs, tolerance_, hints=hints
                 )
             )
     if not legs:
@@ -1458,44 +1406,6 @@ def _predicted_zero(predicted: Mapping[Any, Any], sector: Any, k: int) -> bool:
         return False
 
 
-def _label_powers(text: str) -> dict[str, int]:
-    """A sector name of the rows' labels ("QCD^4 QED^2", ``_sector_name``)
-    as order -> power (zero powers dropped)."""
-
-    out = {}
-    for word in str(text).split():
-        name, _, power = word.partition("^")
-        if power.isdigit() and int(power):
-            out[name] = int(power)
-    return out
-
-
-def _reached_finite(labels: Sequence[Any], unstable: Sequence[Any]) -> set[Any]:
-    """The labels of the finite coefficients of the sectors an unstable
-    external leg's open decay reaches (``ward.affected_sector``; the Born
-    sectors read from the "Born ..." labels)."""
-
-    from . import ward
-
-    if not unstable:
-        return set()
-    born = [
-        _label_powers(str(label)[len("Born ") :])
-        for label in labels
-        if str(label).startswith("Born ")
-    ]
-    suffix = f" {COEFFICIENT_NAMES[0]}"
-    return {
-        label
-        for label in labels
-        if str(label).endswith(suffix)
-        and not str(label).startswith("Born ")
-        and ward.affected_sector(
-            _label_powers(str(label)[: -len(suffix)]), born, unstable
-        )
-    }
-
-
 def _ward_subject(leg: int, factor: Any) -> str:
     return f"leg {leg}, " + ("c = 1" if tuple(factor) == (1, 0) else "c = i")
 
@@ -1557,18 +1467,17 @@ def _born_ward_rows(
     legs: Sequence[int],
     tolerance_: float,
     *,
-    unstable: Sequence[Any] = (),
+    hints: Mapping[int, Sequence[Any]] | None = None,
 ) -> list[CheckRow]:
     """The Ward rows of one point, per (leg, factor) and per required row
     (Born sector, virtual sector and coefficient) up the ladder of
     ``stages`` (``ladder_step``): each row keeps its first decision, a
     pending row absent from a later carrier is inconclusive, a refusal
     leaves the next carrier to try; one check row per (leg, factor) from
-    its rows' final verdicts (``row_from_cells``). With ``unstable`` external
-    legs (module docstring, "Unstable external legs") the finite
-    coefficients of the sectors their open decay reaches are not
-    applicable (``_reached_finite``: measured, never judged, never climbing
-    the ladder), the reason naming the legs and their channels."""
+    its rows' final verdicts (``row_from_cells``). A row of a leg with
+    unstable external legs (``hints``, ``ward.hint_legs``) whose finite cell
+    fails carries ``ward.unstable_hint`` in its reason, its verdict
+    unchanged (module docstring, "Unstable external legs: a hint")."""
 
     from . import ward
     from .plan_export import FailedPoints
@@ -1584,11 +1493,7 @@ def _born_ward_rows(
             key
             for key in every
             if key not in seen
-            or any(
-                cell.verdict not in _DECIDED
-                for label, cell in cells[key].items()
-                if label not in _reached_finite(list(cells[key]), unstable)
-            )
+            or any(cell.verdict not in _DECIDED for cell in cells[key].values())
         ]
         if not pending:
             break
@@ -1627,13 +1532,6 @@ def _born_ward_rows(
             )
             continue
         final = finished(cells[key])
-        reached = _reached_finite(list(final), unstable)
-        for label in reached:
-            final[label] = replace(
-                final[label],
-                verdict=NOT_APPLICABLE,
-                reason=ward.unstable_reason(unstable),
-            )
         row = row_from_cells(
             "ward",
             _ward_subject(*key),
@@ -1643,9 +1541,14 @@ def _born_ward_rows(
             improvements,
             stages,
         )
-        if reached:
-            names = ", ".join(sorted(str(label) for label in reached))
-            note = f"{names}: {ward.unstable_reason(unstable)}"
+        unstable = (hints or {}).get(key[0])
+        if unstable and any(
+            cell.verdict == FAIL
+            and str(label).endswith(f" {COEFFICIENT_NAMES[0]}")
+            and not str(label).startswith("Born")
+            for label, cell in final.items()
+        ):
+            note = ward.unstable_hint(unstable)
             row = _with(row, reason=note if not row.reason else f"{row.reason}; {note}")
         rows.append(row)
     return rows
@@ -1686,17 +1589,8 @@ def induced_rows(
             return zero
         out.extend(zero)
         return out
-    from . import ward
-
     legs = induced.probe_legs(target)
-    # The amplitude-level probes are not split by sector: a leg whose boson
-    # sees an unstable external leg is not applicable (module docstring).
-    exclusions = {
-        leg: ward.unstable_reason(found) + "; not evaluated"
-        for leg in legs
-        if (found := ward.unstable_external_legs(target, [leg]))
-    }
-    probed = [leg for leg in legs if leg not in exclusions]
+    probed = legs
     executor = NativeExecutor(
         target,
         forward=False,
@@ -1765,9 +1659,6 @@ def induced_rows(
                 reason="the process has no external gluon or photon",
             )
         )
-    for reason in dict.fromkeys(exclusions.values()):
-        members = [leg for leg in legs if exclusions.get(leg) == reason]
-        rows.append(_not_applicable_ward(members, reason))
     if applicability is not None:
         rows.append(
             CheckRow(
@@ -2020,6 +1911,4 @@ __all__ = [
     "threshold",
     "tolerance",
     "tolerating",
-    "ward_applicability",
-    "ward_groups",
 ]

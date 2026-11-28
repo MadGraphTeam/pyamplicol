@@ -15,13 +15,16 @@ regenerates an electroweak request in memory).
   row passes; exit 0. At the default K every row passes without the rung.
   About 4 minutes and 10-20 GiB (the probe slice of a 2 -> 4 electroweak
   request and an MPFR Ward batch).
-* **Ward rows not applicable** (USER 2026-11-10 ~00:17): g t > t t t~ with
+* **Ward rows with external tops on a stable spectrum**: g t > t t t~ with
   QCD and QED corrections (lit-ew-blocks census row TT05, external on-shell
-  zero-width tops), whose gluon Ward rows failed by 3e8 - 7e8: one "not
-  applicable" Ward row naming the class, nothing Ward-evaluated; the 1/eps
-  pole row of sector QCD^2 QED^6 passes on its physical scale, its 1/eps^2
-  row has no term (R = P = T = 0, vacuous) and QCD^4 QED^4 has no
-  prediction; exit 0. About 3 minutes and 9 GiB.
+  zero-width tops). At the physical masses the tops decay to W b, and the
+  gluon Ward rows fail on their finite cells (the physical absorptive
+  violation of the real on-shell scheme) with the hint naming the unstable
+  tops; that was skipped as "not applicable" before (USER 2026-11-10
+  ~00:17). With MW = 180 and MZ = 200 fixed (stable tops) both gluon Ward
+  rows pass; the 1/eps pole row of sector QCD^2 QED^6 passes on its
+  physical scale, its 1/eps^2 row has no term (R = P = T = 0, vacuous) and
+  QCD^4 QED^4 has no prediction; exit 0. About 3 minutes and 9 GiB.
 """
 
 from __future__ import annotations
@@ -106,7 +109,7 @@ fixed_parameters = {{MB = "0", MTA = "0", {WIDTHS}}}
     assert all(cell["carrier"] == "double-double" for cell in born), born
 
 
-def test_ward_rows_of_ew_corrections_with_external_tops_are_not_applicable(tmp_path):
+def test_ward_rows_of_ew_corrections_with_external_tops_on_a_stable_spectrum(tmp_path):
     from pyamplicol.api.services import check
     from pyamplicol.loops.v2 import checks
 
@@ -121,16 +124,18 @@ loop_coupling_orders = ["QCD", "QED"]
 coupling_order_policy = "explicit"
 max_coupling_orders = {{ QCD = 1, QED = 2 }}
 [loop.preparation]
-fixed_parameters = {{MB = "0", ymb = "0", MTA = "0", ymtau = "0", {WIDTHS}}}
+fixed_parameters = {{MB = "0", ymb = "0", MTA = "0", ymtau = "0", {WIDTHS}, \
+MW = "180", MZ = "200"}}
 """,
     )
     report = check(card, points=1, seed=12345)
     assert report.exit_code == checks.EXIT_PASSED, report
     (process,) = report.processes
-    (ward,) = [row for row in process.rows if row.check == "ward"]
-    assert ward.verdict == checks.NOT_APPLICABLE and ward.point is None
-    assert ward.reason.startswith("leg 1 not checked: EW corrections (QED)")
-    assert "(legs 2, 3, 4, 5)" in ward.reason
+    ward = {row.subject: row for row in process.rows if row.check == "ward"}
+    assert set(ward) == {"leg 1, c = 1", "leg 1, c = i"}
+    for row in ward.values():
+        assert row.verdict == checks.PASS
+        assert "unstable" not in (row.reason or "")
     poles = {row.subject: row for row in process.rows if row.check == "poles"}
     assert {row.verdict for row in poles.values()} == {
         checks.PASS,

@@ -93,11 +93,10 @@ output = "artifacts/dy"
   helicity). Complex outputs do: the imaginary parts of directed colour
   correlations and of off-diagonal spin sources carry that unrenormalised
   Im Sigma of the unstable leg, as any real-mass code's would, and the
-  gluon or photon Ward identity fails in the absorptive part of the finite
-  coefficient of the sectors the decay reaches (`pyamplicol check` reports
-  that cell "not applicable", the Born, the poles and every other sector
-  judged as always; check it on a spectrum where the particle is stable, see
-  [the command line](command-line-interface.md)). A gauge-invariant
+  gluon or photon Ward identity has a physical violation in the absorptive
+  part of the finite coefficient: `pyamplicol check` fails that cell with a
+  hint naming the unstable particle; check it on a spectrum where the
+  particle is stable, see [the command line](command-line-interface.md)). A gauge-invariant
   treatment of an unstable external particle needs the complex-mass scheme
   with its width, which is refused today (`cms-external-width`).
 - **Colour.** Full colour by default, as MadLoop, and full colour serves
