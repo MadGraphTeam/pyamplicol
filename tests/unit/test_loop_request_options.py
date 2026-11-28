@@ -857,3 +857,38 @@ def test_an_unnamed_append_avoids_the_id_of_a_served_member(tmp_path, model_cach
 
     with pytest.raises(ProcessIdCollisionError):
         generator.generate(ProcessRequest.parse("e- u > e- u"), artifact, mode="append")
+
+
+def test_an_identical_unnamed_append_is_refused_in_any_spelling(tmp_path, model_cache):
+    # s g > s g is served through d g > d g with the colour correlation T12;
+    # re-appending it unnamed, in any spelling of its particles, names the
+    # same process: it is a duplicate (refused), not a new process under a
+    # digest name, and the expression keeps serving T12.
+    from pyamplicol.api.errors import ProcessIdCollisionError
+    from pyamplicol.correlators import CorrelatorConfig
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="d g > d g",
+        name="unused",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("d g > d g"), ProcessRequest.parse("s g > s g"))
+        ),
+        artifact,
+        correlators=CorrelatorConfig.from_json_dict(
+            {"color_correlations": [_history("T12", 1, 2)]}
+        ),
+    )
+    assert Runtime.load(artifact, process="s_g_to_s_g").physics.process == "s G > s G"
+    before, t12 = _digest(artifact), _correlated(artifact, "s g > s g", "T12")
+    for spelling in ("s g > s g", "s G > s G", "S g > S g"):
+        with pytest.raises(ProcessIdCollisionError, match="'s_g_to_s_g'"):
+            generator.generate(ProcessRequest.parse(spelling), artifact, mode="append")
+        assert _digest(artifact) == before
+    assert _correlated(artifact, "s g > s g", "T12") == t12

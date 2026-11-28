@@ -4,7 +4,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeAlias
@@ -401,6 +401,7 @@ def _with_unique_default_names(
     automatic: Sequence[bool],
     reserved: Mapping[str, str] | None = None,
     blocked: Iterable[str] = (),
+    identity: Callable[[str], str] | None = None,
 ) -> tuple[ProcessRequest, ...]:
     """Disambiguate automatic names that collide within one request list.
 
@@ -412,8 +413,14 @@ def _with_unique_default_names(
     another expression, or by a ``blocked`` name (a process alias, of the call
     or of the artifact appended to) take the digest form (``<readable>_<sha256
     of the expression>``); every other name is the default name, unchanged.
-    Repeating the same expression stays a duplicate.
+    Repeating the same expression stays a duplicate. ``identity`` (an
+    append's: the process an expression names, by the appended artifact's
+    model, the form of ``reserved``'s values) decides which expressions are
+    the same; without it, the expressions' text.
     """
+
+    def same(expression: str) -> str:
+        return expression if identity is None else identity(expression)
 
     explicit = {
         request.name
@@ -425,14 +432,17 @@ def _with_unique_default_names(
     expressions_by_name: dict[str, set[str]] = {}
     for request, auto in zip(requests, automatic, strict=True):
         if auto:
-            expressions_by_name.setdefault(request.name, set()).add(request.expression)
+            expressions_by_name.setdefault(request.name, set()).add(
+                same(request.expression)
+            )
     result: list[ProcessRequest] = []
     for request, auto in zip(requests, automatic, strict=True):
         if auto and (
             request.name in explicit
             or request.name in aliases
             or len(expressions_by_name[request.name]) > 1
-            or taken.get(request.name, request.expression) != request.expression
+            or taken.get(request.name, same(request.expression))
+            != same(request.expression)
         ):
             request = ProcessRequest(
                 expression=request.expression,
@@ -448,6 +458,7 @@ def parse_process_requests(
     *,
     reserved: Mapping[str, str] | None = None,
     blocked: Iterable[str] = (),
+    identity: Callable[[str], str] | None = None,
 ) -> tuple[ProcessRequest, ...]:
     """Parse a list of process requests with injective automatic names.
 
@@ -471,7 +482,7 @@ def parse_process_requests(
             expression, name = entry, None
         requests.append(ProcessRequest.parse(expression, name=name))
         automatic.append(name is None)
-    return _with_unique_default_names(requests, automatic, reserved, blocked)
+    return _with_unique_default_names(requests, automatic, reserved, blocked, identity)
 
 
 @dataclass(frozen=True, slots=True)
