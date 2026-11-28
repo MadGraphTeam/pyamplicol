@@ -12,7 +12,7 @@ import os
 import re
 import time
 import zipfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
 from functools import cache
@@ -125,7 +125,12 @@ from .loop_artifact import (
     LoopV2ProcessArtifact,
     loop_process_payloads,
 )
-from .process_grouping import PROCESS_GROUPS_PATH, PROCESS_GROUPS_ROLE, ProcessGroupMap
+from .process_grouping import (
+    PROCESS_GROUPS_PATH,
+    PROCESS_GROUPS_ROLE,
+    GroupMember,
+    ProcessGroupMap,
+)
 from .recurrence_schedule_sharing import (
     RECURRENCE_PROCESS_BINDING_ABI,
     RECURRENCE_SCHEDULE_INDEX_PATH,
@@ -986,6 +991,10 @@ def _write_umami_bundle(
         )
 
 
+# The adjustment of ``generation.emit_api_bundle`` in a v2 one-loop artifact.
+_V2_NO_BUNDLE_REASON = "the standalone SDK does not evaluate v2 virtuals yet"
+
+
 def write_schema_v3_artifact(
     destination: str | Path,
     *,
@@ -1061,7 +1070,7 @@ def write_schema_v3_artifact(
         adjustments.append(
             {
                 "path": "generation.emit_api_bundle",
-                "reason": "the standalone SDK does not evaluate v2 virtuals yet"
+                "reason": _V2_NO_BUNDLE_REASON
                 if v2_loop
                 else "no root API-bundle emitter is installed",
             }
@@ -1119,7 +1128,15 @@ def write_schema_v3_artifact(
         adjustments=adjustments,
         processes=processes,
     )
-    _validate_public_process_ids(existing, processes)
+    # One owner per public ID (for an append, part (i) of its invariant).
+    _validate_public_process_ids(existing, processes, process_groups)
+    _validate_alias_spellings(existing, processes)
+    if existing is not None:
+        _validate_append_invariant(existing, processes, process_groups)
+    if existing is not None:
+        _require_stored_parameter_values(
+            output, compiled_model, _bound_parameters(loop_processes)
+        )
     if existing is not None:
         producer = _plain_mapping(existing.producer)
         model = _plain_mapping(existing.model)
@@ -1175,8 +1192,6 @@ def write_schema_v3_artifact(
                 effective_bytes=effective_bytes,
                 bound_parameters=_bound_parameters(loop_processes),
             )
-        else:
-            _require_stored_bound_parameters(output, _bound_parameters(loop_processes))
         _write_specialization_guards(
             builder,
             compiled_model=compiled_model,
@@ -1411,8 +1426,9 @@ def _write_process_groups(
 ) -> ProcessGroupMap:
     """Stage ``process-groups.json`` covering every process of the artifact.
 
-    An append keeps the stored groups, and a newly generated process leaves a
-    group in which it was only an assumed member. Processes without a recorded
+    An append keeps the stored groups (the public-ID check refuses an
+    appended process that would take a served member's ID, so no group loses
+    a member here). Processes without a recorded
     group map to themselves.
     """
 
@@ -1484,22 +1500,58 @@ def _bound_parameters(
     return bound
 
 
-def _require_stored_bound_parameters(output: Path, bound: Mapping[str, str]) -> None:
-    """An append to ``output`` binds the parameters its model parameter record
-    states (``model/parameters.json``, ``_write_global_payloads``): a value
-    fixed now (``bound``) that the record states otherwise is refused."""
+def _parameter_record(
+    compiled_model: CompiledModel, bound: Mapping[str, str]
+) -> dict[str, list[float]]:
+    """The model parameter record (``model/parameters.json``) of processes
+    that bind ``bound``: every external parameter at the value they evaluate
+    it with, the model's own (its restriction applied) unless bound."""
 
-    if not bound:
+    return {
+        name: (
+            [float(bound[name]), 0.0]
+            if name in bound
+            else [float(value[0]), float(value[1])]
+        )
+        for name, value in sorted(compiled_model.parameter_defaults.items())
+    }
+
+
+def _require_stored_parameter_values(
+    output: Path, compiled_model: CompiledModel, bound: Mapping[str, str]
+) -> None:
+    """An appended process evaluates every model parameter at the value the
+    artifact's parameter record states (``model/parameters.json``, the one
+    parameter point of the artifact): the value it binds (``bound``) or, for
+    a parameter it does not bind, the model's own. Compared in both
+    directions; a difference is refused, naming the parameter and both
+    values."""
+
+    path = output / _MODEL_PARAMETERS_PATH
+    if not path.is_file():
+        # An artifact written before the record existed states no point.
         return
-    record = json.loads((output / _MODEL_PARAMETERS_PATH).read_text(encoding="utf-8"))
-    stored = record.get("parameters", {})
-    for name, value in sorted(bound.items()):
-        if name in stored and float(stored[name][0]) != float(value):
-            raise ValueError(
-                f"cannot append: the processes bind {name} = {value}, the "
-                f"artifact's model parameters state {stored[name][0]} "
-                "(model/parameters.json); regenerate the artifact"
-            )
+    stored = json.loads(path.read_text(encoding="utf-8")).get("parameters", {})
+    incoming = _parameter_record(compiled_model, bound)
+    for name in sorted(set(stored) | set(incoming)):
+        old, new = stored.get(name), incoming.get(name)
+        if old is not None and new is not None and [float(x) for x in old] == new:
+            continue
+        how = "binds" if name in bound else "takes the model's value"
+
+        def text(value: Sequence[float] | None) -> str:
+            if value is None:
+                return "no value"
+            real, imaginary = (float(item) for item in value)
+            return f"{real!r}" if imaginary == 0 else f"{real!r} + {imaginary!r}i"
+
+        raise ValueError(
+            f"cannot append: the appended processes evaluate {name} = "
+            f"{text(new)} (it {how}), but the artifact's processes evaluate it at "
+            f"{text(old)} (model/parameters.json); one artifact holds one "
+            f"parameter point: fix {name} to one value for both requests "
+            "([loop.preparation] fixed_parameters), or write a separate artifact"
+        )
 
 
 def _write_global_payloads(
@@ -1541,14 +1593,7 @@ def _write_global_payloads(
         {
             "schema_version": 1,
             "kind": "pyamplicol-model-parameter-defaults",
-            "parameters": {
-                name: (
-                    [float(bound[name]), 0.0]
-                    if name in bound
-                    else [float(value[0]), float(value[1])]
-                )
-                for name, value in sorted(compiled_model.parameter_defaults.items())
-            },
+            "parameters": _parameter_record(compiled_model, bound),
         },
         role="model-parameters",
     )
@@ -5188,12 +5233,56 @@ def _validate_append_compatibility(
         raise ValueError("append model provenance differs from the existing artifact")
     if existing_producer.get("target") != producer.get("target"):
         raise ValueError("append target differs from the existing artifact")
+    _validate_append_settings(
+        existing,
+        requested_bytes=requested_bytes,
+        effective_bytes=effective_bytes,
+        adjustments=adjustments,
+    )
+    existing_ids = {str(record["id"]) for record in existing.processes}
+    duplicates = existing_ids.intersection(process.process_id for process in processes)
+    if duplicates:
+        raise ValueError(
+            "append process IDs already exist: " + ", ".join(sorted(duplicates))
+        )
+
+
+def _validate_append_settings(
+    existing: ArtifactManifest,
+    *,
+    requested_bytes: bytes,
+    effective_bytes: bytes,
+    adjustments: Sequence[Mapping[str, str]],
+) -> None:
+    """An append generates with the settings ``existing`` records: its
+    requested and effective configurations and their adjustments, but for
+    ``_APPEND_INDEPENDENT_SETTINGS``; else a ``ValueError`` naming the first
+    setting that differs."""
+
     requested_path = existing.root / str(existing.configuration["requested_path"])
     effective_path = existing.root / str(existing.configuration["effective_path"])
-    if requested_path.read_bytes() != requested_bytes:
-        raise ValueError("append requested configuration differs from the artifact")
-    if effective_path.read_bytes() != effective_bytes:
-        raise ValueError("append effective configuration differs from the artifact")
+    for kind, stored, incoming in (
+        ("requested", requested_path.read_bytes(), requested_bytes),
+        ("effective", effective_path.read_bytes(), effective_bytes),
+    ):
+        differences = _append_setting_differences(stored, incoming)
+        if differences:
+            path, old, new = differences[0]
+            verb = "is" if kind == "requested" else "resolves to"
+            others = (
+                f" (and {len(differences) - 1} more: "
+                + ", ".join(item[0] for item in differences[1:4])
+                + (", ..." if len(differences) > 4 else "")
+                + ")"
+                if len(differences) > 1
+                else ""
+            )
+            raise ValueError(
+                f"append: setting {path} {verb} {_setting_text(new)} in this "
+                f"request but {_setting_text(old)} in the artifact{others}; an "
+                "append generates with the settings the artifact was generated "
+                "with: use them, or write a separate artifact"
+            )
     existing_adjustments: list[dict[str, str]] = []
     for item in _sequence(existing.configuration["adjustments"]):
         adjustment = _mapping(item)
@@ -5203,24 +5292,160 @@ def _validate_append_compatibility(
                 "reason": str(adjustment["reason"]),
             }
         )
-    if existing_adjustments != list(adjustments):
-        raise ValueError("append configuration adjustments differ from the artifact")
-    existing_ids = {str(record["id"]) for record in existing.processes}
-    duplicates = existing_ids.intersection(process.process_id for process in processes)
-    if duplicates:
-        raise ValueError(
-            "append process IDs already exist: " + ", ".join(sorted(duplicates))
+    stored_adjustments = [
+        item for item in existing_adjustments if not _append_independent(item["path"])
+    ]
+    incoming_adjustments = [
+        dict(item) for item in adjustments if not _append_independent(item["path"])
+    ]
+    if stored_adjustments != incoming_adjustments:
+        stored_paths = {item["path"] for item in stored_adjustments}
+        incoming_paths = {item["path"] for item in incoming_adjustments}
+        changed = sorted(stored_paths ^ incoming_paths) or sorted(
+            item["path"]
+            for item in incoming_adjustments
+            if item not in stored_adjustments
         )
+        raise ValueError(
+            "append: the configuration adjustments differ from the artifact's "
+            f"({', '.join(changed)}); an append generates with the settings the "
+            "artifact was generated with"
+        )
+
+
+# Settings of a generation that do not shape the processes it stores (how
+# and where the call runs, which processes it asks for, how the CLI reports),
+# so an append to an artifact may differ in them: the run mode itself, the
+# output, the requested entries, the resolved worker and evaluator-core
+# counts (resolved from the call's process count), and the reporting.
+_APPEND_INDEPENDENT_SETTINGS = (
+    ("action",),
+    ("process", "entries"),
+    ("generation", "mode"),
+    ("generation", "output"),
+    ("generation", "workers"),
+    ("evaluator", "optimization", "cores"),
+    ("output",),
+    ("symbolica",),
+)
+
+
+def _append_independent(path: str) -> bool:
+    parts = tuple(path.split("."))
+    return any(
+        parts[: len(setting)] == setting for setting in _APPEND_INDEPENDENT_SETTINGS
+    )
+
+
+def _append_settings(payload: bytes) -> dict[str, object]:
+    """A recorded configuration without ``_APPEND_INDEPENDENT_SETTINGS``."""
+
+    import tomllib
+
+    settings = tomllib.loads(payload.decode("utf-8"))
+    for path in _APPEND_INDEPENDENT_SETTINGS:
+        node: object = settings
+        for key in path[:-1]:
+            node = node.get(key) if isinstance(node, dict) else None
+        if isinstance(node, dict):
+            node.pop(path[-1], None)
+    return settings
+
+
+def _append_setting_differences(
+    stored: bytes, incoming: bytes
+) -> list[tuple[str, object, object]]:
+    """The settings (dotted path, the artifact's value, the request's) in
+    which a recorded configuration ``incoming`` differs from ``stored``,
+    in the order the configuration lists them; none for an append."""
+
+    if stored == incoming:
+        return []
+    missing = object()
+    differences: list[tuple[str, object, object]] = []
+
+    def walk(path: tuple[str, ...], old: object, new: object) -> None:
+        if isinstance(old, dict) and isinstance(new, dict):
+            for key in [*old, *(key for key in new if key not in old)]:
+                walk((*path, key), old.get(key, missing), new.get(key, missing))
+        elif old != new:
+            differences.append((".".join(path), old, new))
+
+    walk((), _append_settings(stored), _append_settings(incoming))
+    return [
+        (
+            path,
+            "unset" if old is missing else old,
+            "unset" if new is missing else new,
+        )
+        for path, old, new in differences
+    ]
+
+
+def _setting_text(value: object) -> str:
+    return "unset" if value == "unset" else json.dumps(value, default=str)
+
+
+def check_append_settings(
+    destination: str | Path,
+    configuration: _GenerationConfigProvenance,
+    *,
+    api_bundle: bool,
+) -> None:
+    """Before an append generates anything: the settings check the writer
+    makes (``_validate_append_settings``) of ``configuration`` against the
+    artifact at ``destination`` (none there: nothing to check, the writer
+    decides). ``api_bundle`` is whether the appended processes can carry
+    an API bundle (a one-loop v2 artifact carries none)."""
+
+    output = Path(destination).expanduser().resolve(strict=False)
+    if not (output / "artifact.json").is_file():
+        return
+    existing = load_manifest(output)
+    _reject_legacy_eager_append(existing)
+    bundle_requested = _bundle_requested(configuration.effective)
+    requested_config = _config_payload(configuration.requested)
+    effective_config = _effective_config_payload(
+        _config_payload(configuration.effective),
+        disable_api_bundle=bundle_requested and not api_bundle,
+    )
+    adjustments = [
+        {"path": adjustment.path, "reason": adjustment.reason}
+        for adjustment in configuration.adjustments
+    ]
+    if bundle_requested and not api_bundle:
+        adjustments.append(
+            {"path": "generation.emit_api_bundle", "reason": _V2_NO_BUNDLE_REASON}
+        )
+    _validate_append_settings(
+        existing,
+        requested_bytes=_toml_bytes(
+            cast(dict[str, object], _portable_paths(requested_config))
+        ),
+        effective_bytes=_toml_bytes(
+            cast(dict[str, object], _portable_paths(effective_config))
+        ),
+        adjustments=adjustments,
+    )
 
 
 def _validate_public_process_ids(
     existing: ArtifactManifest | None,
     processes: Sequence[ProcessArtifact],
+    process_groups: ProcessGroupMap | None = None,
 ) -> None:
     """Before anything is written: the public IDs of the artifact as it will
-    be (the process and process alias IDs of ``existing`` and of
-    ``processes``) are unique, as its loader requires; else a
-    ``ProcessIdCollisionError`` naming both owners."""
+    be are unique, as its loaders require; else a ``ProcessIdCollisionError``
+    naming both owners.
+
+    The public IDs are every ID the selectors resolve (the Python runtime's
+    and the native one's alike): process IDs, process alias IDs and the IDs
+    of the process-group members that are served through a representative
+    (not generated), of ``existing`` and of the call (``processes``,
+    ``process_groups``). An ID keeps what it serves: an append never reuses
+    one, not even for the same process (a stored ID serves the observables,
+    such as declared colour and spin correlations, and the values it was
+    generated with, which another generation need not reproduce)."""
 
     owners: dict[str, str] = {}
 
@@ -5229,11 +5454,23 @@ def _validate_public_process_ids(
         if previous is not None:
             raise ProcessIdCollisionError(
                 f"public process ID {public_id!r} would name both {previous} "
-                f"and {owner}; nothing was written. Name the process or alias "
-                "differently (an unnamed request takes a digest-suffixed name)",
+                f"and {owner}; nothing was written. An ID keeps what it "
+                "serves (an append never reuses one, not even for the same "
+                "process): name the process or alias differently (an unnamed "
+                "request takes a digest-suffixed name)",
                 process_ids=(public_id,),
             )
         owners[public_id] = owner
+
+    def served_members(
+        group_map: ProcessGroupMap | None,
+    ) -> Iterator[tuple[str, GroupMember]]:
+        if group_map is None:
+            return
+        for representative, group in group_map.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    yield representative, item
 
     if existing is not None:
         for record in existing.processes:
@@ -5244,14 +5481,168 @@ def _validate_public_process_ids(
                     str(_mapping(alias)["id"]),
                     f"an alias of the artifact's process {process_id!r}",
                 )
+        stored_groups = existing.root / PROCESS_GROUPS_PATH
+        if stored_groups.is_file():
+            for representative, item in served_members(
+                ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
+            ):
+                claim(
+                    item.process_id,
+                    f"the artifact's process {item.expression!r} (served "
+                    f"through {representative!r})",
+                )
     incoming = "appended" if existing is not None else "generated"
     for process in processes:
-        claim(process.process_id, f"the {incoming} process {process.process_id!r}")
+        claim(
+            process.process_id,
+            f"the {incoming} process {process.process_id!r}",
+        )
         for alias in process.aliases:
             claim(
                 str(alias["id"]),
                 f"an alias of the {incoming} process {process.process_id!r}",
             )
+    for representative, item in served_members(process_groups):
+        claim(
+            item.process_id,
+            f"the {incoming} process {item.expression!r} (served through "
+            f"{representative!r})",
+        )
+
+
+def _validate_alias_spellings(
+    existing: ArtifactManifest | None,
+    processes: Sequence[ProcessArtifact],
+) -> None:
+    """Before anything is written: no two alias records serve one spelling
+    that no stored process has. The selectors try stored expressions first,
+    then alias expressions, and count the matching alias records: two
+    aliases of one spelling (two maps of one target onto the same order, or
+    maps that differ only on identical particles) leave it ambiguous though
+    they serve one process. Such a second alias is refused
+    (``ProcessIdCollisionError`` naming both aliases and the spelling), in a
+    fresh generation and an append alike; an alias spelling the expression
+    of a stored process (a nickname of its target) is served by that
+    process and stays. Spellings compare as the selectors compare them
+    (whitespace-normalised, letter-case-insensitively)."""
+
+    from pyamplicol.loops.v2.artifact import _selector_text
+
+    def fold(expression: object) -> str:
+        return _selector_text(str(expression), fold=True)
+
+    records: list[tuple[Mapping[str, object], bool]] = [
+        (_plain_mapping(record), False)
+        for record in (existing.processes if existing is not None else ())
+    ]
+    records += [
+        (
+            {
+                "id": process.process_id,
+                "expression": process.expression,
+                "aliases": [dict(alias) for alias in process.aliases],
+            },
+            True,
+        )
+        for process in processes
+    ]
+    stored = {fold(record.get("expression", "")) for record, _incoming in records}
+    seen: dict[str, tuple[str, bool]] = {}
+    for record, incoming in records:
+        for alias in _sequence(record.get("aliases", ())):
+            entry = _mapping(alias)
+            spelling = fold(entry.get("expression", ""))
+            if spelling in stored:
+                continue
+            alias_id = str(entry["id"])
+            previous = seen.get(spelling)
+            if previous is None:
+                seen[spelling] = (alias_id, incoming)
+                continue
+            if incoming or previous[1]:
+                raise ProcessIdCollisionError(
+                    f"the aliases {previous[0]!r} and {alias_id!r} would both "
+                    f"serve {str(entry.get('expression', ''))!r}, which no stored "
+                    "process spells, and leave that expression ambiguous; "
+                    "nothing was written. Keep one alias per spelling (aliases "
+                    "that permute identical particles spell the same process)",
+                    process_ids=(previous[0], alias_id),
+                )
+
+
+def _validate_append_invariant(
+    existing: ArtifactManifest,
+    processes: Sequence[ProcessArtifact],
+    process_groups: ProcessGroupMap | None = None,
+) -> None:
+    """Before anything is written, the one rule of an append, stated on what
+    the selectors serve. A selector serves a public ID, or a spelling of a
+    process by the class it belongs to (``loops.v2.mapping.side_class``:
+    each side's particles as a multiset, any order, any letter case: the
+    native and the Python selector alike), through the class's owner: a
+    stored process (with its aliases, which are spellings of its class) or a
+    process-group member served through a representative.
+
+    The append is admitted iff after it (i) every public ID names one owner
+    (``_validate_public_process_ids``, run before) and (ii) every class has
+    one owner: an appended process or served member whose class the artifact
+    already owns, or another appended one owns, is refused
+    (``ProcessIdCollisionError``, naming the class and its owner) before
+    anything is written. Then every spelling and ID that resolved before
+    resolves to the same owner after (no class gains an owner, no ID
+    changes), and nothing after is ambiguous. An appended process and its
+    own aliases are one owner. A fresh generation keeps overlapping requests
+    as requested."""
+
+    from pyamplicol.loops.v2.mapping import side_class
+
+    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], tuple[str, str, bool]] = {}
+
+    def own(expression: object, public_id: str, *, incoming: bool) -> None:
+        key = side_class(str(expression))
+        if key is None:
+            return
+        previous = owners.get(key)
+        if previous is None:
+            owners[key] = (public_id, str(expression), incoming)
+            return
+        if not incoming:
+            return
+        owner_id, owner_expression, owner_incoming = previous
+        if owner_incoming:
+            # Two processes of the batch: the artifact holds neither yet.
+            raise ProcessIdCollisionError(
+                f"the appended processes {owner_expression!r} ({owner_id!r}) and "
+                f"{str(expression)!r} ({public_id!r}) are spellings of one "
+                "process (any order of the particles on each side selects "
+                "either); nothing was written. Append one of them",
+                process_ids=(owner_id, public_id),
+            )
+        raise ProcessIdCollisionError(
+            f"the appended process {str(expression)!r} ({public_id!r}) is "
+            f"already in the artifact as {owner_id!r} (it is a spelling of "
+            "it: any order of the particles on each side selects it); "
+            "nothing was written. An artifact holds a process once: select "
+            "it by that ID",
+            process_ids=(owner_id, public_id),
+        )
+
+    for record in existing.processes:
+        own(record.get("expression", ""), str(record["id"]), incoming=False)
+    stored_groups = existing.root / PROCESS_GROUPS_PATH
+    if stored_groups.is_file():
+        group_map = ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
+        for representative, group in group_map.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    own(item.expression, item.process_id, incoming=False)
+    for process in processes:
+        own(process.expression, process.process_id, incoming=True)
+    if process_groups is not None:
+        for representative, group in process_groups.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    own(item.expression, item.process_id, incoming=True)
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:

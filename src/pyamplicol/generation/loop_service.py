@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, nullcontext
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
@@ -22,7 +22,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
-from pyamplicol.api.errors import GenerationError, PyAmpliColError
+from pyamplicol.api.errors import GenerationError, PyAmpliColError, RequestFilterError
 from pyamplicol.api.requests import ProcessSet
 from pyamplicol.api.results import GenerationPlan, GenerationResult
 from pyamplicol.config import ColorContraction
@@ -223,14 +223,16 @@ def _prepare(
     *,
     planning,
     phase,
+    resolved=None,
 ):
     license_state = backend._detect_symbolica_license()
     backend._apply_symbolica_resource_policy(license_state)
-    resolved = (
-        backend._resolve_model_for_plan(source)
-        if planning
-        else backend._resolve_model(source)
-    )
+    if resolved is None:
+        resolved = (
+            backend._resolve_model_for_plan(source)
+            if planning
+            else backend._resolve_model(source)
+        )
     compiled = backend._artifact_model(resolved)
     if compiled.raw_loop_model is None:
         from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
@@ -356,7 +358,12 @@ def _prepare(
     from pyamplicol.models.external import CompiledUFOModel
 
     resolved = replace(resolved, compiled=compiled, model=CompiledUFOModel(compiled))
-    expanded = backend._expand_process_set(processes, resolved, phase)
+    expanded = backend._expand_process_set(
+        processes,
+        resolved,
+        phase,
+        member_filter=_quark_line_cut(run.process.max_quark_lines),
+    )
     backend._apply_symbolica_resource_policy(license_state, process_count=len(expanded))
     entry_limits = []
     explicit = _resolve_limits(names, run.process.max_coupling_orders)
@@ -388,6 +395,57 @@ def _prepare(
     )
 
 
+def quark_lines(process_ir: Any) -> int:
+    """The external quark lines of a concrete process as
+    ``process.max_quark_lines`` counts them, on every route: its colour
+    triplet-antitriplet pairs with every leg outgoing
+    (``color_endpoints.pair_count``, the tree DAG compiler's cut)."""
+
+    return int(process_ir.color_endpoints.pair_count)
+
+
+def _quark_line_cut(
+    limit: int | None,
+) -> Callable[[Any, Sequence[Any]], tuple[int, ...]] | None:
+    """``process.max_quark_lines`` on the one-loop route, as on the tree
+    route: the member filter of the shared expansion
+    (``_expand_process_set(member_filter=...)``, applied before a request's
+    aliases are resolved) that keeps the concrete processes with at most
+    ``limit`` external quark lines (``quark_lines``); they keep the names of
+    the whole expansion. A request every concrete process of which it drops
+    is refused (``RequestFilterError``), before anything is generated."""
+
+    if limit is None:
+        return None
+
+    def kept(request: Any, expanded: Sequence[Any]) -> tuple[int, ...]:
+        lines = [quark_lines(process) for process in expanded]
+        indices = tuple(index for index, count in enumerate(lines) if count <= limit)
+        if not indices:
+            fewest = min(lines)
+            raise RequestFilterError(
+                f"request filter: process.max_quark_lines = {limit} removes "
+                f"every concrete process of {request.expression!r} (each has at "
+                f"least {fewest} quark lines), so there is nothing to generate; "
+                f"process.max_quark_lines >= {fewest} keeps them",
+                processes=(request.expression,),
+                settings=("process.max_quark_lines",),
+            )
+        if len(indices) < len(expanded):
+            notice(
+                _LOGGER,
+                "processes",
+                "process.max_quark_lines = %d drops %d of %d concrete processes of %s",
+                limit,
+                len(expanded) - len(indices),
+                len(expanded),
+                request.name,
+            )
+        return indices
+
+    return kept
+
+
 def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     """``preparation`` with the width parameters of every external particle
     of ``processes`` fixed to zero (``loops.external_widths``), logged."""
@@ -395,8 +453,11 @@ def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     from pyamplicol.loops.external_widths import stable_external_widths
 
     pdgs: set[int] = set()
+    limit = backend._run_config.process.max_quark_lines
     for request in processes.requests:
         for process_ir in backend._expand_request(request, resolved):
+            if limit is not None and quark_lines(process_ir) > limit:
+                continue
             pdgs.update(int(pdg) for pdg in process_ir.initial_pdgs)
             pdgs.update(int(pdg) for pdg in process_ir.final_pdgs)
     widths = stable_external_widths(compiled, pdgs, preparation.fixed_parameters)
@@ -490,8 +551,12 @@ def _resolve_limits(names, limits: Mapping[str, int]) -> dict[str, int]:
 
 
 def _plan_result(backend, processes, blockers, *, context=None, coverage=()):
+    # A plan-wide refusal (``blockers``) lists no process anywhere: generation
+    # then generates none.
     return GenerationPlan(
-        concrete_processes=tuple(e.request for e in context.expanded)
+        concrete_processes=()
+        if blockers
+        else tuple(e.request for e in context.expanded)
         if context
         else processes.requests,
         estimated_coverage={
@@ -512,10 +577,10 @@ def _plan_result(backend, processes, blockers, *, context=None, coverage=()):
             "correlations": False,
             "resolved": True,
             "api_bundle": True,
-            "process_count": len(coverage),
+            "process_count": 0 if blockers else len(coverage),
             "exact_flavor_grouping_requested": backend._run_config.process.flavor_blind,
             "flavor_transport_checked": False,
-            "processes": tuple(coverage),
+            "processes": () if blockers else tuple(coverage),
             "model_declaration": context.declaration.to_dict() if context else None,
             "model_preparation": context.preparation.to_dict() if context else None,
             "source_compatibility_diagnostics": (),
@@ -1417,6 +1482,28 @@ def _born_members(backend, context, memo=None):
     )
 
 
+def _check_requests(
+    context: _LoopContext,
+    requests: Sequence[Any],
+    dags: Sequence[Any] | None = None,
+    memo: Any = None,
+) -> None:
+    """The refusals of every slice request of ``context`` that need only the
+    model and the Born DAG, before any process is generated: its model
+    preparation (``prepare_request_model``, ``memo`` shares it with the
+    generation) and ``_plan_policy_checks``. The dry run and generation
+    both run them, so they refuse the same requests at the same stage."""
+
+    from pyamplicol.loops.v2.assemble import prepare_request_model
+
+    compiled = context.resolved.compiled
+    for index, request in enumerate(requests):
+        prepared = prepare_request_model(compiled, request, memo=memo)
+        _plan_policy_checks(
+            compiled, request, prepared, None if dags is None else dags[index]
+        )
+
+
 def _plan_policy_checks(compiled, request, model, dag):
     """The dry run's checks of an electroweak request that need only the
     model and the Born DAG (``LoopSlice.generate`` makes them again on the
@@ -1465,7 +1552,6 @@ def _plan_v2(backend, processes, blockers, *, model=None):
     (``preparation_cache.store_for``): a dry run fills it when the compiled
     model is available (it never compiles one)."""
     from pyamplicol.loops.preparation_cache import PreparationMemo, store_for
-    from pyamplicol.loops.v2.assemble import prepare_request_model
     from pyamplicol.loops.v2.native_trees import NATIVE_EXPORT_REFUSALS
     from pyamplicol.loops.v2.refusals import (
         LOOP_ADMISSION_REFUSALS,
@@ -1477,12 +1563,25 @@ def _plan_v2(backend, processes, blockers, *, model=None):
 
     blockers = blockers + _v2_blockers(backend)
     context, coverage, skipped = None, [], ()
+    resolved = None
+    if not blockers:
+        source = model or backend._configured_model_source()
+        try:
+            resolved = backend._resolve_model_for_plan(source)
+        except PyAmpliColError as e:
+            # A listed refusal of the model source is the plan's blocker; a
+            # model the dry run cannot load (one it would have to compile)
+            # fails the plan with its reason, as the tree dry run does.
+            if getattr(e, "key", None) is None:
+                raise
+            blockers = (str(keyed_error(e)),)
     if not blockers:
         try:
             context = _prepare(
                 backend,
                 processes,
-                model or backend._configured_model_source(),
+                source,
+                resolved=resolved,
                 planning=True,
                 phase=PhaseHandle(
                     "loop-generation-plan", backend._progress, len(processes.requests)
@@ -1490,13 +1589,13 @@ def _plan_v2(backend, processes, blockers, *, model=None):
             )
             memo = PreparationMemo(store_for(backend._run_config.model))
             context, requests, dags, skipped = _born_members(backend, context, memo)
-            for entry, request, dag, zero in zip(
-                context.expanded, requests, dags, context.colour_zero, strict=True
+            # Every request's refusals before any record: the dry run lists
+            # every member, or none with the refusal (as generation refuses
+            # before generating any process).
+            _check_requests(context, requests, dags, memo)
+            for entry, request, zero in zip(
+                context.expanded, requests, context.colour_zero, strict=True
             ):
-                prepared = prepare_request_model(
-                    context.resolved.compiled, request, memo=memo
-                )
-                _plan_policy_checks(context.resolved.compiled, request, prepared, dag)
                 record = (
                     _loop_induced_coverage(backend, context, entry, request, zero)
                     if request.contribution == "loop-induced"
@@ -1526,8 +1625,9 @@ def _plan_v2(backend, processes, blockers, *, model=None):
                 coverage.append(record)
             _LOGGER.debug("loop preparation: %s", json.dumps(memo.report()))
         except (ValueError, TypeError, RuntimeError, ImportError, PyAmpliColError) as e:
-            # A listed key first (``refusals.keyed_error``).
-            blockers = (str(keyed_error(e)),)
+            # A listed key first (``refusals.keyed_error``); no process is
+            # listed with a refusal, which generation raises before any.
+            blockers, coverage = (str(keyed_error(e)),), []
     # Plain texts (a ``ListedBlocker`` is a ``str`` that also carries its key).
     result = _plan_result(
         backend,
@@ -1565,7 +1665,7 @@ def _plan_v2(backend, processes, blockers, *, model=None):
             f"{refusal.key}: {refusal.feature}" for refusal in LOOP_INTERNAL_REFUSALS
         ),
         # Members of multiparticle requests without a Born (m-sm Q2 (a)).
-        skipped_members=tuple(skipped),
+        skipped_members=() if result.unsupported_features else tuple(skipped),
         process_request_refusals=tuple(
             f"{refusal.key}: {refusal.feature}; instead: {refusal.remedy}"
             for refusal in PROCESS_REQUEST_REFUSALS
@@ -1848,6 +1948,12 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     memo = PreparationMemo(store_for(backend._run_config.model))
     stack = ExitStack()
     try:
+        if mode == "append":
+            # The writer's settings check of an append, before any process
+            # is generated (a v2 one-loop artifact carries no API bundle).
+            from .artifact_writer import check_append_settings
+
+            check_append_settings(output, backend._configuration, api_bundle=False)
         with reporter.phase(
             "loop-model",
             "Preparing the loop model and the requests",
@@ -1876,6 +1982,9 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                     backend, context, memo
                 )
             del _released
+            # Every request's refusals before the first process is generated.
+            with step("checks", "Checking the requests"):
+                _check_requests(context, requests, memo=memo)
             phase.summary = _plural(len(context.expanded), "process")
         native = load_loop_native()
         compiled = context.resolved.compiled

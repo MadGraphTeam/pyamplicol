@@ -419,9 +419,14 @@ charge, one quark number per generation (the CKM matrix is diagonal), one
 lepton number per generation and two ghost numbers. With a non-diagonal CKM
 matrix, the three quark numbers reduce to baryon number.
 
-The built-in SM keeps its own catalogue prefilters (`flavor_scheme`,
-`max_quark_lines`). `pyamplicol model processes` applies the same charge
-filter, but not the colour and amplitude checks. See
+`process.max_quark_lines` applies to every model, at tree level and at one
+loop, and in `pyamplicol model processes`: a concrete process with more
+external quark lines than the limit (colour triplet-antitriplet pairs, every
+leg counted as outgoing) is dropped, the other processes keep their names, and
+a request it empties is refused with an error that names the setting. The
+built-in SM also keeps its own catalogue prefilter `flavor_scheme`.
+`pyamplicol model processes` applies the same charge filter, but not the
+colour and amplitude checks. See
 [Models and Processes](models-and-processes.md#multiparticles)
 for the expansion syntax.
 
@@ -584,9 +589,11 @@ Every generation lane (compiled, eager, recurrence, on-the-fly) writes
 payload role `process-groups` and media type `application/json`. Without
 `--flavor-blind` and without numerical analysis, each generated subprocess is
 its own group with factor 1. An append keeps the stored groups and adds the
-new subprocesses. A newly generated subprocess whose process ID matches an
-ungenerated flavour-blind member replaces that member and becomes its own
-group.
+new subprocesses. An append never reuses a public process ID: a process, an
+alias, or a member served through a representative keeps what it serves, so
+an appended subprocess named like a served member, even the same
+subprocess, is refused before anything is written (`ProcessIdCollisionError`);
+generate it under another name, or into a new artifact.
 
 The example below comes from
 

@@ -13,7 +13,11 @@ import pytest
 
 import pyamplicol.generation.artifact_writer as artifact_writer
 import pyamplicol.generation.service as service_module
-from pyamplicol.api.errors import ArtifactError, GenerationError
+from pyamplicol.api.errors import (
+    ArtifactError,
+    GenerationError,
+    ProcessIdCollisionError,
+)
 from pyamplicol.api.requests import ModelSource, ProcessRequest, ProcessSet
 from pyamplicol.api.services import Generator
 from pyamplicol.artifacts import inspect_artifact, load_manifest
@@ -659,9 +663,7 @@ def test_on_the_fly_writer_and_inspector_validate_optional_color_basis(
     )
     mutations = [{"color_basis": value} for value in ("other", None, True, [])]
     mutations.append(
-        {"trace_reflections_folded": True}
-        if contracted
-        else {"color_basis": "adjoint"}
+        {"trace_reflections_folded": True} if contracted else {"color_basis": "adjoint"}
     )
     if contracted:
         mutations.append({"color_coverage": "complete"})
@@ -757,11 +759,13 @@ def test_on_the_fly_writer_append_skips_structural_proofs_for_complete_set(
     compiled = load_compiled_model(source_path)
     artifact = tmp_path / "artifact"
     first = _process_artifact(tmp_path, runtime_name="first.pacbin")
-    second_process_id = "d_dbar_to_z_copy"
+    second_process_id = "u_ubar_to_z"
+    # An append adds another process than the artifact's.
     second = _process_artifact(
         tmp_path,
         runtime_name="second.pacbin",
         process_id=second_process_id,
+        expression="u u~ > z",
     )
 
     write_schema_v3_artifact(
@@ -842,42 +846,41 @@ def test_writer_records_process_groups_and_appended_processes(
         ("u_ubar_to_z", False),
     ]
 
-    # Generating an assumed member makes it a representative of its own.
-    write_schema_v3_artifact(
-        artifact,
-        mode="append",
-        source=source,
-        compiled_model=compiled,
-        configuration=_configuration(),
-        processes=(
-            _process_artifact(
-                tmp_path,
-                runtime_name="second.pacbin",
-                process_id="u_ubar_to_z",
-                expression="u u~ > z",
-            ),
-        ),
-        timings={"total": 0.2},
-        api_bundle_hook=None,
+    # An appended process may not take the ID of a served member, not even
+    # the same process: the ID keeps what it serves (an assumed member's
+    # value would change). Nothing is written.
+    before = sorted(
+        (str(path.relative_to(artifact)), path.read_bytes())
+        for path in artifact.rglob("*")
+        if path.is_file()
     )
-    manifest = load_manifest(artifact, verify_payloads=True)
+    with pytest.raises(ProcessIdCollisionError, match="'u_ubar_to_z'"):
+        write_schema_v3_artifact(
+            artifact,
+            mode="append",
+            source=source,
+            compiled_model=compiled,
+            configuration=_configuration(),
+            processes=(
+                _process_artifact(
+                    tmp_path,
+                    runtime_name="second.pacbin",
+                    process_id="u_ubar_to_z",
+                    expression="u u~ > z",
+                ),
+            ),
+            timings={"total": 0.2},
+            api_bundle_hook=None,
+        )
+    assert before == sorted(
+        (str(path.relative_to(artifact)), path.read_bytes())
+        for path in artifact.rglob("*")
+        if path.is_file()
+    )
     assert [
-        (record.role, record.media_type)
-        for record in manifest.payloads
-        if record.path == "process-groups.json"
-    ] == [("process-groups", "application/json")]
-    appended = read_process_groups(artifact)
-    assert appended is not None
-    assert {
-        identifier: [
-            (member.process_id, member.factor, member.permutation, member.basis)
-            for member in group.members
-        ]
-        for identifier, group in appended.groups.items()
-    } == {
-        _PROCESS_ID: [(_PROCESS_ID, 1, (0, 1, 2), GroupingBasis.IDENTITY)],
-        "u_ubar_to_z": [("u_ubar_to_z", 1, (0, 1, 2), GroupingBasis.IDENTITY)],
-    }
+        (member.process_id, member.generated)
+        for member in read_process_groups(artifact).members()
+    ] == [(_PROCESS_ID, True), ("u_ubar_to_z", False)]
 
 
 @pytest.mark.parametrize(

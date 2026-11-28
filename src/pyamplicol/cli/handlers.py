@@ -999,6 +999,11 @@ class DefaultCliServices:
             **catalog.default_multiparticles(),
             **config.process.multiparticles,
         }
+        # process.max_quark_lines bounds the external quark lines of every
+        # listed process as it bounds generation's (tree and one loop): the
+        # colour triplet-antitriplet pairs with every leg outgoing.
+        max_quark_lines = config.process.max_quark_lines
+        dropped: set[str] = set()
         entries: dict[str, dict[str, object]] = {}
         for entry in config.process.entries:
             request = entry.expression
@@ -1013,6 +1018,12 @@ class DefaultCliServices:
                     compiled.ir,
                     color_accuracy=config.color.accuracy,
                 )
+                if (
+                    max_quark_lines is not None
+                    and process_ir.color_endpoints.pair_count > max_quark_lines
+                ):
+                    dropped.add(process_ir.key)
+                    continue
                 entries.setdefault(
                     process_ir.key,
                     {
@@ -1029,6 +1040,14 @@ class DefaultCliServices:
             "requests": [entry.expression for entry in config.process.entries],
             "default_key": concrete[0]["key"] if concrete else None,
             "n_entries": len(concrete),
+            **(
+                {
+                    "max_quark_lines": max_quark_lines,
+                    "n_dropped_by_max_quark_lines": len(dropped - set(entries)),
+                }
+                if max_quark_lines is not None
+                else {}
+            ),
             "multiparticles": {
                 name: list(values) for name, values in sorted(multiparticles.items())
             },
