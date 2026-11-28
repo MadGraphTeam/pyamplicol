@@ -109,6 +109,7 @@ if TYPE_CHECKING:
         ReductionGroup,
         ReductionUnavailable,
         ResolvedEvaluation,
+        ResourceExhaustedError,
         Runtime,
         TreeGradedEvaluation,
         TreeOrderEvaluation,
@@ -220,6 +221,7 @@ __all__ = [
     "ReductionUnavailable",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
+    "ResourceExhaustedError",
     "ResultWarning",
     "RunConfig",
     "Runtime",
@@ -258,6 +260,7 @@ _ERROR_EXPORTS = (
     "NativePlatformError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "ResourceExhaustedError",
 )
 _REQUEST_EXPORTS = (
     "ModelSource",
