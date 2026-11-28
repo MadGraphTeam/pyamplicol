@@ -1200,6 +1200,12 @@ pub(crate) fn loop_factor<A: Arith>(arith: &A, average: i64) -> C<A::N> {
 pub struct V2Runtime {
     path: PathBuf,
     artifact: LoadedLoopV2Artifact,
+    /// The selected process's leg of each stored leg (representative index
+    /// to public index, `ArtifactSelection::external_permutation`): the
+    /// identity unless a permutation alias, a stored expression in another
+    /// order within each side or a process-group member was selected, which
+    /// the stored process serves at the permuted momenta.
+    public: Vec<usize>,
     record: NativeRecord,
     process: Runner,
     /// The reduction backend of every evaluation ([`V2Runtime::set_reduction`]).
@@ -1471,9 +1477,19 @@ impl V2Runtime {
                         == rusticol_core::RusticolErrorKind::UnsupportedRuntimeCapability => {}
             Err(error) => return Err(error),
         }
+        let public = artifact.selection.external_permutation.clone();
+        if public.len() != record.legs.len()
+            || public.iter().copied().collect::<BTreeSet<_>>()
+                != (0..record.legs.len()).collect::<BTreeSet<_>>()
+        {
+            return Err(invalid(
+                "the process selection does not permute the stored legs",
+            ));
+        }
         let runtime = Self {
             path,
             artifact,
+            public,
             record,
             process,
             reduction,
@@ -1555,6 +1571,45 @@ impl V2Runtime {
     pub fn metadata_json(&self) -> RusticolResult<String> {
         serde_json::to_string(&self.artifact.metadata)
             .map_err(|e| RusticolError::serialization(e.to_string()))
+    }
+
+    /// The selected process's leg of each stored leg (0-based; the
+    /// identity for a stored process selected as itself): the callers'
+    /// momenta, helicity rows and spin legs are in the selected process's
+    /// order and reach the stored process through it
+    /// ([`V2Runtime::to_stored`]).
+    pub fn external_permutation(&self) -> &[usize] {
+        &self.public
+    }
+
+    /// Whether the selected process is served by the stored process through
+    /// a leg permutation or a process-group relation (its public order or
+    /// labels differ from the stored process's).
+    pub fn remaps(&self) -> bool {
+        self.artifact.selection.remaps_public_process()
+    }
+
+    /// The selected process's id and expression as the caller selected it
+    /// (an alias's or member's own; a side-permuted expression keeps the
+    /// stored id, as the Python runtime does), and the stored process's id.
+    pub fn process_identity(&self) -> (&str, &str, &str) {
+        let selection = &self.artifact.selection;
+        (
+            &selection.requested_id,
+            &selection.public_expression,
+            &selection.process.id,
+        )
+    }
+
+    /// The stored process's values of the selected process's per-leg
+    /// `values` (`q[r] = p[public[r]]`): momenta of one point by leg, or any
+    /// other per-leg record. The evaluation entries of this runtime take the
+    /// stored process's order (a caller maps its points with this, as the
+    /// SDK does); [`V2Runtime::improve_kinematics`] takes the selected
+    /// process's (the Python API improves a mapped process's points in the
+    /// caller's legs).
+    pub fn to_stored<T: Clone>(&self, values: &[T]) -> Vec<T> {
+        self.public.iter().map(|&leg| values[leg].clone()).collect()
     }
 
     pub fn external_count(&self) -> usize {
@@ -1985,7 +2040,9 @@ impl V2Runtime {
     /// The kinematics improvement of a batch's points in `precision` (m-lit
     /// lit-psimprove; `rusticol_core::kinematics_improvement`, the one
     /// implementation): each point's physical momenta (`4 × legs` exact
-    /// rationals, label order, the initial states first) improved in that
+    /// rationals, the selected process's label order, the initial states
+    /// first, as the Python API improves a mapped process's points in the
+    /// caller's legs) improved in that
     /// carrier's arithmetic with `variant` (MadLoop's dispatch with
     /// `fallback`, the public chain) toward the squared masses an evaluation
     /// in that carrier binds (`TreeProgram::bind`'s leg masses, one source
@@ -2040,6 +2097,14 @@ impl V2Runtime {
                     .leg_masses(precision, &values, &scales[0], &zero)?
             }
         };
+        // The stored legs' masses on the selected process's legs.
+        let mut masses = masses;
+        if self.public.iter().enumerate().any(|(r, &p)| r != p) {
+            let stored = masses.clone();
+            for (r, &p) in self.public.iter().enumerate() {
+                masses[p] = stored[r].clone();
+            }
+        }
         let carrier = match precision {
             V2Precision::Double => Carrier::Binary64,
             V2Precision::DoubleDouble => Carrier::DoubleDouble,

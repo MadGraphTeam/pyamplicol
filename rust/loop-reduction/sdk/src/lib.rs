@@ -438,6 +438,10 @@ pub struct Runtime {
     kinematics_binary64: bool,
     color_components: Vec<String>,
     history_ids: Vec<String>,
+    /// Per correlated output (`history_ids`) its column among the stored
+    /// process's correlated columns (the stored history serving it; the
+    /// identity for a stored process selected as itself).
+    history_columns: Vec<usize>,
     spin_classes: Vec<Vec<usize>>,
     /// The stored observable columns: the resolved helicity rows (1-based
     /// legs), their colour component ids, the squared Born orders of the
@@ -445,15 +449,44 @@ pub struct Runtime {
     observables: Result<Observables, String>,
 }
 
-/// The axes of a process's stored observable columns.
+/// The axes of a process's stored observable columns, on the selected
+/// process's legs.
 #[derive(Clone, Debug)]
 struct Observables {
+    /// The resolved helicity rows (1-based legs of the selected process):
+    /// the stored rows, or for a mapped process its own rows (the stored
+    /// rows read on its legs) in its sorted order, as the Python API lists
+    /// them (`V2VirtualRuntime.physics`, `evaluate_resolved`).
     rows: Vec<Vec<(usize, i32)>>,
+    /// Per row its stored row index (the identity for a stored process
+    /// selected as itself).
+    stored: Vec<usize>,
     colour_ids: Vec<String>,
     born_orders: usize,
     /// A loop-induced process's amplitude-basis size (its anchors); 0 for
     /// a Born-interfered one.
     anchors: usize,
+}
+
+impl Observables {
+    /// The selected process's row index of a stored row index.
+    fn public_row(&self, stored: usize) -> RusticolResult<usize> {
+        self.stored
+            .iter()
+            .position(|&row| row == stored)
+            .ok_or_else(|| invalid("a stored helicity row is not a row of the process"))
+    }
+    /// Resolved column keys (stored row, colour component) on the selected
+    /// process's rows.
+    fn public_keys(&self, keys: Vec<(usize, usize)>) -> RusticolResult<Vec<(usize, usize)>> {
+        keys.into_iter()
+            .map(|(row, colour)| Ok((self.public_row(row)?, colour)))
+            .collect()
+    }
+    /// The stored row indices of the selected process's row indices.
+    fn stored_rows(&self, rows: &[usize]) -> Vec<usize> {
+        rows.iter().map(|&row| self.stored[row]).collect()
+    }
 }
 
 impl Runtime {
@@ -523,23 +556,53 @@ impl Runtime {
             } else {
                 vec![accuracy.clone()]
             };
+            // The rows on the selected process's legs; a mapped process's in
+            // its sorted order.
+            let public = native.external_permutation();
+            let mut rows: Vec<(Vec<(usize, i32)>, usize)> = rows
+                .into_iter()
+                .enumerate()
+                .map(|(stored, row)| {
+                    let mut row: Vec<(usize, i32)> = row
+                        .into_iter()
+                        .map(|(leg, h)| (public[leg] + 1, h))
+                        .collect();
+                    row.sort_unstable();
+                    (row, stored)
+                })
+                .collect();
+            if native.remaps() {
+                rows.sort();
+            }
+            let (histories, classes) = native.mapped_correlations()?;
+            let stored_histories = native.correlation_histories()?;
+            let history_columns = histories
+                .iter()
+                .map(|(_, stored)| {
+                    stored_histories
+                        .iter()
+                        .position(|id| id == stored)
+                        .ok_or_else(|| invalid("a served history is not a stored column"))
+                })
+                .collect::<RusticolResult<Vec<_>>>()?;
             Ok((
                 Observables {
-                    rows: rows
-                        .into_iter()
-                        .map(|row| row.into_iter().map(|(leg, h)| (leg + 1, h)).collect())
-                        .collect(),
+                    stored: rows.iter().map(|(_, stored)| *stored).collect(),
+                    rows: rows.into_iter().map(|(row, _)| row).collect(),
                     colour_ids,
                     born_orders: native.column_born_axis()?.len(),
                     anchors: if native.loop_induced() { basis } else { 0 },
                 },
-                native.correlation_histories()?,
-                native.spin_correlation_classes()?,
+                histories.into_iter().map(|(id, _)| id).collect(),
+                history_columns,
+                classes,
             ))
         })();
-        let (observables, history_ids, spin_classes) = match observables {
-            Ok((observables, histories, classes)) => (Ok(observables), histories, classes),
-            Err(error) => (Err(error.to_string()), vec![], vec![]),
+        let (observables, history_ids, history_columns, spin_classes) = match observables {
+            Ok((observables, histories, columns, classes)) => {
+                (Ok(observables), histories, columns, classes)
+            }
+            Err(error) => (Err(error.to_string()), vec![], vec![], vec![]),
         };
         let (helicities, colours) = match &observables {
             Ok(axes) => (axes.rows.len(), axes.colour_ids.len()),
@@ -575,6 +638,7 @@ impl Runtime {
             kinematics_binary64: kinematics_improvement::DEFAULT_BINARY64,
             threads_requested: threads,
             history_ids,
+            history_columns,
             spin_classes,
             observables,
         })
@@ -905,6 +969,65 @@ impl Runtime {
         &mut self,
         inputs: &'a LoopInputs,
     ) -> RusticolResult<(Cow<'a, LoopInputs>, Option<Vec<serde_json::Value>>)> {
+        let (inputs, records) = self.improved_public_inputs(inputs)?;
+        Ok((self.stored_inputs(inputs)?, records))
+    }
+    /// A mapped process's inputs (momenta and spin-source legs in its own
+    /// order, after the kinematics improvement, which runs in the caller's
+    /// legs as the Python API's) in the stored process's order
+    /// (`q[r] = p[public[r]]`, `V2Runtime::to_stored`): every evaluation
+    /// entry takes them through [`Runtime::improved_inputs`]. A stored
+    /// process selected as itself takes the inputs unchanged.
+    fn stored_inputs<'a>(
+        &self,
+        inputs: Cow<'a, LoopInputs>,
+    ) -> RusticolResult<Cow<'a, LoopInputs>> {
+        let Engine::V4(native) = &self.engine;
+        let public = native.external_permutation();
+        if public.iter().enumerate().all(|(r, &p)| r == p) {
+            return Ok(inputs);
+        }
+        let legs = self.shape.external_count;
+        let mut mapped = inputs.into_owned();
+        let width = legs * 4;
+        if width == 0 || !mapped.momenta.len().is_multiple_of(width) {
+            return Err(invalid(
+                "momentum count must equal point_count * external_count * 4",
+            ));
+        }
+        mapped.momenta = mapped
+            .momenta
+            .chunks_exact(width)
+            .flat_map(|point| {
+                let legs: Vec<&[String]> = point.chunks_exact(4).collect();
+                native
+                    .to_stored(&legs)
+                    .into_iter()
+                    .flat_map(|leg| leg.iter().cloned())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let mut stored = vec![0; legs];
+        for (r, &p) in public.iter().enumerate() {
+            stored[p] = r + 1;
+        }
+        mapped.spin_sources = std::mem::take(&mut mapped.spin_sources)
+            .into_iter()
+            .map(|(leg, values)| {
+                let label = leg
+                    .checked_sub(1)
+                    .and_then(|index| stored.get(index).copied())
+                    .unwrap_or(leg);
+                (label, values)
+            })
+            .collect();
+        Ok(Cow::Owned(mapped))
+    }
+    /// [`Runtime::improved_inputs`] in the caller's legs.
+    fn improved_public_inputs<'a>(
+        &mut self,
+        inputs: &'a LoopInputs,
+    ) -> RusticolResult<(Cow<'a, LoopInputs>, Option<Vec<serde_json::Value>>)> {
         let double = self.arithmetic == Arithmetic::Double;
         if !kinematics_improvement::reaches(self.kinematics_binary64, double) {
             return Ok((Cow::Borrowed(inputs), None));
@@ -1067,7 +1190,17 @@ impl Runtime {
                 "certificate": certificate,
             })
         });
+        // The selected process (an alias's or process-group member's own id
+        // and expression; a side-permuted expression keeps the stored id, as
+        // the Python API's `physics.process_id`) and the stored process that
+        // serves it at the permuted momenta (`external_permutation`: the
+        // selected leg of each stored leg).
+        let (process_id, process, representative) = native.process_identity();
         serde_json::to_string(&serde_json::json!({
+            "process_id": process_id,
+            "process": process,
+            "representative_process_id": representative,
+            "external_permutation": native.external_permutation(),
             "contribution_kind":metadata.contribution_kind,
             "interference":metadata.interference,
             "reduction": {
@@ -1516,12 +1649,23 @@ impl Runtime {
                 Resolution::Contracted => axes.colour_ids.clone(),
                 Resolution::AmplitudeBasis => (0..axes.anchors).map(anchor_id).collect(),
             };
+            // The stored rows of the kept rows, in the stored order the
+            // native outputs follow, and each one's place in the layout.
+            let mut stored: Vec<(usize, usize)> = kept_rows
+                .iter()
+                .enumerate()
+                .map(|(place, &row)| (axes.stored[row], place))
+                .collect();
+            stored.sort_unstable();
+            let order: Vec<usize> = stored.iter().map(|&(_, place)| place).collect();
             let call = InducedCall::Resolved {
                 resolution,
-                rows: kept.is_some().then(|| kept_rows.clone()),
+                rows: kept
+                    .is_some()
+                    .then(|| stored.iter().map(|&(row, _)| row).collect()),
             };
             let mut evaluation = Evaluation::induced_resolved(
-                native, &inputs, &call, &kept_rows, components, request,
+                native, &inputs, &call, &kept_rows, &order, components, request,
             )?;
             with_kinematics(&mut evaluation.diagnostics_json, kinematics)?;
             return Ok(evaluation);
@@ -1531,7 +1675,8 @@ impl Runtime {
             (None, Some(by_point)) => by_point.iter().map(|&row| vec![row as usize]).collect(),
             (None, None) => unreachable!("an unselected ordinary evaluation returned above"),
         };
-        let mut evaluation = Evaluation::induced_selected(native, &inputs, &by_point, request)?;
+        let mut evaluation =
+            Evaluation::induced_selected(native, &inputs, &by_point, &axes.stored, request)?;
         with_kinematics(&mut evaluation.diagnostics_json, kinematics)?;
         Ok(evaluation)
     }
@@ -1625,7 +1770,7 @@ impl Runtime {
                 (None, Some(by_point)) => by_point.iter().map(|&row| vec![row as usize]).collect(),
                 (None, None) => unreachable!("an unselected evaluation returned before"),
             };
-            Evaluation::born_selected(native, &inputs, &by_point, request)?
+            Evaluation::born_selected(native, &inputs, &by_point, &axes.stored, request)?
         };
         with_kinematics(&mut evaluation.diagnostics_json, kinematics)?;
         Ok(evaluation)
@@ -2471,7 +2616,7 @@ impl Evaluation {
         monitoring: Monitoring<'_>,
     ) -> RusticolResult<Self> {
         let (momenta, scales) = exact_inputs(&inputs, shape.external_count)?;
-        let keys = native.resolved_keys()?;
+        let keys = axes.public_keys(native.resolved_keys()?)?;
         let stability = monitoring.not_run_resolved();
         match arithmetic {
             Arithmetic::Double => {
@@ -2619,15 +2764,20 @@ impl Evaluation {
         inputs: &LoopInputs,
         call: &InducedCall,
         rows: &[usize],
+        order: &[usize],
         components: Vec<String>,
         request: InducedRequest<'_>,
     ) -> RusticolResult<Self> {
         let shape = request.shape;
         let (momenta, scales) = exact_inputs(&inputs, shape.external_count)?;
-        let keys: Vec<(usize, usize)> = (0..rows.len())
-            .flat_map(|row| (0..components.len()).map(move |colour| (row, colour)))
+        // The native outputs come per kept stored row in the stored order:
+        // `order` places each in the layout's rows.
+        let keys: Vec<(usize, usize)> = order
+            .iter()
+            .flat_map(|&row| (0..components.len()).map(move |colour| (row, colour)))
             .collect();
         let axes = Observables {
+            stored: (0..rows.len()).collect(),
             rows: vec![Vec::new(); rows.len()],
             colour_ids: components,
             born_orders: 0,
@@ -2726,6 +2876,7 @@ impl Evaluation {
         native: &mut V2Runtime,
         inputs: &LoopInputs,
         by_point: &[Vec<usize>],
+        stored: &[usize],
         request: InducedRequest<'_>,
     ) -> RusticolResult<Self> {
         let shape = request.shape;
@@ -2764,7 +2915,8 @@ impl Evaluation {
                 };
                 for (rows, members) in &groups {
                     let call = InducedCall::Selection {
-                        rows: (*rows).clone(),
+                        // The stored rows of the selected process's rows.
+                        rows: rows.iter().map(|&row| stored[row]).collect(),
                     };
                     let part_momenta: Vec<Vec<Rational>> =
                         members.iter().map(|&p| momenta[p].clone()).collect();
@@ -2860,6 +3012,7 @@ impl Evaluation {
         native: &mut V2Runtime,
         inputs: &LoopInputs,
         by_point: &[Vec<usize>],
+        stored: &[usize],
         request: InducedRequest<'_>,
     ) -> RusticolResult<Self> {
         let shape = request.shape;
@@ -2895,7 +3048,8 @@ impl Evaluation {
                     uncertified: BTreeMap::new(),
                 };
                 for (rows, members) in &groups {
-                    let kept: BTreeSet<usize> = rows.iter().copied().collect();
+                    // The stored rows of the selected process's rows.
+                    let kept: BTreeSet<usize> = rows.iter().map(|&row| stored[row]).collect();
                     let part_momenta: Vec<Vec<Rational>> =
                         members.iter().map(|&p| momenta[p].clone()).collect();
                     let part_scales: Vec<Rational> =
@@ -2991,7 +3145,7 @@ impl Evaluation {
             ..request.shape
         };
         let (momenta, scales) = exact_inputs(&inputs, shape.external_count)?;
-        let rows: BTreeSet<usize> = kept.iter().copied().collect();
+        let rows: BTreeSet<usize> = axes.stored_rows(kept).into_iter().collect();
         let poles = request.poles.v2();
         let precision = request.arithmetic.v2();
         let mut keys = Vec::new();
@@ -3011,7 +3165,7 @@ impl Evaluation {
                             poles,
                             precision,
                         )?;
-                        keys = found;
+                        keys = axes.public_keys(found)?;
                         match points {
                             ResolvedPoints::$variant(points) => Ok(points),
                             _ => Err(invalid("a resolved selection of another carrier")),

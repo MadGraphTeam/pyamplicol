@@ -223,10 +223,13 @@ impl Runtime {
             requested: self.stability_checks().enabled(),
         }
         .not_run_resolved();
+        // The spin legs as the caller names them (a mapped process's own);
+        // the evaluation reads them on the stored process's legs.
+        let spin_legs: Vec<usize> = inputs.spin_sources.keys().copied().collect();
+        let columns = self.history_columns.clone();
         let (inputs, kinematics) = self.improved_inputs(inputs)?;
         let (momenta, scales) = exact_inputs(&inputs, self.shape.external_count)?;
         let points = inputs.point_ids.len();
-        let spin_legs: Vec<usize> = inputs.spin_sources.keys().copied().collect();
         let spins = spin_rows(&inputs.spin_sources, points)?;
         let Engine::V4(native) = &mut self.engine;
         let evaluation = match arithmetic {
@@ -246,6 +249,7 @@ impl Runtime {
                         )
                     },
                 )?;
+                let found = served_columns(found, &columns);
                 CorrelatedEvaluation::from_columns(
                     &inputs, shape, poles, arithmetic, found, &reduction, &fallbacks, stability,
                 )?
@@ -277,7 +281,10 @@ impl Runtime {
                         ),
                     },
                 )?;
-                let found = found.into_iter().map(|(point, _)| point).collect();
+                let found = served_columns(
+                    found.into_iter().map(|(point, _)| point).collect(),
+                    &columns,
+                );
                 CorrelatedEvaluation::from_columns(
                     &inputs, shape, poles, arithmetic, found, &reduction, &fallbacks, stability,
                 )?
@@ -291,6 +298,17 @@ impl Runtime {
         with_kinematics(&mut evaluation.diagnostics_json, kinematics)?;
         Ok(evaluation)
     }
+}
+
+/// Per point the served histories' columns of the stored correlated
+/// columns (`columns`: per served history its stored column; a mapped
+/// process is served the histories whose image the stored process stores,
+/// `V2Runtime::mapped_correlations`).
+fn served_columns<N: Clone>(points: Vec<ColumnPoint<N>>, columns: &[usize]) -> Vec<ColumnPoint<N>> {
+    points
+        .into_iter()
+        .map(|point| point.map(|found| columns.iter().map(|&k| found[k].clone()).collect()))
+        .collect()
 }
 
 /// The spin rows of the points at `indices` ([`pick`]; none without spin

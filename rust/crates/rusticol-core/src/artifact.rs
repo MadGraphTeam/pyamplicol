@@ -308,6 +308,10 @@ pub struct ProcessGroupRelation {
     pub conjugated: bool,
     /// Member particle names in the public external order.
     pub external_particles: Vec<String>,
+    /// How the relation was established (`process-groups.json` `basis`:
+    /// `flavor-blind`, `numerical`, `exact-loop-flavor`, ...); `None` when
+    /// the map does not record it.
+    pub basis: Option<String>,
 }
 
 impl ProcessGroupRelation {
@@ -2287,7 +2291,7 @@ fn normalize_process_expression(expression: &str) -> String {
 const PROCESS_GROUPS_KIND: &str = "pyamplicol-process-groups";
 const PROCESS_GROUPS_SCHEMA_VERSION: u64 = 1;
 
-// Unknown keys (`analyses`, `basis`, `warning`, ...) are ignored on purpose.
+// Unknown keys (`analyses`, `warning`, ...) are ignored on purpose.
 #[derive(Deserialize)]
 struct ProcessGroupsDocument {
     kind: String,
@@ -2316,6 +2320,8 @@ struct ProcessGroupMemberRecord {
     permutation: Vec<usize>,
     conjugated: bool,
     generated: bool,
+    #[serde(default)]
+    basis: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -2344,6 +2350,7 @@ struct ProcessGroupMember {
     factor_numerator: u64,
     factor_denominator: u64,
     conjugated: bool,
+    basis: Option<String>,
 }
 
 impl ProcessGroups {
@@ -2475,6 +2482,7 @@ impl ProcessGroups {
                     factor_numerator,
                     factor_denominator,
                     conjugated: member.conjugated,
+                    basis: member.basis,
                 });
             }
         }
@@ -2583,6 +2591,7 @@ impl ProcessGroupMember {
                 factor_denominator: self.factor_denominator,
                 conjugated: self.conjugated,
                 external_particles: particles,
+                basis: self.basis.clone(),
             }),
         })
     }
