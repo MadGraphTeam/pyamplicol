@@ -28,6 +28,7 @@ from pyamplicol._internal.versions import (
 )
 from pyamplicol.api.errors import (
     ArtifactError,
+    ConfigurationError,
     GenerationError,
     ModelError,
     PyAmpliColError,
@@ -68,6 +69,12 @@ from ..color.plan import (
     build_color_plan,
     build_color_topology_replay_certificate,
     build_lc_topology_replay_plan,
+)
+from ..color.plan_build import (
+    _canonical_cycle,
+    _reference_lc_color_sectors,
+    _sector_tensor_key,
+    validate_reference_color_order,
 )
 from ..models.adjoint_color_certificate import adjoint_tree_color_basis_is_proven
 from ..models.base import CouplingOrders, Model
@@ -2712,6 +2719,83 @@ class _ExpandedProcess:
     group_members: tuple[GroupMember, ...] = ()
 
 
+def _unfolded_subset(
+    process: CanonicalProcessIR,
+    folded: GenericColorPlan,
+    selected: Iterable[int] | None,
+    *,
+    reference_color_order: Sequence[int] | None,
+) -> tuple[GenericColorPlan, frozenset[int]]:
+    """The unfolded plan of ``folded`` and the ids of both orientations of
+    every kept sector (the ``selected`` ids of ``folded``, or all of its
+    capped sectors)."""
+
+    chosen = None if selected is None else {int(sector_id) for sector_id in selected}
+    keys = {
+        _sector_tensor_key(sector, folded=True)
+        for sector in folded.sectors
+        if chosen is None or int(sector.id) in chosen
+    }
+    unfolded = build_color_plan(
+        process,
+        basis="trace",
+        color_accuracy=folded.color_accuracy,
+        max_sectors=None,
+        reference_color_order=reference_color_order,
+        fold_trace_reflections=False,
+    )
+    return unfolded, frozenset(
+        int(sector.id)
+        for sector in unfolded.sectors
+        if _sector_tensor_key(sector, folded=True) in keys
+    )
+
+
+def _optional_list(values: Sequence[int] | None) -> list[int] | None:
+    return None if values is None else list(values)
+
+
+def _canonical_reference_word(
+    process: CanonicalProcessIR,
+    reference: Sequence[int] | None,
+    *,
+    folded: bool,
+) -> tuple[int, ...] | None:
+    """A reference colour order in the spelling of the sector it names: its
+    coloured labels, and without a quark line the trace from its smallest
+    label (the smaller orientation where reflections are folded). A cyclic
+    respelling or a reflection names the same sector, never another."""
+
+    if reference is None or not _reference_lc_color_sectors(process, reference):
+        # A reference that names no sector reorders nothing in any lane.
+        return None
+    coloured = {
+        *process.fundamental_labels,
+        *process.antifundamental_labels,
+        *process.adjoint_labels,
+    }
+    word = tuple(int(label) for label in reference if int(label) in coloured)
+    if process.fundamental_labels or process.antifundamental_labels:
+        # Open lines in the selector's canonical spelling: each from its
+        # fundamental end (a reference may start a line at its antiquark), in
+        # the process's fundamental-label order (another order of whole lines
+        # is the same colour tensor).
+        named = _reference_lc_color_sectors(process, reference)
+        if not named:
+            return word
+        position = {
+            int(label): index for index, label in enumerate(process.fundamental_labels)
+        }
+        lines = tuple(
+            sorted(
+                named[0].open_color_lines,
+                key=lambda line: position[int(line.fundamental_label)],
+            )
+        )
+        return tuple(int(label) for line in lines for label in line.coloured_labels)
+    return _canonical_cycle(word, folded=folded)
+
+
 class _NoModelSupportedAmplitudes(GenerationError):
     """A concrete tree-level subprocess has no amplitude in the active model."""
 
@@ -3439,6 +3523,7 @@ class GenerationBackend:
                 resolved_model,
                 PhaseHandle(task_id, self._progress, len(processes.requests)),
             )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -3489,7 +3574,7 @@ class GenerationBackend:
                 self._progress.emit(
                     ProgressEnd(task_id, success=False, message=str(exc))
                 )
-            if isinstance(exc, (GenerationError, ModelError)):
+            if isinstance(exc, (GenerationError, ModelError, ConfigurationError)):
                 raise
             raise GenerationError(str(exc)) from exc
         if self._progress is not None:
@@ -3635,6 +3720,7 @@ class GenerationBackend:
                 phase.summary = f"{len(expanded):,} concrete " + (
                     "process" if len(expanded) == 1 else "processes"
                 )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -4160,7 +4246,11 @@ class GenerationBackend:
                 coupling_policy,
             ),
             coupling_order_limits=explicit_limits,
-            reference_color_order=self._process_selection.reference_color_order,
+            reference_color_order=_canonical_reference_word(
+                expanded.process_ir,
+                self._process_selection.reference_color_order,
+                folded=False,
+            ),
             color_basis=self._fft_color_basis(expanded.process_ir, model),
         )
         return _ProjectedOnTheFlyProcess(
@@ -4191,6 +4281,78 @@ class GenerationBackend:
             "run time on a complete artifact (eager, compiled, recurrence or "
             "on-the-fly)"
         )
+
+    def _validate_concrete_colour_selection(
+        self,
+        expanded: Sequence[_ExpandedProcess],
+        resolved_model: _ResolvedModel,
+    ) -> None:
+        """The colour selectors checked against each concrete process, before
+        any colour plan or generation: a malformed reference order is a
+        configuration error in every mode, and the eager mode refuses a
+        colour-sector subset of a plan with folded trace reflections."""
+
+        selection = self._process_selection
+        for entry in expanded:
+            validate_reference_color_order(
+                entry.process_ir, selection.reference_color_order
+            )
+        if (
+            not self._eager_execution_enabled
+            or self._color_accuracy != "lc"
+            or (
+                selection.max_color_sectors is None
+                and selection.selected_color_sector_ids is None
+            )
+        ):
+            return
+        model = resolved_model.model
+        if model is None and resolved_model.compiled is not None:
+            from ..models.external import CompiledUFOModel
+
+            model = CompiledUFOModel(resolved_model.compiled)
+        if model is None:  # pragma: no cover - model preflight invariant
+            raise GenerationError("eager colour selection requires a resolved model")
+        for entry in expanded:
+            process = entry.process_ir
+            if self._fft_color_basis(
+                process, model
+            ) != "trace" or not model.lc_trace_reflection_equivalence_is_proven(
+                process
+            ):
+                continue
+            plan = build_color_plan(
+                process,
+                basis="trace",
+                color_accuracy="lc",
+                max_sectors=selection.max_color_sectors,
+                reference_color_order=selection.reference_color_order,
+                fold_trace_reflections=True,
+            )
+            selected = selection.selected_color_sector_ids
+            if not plan.truncated and (
+                selected is None
+                or {int(sector.id) for sector in plan.sectors} <= set(selected)
+            ):
+                continue
+            settings = ", ".join(
+                f"process.{name}={value}"
+                for name, value in (
+                    ("max_color_sectors", selection.max_color_sectors),
+                    (
+                        "selected_color_sector_ids",
+                        None if selected is None else sorted(selected),
+                    ),
+                )
+                if value is not None
+            )
+            raise GenerationError(
+                "the eager mode does not generate a subset of the colour sectors "
+                f"of {process.process!r}, whose leading-colour traces are folded "
+                f"with their reflections ({settings}); generate the subset in the "
+                "compiled or recurrence mode, or select the flows at run time on "
+                "a complete artifact (eager, compiled, recurrence or on-the-fly)"
+            )
 
     def _validate_on_the_fly_process_selection(self) -> None:
         if not self._on_the_fly_execution_enabled:
@@ -4380,11 +4542,18 @@ class GenerationBackend:
                 "reference_color_word": (
                     None
                     if selection.reference_color_order is None
-                    else list(
-                        projection.color_plan.sectors[0].trace_labels
-                        if projection.color_plan is not None
-                        and projection.color_plan.basis == "adjoint"
-                        else selection.reference_color_order
+                    else list(projection.color_plan.sectors[0].trace_labels)
+                    if projection.color_plan is not None
+                    and projection.color_plan.basis == "adjoint"
+                    else _optional_list(
+                        _canonical_reference_word(
+                            expanded.process_ir,
+                            selection.reference_color_order,
+                            folded=contracted_color is None
+                            and model.lc_trace_reflection_equivalence_is_proven(
+                                expanded.process_ir
+                            ),
+                        )
                     )
                 ),
                 "trace_reflections_folded": bool(
@@ -8611,12 +8780,39 @@ class GenerationBackend:
         limits = dict(prepared.coupling_order_limits)
         replay_plan = prepared.topology_replay
         selection = self._process_selection
+        dag_color_plan = complete_color_plan
+        dag_max_color_sectors = selection.max_color_sectors
+        if (
+            not self._eager_execution_enabled
+            and complete_color_plan.color_accuracy == "lc"
+            and complete_color_plan.basis == "trace"
+            and complete_color_plan.trace_reflections_folded
+            and (
+                complete_color_plan.truncated
+                or selection.selected_color_sector_ids is not None
+            )
+        ):
+            # A subset of a plan with folded trace reflections has no topology
+            # replay to evaluate a kept trace's other orientation, which its
+            # public flows list: build the unfolded plan and keep both
+            # orientations of every kept sector, each its own sector.
+            # The user's subset (a truncating cap, fixed ids); a topology
+            # replay's representatives are not one.
+            dag_color_plan, materialized_sector_ids = _unfolded_subset(
+                process,
+                complete_color_plan,
+                selection.selected_color_sector_ids,
+                reference_color_order=selection.reference_color_order,
+            )
+            dag_max_color_sectors = None
+            replay_plan = None
         dag = compile_generic_dag(
             process,
             model=model,
-            color_plan=complete_color_plan,
-            max_color_sectors=selection.max_color_sectors,
-            reference_color_order=selection.reference_color_order,
+            color_plan=dag_color_plan,
+            max_color_sectors=dag_max_color_sectors,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=materialized_sector_ids,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,
@@ -8647,7 +8843,8 @@ class GenerationBackend:
                     model=model,
                     color_plan=complete_color_plan,
                     max_color_sectors=selection.max_color_sectors,
-                    reference_color_order=selection.reference_color_order,
+                    # The plan already starts with the reference sector.
+                    reference_color_order=None,
                     selected_color_sector_ids=None,
                     max_coupling_orders=limits or None,
                     max_quark_pairs=self._max_quark_pairs,
@@ -8922,13 +9119,13 @@ class GenerationBackend:
         if not isinstance(limits_payload, Mapping):
             raise GenerationError("process coupling-order coverage is not a mapping")
         limits = {str(name): int(value) for name, value in limits_payload.items()}
-        selection = self._process_selection
         union = compile_generic_dag(
             process.expanded.process_ir,
             model=model,
             color_plan=parent.color_plan,
             max_color_sectors=None,
-            reference_color_order=selection.reference_color_order,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=None,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,
