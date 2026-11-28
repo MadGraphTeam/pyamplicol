@@ -909,6 +909,58 @@ def test_an_identical_unnamed_append_is_refused_in_any_spelling(tmp_path, model_
     assert _correlated(artifact, "s g > s g", "T12") == t12
 
 
+def test_an_append_holding_a_process_already_there_is_refused(tmp_path, model_cache):
+    # Every stored, aliased or served process is checked, whatever its ID:
+    # (a) a two-charge batch stores e+ u > e+ u under a digest-suffixed ID,
+    # whose identical retry is refused; (b) a batch with the served member
+    # e- u > e- u and a new process is refused as a whole; (c) a retry of an
+    # alias's process is refused. Each time the artifact is unchanged and the
+    # expressions stay unambiguous (the served member keeps its ID and value).
+    from pyamplicol.api import ProcessAlias
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u e- > u e-",
+        name="unused",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("u e- > u e-"),
+                ProcessRequest.parse("e- u > e- u"),
+                ProcessRequest.parse("e+ u > e+ u"),
+                ProcessRequest.parse("u u~ > g g", name="first"),
+            ),
+            (ProcessAlias("other", "first", (1, 0, 2, 3)),),
+        ),
+        artifact,
+    )
+    before = _digest(artifact)
+    member = Runtime.load(artifact, process="e- u > e- u").physics.process_id
+    values = _values(artifact, "e- u > e- u")
+    positron = Runtime.load(artifact, process="e+ u > e+ u").physics.process_id
+    assert positron.startswith("e_u_to_e_u_")
+    for batch in (
+        ProcessRequest.parse("e+ u > e+ u"),
+        ProcessSet(
+            (ProcessRequest.parse("e- u > e- u"), ProcessRequest.parse("c e+ > c e+"))
+        ),
+        ProcessRequest.parse("u~ u > g g"),
+    ):
+        with pytest.raises(ProcessIdCollisionError, match="already in the artifact"):
+            generator.generate(batch, artifact, mode="append")
+        assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="e+ u > e+ u").physics.process_id == positron
+    assert Runtime.load(artifact, process="e- u > e- u").physics.process_id == member
+    assert _values(artifact, "e- u > e- u") == values
+    assert Runtime.load(artifact, process="u~ u > g g").physics.process == "u~ u > G G"
+
+
 # process.consider_charge_conjugation at one loop -----------------------------
 
 

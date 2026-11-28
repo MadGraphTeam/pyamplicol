@@ -186,3 +186,46 @@ output = {json.dumps(str(tmp_path / "unused"))}
             generator.generate(ProcessRequest.parse(spelling), artifact, mode="append")
         assert _digest(artifact) == before
     assert Runtime.load(artifact, process="g u > g u").physics.process == "G u > G u"
+
+
+def test_a_compiled_tree_append_holding_a_process_already_there_is_refused(tmp_path):
+    # Built-in SM, compiled: a two-charge batch stores e+ u > e+ u under a
+    # digest-suffixed ID; its identical retry, and a batch holding e- u > e- u
+    # with a new process, are refused; the expressions stay unambiguous.
+    from pyamplicol.api.errors import GenerationError
+
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[process]
+entries = [{{ expression = "e- u > e- u", name = "unused" }}]
+[evaluator]
+execution_mode = "compiled"
+[generation]
+output = {json.dumps(str(tmp_path / "unused"))}
+"""
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("e- u > e- u"), ProcessRequest.parse("e+ u > e+ u"))
+        ),
+        artifact,
+    )
+    before = _digest(artifact)
+    positron = Runtime.load(artifact, process="e+ u > e+ u").physics.process_id
+    for batch in (
+        ProcessRequest.parse("e+ u > e+ u"),
+        ProcessSet(
+            (ProcessRequest.parse("e- u > e- u"), ProcessRequest.parse("e+ c > e+ c"))
+        ),
+    ):
+        with pytest.raises(GenerationError, match="already"):
+            generator.generate(batch, artifact, mode="append")
+        assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="e+ u > e+ u").physics.process_id == positron
+    assert (
+        Runtime.load(artifact, process="e- u > e- u").physics.process == "e- u > e- u"
+    )

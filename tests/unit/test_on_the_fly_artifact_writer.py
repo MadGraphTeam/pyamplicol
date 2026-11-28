@@ -759,11 +759,13 @@ def test_on_the_fly_writer_append_skips_structural_proofs_for_complete_set(
     compiled = load_compiled_model(source_path)
     artifact = tmp_path / "artifact"
     first = _process_artifact(tmp_path, runtime_name="first.pacbin")
-    second_process_id = "d_dbar_to_z_copy"
+    second_process_id = "u_ubar_to_z"
+    # An append adds another process than the artifact's.
     second = _process_artifact(
         tmp_path,
         runtime_name="second.pacbin",
         process_id=second_process_id,
+        expression="u u~ > z",
     )
 
     write_schema_v3_artifact(

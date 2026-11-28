@@ -1129,6 +1129,7 @@ def write_schema_v3_artifact(
         processes=processes,
     )
     _validate_public_process_ids(existing, processes, process_groups)
+    _validate_appended_processes_are_new(existing, processes, process_groups)
     if existing is not None:
         _require_stored_parameter_values(
             output, compiled_model, _bound_parameters(loop_processes)
@@ -5504,6 +5505,112 @@ def _validate_public_process_ids(
             f"the {incoming} process {item.expression!r} (served through "
             f"{representative!r})",
         )
+
+
+def _validate_appended_processes_are_new(
+    existing: ArtifactManifest | None,
+    processes: Sequence[ProcessArtifact],
+    process_groups: ProcessGroupMap | None = None,
+) -> None:
+    """Before anything is written: an append adds only processes the
+    artifact does not hold yet. A process is its incoming and its outgoing
+    particles in order (``_process_identity``: any spelling, the arrow
+    included); every process the artifact stores, publishes as an alias or
+    serves through a representative is held, whatever its ID (plain,
+    digest-suffixed, alias or member). An appended process, alias or served
+    member identical to one of them, or to another of the batch, is refused
+    with a ``ProcessIdCollisionError`` naming both IDs (the whole append,
+    also when the batch brings new processes too), as it would make the
+    expression select two IDs."""
+
+    if existing is None:
+        return
+    held: dict[tuple[tuple[int, ...], tuple[int, ...]], str] = {}
+
+    def hold(pdgs: Sequence[object], expression: object, public_id: str) -> None:
+        held.setdefault(_process_identity(pdgs, expression), public_id)
+
+    for record in existing.processes:
+        hold(
+            _sequence(record.get("external_pdgs", ())),
+            record.get("expression", ""),
+            str(record["id"]),
+        )
+        for alias in _sequence(record.get("aliases", ())):
+            entry = _mapping(alias)
+            hold(
+                _sequence(entry.get("external_pdgs", ())),
+                entry.get("expression", ""),
+                str(entry["id"]),
+            )
+    stored_groups = existing.root / PROCESS_GROUPS_PATH
+    if stored_groups.is_file():
+        group_map = ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
+        for representative, group in group_map.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    held.setdefault(
+                        _split_identity(item.pdgs, item.initial_count),
+                        item.process_id,
+                    )
+
+    def refuse(
+        identity: tuple[tuple[int, ...], tuple[int, ...]],
+        public_id: str,
+        expression: object,
+    ) -> None:
+        # Against the artifact and the processes of the batch checked before
+        # (a batch holding one process twice is refused as well).
+        found = held.get(identity)
+        held.setdefault(identity, public_id)
+        if found is not None:
+            raise ProcessIdCollisionError(
+                f"the appended process {expression!r} ({public_id!r}) is already "
+                f"in the artifact as {found!r}; nothing was written. An artifact "
+                "holds a process once: select it by that ID",
+                process_ids=(found, public_id),
+            )
+
+    for process in processes:
+        refuse(
+            _process_identity(process.external_pdgs, process.expression),
+            process.process_id,
+            process.expression,
+        )
+        for alias in process.aliases:
+            refuse(
+                _process_identity(
+                    _sequence(alias.get("external_pdgs", ())),
+                    alias.get("expression", ""),
+                ),
+                str(alias["id"]),
+                alias.get("expression", ""),
+            )
+    if process_groups is not None:
+        for representative, group in process_groups.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    refuse(
+                        _split_identity(item.pdgs, item.initial_count),
+                        item.process_id,
+                        item.expression,
+                    )
+
+
+def _split_identity(
+    pdgs: Sequence[object], initial_count: int
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    codes = tuple(int(cast(int, pdg)) for pdg in pdgs)
+    return codes[:initial_count], codes[initial_count:]
+
+
+def _process_identity(
+    pdgs: Sequence[object], expression: object
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """A process's incoming and outgoing PDG codes, in order: its PDGs
+    split where its expression's arrow is."""
+
+    return _split_identity(pdgs, len(str(expression).partition(">")[0].split()))
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:
