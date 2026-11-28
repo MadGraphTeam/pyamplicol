@@ -54,9 +54,7 @@ def _compiled(card):
     """The shipped model compiled into the card's cache (a dry run never
     compiles one)."""
 
-    code, _, stderr = _cli(
-        "model", "processes", "u u~ > g g", "--card", str(card), "--json"
-    )
+    code, _, stderr = _cli("model", "inspect", "--card", str(card), "--json")
     assert code == 0, stderr
 
 
