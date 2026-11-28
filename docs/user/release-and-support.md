@@ -538,7 +538,7 @@ worker processes (default 10; `benchmark.n_core`) with an estimated time to
 completion.
 
 Version `1.0.3` uses the Python dependencies of 1.0.2 (Symbolica 3.0.3
-from PyPI, SymJIT 2.28.4, ufo-model-loader 1.0.1). The native code builds
+from PyPI, SymJIT 2.28.5, ufo-model-loader 1.0.1). The native code builds
 Symbolica from symbolica-dev/symbolica's `community` branch (`d0424f9e`),
 NinjaRS and oneloopmaster at newer commits of their `main` branches (their
 sources pinned on that revision), and TIRust

@@ -43,7 +43,7 @@ shipped in pyAmpliCol release artifacts.
 ## SymJIT
 
 SymJIT is a separate Rust dependency used by Symbolica's JIT functionality.
-The published `symjit` 2.28.4 crate pinned in `Cargo.lock` is distributed
+The published `symjit` 2.28.5 crate pinned in `Cargo.lock` is distributed
 under the MIT License, not the Symbolica proprietary license. Its copyright
 notice and complete MIT License are reproduced in `licenses/SymJIT.txt`.
 The generic unsafe raw P-kernel plane-descriptor callable was merged upstream
