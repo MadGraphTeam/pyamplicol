@@ -64,11 +64,72 @@ def test_an_append_cannot_take_a_served_member_id_for_another_process(grouped):
     assert Runtime.load(artifact, process="charm").physics.process == "c c~ > g g"
 
 
-def test_an_append_may_promote_a_served_member_of_the_same_process(grouped):
+def test_an_append_cannot_reuse_a_served_member_id_for_the_same_process(grouped):
     generator, artifact = grouped
-    generator.generate(
-        ProcessRequest.parse("c c~ > g g", name="charm"), artifact, mode="append"
+    before = _digest(artifact)
+    with pytest.raises(ProcessIdCollisionError, match="'charm'"):
+        generator.generate(
+            ProcessRequest.parse("c c~ > g g", name="charm"), artifact, mode="append"
+        )
+    assert _digest(artifact) == before
+
+
+@pytest.mark.parametrize("direction", ["member-then-record", "record-then-member"])
+def test_the_arrow_is_part_of_a_tree_process_identity(tmp_path, direction):
+    # Compiled tree on a UFO: Z > g s s~ (a decay) and Z g > s s~ (a
+    # scattering) list the same PDGs in the same order.
+    import io
+
+    from pyamplicol.cli import run_cli
+
+    cache = tmp_path / "models"
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = "loop_sm"
+restriction = "no_b_mass"
+cache_dir = {json.dumps(str(cache))}
+[process]
+entries = [{{ expression = "z > s s~ g", name = "base" }}]
+flavor_blind = true
+[evaluator]
+execution_mode = "compiled"
+[generation]
+output = {json.dumps(str(tmp_path / "unused"))}
+"""
     )
-    manifest = json.loads((artifact / "artifact.json").read_text())
-    assert [record["id"] for record in manifest["processes"]] == ["up", "charm"]
-    assert Runtime.load(artifact, process="charm").physics.process == "c c~ > g g"
+    # The model compiled into the card's cache.
+    assert (
+        run_cli(
+            ("model", "inspect", "--card", str(card), "--json"),
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+        == 0
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    pair = ProcessSet(
+        (
+            ProcessRequest.parse("z > s s~ g", name="base"),
+            ProcessRequest.parse("z > g s s~", name="take"),
+        )
+    )
+    crossed = ProcessRequest.parse("z g > s s~", name="take")
+    first, second = (
+        (pair, crossed)
+        if direction == "member-then-record"
+        else (
+            crossed,
+            pair,
+        )
+    )
+    generator.generate(first, artifact)
+    before = _digest(artifact)
+    kept = Runtime.load(artifact, process="take").physics.process
+    with pytest.raises(ProcessIdCollisionError, match="'take'"):
+        generator.generate(second, artifact, mode="append")
+    assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="take").physics.process == kept
