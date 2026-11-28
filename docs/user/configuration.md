@@ -781,6 +781,11 @@ Generation validation checks symbolic/numerical construction before
 publication. Structural artifact checks always run. The optional
 `post_build_validation` reopens the finished artifact and evaluates it again;
 it is disabled by default because its cost can dominate large process builds.
+For a one-loop request, it also keeps every generated subprocess in memory
+until the artifact is validated (its reference executor), so the memory of a
+multiprocess one-loop generation grows with the number of subprocesses when
+post-build validation is on; without it, a written subprocess is released
+before the next one is generated.
 Enable it when you explicitly want that additional runtime smoke:
 
 ```console

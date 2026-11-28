@@ -84,6 +84,7 @@ import sys
 from array import array
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, fields, replace
 from types import SimpleNamespace
 from typing import Any, TypeVar, cast
@@ -625,10 +626,32 @@ class _ModelVertexRow:
 # symbolic Weyl-projection probe, which a model instance caches only for
 # itself (a lowered model's instance, ``CountertermLoweredModel.tree_model``,
 # comes with them decided).
-_MODEL_ROWS: dict[
-    tuple[int, str], tuple[Any, dict[tuple[int, tuple[int, ...]], Any]]
-] = {}
+# Inside a ``model_rows_scope`` (a generation, ``generation.loop_service.
+# _generate_v2``) the scope's own table serves them, shared by the
+# generation's subprocesses, never read by another generation and dropped
+# with the scope; outside every scope the module table serves them.
+_ModelRows = dict[tuple[int, str], tuple[Any, dict[tuple[int, tuple[int, ...]], Any]]]
+_MODEL_ROWS: _ModelRows = {}
 _MODEL_ROWS_KEPT = 4
+_MODEL_ROWS_SCOPE: ContextVar[_ModelRows | None] = ContextVar(
+    "model_vertex_rows", default=None
+)
+
+
+@contextmanager
+def model_rows_scope() -> Iterator[None]:
+    """Serve ``_model_rows`` from a table of the scope's own (bounded as the
+    module table), dropped when the scope closes. Nested scopes share the
+    outermost one's; a thread starts outside every scope."""
+
+    if _MODEL_ROWS_SCOPE.get() is not None:
+        yield
+        return
+    token = _MODEL_ROWS_SCOPE.set({})
+    try:
+        yield
+    finally:
+        _MODEL_ROWS_SCOPE.reset(token)
 
 
 def _model_rows(model: Any) -> dict[tuple[int, tuple[int, ...]], Any]:
@@ -639,13 +662,15 @@ def _model_rows(model: Any) -> dict[tuple[int, tuple[int, ...]], Any]:
         id(compiled),
         repr(sorted(getattr(model, "_runtime_parameters", {}).items())),
     )
-    found = _MODEL_ROWS.pop(key, None)
+    scope = _MODEL_ROWS_SCOPE.get()
+    table = _MODEL_ROWS if scope is None else scope
+    found = table.pop(key, None)
     if found is None or found[0] is not compiled:
         found = (compiled, {})
     # Most recently used last; the oldest entries leave first.
-    _MODEL_ROWS[key] = found
-    while len(_MODEL_ROWS) > _MODEL_ROWS_KEPT:
-        del _MODEL_ROWS[next(iter(_MODEL_ROWS))]
+    table[key] = found
+    while len(table) > _MODEL_ROWS_KEPT:
+        del table[next(iter(table))]
     return found[1]
 
 
