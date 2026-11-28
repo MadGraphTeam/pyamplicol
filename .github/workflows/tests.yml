@@ -202,7 +202,10 @@ jobs:
             tests/unit/test_model_builtin.py \
             tests/unit/test_sdk_config.py \
             tests/unit/test_selftest_fixture.py \
-            tests/unit/test_symbolica_exact.py
+            tests/unit/test_symbolica_exact.py \
+            tests/unit/test_auxiliary_thread_start.py \
+            tests/unit/test_resource_exhaustion.py \
+            tests/unit/test_symbolica_log_capture.py
       - name: Run eager prepared-model and runtime unit checks (30 GiB RSS limit)
         run: >-
           .venv/bin/python tools/ci/memory_watchdog.py --limit-gib 30 --
@@ -236,6 +239,8 @@ jobs:
             tests/integration/test_correlators.py \
             tests/integration/test_correlator_colour_accuracy.py \
             tests/integration/test_otf_cache.py \
+            tests/integration/test_kernel_code_sharing.py \
+            tests/integration/test_reused_code_pages.py \
             tests/integration/test_adjoint_fft_runtime.py \
             tests/integration/test_generalized_adjoint_fft_runtime.py \
             tests/integration/test_recurrence_generation_runtime.py::test_ufo_sm_recurrence_refreshes_real_and_complex_derived_couplings \
