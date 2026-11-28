@@ -745,8 +745,10 @@ def _guard_estimate(result: Any) -> float:
         estimate = getattr(output, "stability", None)
         if estimate is None or check not in estimate.budgets:
             return math.nan
-        if set(estimate.budgets) != {check}:
-            estimate = estimate.subset([check])
+        # The guard decides with the floor it was calibrated with,
+        # FLOOR_UNITS u S (``StabilityEstimate.subset``'s ``floor``), also
+        # where the point's own estimate carries a loop-induced floor.
+        estimate = estimate.subset([check], floor=False)
         roundoff = estimate.roundoff
         outputs.append(_guard_sectors(estimate))
     return fallback_estimate(outputs, roundoff)

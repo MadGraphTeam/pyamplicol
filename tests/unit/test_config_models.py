@@ -87,8 +87,11 @@ def test_schema_v1_registry_contains_every_contract_leaf() -> None:
     # benchmark.measured_precisions (`profile --measured-precisions`); 163:
     # evaluation.phase_space.pt_min, delta_r_min and cut_attempts (`--pt-min`,
     # `--delta-r-min`); 164: check.tolerance (`check --tolerance`, the
-    # threshold rule's K).
-    assert len(FIELD_REGISTRY) == 164
+    # threshold rule's K); 165: evaluation.stability_checks.floor_weight (the
+    # loop-induced floor's first-order weight, `--stability-floor-weight`).
+    assert len(FIELD_REGISTRY) == 165
+    weight = FIELD_REGISTRY["evaluation.stability_checks.floor_weight"]
+    assert weight.default is None and weight.nullable
     assert FIELD_REGISTRY["benchmark.measured_precisions"].default == ("binary64",)
     assert FIELD_REGISTRY["evaluation.threads"].default is None
     assert FIELD_REGISTRY["evaluation.threads"].nullable

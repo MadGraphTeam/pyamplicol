@@ -19,7 +19,8 @@ type PyLane = (usize, usize, Vec<(f64, f64)>);
 type PyPoint = (Vec<PyLane>, Vec<Budget>);
 /// The estimate's fields: relative, per coefficient, per check its relative
 /// budget, E per sector, per check its absolute budget, S per sector, the
-/// checks that did not run.
+/// checks that did not run, the floor per sector where it is not
+/// FLOOR_UNITS u S (a loop-induced point).
 type PyEstimate = (
     f64,
     Vec<f64>,
@@ -28,6 +29,7 @@ type PyEstimate = (
     Vec<(String, Budget)>,
     Budget,
     Vec<(String, String)>,
+    Option<Budget>,
 );
 
 fn point((lanes, local): PyPoint) -> PointLanes<usize> {
@@ -145,7 +147,16 @@ fn fields(estimate: Estimate) -> PyEstimate {
         estimate.budgets,
         estimate.scale,
         estimate.not_run,
+        estimate.floor,
     )
+}
+
+/// The default floor weight of a process whose highest-point loop has
+/// `largest_loop` legs (`stability.default_floor_weight`'s native twin,
+/// `v2_stability::default_floor_weight`).
+#[pyfunction]
+fn default_floor_weight(largest_loop: usize) -> f64 {
+    stability::default_floor_weight(largest_loop)
 }
 
 /// The binary64 stability estimate of one loop-induced point
@@ -156,7 +167,7 @@ fn fields(estimate: Estimate) -> PyEstimate {
 /// evaluation, each rotated evaluation's, the reduction check's name, and
 /// the cross-backend check's evaluation or the reason it did not run.
 #[pyfunction]
-#[pyo3(signature = (shape, roundoff, reference, direct, rotated, reduction=None, cross=None, cross_reason=None))]
+#[pyo3(signature = (shape, roundoff, reference, direct, rotated, reduction=None, cross=None, cross_reason=None, *, floor_weight))]
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn stability_loop_induced(
     shape: (
@@ -174,6 +185,7 @@ fn stability_loop_induced(
     reduction: Option<String>,
     cross: Option<PyInduced>,
     cross_reason: Option<String>,
+    floor_weight: f64,
 ) -> PyResult<PyEstimate> {
     let _unlock = pyamplicol::unlock();
     let (size, width, gram, rows, sectors, average) = shape;
@@ -204,6 +216,7 @@ fn stability_loop_induced(
         &rotated,
         reduction.as_deref(),
         cross.as_ref(),
+        floor_weight,
     )
     .map(fields)
     .map_err(error)
@@ -211,6 +224,7 @@ fn stability_loop_induced(
 
 pub(crate) fn register(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(stability_loop_induced, module)?)?;
+    module.add_function(wrap_pyfunction!(default_floor_weight, module)?)?;
     module.add_function(wrap_pyfunction!(stability_default_rotation, module)?)?;
     module.add_function(wrap_pyfunction!(stability_rotation, module)?)?;
     module.add_function(wrap_pyfunction!(stability_born_interfered, module)?)?;

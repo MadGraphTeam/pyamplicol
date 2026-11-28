@@ -17,10 +17,11 @@ batch (``V2VirtualRuntime`` and ``V2ObservablesRuntime``):
    reduction inside a level); an accepted point is never
    evaluated again; a point whose estimate grew, against the next lower
    precision under the same metric, at least by the square root of the two
-   levels' unit-roundoff ratio is not escalated either (the stopping rule,
-   ``_stalled``: the signature of a numerical zero, whose value falls like
-   u^2 and its error like u) and keeps that level's value with the target
-   not met;
+   levels' unit-roundoff ratio (``_stalled``), or whose value is zero
+   within its estimate at both precisions while its E / S fell at least by
+   their unit-roundoff ratio to the power 3/2 (``_vanishing``), is not
+   escalated either (the stopping rule: the signatures of a numerical
+   zero) and keeps that level's value with the target not met;
 3. at the last level a point that evaluates keeps its value with the target
    marked as not met; a point that failed at every level is a failed lane,
    or, under ``on_failure="best-effort"``, a best-effort lane when the last
@@ -30,16 +31,22 @@ batch (``V2VirtualRuntime`` and ``V2ObservablesRuntime``):
 A level compares the public estimate's field named by its ``metric`` with
 its target. An integrated zero (a Landau-Yang |A|^2 of a loop-induced
 process, m-lit PLAN §2.a.8; numerical, never declared, RULED Q13) can never
-meet a "relative" or "finite" target, its value being itself rounding: its
-relative estimate grows like 1 / u (|A|^2 falls with the unit roundoff
-squared, E with the unit roundoff), so the stopping rule keeps it at the
-first level of higher precision where it grew at least by sqrt(u_lower /
-u), with the target not met (g g > z on the loop-induced default stack: the
+meet a "relative" or "finite" target, its value being itself rounding. Its
+estimate's floor is first order in each side's term floor (``stability``),
+so its value (|A|^2 of amplitudes that vanish to u) and its estimate both
+fall like u^2: its relative estimate stays above 1 at every precision while
+its scale-relative estimate E / S falls like u^2, where a real point's
+falls like u. The stopping rule's second criterion (``_vanishing``) keeps
+it at the first level of higher precision where it is zero within its
+estimate there and below and its E / S fell at least by (u_lower / u)^(3/2),
+with the target not met (g g > z on the loop-induced default stack: the
 double-double level; before the rule it climbed to the last level). The
-opt-in "scale" metric (``VirtualRescueLevel.metric``: E <= target x S,
-the estimate against the pre-cancellation scale S of its floor,
-``VirtualStabilityEstimate.scale``) accepts it at the first level, where
-its E / S is the floor's FLOOR_UNITS x u (M-LIT LIT-STAB-N, ``tests/unit/
+first criterion (``_stalled``: the relative estimate grew at least by
+sqrt(u_lower / u)) is kept. The opt-in "scale" metric
+(``VirtualRescueLevel.metric``: E <= target x S, the estimate against the
+pre-cancellation scale S, ``VirtualStabilityEstimate.scale``) accepts it at
+the first level, where its E / S is at least the floor's second-order
+(FLOOR_UNITS x u)^2 (M-LIT LIT-STAB-N, ``tests/unit/
 test_loop_v2_induced_stability.py``).
 
 Every level evaluates the points it receives in ONE call: the native
@@ -115,17 +122,29 @@ def default_stack(
     TIRust in binary64 with a per-point NinjaRS fallback (``fallback``, the
     native policy's choice there: none on a TIR-only artifact or in a build
     without TIRust); any other policy as given. A call naming a backend runs
-    the default ladder on it at every level (its levels are ``"auto"``)."""
+    the default ladder on it at every level (its levels are ``"auto"``).
+    The ladder is chosen on the policy apart from its floor weights (a
+    policy that differs from the default only by weights is the default
+    policy here); the stack's levels then take the weights of the levels
+    they stand for (both binary64 rungs the first level's)."""
 
     if (
         policy is None
-        or policy != VirtualRescuePolicy()
+        or policy.without_floor_weight() != VirtualRescuePolicy()
         or contribution != "loop-induced"
         or requested != "auto"
         or fallback != "ninjars"
     ):
         return policy
-    return loop_induced_stack()
+    first, *rest = (level.floor_weight for level in policy.levels)
+    return VirtualRescuePolicy(
+        tuple(
+            replace(level, floor_weight=weight)
+            for level, weight in zip(
+                loop_induced_stack().levels, (first, first, *rest), strict=True
+            )
+        )
+    )
 
 
 def rescue_policy(
@@ -141,20 +160,31 @@ def rescue_policy(
     together with an explicit carrier or checks, which the levels own), else
     the load-time ``default`` unless the call names its own arithmetic, a
     precision other than ``default_precision`` or stability checks (such a
-    call evaluates in that one carrier, without rescue)."""
+    call evaluates in that one carrier, without rescue). Checks that run
+    nothing but set a floor weight are no checks: their weight reaches the
+    policy's levels that set none (``VirtualRescuePolicy.with_floor_weight``;
+    a level's own weight wins), resolved per call, never stored in the
+    policy. Empty checks (no check, no weight) are explicit checks, as
+    before the weight existed: a plain call without the policy."""
 
+    weight = None
+    if stability_checks is not None and not getattr(stability_checks, "enabled", True):
+        weight = getattr(stability_checks, "floor_weight", None)
+    checks = stability_checks is not None and weight is None
     explicit = (
         arithmetic is not None
         or (precision is not None and precision != default_precision)
-        or stability_checks is not None
+        or checks
     )
     if stability is None:
-        return None if explicit else default
+        if explicit or default is None:
+            return None
+        return default.with_floor_weight(weight)
     if not isinstance(stability, VirtualRescuePolicy):
         raise TypeError("stability takes a VirtualRescuePolicy")
     if explicit:
         raise CompatibilityError(RESCUE_OWNS_CARRIER)
-    return stability
+    return stability.with_floor_weight(weight)
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +214,9 @@ def rescue(
 
     levels = policy.levels
     attempts: list[list[VirtualRescueAttempt]] = [[] for _ in range(count)]
+    # Per point and attempt its zero signature (``_signature``), for the
+    # stopping rule's second criterion (``_vanishing``).
+    signatures: list[list[_Signature | None]] = [[] for _ in range(count)]
     kept: list[_Kept | None] = [None] * count
     pending = tuple(range(count))
     template: VirtualEvaluation | None = None
@@ -202,6 +235,7 @@ def rescue(
                 diagnostic = evaluation.diagnostics[lane]
                 attempt = _attempt(evaluation, lane, level)
                 attempts[index].append(attempt)
+                signatures[index].append(_signature(evaluation, lane))
                 # A level whose result carries lanes served without accuracy
                 # evidence (``VirtualLaneDiagnostic.uncertified``) is never
                 # met: the policy escalates, or keeps it not established.
@@ -221,6 +255,7 @@ def rescue(
                     None
                     if met or last or not diagnostic.valid
                     else _stalled(attempts[index], levels)
+                    or _vanishing(attempts[index], signatures[index], levels)
                 )
                 if met or last or stalled is not None:
                     kept[index] = _Kept(evaluation, lane, k, met, stalled)
@@ -301,6 +336,103 @@ class _Stall:
     attempt: VirtualRescueAttempt
     grew: float
     needed: float
+    # "grew": the relative estimate grew (``_stalled``); "fell": the
+    # scale-relative estimate E / S fell quadratically while the value stayed
+    # within its estimate (``_vanishing``; ``grew`` then holds log2 of the
+    # fall).
+    kind: str = "grew"
+
+
+@dataclass(frozen=True, slots=True)
+class _Signature:
+    """What the second stopping criterion reads of one attempt
+    (``_vanishing``): the public estimate's largest E / S (``scale``) and
+    whether the value is zero within its estimate, |value_k| <= E_k for
+    every sector and computed Laurent coefficient k."""
+
+    scale: float
+    within: bool
+
+
+def _signature(evaluation: VirtualEvaluation, lane: int) -> _Signature | None:
+    """The attempt's ``_Signature``, or None where the lane has no value, no
+    estimate or no E / S (the criterion then never stops the point)."""
+
+    if evaluation.stability is None or evaluation.values is None:
+        return None
+    estimate = evaluation.stability[lane]
+    values = evaluation.values[lane]
+    scale = None if estimate is None else getattr(estimate, "scale", None)
+    absolute = None if estimate is None else getattr(estimate, "absolute", None)
+    if values is None or scale is None or absolute is None:
+        return None
+    if len(values) != len(absolute):
+        return None
+    within, compared = True, 0
+    for value, error in zip(values, absolute, strict=True):
+        for name in ("finite", "single_pole", "double_pole"):
+            x, e = getattr(value, name, None), getattr(error, name, None)
+            if x is None or e is None:
+                continue
+            compared += 1
+            if not abs(complex(x)) <= float(e):
+                within = False
+    if not compared:
+        return None
+    return _Signature(float(scale), within)
+
+
+def _vanishing(
+    history: list[VirtualRescueAttempt],
+    signatures: list[_Signature | None],
+    levels: tuple[VirtualRescueLevel, ...],
+) -> _Stall | None:
+    """The stopping rule's second criterion ("stop when no gain" for a
+    numerical zero, USER 2026-11-18; restated for an estimate whose floor is
+    first order in each side's term floor, ``stability``): the point is not
+    escalated when its value is zero within its estimate (|value_k| <= E_k,
+    ``_signature``) at its latest level AND at the next lower precision, and
+    its scale-relative estimate E / S fell between the two by at least
+    (u_lower / u_latest)^(3/2). A numerical zero's E falls like u^2 (its
+    amplitudes are rounding of the size u S, so both the first-order floor
+    and the checks' budgets are of the size u^2 S), a real or ruined
+    point's like u (S is the same at every precision): the 3/2 power
+    separates the two as the square root does in ``_stalled``. The lower
+    attempt is the latest level's own effective backend's when it ran
+    there, else the one with the smallest E / S (the smaller fall: the gap
+    between two backends never counts as a fall). Returns the comparison
+    (``_Stall``, kind "fell"), or None (escalate)."""
+
+    latest, mine = history[-1], signatures[-1]
+    if latest.estimate is None or mine is None or not mine.within:
+        return None
+    lower = [
+        (j, attempt)
+        for j, attempt in enumerate(history[:-1])
+        if signatures[j] is not None
+        and attempt.estimate is not None
+        and attempt.precision_bits < latest.precision_bits
+    ]
+    if not lower:
+        return None
+    bits = max(attempt.precision_bits for _, attempt in lower)
+    candidates = [
+        (j, attempt) for j, attempt in lower if attempt.precision_bits == bits
+    ]
+    backend = _effective(latest)
+    same = [item for item in candidates if backend and _effective(item[1]) == backend]
+    j, below = min(
+        same or candidates, key=lambda item: cast(_Signature, signatures[item[0]]).scale
+    )
+    found = cast(_Signature, signatures[j])
+    before, after = found.scale, mine.scale
+    if not found.within or not before or not after:
+        return None
+    needed = 1.5 * (
+        _log2_roundoff(levels[j]) - _log2_roundoff(levels[len(history) - 1])
+    )
+    fell = math.log2(before) - math.log2(after)
+    return _Stall(below, fell, needed, "fell") if fell >= needed else None
 
 
 def _effective(attempt: VirtualRescueAttempt) -> str | None:
@@ -366,6 +498,16 @@ def _detail(
         return f"{level}: last level, no stability check; accuracy not estimated"
     if record.met:
         verdict = f"within the target {record.target:.1e}"
+    elif stalled is not None and stalled.kind == "fell":
+        below = stalled.attempt
+        backend = "" if below.reduction is None else f" {below.reduction.effective}"
+        verdict = (
+            f"target {record.target:.1e} not met; not escalated: the value is "
+            f"zero within its estimate here and at the {below.arithmetic}{backend} "
+            f"level, whose E / S fell by {_factor(stalled.grew)} to this one's "
+            f"(at least {_factor(stalled.needed)}, their unit-roundoff ratio to "
+            "the power 3/2), as a numerical zero's does"
+        )
     elif stalled is not None:
         below = stalled.attempt
         backend = "" if below.reduction is None else f" {below.reduction.effective}"

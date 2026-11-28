@@ -457,6 +457,19 @@ pub mod virtual_amplitudes {
                 )
             })
         }
+        /// Weight of a loop-induced estimate's first-order floor term in
+        /// later evaluations, the Python API's
+        /// `VirtualStabilityChecks(floor_weight=)` (1 the calibrated
+        /// coverage, 0 the checks alone, NaN the process's default by its
+        /// highest-point loop); kept by `set_stability_checks`. Another
+        /// value that is not finite and non-negative is an invalid-argument
+        /// error.
+        pub fn set_stability_floor_weight(&mut self, weight: f64) -> Result<()> {
+            // SAFETY: exclusive live handle.
+            check(unsafe {
+                ffi::rusticol_virtual_set_stability_floor_weight(self.handle.as_ptr(), weight)
+            })
+        }
         /// One native bulk call; binary64 inputs are read as their exact values.
         pub fn evaluate(
             &mut self,
@@ -1162,6 +1175,10 @@ pub mod virtual_amplitudes {
             pub(super) fn rusticol_virtual_set_reduction_target(
                 handle: *mut c_void,
                 target: f64,
+            ) -> c_int;
+            pub(super) fn rusticol_virtual_set_stability_floor_weight(
+                handle: *mut c_void,
+                weight: f64,
             ) -> c_int;
             pub(super) fn rusticol_virtual_set_reduction_unchecked(
                 handle: *mut c_void,

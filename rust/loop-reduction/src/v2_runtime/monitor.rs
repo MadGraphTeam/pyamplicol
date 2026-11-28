@@ -255,6 +255,16 @@ impl V2Runtime {
         let gram = induced.carrier(&Binary64, induced.metric())?;
         let rows = induced.plan_rows();
         let average = self.record.average;
+        // The highest-point loop the process reduces (the floor weight's
+        // default, `v2_stability::default_floor_weight`).
+        let largest_loop = self
+            .process
+            .plan
+            .families
+            .iter()
+            .map(|family| family.propagators())
+            .max()
+            .unwrap_or(0);
         let mut collected = Vec::with_capacity(momenta.len());
         self.rescued_last.clear();
         let points = self.induced_points_with(
@@ -361,6 +371,7 @@ impl V2Runtime {
                 &turned,
                 checks.reduction(),
                 other.as_ref(),
+                checks.resolved_floor_weight(largest_loop),
             )?;
             let finiteness = shape.finiteness(&direct)?;
             let values = self

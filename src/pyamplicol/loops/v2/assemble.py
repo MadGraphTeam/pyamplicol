@@ -213,6 +213,7 @@ from .stability import (
     StabilityEstimate,
     cross_check,
     differences,
+    resolved_floor_weight,
 )
 from .wide import magnitude
 
@@ -3313,11 +3314,14 @@ class LoopSlice:
                 exact_point, scale, dict(parameters or {}), precision, poles
             )
             not_run = cross_check(reference, budgets)
+        weight = resolved_floor_weight(stability, reference.largest_loop)
         estimate = StabilityEstimate.from_checks(
             reference.result.components["virtual"],
             budgets,
             scale=reference.stability_scale(),
             roundoff=precision.estimate_roundoff,
+            floor=reference.stability_floor(weight),
+            floor_weight=weight,
             families=reference.family_deviations,
             not_run=not_run,
         )
@@ -4229,6 +4233,27 @@ class _PointEvaluation:
         if self.slice.amplitude is not None:
             return induced.stability_scale(self)
         return self.absolute
+
+    @property
+    def largest_loop(self) -> int:
+        """The number of legs of the highest-point loop the process reduces
+        (its families' propagators; the floor weight's default,
+        ``stability.default_floor_weight``)."""
+        found = getattr(self.slice, "largest_loop", None)
+        if found is not None:
+            # A native process's view: read from its plan's families.
+            return found
+        families = self.slice.families.families.values()
+        return max((family.size for family in families), default=0)
+
+    def stability_floor(self, weight: float) -> dict | None:
+        """The estimate's absolute floor where it is not FLOOR_UNITS u S
+        (``StabilityEstimate.from_checks``' ``floor``): a loop-induced
+        point's at the first-order weight ``weight``, formed on first use
+        (``induced.floor``); None otherwise."""
+        if self.slice.amplitude is not None:
+            return induced.stability_floor(self, weight)
+        return None
 
     def finish(self, retest: str | None) -> _PointEvaluation:
         """Dress (schedule B), reduce and assemble the complete virtual."""

@@ -651,6 +651,39 @@ def test_shipped_self_test_artifact_equals_madloop_and_is_portable():
 
 
 @pytest.mark.loop_physics
+def test_the_floor_weight_is_reported_and_changes_no_value(shipped):
+    """On the shipped g g > h with the recommended checks: every estimate
+    reports the floor weight it was formed with (unset: the process's
+    default, w = 1 for g g > h, whose loops are triangles; else the one the
+    checks name), the values are bitwise the same at every weight,
+    and a larger weight gives a larger estimate (only the floor's
+    first-order term changes)."""
+
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+
+    expected = _expected()
+    points, scales = expected["points"], expected["mu_r2"]
+    # g g > h reduces triangles: its default is the calibrated w = 1.
+    weights = (0.0, 2.0**-12, None)
+    found = [
+        shipped.evaluate(
+            points,
+            mu_r2=scales,
+            stability_checks=VirtualStabilityChecks(
+                1, True, rescaled=True, floor_weight=weight
+            ),
+        )
+        for weight in weights
+    ]
+    assert found[0].values == found[1].values == found[2].values
+    for weight, result in zip(weights, found, strict=True):
+        used = 1.0 if weight is None else weight
+        assert {estimate.floor_weight for estimate in result.stability} == {used}
+    for low, mid, high in zip(*(result.stability for result in found), strict=True):
+        assert low.relative <= mid.relative < high.relative
+
+
+@pytest.mark.loop_physics
 def test_reduction_finiteness_and_estimates_on_the_public_route(shipped):
     """On the shipped g g > h: every lane names its reduction backend (auto
     takes TIRust, the loop-induced default, in an extension built with it,

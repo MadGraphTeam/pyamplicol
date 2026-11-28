@@ -1014,10 +1014,10 @@ class PointOutputs:
             errors = induced.lane_errors(evaluation, deviations)
         return _spin_errors(errors, self.coefficients)
 
-    def scale(self, output: Output) -> dict:
-        """The floor's scale S: the output's |M| form of the per-row term
-        floors (term scale per t and k with the row's finite floor, plus the
-        counterterm kets' magnitudes)."""
+    def _floors(self) -> dict:
+        """The per-row term floors per t and k (term scale with the row's
+        finite floor, plus the counterterm kets' magnitudes), moved onto the
+        point's spin assignment."""
 
         evaluation = self.evaluation
         terms = induced.term_values(evaluation)
@@ -1033,15 +1033,65 @@ class PointOutputs:
                             values[k] += induced._size(source[t][k])
                 cells.append([max(value, values[0]) for value in values])
             floors[key] = cells
-        floors = _spin_errors(floors, self.coefficients)
-        _h, _k, magnitude = self.forms(output.metric)
-        return _bound(evaluation, magnitude, floors, floors, self.rows_of(output))
+        return _spin_errors(floors, self.coefficients)
+
+    def scale(self, output: Output) -> dict:
+        """The scale S of the estimate (the public estimate's
+        ``magnitude``): the output's |M| form of the per-row term floors F
+        (``_floors``), F^T|M|F, the size of what cancelled."""
+
+        _h, _k, magnitude_ = self.forms(output.metric)
+        floors = self._floors()
+        return _bound(self.evaluation, magnitude_, floors, floors, self.rows_of(output))
+
+    def floor(self, output: Output, roundoff: Any, weight: float) -> dict:
+        """The estimate's floor (``StabilityEstimate.from_checks``'
+        ``floor``): the change bound of the form for errors eps F of its
+        vectors b (``_perturbed``), w eps1 (F^T|M||b| + |b|^T|M|F) + eps2^2
+        F^T|M|F with eps1 = BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u and
+        w = ``weight``:
+        first order in each side's floor (``induced.floor_kernel``)."""
+
+        from .stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS, Budget
+
+        evaluation = self.evaluation
+        _h, _k, magnitude_ = self.forms(output.metric)
+        rows = self.rows_of(output)
+        floors = self._floors()
+        values = _absolute(self.amplitudes, evaluation.numbers.wide)
+        first = weight * (BILINEAR_FLOOR_UNITS * roundoff)
+        second = FLOOR_UNITS * roundoff
+        parts = (
+            _bound(evaluation, magnitude_, floors, values, rows),
+            _bound(evaluation, magnitude_, values, floors, rows),
+            _bound(evaluation, magnitude_, floors, floors, rows),
+        )
+        return {
+            sector: Budget(
+                tuple(
+                    first * (x + y) + second * (second * z)
+                    for x, y, z in zip(
+                        *(part[sector].coefficients for part in parts), strict=True
+                    )
+                )
+            )
+            for sector in parts[0]
+        }
 
     def estimate(
-        self, output: Output, rotated, frame, roundoff, cross=None, not_run=None
+        self,
+        output: Output,
+        rotated,
+        frame,
+        roundoff,
+        cross=None,
+        not_run=None,
+        *,
+        floor_weight: float,
     ) -> Any:
         """The output's estimate; ``cross`` and ``not_run`` as ``budgets``'
-        and ``StabilityEstimate.from_checks``'."""
+        and ``StabilityEstimate.from_checks``', ``floor_weight`` the floor's
+        first-order weight (``StabilityChecks.floor_weight``)."""
 
         from .assemble import Laurent
         from .stability import StabilityEstimate
@@ -1054,6 +1104,8 @@ class PointOutputs:
             self.budgets(output, rotated, frame, cross),
             scale=self.scale(output),
             roundoff=roundoff,
+            floor=self.floor(output, roundoff, floor_weight),
+            floor_weight=floor_weight,
             not_run=not_run,
         )
 
@@ -1183,7 +1235,7 @@ class InducedColumns:
             merged_rescue,
             point_estimate,
         )
-        from .stability import StabilityChecks
+        from .stability import StabilityChecks, resolved_floor_weight
 
         if ward is not None:
             raise NotImplementedError(
@@ -1317,6 +1369,9 @@ class InducedColumns:
                         precision.estimate_roundoff,
                         other,
                         skipped,
+                        floor_weight=resolved_floor_weight(
+                            stability, reference.largest_loop
+                        ),
                     )
                 value = point_result(
                     reference, outputs[g].value(output), estimate, output.rows

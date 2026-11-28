@@ -336,9 +336,12 @@ One-loop evaluation settings:
 - `kinematics_improvement_binary64: bool | null` (null = false: binary64 inputs
   are not improved)
 - `stability_checks.{rotations: list[str] = [], rotation_count: int = 0,
-  reduction_direction: bool = false, rescaled: bool = false}` (off by default;
-  the recommended checks are one rotation with the reduction-direction and
-  rescaled checks)
+  reduction_direction: bool = false, rescaled: bool = false,
+  floor_weight: float | null}` (off by default; the recommended checks are
+  one rotation with the reduction-direction and rescaled checks;
+  `floor_weight` weighs a loop-induced estimate's first-order floor term,
+  null = the process's default by its highest-point loop: 1 up to pentagons,
+  2^-6 for hexagons, 2^-12 from heptagons; 1 the calibrated coverage)
 - `stability.{higher, relative_tolerance, absolute_tolerance,
   verify_successful}`: removed with the legacy loop engine; a non-default
   value is refused

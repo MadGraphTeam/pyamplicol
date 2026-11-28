@@ -55,7 +55,29 @@ contributions (sum_f |bare_f| plus the absolute local components): the
 factor 2 covers a difference of two evaluations with comparable rounding,
 which understates either one's error by up to about 2, and the floor covers
 roundings no check samples (couplings, kernel constants, the final sums, and
-the master integrals unless the rescaled check runs).
+the master integrals unless the rescaled check runs). A loop-induced output
+<A|M|A> is a bilinear form of amplitudes whose terms may cancel: its S is
+the product of the two sides' term floors (the size of what cancelled,
+``induced.scale``), and its floor (``from_checks``' ``floor``) is the same
+roundings' effect on the form, eps1 (|A| S' + S |A'|) + eps2 (eps2 S S')
+with eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u
+(``induced.floor``, ``induced_observables.PointOutputs.floor``), linear in
+the cancellation where the product is quadratic in it. Its first-order
+term models the first-order error of each amplitude that no check samples
+as |delta a| <= BILINEAR_FLOOR_UNITS u S_row: a model, not a proven bound.
+It covers what no check samples, including, for an estimate of rotations
+alone, the master integrals' own rounding (a rotation leaves every
+rotation-invariant quantity unchanged; that rounding enters A linearly,
+through the masters' error amplification). Its unit count is measured on
+binary64 loop-induced points of both backends against double-double
+(``tools/loop_v2_floor_units.py``, the derivation fixture in the tests):
+the smallest power of 4 under which every point that FLOOR_UNITS u S
+covered stays within the calibration tests' x10 margin and fewer than 1 in
+10^4 of them exceed E (on rows whose worst points are dominated by the
+checks, whose budgets under-measure the error, no unit count avoids every
+such point). The second-order term keeps a vanishing value "zero within
+the estimate". The fallback guard decides with FLOOR_UNITS u S, the floor
+it was calibrated with (``subset(..., floor=False)``).
 
 In arbitrary precision the sizes of an estimate (budgets, E, S, the unit
 roundoff) are exponent-safe ``loops.v2.wide.Wide`` magnitudes: at the default
@@ -113,6 +135,16 @@ from .wide import Wide, is_wide, magnitude, ratio
 
 SAFETY = 2
 FLOOR_UNITS = 16
+# The first-order term of a loop-induced output's floor, eps1 (|A| S' + S
+# |A'|) with eps1 = BILINEAR_FLOOR_UNITS u (``induced.floor_kernel``): the
+# unsampled error of an amplitude against its term floor S. A measured
+# count, not a proven bound: the smallest power of 4 under which, on the
+# binary64 loop-induced points of tests/fixtures/loop/v2/floor_units_li.json
+# (both backends against double-double), every point the previous floor
+# FLOOR_UNITS u S covered stays within the calibration tests' x10 margin
+# (ESTIMATE_MARGIN) and fewer than 1 in 10^4 of them exceed E. Its
+# second-order term keeps FLOOR_UNITS.
+BILINEAR_FLOOR_UNITS = 2**14
 ROTATION = "rotation-{}"
 REDUCTION = "reduction-direction"
 RESCALED = "reduction-rescaled"
@@ -416,6 +448,52 @@ def _determinant(m) -> Fraction:
     )
 
 
+def default_floor_weight(largest_loop: int) -> float:
+    """The default weight w of a loop-induced estimate's first-order floor
+    term (``StabilityChecks.floor_weight`` unset) for a process whose
+    highest-point loop has ``largest_loop`` legs, in whole floor units
+    (w x BILINEAR_FLOOR_UNITS): 2^14 (w = 1, the calibrated coverage) up to
+    pentagons, 2^8 (w = 2^-6) for hexagons, 4 (w = 2^-12) for heptagons and
+    above; six powers of two per loop leg above the pentagon, not
+    extrapolated beyond the data (the owner's rule: the reductions differ
+    with the highest-point loop, whole units, not tuned). The data
+    (binary64 against double-double; a new miss is a true error above E
+    that FLOOR_UNITS u S covered): boxes and pentagons have new misses below
+    2^14 units (at 2^14: 3 and 1 of 74,000 and 19,195 points, within 3.1 E;
+    their one-digit weights, 15 and 200 units at the median, would leave
+    2,352 and 783), hexagons none from 32 units (2,662 points, a small
+    sample), heptagons none at 4 units (693 points, projected from the
+    campaign's stored estimates). 4 units is the owner's one-digit choice
+    on g g > z z g g g (NinjaRS: true digits 9.62 / 10.71 / 11.95, the
+    weight making the floor ten times the true error 1.97e-4 = 2^-12.3 at
+    the median; the estimate is then 8.56 digits at the median, and even
+    w = 0 leaves 2 x checks, 212 times the true error). Native twin:
+    ``v2_stability::default_floor_weight``."""
+
+    units = 2**14 if largest_loop <= 5 else 2**8 if largest_loop == 6 else 2**2
+    return units / BILINEAR_FLOOR_UNITS
+
+
+def resolved_floor_weight(checks: Any, largest_loop: int) -> float:
+    """The floor weight an estimate of ``checks`` uses for a process whose
+    highest-point loop has ``largest_loop`` legs: the one the checks set,
+    else ``default_floor_weight``."""
+
+    weight = checks.floor_weight
+    return default_floor_weight(largest_loop) if weight is None else weight
+
+
+def checked_floor_weight(value: object) -> float:
+    """``value`` as a floor weight (``StabilityChecks.floor_weight``): a
+    finite non-negative number, as a float (-0 is 0)."""
+
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError("floor_weight must be a number")
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("floor_weight must be a finite non-negative number")
+    return float(value) + 0.0
+
+
 @dataclass(frozen=True, slots=True)
 class StabilityChecks:
     """Which checks an evaluation runs: rotations (any number) and/or one
@@ -428,8 +506,16 @@ class StabilityChecks:
     reduction_direction: bool = False
     rescaled: bool = False
     cross_backend: bool = False
+    # The weight of a loop-induced estimate's first-order floor term (1: the
+    # calibrated coverage, 0: the checks and the second-order term alone;
+    # None: the process's default, ``default_floor_weight``).
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         rotations = tuple(self.rotations)
         if any(not isinstance(r, Rotation) for r in rotations):
             raise TypeError("rotation checks take Rotation records")
@@ -645,9 +731,11 @@ class StabilityEstimate:
     (finite, then the poles when computed), ``absolute`` E itself per sector
     and Laurent coefficient. ``checks`` holds each check's own budget against
     the Laurent vector, without safety factor and floor. ``budgets``
-    (absolute, per check and sector) and ``scale`` (the absolute sums S) let
-    ``subset`` re-combine fewer checks; ``families`` holds |Omega - Omega'|
-    per reduction lane when the reduction check ran. ``not_run`` names each
+    (absolute, per check and sector), ``scale`` (the absolute sums S) and
+    ``floor`` (a loop-induced output's floor, in place of FLOOR_UNITS u S)
+    let ``subset`` re-combine fewer checks;
+    ``families`` holds |Omega - Omega'| per reduction lane when the
+    reduction check ran. ``not_run`` names each
     requested check that did not run at the point with its reason (the
     cross-backend check where the other backend fails the point).
 
@@ -666,6 +754,10 @@ class StabilityEstimate:
     roundoff: float = field(repr=False)
     families: Mapping[Any, Any] | None = field(default=None, repr=False)
     not_run: Mapping[str, str] = field(default_factory=dict)
+    floor: Mapping[Any, Budget] | None = field(default=None, repr=False)
+    # The first-order weight ``floor`` was formed with (None: no
+    # loop-induced floor).
+    floor_weight: float | None = None
 
     @property
     def finite(self) -> float:
@@ -682,12 +774,16 @@ class StabilityEstimate:
         roundoff: float,
         families: Mapping[Any, Any] | None = None,
         not_run: Mapping[str, str] | None = None,
+        floor: Mapping[Any, Any] | None = None,
+        floor_weight: float | None = None,
     ) -> StabilityEstimate:
         """Combine the absolute budgets of named checks (``ROTATION``,
         ``REDUCTION`` and ``ADDITIVE`` names) for the reference Laurent values
         per sector; ``scale`` are the absolute sums S and ``roundoff`` the
         carrier's unit roundoff; ``not_run`` the requested checks that did
-        not run, with their reasons."""
+        not run, with their reasons; ``floor`` the absolute floor per sector
+        and Laurent coefficient of a loop-induced output, used in place of
+        FLOOR_UNITS u S (module docstring)."""
 
         if not budgets:
             raise ValueError("a stability estimate needs at least one check")
@@ -713,7 +809,12 @@ class StabilityEstimate:
 
             combined[sector] = Budget(
                 tuple(
-                    SAFETY * sampled(k) + FLOOR_UNITS * roundoff * _at(scale[sector], k)
+                    SAFETY * sampled(k)
+                    + (
+                        FLOOR_UNITS * roundoff * _at(scale[sector], k)
+                        if floor is None
+                        else _at(floor[sector], k)
+                    )
                     for k in range(width)
                 )
             )
@@ -728,10 +829,15 @@ class StabilityEstimate:
             roundoff,
             families,
             dict(not_run or {}),
+            None if floor is None else dict(floor),
+            None if floor is None else floor_weight,
         )
 
-    def subset(self, names: Iterable[str]) -> StabilityEstimate:
-        """The estimate an evaluation with only the checks ``names`` returns."""
+    def subset(self, names: Iterable[str], *, floor: bool = True) -> StabilityEstimate:
+        """The estimate an evaluation with only the checks ``names`` returns;
+        with ``floor=False`` combined with FLOOR_UNITS u S in place of a
+        loop-induced floor (the fallback guard's decision, module
+        docstring)."""
 
         names = tuple(names)
         missing = [name for name in names if name not in self.budgets]
@@ -744,6 +850,8 @@ class StabilityEstimate:
             roundoff=self.roundoff,
             families=self.families if set(names) & set(FRAMES) else None,
             not_run=self.not_run,
+            floor=self.floor if floor else None,
+            floor_weight=self.floor_weight,
         )
 
 
@@ -893,7 +1001,7 @@ def native_estimate(
         cross,
         reason,
     )
-    relative_, coefficients, relatives, absolute, budgets, scale, not_run = found
+    relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
 
     def budget(rows: Sequence[Sequence[float]]) -> dict:
         return {
@@ -912,6 +1020,7 @@ def native_estimate(
         roundoff,
         _deviations(reference),
         dict(not_run),
+        None if floor is None else budget(floor),
     )
 
 
@@ -994,6 +1103,7 @@ def _native_induced_estimate(
             reason = why
         else:
             cross = point(run)
+    weight = resolved_floor_weight(checks, reference.largest_loop)
     found = load_loop_native().stability_loop_induced(
         shape,
         roundoff,
@@ -1003,8 +1113,9 @@ def _native_induced_estimate(
         checks.reduction,
         cross,
         reason,
+        floor_weight=weight,
     )
-    relative_, coefficients, relatives, absolute, budgets, scale, not_run = found
+    relative_, coefficients, relatives, absolute, budgets, scale, not_run, floor = found
     names = [sector for sector, _pairs in sectors]
 
     def budget(rows_: Sequence[Sequence[float]]) -> dict:
@@ -1023,6 +1134,8 @@ def _native_induced_estimate(
         roundoff,
         _deviations(reference),
         dict(not_run),
+        None if floor is None else budget(floor),
+        None if floor is None else weight,
     )
 
 
@@ -1034,6 +1147,7 @@ def _at(budget: Any, k: int) -> Any:
 
 __all__ = [
     "ADDITIVE",
+    "BILINEAR_FLOOR_UNITS",
     "CROSS",
     "DEFAULT_RESCUE",
     "FLOOR_UNITS",
@@ -1053,6 +1167,7 @@ __all__ = [
     "StabilityChecks",
     "StabilityEstimate",
     "cross_check",
+    "default_floor_weight",
     "default_rescue",
     "default_rotation",
     "deviation",
@@ -1061,4 +1176,5 @@ __all__ = [
     "per_coefficient",
     "relative",
     "relative_text",
+    "resolved_floor_weight",
 ]

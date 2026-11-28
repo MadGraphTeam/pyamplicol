@@ -56,12 +56,14 @@ pub struct RuntimeOptions {
 
 /// `[evaluation.stability_checks]`: its keys at their defaults where absent
 /// (the table given replaces the runtime's checks as a whole).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct StabilityChecksOptions {
     pub rotations: Vec<String>,
     pub rotation_count: u64,
     pub reduction_direction: bool,
     pub rescaled: bool,
+    /// The loop-induced floor's first-order weight (None: the default).
+    pub floor_weight: Option<f64>,
 }
 
 type Reader = fn(&mut RuntimeOptions, &str, &toml::Value) -> Result<(), String>;
@@ -158,6 +160,20 @@ pub const KEYS: &[(&str, Reader)] = &[
         o.stability_checks
             .get_or_insert_with(Default::default)
             .rescaled = boolean(p, v)?;
+        Ok(())
+    }),
+    ("stability_checks.floor_weight", |o, p, v| {
+        let value = match v {
+            toml::Value::Float(value) => *value,
+            toml::Value::Integer(value) => *value as f64,
+            _ => return Err(format!("{p} must be a finite non-negative number")),
+        };
+        if !value.is_finite() || value < 0.0 {
+            return Err(format!("{p} must be a finite non-negative number"));
+        }
+        o.stability_checks
+            .get_or_insert_with(Default::default)
+            .floor_weight = Some(value);
         Ok(())
     }),
     ("threads", |o, p, v| {
@@ -319,7 +335,7 @@ impl StabilityChecksOptions {
     /// has none).
     pub fn checks(&self) -> rusticol_core::RusticolResult<crate::v2_stability::StabilityChecks> {
         use crate::v2_stability::{Rotation, StabilityChecks};
-        if self.rotations.is_empty() {
+        let checks = if self.rotations.is_empty() {
             StabilityChecks::with_default_rotations(
                 self.rotation_count,
                 self.reduction_direction,
@@ -333,7 +349,8 @@ impl StabilityChecksOptions {
                 .map(|text| Rotation::parse(text))
                 .collect::<rusticol_core::RusticolResult<Vec<_>>>()?;
             StabilityChecks::new(rotations, self.reduction_direction, self.rescaled, false)
-        }
+        }?;
+        checks.with_floor_weight(self.floor_weight)
     }
 }
 

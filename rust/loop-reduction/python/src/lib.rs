@@ -165,6 +165,7 @@ fn runtime_options(text: &str, keys: bool) -> PyResult<String> {
             "rotation_count": checks.rotation_count,
             "reduction_direction": checks.reduction_direction,
             "rescaled": checks.rescaled,
+            "floor_weight": checks.floor_weight,
         })
     });
     Ok(serde_json::json!({

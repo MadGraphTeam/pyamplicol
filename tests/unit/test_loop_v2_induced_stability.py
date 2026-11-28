@@ -3,10 +3,14 @@
 §2.a.8 with DECISIONS 2026-11-06 ~09:00 (1)).
 
 The estimate of a loop-induced |A|^2 is E = SAFETY x (max over rotations +
-reduction re-test) + FLOOR_UNITS x u x S, with budgets quadratic in the
-colour-metric norm (``induced.quadratic_budget``, the rotation budget after
-removing each helicity row's little-group phase) and S the |A|^2-level
-product of the per-row pre-reduction term floors (``induced.scale``). On
+reduction re-test) + floor, with budgets quadratic in the colour-metric
+norm (``induced.quadratic_budget``, the rotation budget after removing each
+helicity row's little-group phase), S the |A|^2-level product of the
+per-row pre-reduction term floors (``induced.scale``) and the floor first
+order in each side's term floor, eps1 (N S' + S N') + eps2^2 S S' with
+eps1 = BILINEAR_FLOOR_UNITS u and eps2 = FLOOR_UNITS u (``induced.floor``),
+on every estimate with a check (the fallback guard keeps deciding with
+FLOOR_UNITS u S). On
 the two calibration rows, g g > h h (large cancellations) and g g > z
 (Landau-Yang: every family integrates to zero by itself), on the stored
 runtime's route (native point inputs) against Float(256):
@@ -16,7 +20,8 @@ runtime's route (native point inputs) against Float(256):
   double-double (``ESTIMATE_MARGIN``, DESIGN §10.4);
 * g g > z is served as "zero within its estimate" (RULED Q13: no
   Landau-Yang declaration): |A|^2 <= 10 E in binary64 and double-double;
-  its E / S is the floor's 16 u, so the opt-in rescue metric "scale" (E <=
+  its E / S is at least the floor's (16 u)^2 and far below every target,
+  so the opt-in rescue metric "scale" (E <=
   target x S, PLAN §2.a.8, ``VirtualRescueLevel.metric``) accepts it at the
   first level, while its relative estimate exceeds every target and the
   default rescue keeps it at the last level with the target not met (both
@@ -36,7 +41,9 @@ runtime's route (native point inputs) against Float(256):
 
 from __future__ import annotations
 
+import itertools
 import json
+import math
 from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
@@ -54,6 +61,13 @@ CALIBRATION = (
 # estimate and per Laurent coefficient.
 ESTIMATE_MARGIN = 10
 CALIBRATION_ROWS = ("li_gg_hh", "li_gg_z")
+# The derivation of the loop-induced floor's first-order unit count
+# (``stability.BILINEAR_FLOOR_UNITS``): campaign binary64 points of the
+# loop-induced rows, estimated with a rotation and the rescaled reduction
+# check (TIRust) against their double-double references.
+FLOOR_UNITS_DERIVATION = (
+    ROOT / "tests" / "fixtures" / "loop" / "v2" / "floor_units_li.json"
+)
 TRUTH_DIGITS = 57
 # The relative estimate of a numerical zero is its absolute estimate against
 # rounding: far above any target (here: above 1e5 = 1 / 1e-5).
@@ -163,8 +177,9 @@ def test_double_double_estimate_shrinks_with_the_unit_roundoff(li):
 def test_g_g_to_z_is_zero_within_its_estimate(li, carrier):
     """g g > z (Landau-Yang) is evaluated numerically, never declared zero
     (RULED Q13): on every fixture point |A|^2 lies within ten times E per
-    Laurent coefficient. E rests on the term floor (E / S is the floor's
-    FLOOR_UNITS x u): E / S meets the default rescue target, so the opt-in
+    Laurent coefficient (and within E itself). E rests on the floor (E / S
+    is at least its second-order (FLOOR_UNITS x u)^2): E / S meets the
+    default rescue target, so the opt-in
     rescue metric "scale" (E <= target x S) accepts it, whereas the
     relative estimate (E against the value, itself rounding) exceeds it by
     far."""
@@ -186,9 +201,20 @@ def test_g_g_to_z_is_zero_within_its_estimate(li, carrier):
             scale = estimate.scale[sector].coefficients
             for k, value in enumerate(laurent.coefficients):
                 assert abs(float(value)) <= ESTIMATE_MARGIN * absolute[k], (index, k)
-                assert floor <= absolute[k] / scale[k] <= ESTIMATE_MARGIN * floor
+                # Replaced the band floor <= E / S <= 10 floor, which pinned the
+                # old floor FLOOR_UNITS u S: the floor is first order in each
+                # side's term floor, zero at an exact zero up to rounding, and
+                # its second-order term eps^2 S S' (eps = FLOOR_UNITS u) is what
+                # keeps the zero within its estimate.
+                assert floor**2 <= absolute[k] / scale[k], (index, k)
+                assert abs(float(value)) <= absolute[k], (index, k)
                 assert absolute[k] / scale[k] <= RESCUE_TARGET
-        assert estimate.relative > 1 / RESCUE_TARGET
+        # Replaced relative > 1 / RESCUE_TARGET, which pinned the old floor
+        # (a zero's relative estimate ~ 16 / u): with the floor first order in
+        # each side's term floor it is of order one to a few thousand, still
+        # above 1 (no correct digit claimed, so every relative target is
+        # missed).
+        assert estimate.relative > 1
 
 
 @pytest.mark.loop_physics
@@ -204,8 +230,8 @@ def test_the_rescue_of_g_g_to_z_terminates_under_either_metric(li, tmp_path):
     the rescue terminates; before the rule, at the cost of every level;
     at 500 digits its estimate would underflow binary64). The opt-in
     "scale" metric (E <= target x S, ``VirtualRescueLevel.metric``) on the
-    same ladder accepts it at the first level, its E / S
-    the floor's FLOOR_UNITS x u, its value the binary64 one and within its
+    same ladder accepts it at the first level, its E / S at least the
+    floor's second-order (FLOOR_UNITS x u)^2, its value the binary64 one and within its
     absolute estimate (Q13: zero within the estimate)."""
 
     from dataclasses import replace
@@ -256,14 +282,93 @@ def test_the_rescue_of_g_g_to_z_terminates_under_either_metric(li, tmp_path):
     assert record.level == 0 and record.met and len(record.attempts) == 1
     (estimate,) = scaled.stability
     floor = FLOOR_UNITS * Precision.double().unit_roundoff
-    assert floor <= estimate.scale <= ESTIMATE_MARGIN * floor
+    # Replaced the band floor <= E / S <= 10 floor, which pinned the old floor
+    # FLOOR_UNITS u S: the floor is first order in each side's term floor,
+    # zero at an exact zero up to rounding, and its second-order term
+    # eps^2 S S' (eps = FLOOR_UNITS u) is what keeps the zero within its
+    # estimate.
+    assert floor**2 <= estimate.scale
     assert record.attempts[0].estimate == estimate.scale <= ladder.levels[0].target
     (value,) = scaled.values[0]
     (error,) = estimate.absolute
     assert abs(value.finite) <= ESTIMATE_MARGIN * error.finite
+    assert abs(value.finite) <= error.finite
     unchecked = runtime.evaluate([point], mu_r2=[str(scale)])
     assert scaled.values == unchecked.values
     assert scaled.contribution == "loop-induced"
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize(
+    ("name", "expression"), [("li_gg_z", "g g > z"), ("li_z_gg", "z > g g")]
+)
+def test_an_integrated_zero_stops_where_its_e_over_s_fell_quadratically(
+    li, tmp_path, name, expression
+):
+    """The stopping rule's second criterion on the default stack
+    (``rescue._vanishing``): a Landau-Yang zero's relative estimate is flat
+    with the first-order floor (value and estimate both fall like u^2), so
+    the growth criterion does not keep it; its value is zero within its
+    estimate (|value| <= E) at binary64 and at double-double and its E / S
+    fell by more than the unit-roundoff ratio to the power 3/2 between
+    them: kept at double-double, the target not met, by the second
+    criterion (its detail names it)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescuePolicy
+
+    output = _generate(tmp_path, (("p", expression),), _fixture(name))
+    point, scale, parameters = li.point(name)
+    runtime = Runtime.load(output, process="p", model_parameters=parameters)
+    # mu_R^2 as exact decimal text (the fixture's mu_R is a terminating decimal).
+    mu_r2 = str(Decimal(scale.numerator) / Decimal(scale.denominator))
+    result = runtime.evaluate([point], mu_r2=[mu_r2], stability=VirtualRescuePolicy())
+    (record,) = result.rescue
+    assert not record.met and record.arithmetic == "double-double"
+    detail = result.diagnostics[0].detail
+    assert "not escalated: the value is zero within its estimate here" in detail
+    (estimate,) = result.stability
+    for value, error in zip(result.values[0], estimate.absolute, strict=True):
+        assert abs(value.finite) <= error.finite
+
+
+@pytest.mark.loop_physics
+def test_a_real_point_is_never_kept_as_a_zero(li, tmp_path):
+    """g g > z z (amplitudes cancelling between their terms, a real |A|^2):
+    a ladder whose binary64 target no binary64 estimate meets serves the
+    point from double-double, where it meets its target; a ladder whose
+    double-double target is out of reach too climbs on to 57 digits, which
+    serve it: at double-double its value is far outside its estimate and
+    its estimate fell like u, so neither stopping criterion keeps it."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+
+    output = _generate(tmp_path, (("p", "g g > z z"),), _fixture("li_gg_zz"))
+    point, scale, parameters = li.point("li_gg_zz")
+    scale = Decimal(scale.numerator) / Decimal(scale.denominator)
+    runtime = Runtime.load(output, process="p", model_parameters=parameters)
+    served = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=1e-20),
+            VirtualRescueLevel("double-double", target=1e-20),
+        )
+    )
+    climbed = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", target=1e-40),
+            VirtualRescueLevel("double-double", target=1e-40),
+            VirtualRescueLevel("arbitrary", 57, target=1e-40),
+        )
+    )
+    for policy, level in ((served, 1), (climbed, 2)):
+        result = runtime.evaluate([point], mu_r2=[str(scale)], stability=policy)
+        (record,) = result.rescue
+        assert record.level == level and record.met, (record, result.diagnostics)
+        assert "not escalated" not in result.diagnostics[0].detail
+        (estimate,) = result.stability
+        for value, error in zip(result.values[0], estimate.absolute, strict=True):
+            assert abs(value.finite) > error.finite
 
 
 # The 500-digit evaluations below run in a child process: an evaluation at
@@ -300,8 +405,8 @@ def test_g_g_to_z_reads_right_in_arbitrary_precision(li, tmp_path, digits):
     exponent range (the default 500 digits: unit roundoff ~5e-500, |A|^2 ~
     1e-1039): the estimate's sizes are exponent-safe (``loops.v2.wide``), so
     its relative estimate exceeds the target (the value is rounding; it read
-    0.0, "met", through 0 / 0 in binary64 floats) while its E / S, the
-    floor's FLOOR_UNITS x u, meets the "scale" metric; the value is zero
+    0.0, "met", through 0 / 0 in binary64 floats) while its E / S meets
+    the "scale" metric; the value is zero
     within its absolute estimate."""
 
     import json
@@ -510,3 +615,447 @@ def test_calibration_points_are_exact(name):
             assert energy * energy - sum(x * x for x in space) == mass * mass
         for mu in range(4):
             assert point[0][mu] + point[1][mu] == sum(p[mu] for p in point[2:])
+
+
+@pytest.mark.loop_fast
+def test_the_floor_units_keep_covered_points_in_the_margin():
+    """BILINEAR_FLOOR_UNITS is a measured count, not a proven bound (at the
+    floor weight w = 1, the calibrated coverage): the
+    smallest power of 4 under which, on the fixture's binary64 points of both
+    backends (each point the previous floor FLOOR_UNITS u S covered, with
+    its true error, its checks' sampled budget, the floor's first- and
+    second-order terms at the measuring build's count and the previous
+    estimate), every covered point stays within ESTIMATE_MARGIN x E and
+    fewer than 1 in 10^4 of them exceed E. Where a point's checks
+    under-measure its error no count avoids every such point; at the chosen
+    count they are TIRust points within a factor 3.1. The first-order term
+    scales with the count, the second-order term (FLOOR_UNITS u)^2 S does
+    not. Lowering the count fails here."""
+
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS
+
+    data = json.loads(FLOOR_UNITS_DERIVATION.read_text())
+    measured = data["units_measured"]
+    covered = sum(row["covered"] for row in data["rows"].values())
+
+    def beyond(units):
+        ratios = [
+            error / (sampled + first * units / measured + second)
+            for row in data["rows"].values()
+            for error, sampled, first, second, _previous in row["kept"]
+        ]
+        return sum(ratio > 1 for ratio in ratios), max(ratios, default=0.0)
+
+    def passes(units):
+        count, worst = beyond(units)
+        return worst <= ESTIMATE_MARGIN and count * 10**4 < covered
+
+    passing = [units for units in data["grid"] if passes(units)]
+    assert passing and passing[0] == BILINEAR_FLOOR_UNITS
+    assert not passes(BILINEAR_FLOOR_UNITS // 4)
+    count, worst = beyond(BILINEAR_FLOOR_UNITS)
+    assert count <= 4 and worst <= 3.1, (count, worst)
+    assert sum(row["points"] for row in data["rows"].values()) == 95857
+
+
+@pytest.mark.loop_fast
+def test_the_default_floor_units_per_highest_point_loop():
+    """The default weight by the highest-point loop a process reduces
+    (``default_floor_weight``, whole floor units), on the fixture's binary64
+    points of both backends (true error above E where FLOOR_UNITS u S
+    covered: a new miss): boxes keep 2^14 units (3 new misses of 74,000
+    points, g g > e+e-mu+mu- TIRust, within 3.1 x E; at 2^12 units 26),
+    pentagons 2^14 (1 of 19,195, g g > z z g TIRust, 2.65 x E; at 2^12 30),
+    hexagons 2^8 (none of 2,662: a small sample, its g g > z z g g points
+    enriched in flagged ones), heptagons 4 units (none of 693 g g > z z g g g
+    and g g > h h g g g points, projected from the campaign's stored
+    estimates, not in the fixture). Their one-digit weights (the floor ten
+    times the true error at the median) are 15, 206, 625 and 184 units: on
+    boxes and pentagons that would leave 2,352 and 783 new misses, which is
+    why they keep the calibrated count."""
+
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS, default_floor_weight
+
+    data = json.loads(FLOOR_UNITS_DERIVATION.read_text())
+    measured = data["units_measured"]
+
+    def new_misses(loop, units):
+        ratios = [
+            error / (sampled + first * units / measured + second)
+            for row in data["rows"].values()
+            if row["largest_loop"] == loop
+            for error, sampled, first, second, _previous in row["kept"]
+        ]
+        return sum(ratio > 1 for ratio in ratios), max(ratios, default=0.0)
+
+    expected = {4: (3, 3.1), 5: (1, 2.7), 6: (0, 1.0)}
+    for loop, (count, worst) in expected.items():
+        units = default_floor_weight(loop) * BILINEAR_FLOOR_UNITS
+        found, largest = new_misses(loop, units)
+        assert found == count and largest <= worst, (loop, found, largest)
+    # A quarter of the box and pentagon counts misses many more.
+    assert new_misses(4, 2**12)[0] > 20 and new_misses(5, 2**12)[0] > 20
+
+
+@pytest.mark.loop_fast
+def test_a_cancelling_point_is_estimated_at_its_checks_not_at_16_u_s():
+    """Why the floor is first order: on a strongly cancelling binary64
+    g g > z z g g point (the fixture's, S / |v| = 1.7e13, its value right to
+    6e-10) the estimate is twice its checks plus the first-order floor (the
+    second-order term adds under 1 %), above the true error, and more than
+    a thousand times below the previous floor FLOOR_UNITS u S, at the
+    calibrated weight w = 1 and at its class default (a hexagon: 2^-6)."""
+
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import (
+        BILINEAR_FLOOR_UNITS,
+        FLOOR_UNITS,
+        SAFETY,
+        Budget,
+        StabilityEstimate,
+        default_floor_weight,
+    )
+
+    point = json.loads(FLOOR_UNITS_DERIVATION.read_text())["cancelling"]
+    measured = json.loads(FLOOR_UNITS_DERIVATION.read_text())["units_measured"]
+    ratio = point["scale_over_value"]
+    for weight in (1.0, default_floor_weight(6)):
+        first = weight * point["first"] * BILINEAR_FLOOR_UNITS / measured
+        floor = first + (FLOOR_UNITS * _U) ** 2 * ratio
+        estimate = StabilityEstimate.from_checks(
+            {_SECTOR: Laurent(1.0)},
+            {
+                name: {_SECTOR: Budget((size,))}
+                for name, size in point["checks"].items()
+            },
+            scale={_SECTOR: Budget((ratio,))},
+            roundoff=_U,
+            floor={_SECTOR: Budget((floor,))},
+        )
+        checks = SAFETY * sum(point["checks"].values())
+        assert estimate.relative <= 1.01 * (checks + first)
+        assert point["error"] <= estimate.relative < 1e-3 * FLOOR_UNITS * _U * ratio
+        assert estimate.relative < 1e-3 * point["previous"]
+
+
+# ------------------------------------------------------- the floor's form
+
+# One loop order, one helicity row and a two-element amplitude basis with
+# an identity colour metric: the smallest point the floor's form reads.
+_ORDER = (("QCD", 2), ("QED", 2))
+_ROW = ((0, 1), (1, 1))
+_SECTOR = (("QCD", 4), ("QED", 4))
+_U = 2.0**-53
+
+
+def _constructed(amplitude, terms):
+    """A finite-part loop-induced point (the fields ``induced.scale`` and
+    ``induced.floor`` read): amplitude cells a_t and term sizes T_t."""
+
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+
+    key = (_ORDER, _ROW)
+    precision = SimpleNamespace(estimate_roundoff=_U, unit_roundoff=_U)
+    numbers = SimpleNamespace(wide=False, precision=precision, scope=nullcontext)
+    return SimpleNamespace(
+        gram=((1, 0), (0, 1)),
+        numbers=numbers,
+        slice=SimpleNamespace(
+            amplitude=(0, 1), sectors=((_SECTOR, frozenset({(_ORDER, _ORDER)})),)
+        ),
+        average=1,
+        poles=False,
+        amplitude_rows=(_ROW,),
+        amplitude_vectors={key: [[complex(a)] for a in amplitude]},
+        term_cache={key: [[float(t)] for t in terms]},
+        counterterm_vectors={},
+    )
+
+
+def _largest_change(amplitude, terms, epsilon):
+    """The largest |(|a + d|^2 - |a|^2)| over the corners |d_t| = epsilon
+    T_t with phases +-1, +-i (exact rationals): the bound the floor must
+    hold for roundings of at most epsilon T_t per component."""
+
+    from itertools import product
+
+    a = [complex(x) for x in amplitude]
+    base = [(Fraction(z.real), Fraction(z.imag)) for z in a]
+    sizes = [Fraction(epsilon) * Fraction(t) for t in terms]
+    phases = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    worst = Fraction(0)
+    for corner in product(phases, repeat=len(a)):
+        moved = [
+            (re + p * size, im + q * size)
+            for (re, im), (p, q), size in zip(base, corner, sizes, strict=True)
+        ]
+        change = sum(re * re + im * im for re, im in moved) - sum(
+            re * re + im * im for re, im in base
+        )
+        worst = max(worst, abs(change))
+    return worst
+
+
+@pytest.mark.loop_fast
+def test_the_loop_induced_floor_is_first_order_in_each_sides_floor():
+    """The floor of |A|^2 = a^dag G a (``induced.floor``) is eps1 (N S + S
+    N) + eps2^2 S S, eps1 = BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u, N =
+    sum_t |a_t| sqrt(G_tt) and S the term floor: for an amplitude whose
+    terms cancel to N / S = 3.5e-5 it is 2 N / S = 7e-5 of eps1 times the
+    product of the two sides' term floors (``induced.scale``, the scale S
+    of the estimate, which is unchanged), linear in the cancellation where
+    the product is quadratic,
+    and it bounds the form's change for every rounding of at most eps T_t
+    per component (exact rationals over the corners)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.stability import BILINEAR_FLOOR_UNITS, FLOOR_UNITS
+
+    first, second = BILINEAR_FLOOR_UNITS * _U, FLOOR_UNITS * _U
+    amplitude, terms = (3e-5, 4e-5), (1.0, 1.0)
+    point = _constructed(amplitude, terms)
+    (scale,) = induced.scale(point)[_SECTOR].coefficients
+    (floor,) = induced.floor(point, 1.0)[_SECTOR].coefficients
+    size, term = 3e-5 + 4e-5, 2.0
+    assert scale == term * term
+    assert floor == first * (size * term + term * size) + second * (
+        second * term * term
+    )
+    assert floor / (first * scale) == pytest.approx(2 * size / term, rel=1e-6)
+    # It bounds the form's change for roundings of eps1 T_t per component.
+    assert _largest_change(amplitude, terms, first) <= Fraction(floor)
+
+
+@pytest.mark.loop_fast
+def test_a_vanishing_loop_induced_amplitude_keeps_its_floor():
+    """The floor must still dominate where nothing survives the
+    cancellation (RULED Q13: a numerical zero is "zero within the
+    estimate"): an exactly vanishing amplitude keeps the second-order term
+    (eps S)^2 at every floor weight, and an amplitude that is pure rounding
+    of up to eps T_t per component has |A|^2 within its floor (at w = 1 the
+    floor also bounds every such rounding of the form)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.stability import FLOOR_UNITS
+
+    epsilon = FLOOR_UNITS * _U
+    terms = (1.0, 3.0)
+    for weight in (0.0, 2.0**-12, 1.0):
+        zero = _constructed((0.0, 0.0), terms)
+        (floor,) = induced.floor(zero, weight)[_SECTOR].coefficients
+        assert floor == epsilon * (epsilon * 4.0 * 4.0) > 0
+        for noise in ((epsilon, 0.0), (epsilon, 3 * epsilon), (0.0, 3j * epsilon)):
+            point = _constructed(noise, terms)
+            (floor,) = induced.floor(point, weight)[_SECTOR].coefficients
+            value = sum(abs(complex(x)) ** 2 for x in noise)
+            assert value <= floor, (noise, weight, value, floor)
+            if weight == 1.0:
+                # The first-order bound of roundings of eps T_t per
+                # component holds at the calibrated weight.
+                assert _largest_change(noise, terms, epsilon) <= Fraction(floor)
+
+
+@pytest.mark.loop_fast
+def test_the_floor_weight_scales_the_first_order_term_alone(loop_native):
+    """The runtime setting ``floor_weight`` (``VirtualStabilityChecks``)
+    multiplies the floor's first-order term only: w = 0 leaves twice the
+    checks plus the second-order term (FLOOR_UNITS u)^2 S S', w = 1 the
+    calibrated floor, and the estimate reports the weight it was formed
+    with; the guard's subset (``floor=False``) does not depend on it. Unset
+    (the default), the weight is the process's, by the highest-point loop it
+    reduces (``default_floor_weight``, the same function natively), and a
+    weight the caller sets overrides it for every class."""
+
+    from pyamplicol.api.virtual_results import (
+        VirtualRescueLevel,
+        VirtualStabilityChecks,
+    )
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import (
+        BILINEAR_FLOOR_UNITS,
+        FLOOR_UNITS,
+        RECOMMENDED_CHECKS,
+        SAFETY,
+        Budget,
+        StabilityEstimate,
+        default_floor_weight,
+        resolved_floor_weight,
+    )
+
+    units = {
+        loop: default_floor_weight(loop) * BILINEAR_FLOOR_UNITS for loop in range(12)
+    }
+    assert units == {
+        loop: 2**14 if loop <= 5 else 2**8 if loop == 6 else 4 for loop in range(12)
+    }
+    for loop in range(12):
+        assert loop_native.default_floor_weight(loop) == default_floor_weight(loop)
+    assert VirtualStabilityChecks(1).floor_weight is None
+    assert RECOMMENDED_CHECKS.floor_weight is None
+    assert VirtualRescueLevel("double").checks.floor_weight is None
+    for loop in range(12):
+        default = VirtualStabilityChecks(1).to_checks()
+        assert resolved_floor_weight(default, loop) == default_floor_weight(loop)
+        for weight in (0.0, 0.3, 1.0, 7.0):
+            given = VirtualStabilityChecks(1, floor_weight=weight).to_checks()
+            assert resolved_floor_weight(given, loop) == weight
+            level = VirtualRescueLevel("double", floor_weight=weight)
+            assert resolved_floor_weight(level.checks.to_checks(), loop) == weight
+    for bad in (-1.0, math.inf, math.nan, True, "1"):
+        with pytest.raises((TypeError, ValueError)):
+            VirtualStabilityChecks(1, floor_weight=bad)
+    amplitude, terms = (3e-5, 4e-5), (1.0, 1.0)
+    point = _constructed(amplitude, terms)
+    size, term = 3e-5 + 4e-5, 2.0
+    first, second = BILINEAR_FLOOR_UNITS * _U, FLOOR_UNITS * _U
+    (scale,) = induced.scale(point)[_SECTOR].coefficients
+    rotation = 2e-14
+    for weight in (0.0, 2.0**-12, 1.0):
+        (floor,) = induced.floor(point, weight)[_SECTOR].coefficients
+        assert floor == weight * first * (size * term + term * size) + second * (
+            second * term * term
+        )
+        estimate = StabilityEstimate.from_checks(
+            {_SECTOR: Laurent(size * size)},
+            {"rotation-0": {_SECTOR: Budget((rotation,))}},
+            scale={_SECTOR: Budget((scale,))},
+            roundoff=_U,
+            floor={_SECTOR: Budget((floor,))},
+            floor_weight=weight,
+        )
+        assert estimate.floor_weight == weight
+        assert estimate.absolute[_SECTOR].coefficients == (SAFETY * rotation + floor,)
+        guard = estimate.subset(["rotation-0"], floor=False)
+        assert guard.absolute[_SECTOR].coefficients == (
+            SAFETY * rotation + FLOOR_UNITS * _U * scale,
+        )
+    (zero,) = induced.floor(point, 0.0)[_SECTOR].coefficients
+    assert zero == second * second * scale
+
+
+@pytest.mark.loop_fast
+def test_checked_estimates_take_the_floor_the_guard_keeps_16_u_s():
+    """A loop-induced estimate combines its checks with the loop-induced
+    floor whichever checks ran (rotations alone, with the cached or the
+    rescaled reduction re-test): SAFETY x (max rotations + additive) + floor,
+    also for a subset of its checks; the fallback guard's subset
+    (``floor=False``) and an estimate without a floor combine to
+    SAFETY x (max rotations + additive) + FLOOR_UNITS u S bitwise, the
+    combination the guard was calibrated with."""
+
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import (
+        FLOOR_UNITS,
+        REDUCTION,
+        RESCALED,
+        SAFETY,
+        Budget,
+        StabilityEstimate,
+    )
+
+    value, scale, floor = 2.5e-3, 7.0e3, 3.0e-9
+    rotations = {"rotation-0": 4e-15, "rotation-1": 9e-15}
+    reference = {_SECTOR: Laurent(value)}
+
+    def estimate(checks, with_floor):
+        return StabilityEstimate.from_checks(
+            reference,
+            {name: {_SECTOR: Budget((size,))} for name, size in checks.items()},
+            scale={_SECTOR: Budget((scale,))},
+            roundoff=_U,
+            floor={_SECTOR: Budget((floor,))} if with_floor else None,
+        )
+
+    for checks in (
+        rotations,
+        {**rotations, REDUCTION: 2e-14},
+        {**rotations, RESCALED: 2e-14},
+    ):
+        sampled = SAFETY * (
+            max(rotations.values())
+            + checks.get(REDUCTION, 0.0)
+            + checks.get(RESCALED, 0.0)
+        )
+        found = estimate(checks, True)
+        assert found.absolute[_SECTOR].coefficients == (sampled + floor,), checks
+        assert found.relative == (sampled + floor) / value
+        main = estimate(checks, False)
+        assert main.absolute[_SECTOR].coefficients == (
+            sampled + FLOOR_UNITS * _U * scale,
+        )
+        assert found.subset(["rotation-1"]).absolute[_SECTOR].coefficients == (
+            SAFETY * 9e-15 + floor,
+        )
+        guard = found.subset(["rotation-0"], floor=False)
+        assert guard.absolute[_SECTOR].coefficients == (
+            SAFETY * 4e-15 + FLOOR_UNITS * _U * scale,
+        )
+        assert guard.absolute == estimate({"rotation-0": 4e-15}, False).absolute
+
+
+@pytest.mark.loop_fast
+def test_the_native_floor_of_a_constructed_point_is_the_oracles(loop_native):
+    """The native estimate (``stability_loop_induced``, the SDK's Rust
+    implementation) forms the constructed point's floor, scale and estimate
+    bitwise as the Python oracle (``induced.floor``, ``induced.scale``,
+    ``StabilityEstimate.from_checks``), with the rotation check alone and
+    with the rescaled reduction check (zero budgets: E is the floor
+    itself)."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.assemble import Laurent
+    from pyamplicol.loops.v2.stability import RESCALED, Budget, StabilityEstimate
+
+    for (amplitude, terms), reduction, weight in itertools.product(
+        (
+            ((3e-5, 4e-5 - 1e-9j), (1.0, 1.0)),
+            ((0.0, 0.0), (1.0, 3.0)),
+            ((0.7, -0.2 + 0.1j), (0.9, 0.4)),
+        ),
+        (None, RESCALED),
+        (1.0, 2.0**-6, 0.3),
+    ):
+        point = _constructed(amplitude, terms)
+        cells = [((0, 0), [[(complex(a).real, complex(a).imag)] for a in amplitude])]
+        budget = None if reduction is None else [((0, 0), [[0.0] for _ in amplitude])]
+        native = (cells, cells, [], budget, [((0, 0), [[float(t)] for t in terms])])
+        value = sum(abs(complex(a)) ** 2 for a in amplitude)
+        shape = (
+            2,
+            1,
+            [(1.0, 0.0), (0.0, 0.0), (0.0, 0.0), (1.0, 0.0)],
+            [0],
+            [[(0, 0)]],
+            1.0,
+        )
+        found = loop_native.stability_loop_induced(
+            shape,
+            _U,
+            [[value]],
+            native,
+            [native],
+            reduction,
+            None,
+            None,
+            floor_weight=weight,
+        )
+        relative, _coefficients, _relatives, absolute, budgets, scale, _, floor = found
+        assert floor == [list(induced.floor(point, weight)[_SECTOR].coefficients)]
+        assert scale == [list(induced.scale(point)[_SECTOR].coefficients)]
+        oracle = StabilityEstimate.from_checks(
+            {_SECTOR: Laurent(value)},
+            {name: {_SECTOR: Budget(tuple(row[0]))} for name, row in budgets},
+            scale={_SECTOR: Budget(tuple(scale[0]))},
+            roundoff=_U,
+            floor=induced.floor(point, weight),
+        )
+        assert absolute == [list(oracle.absolute[_SECTOR].coefficients)]
+        assert relative == oracle.relative
+        # Every budget is zero (the rotated point is the direct one): E is
+        # the floor.
+        assert [name for name, _ in budgets] == ["rotation-0"] + (
+            [] if reduction is None else [RESCALED]
+        )
+        assert absolute == floor, (amplitude, reduction)
