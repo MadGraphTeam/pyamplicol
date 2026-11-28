@@ -1412,3 +1412,87 @@ def test_the_sdk_floor_weight_layers(aag, loop_native):
         assert weights(handle) == {1.0}
     finally:
         sdk.rusticol_virtual_free(handle)
+
+
+@pytest.mark.loop_physics
+def test_a_floor_weight_keeps_the_default_rescue_ladder(aag):
+    """A weight does not change which ladder runs: the loop-induced default
+    stack (TIRust binary64, NinjaRS binary64, then the default ladder's
+    higher levels) is chosen on the policy apart from its weights, and its
+    rungs then take the weight. On the frozen g g > a a g points with the
+    default policy, the class default given explicitly (w = 1, pentagons)
+    in the card or on the call reproduces the implicit run exactly (the
+    same statuses, rungs and estimates per attempt, the same values); other
+    weights try the same stack's rungs in its order (review r3: an explicit
+    weight dropped the NinjaRS rung)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import (
+        VirtualRescuePolicy,
+        VirtualStabilityChecks,
+    )
+    from pyamplicol.loops.v2.rescue import loop_induced_stack
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none")
+
+    def run(card=None, weight=None):
+        options = None
+        if card is not None:
+            options = f"[evaluation.stability_checks]\nfloor_weight = {card}\n"
+        runtime = Runtime.load(artifact, process="p", options=options)
+        extra = {}
+        if weight is not None:
+            extra["stability_checks"] = VirtualStabilityChecks(floor_weight=weight)
+        return runtime.evaluate(
+            points, stability=VirtualRescuePolicy(), **call, **extra
+        )
+
+    def ladder(result):
+        return [
+            [
+                (
+                    attempt.arithmetic,
+                    attempt.reduction.requested if attempt.reduction else None,
+                    attempt.failure is not None,
+                    attempt.estimate,
+                )
+                for attempt in record.attempts
+            ]
+            for record in result.rescue
+        ]
+
+    implicit = run()
+    assert "rescued" in implicit.statuses
+    for explicit in (run(card=1.0), run(weight=1.0), run(card=4.0, weight=1.0)):
+        assert explicit.statuses == implicit.statuses
+        assert explicit.values == implicit.values
+        assert ladder(explicit) == ladder(implicit)
+    rungs = [
+        (level.arithmetic, level.reduction) for level in loop_induced_stack().levels
+    ]
+    for weight in (0.0, 4.0, 1024.0):
+        for attempts in ladder(run(weight=weight)):
+            tried = [(arithmetic, requested) for arithmetic, requested, *_ in attempts]
+            assert tried == rungs[: len(tried)], (weight, tried)
+
+
+@pytest.mark.loop_physics
+def test_invalid_stability_checks_keep_their_type_error(aag):
+    """A ``stability_checks`` that is no ``VirtualStabilityChecks`` (a dict)
+    is refused with the same TypeError and message as before the floor
+    weight, with and without a runtime-options weight (review r3 follow-up:
+    it raised AttributeError)."""
+
+    from pyamplicol import Runtime
+
+    artifact, points, scales = aag
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+    for options in (None, card):
+        runtime = Runtime.load(artifact, process="p", options=options)
+        with pytest.raises(
+            TypeError, match="stability_checks requires VirtualStabilityChecks"
+        ):
+            runtime.evaluate(
+                points, mu_r2=scales, stability_checks={"floor_weight": 1.0}
+            )

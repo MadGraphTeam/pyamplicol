@@ -806,6 +806,15 @@ class VirtualRescuePolicy:
             )
         object.__setattr__(self, "levels", levels)
 
+    def without_floor_weight(self) -> VirtualRescuePolicy:
+        """This policy with no level naming a floor weight: what it is
+        apart from its weights (``rescue.default_stack`` chooses the ladder
+        on it)."""
+
+        return VirtualRescuePolicy(
+            tuple(replace(level, floor_weight=None) for level in self.levels)
+        )
+
     def with_floor_weight(self, weight: float | None) -> VirtualRescuePolicy:
         """This policy with the floor weight ``weight`` on every level that
         sets none (``VirtualRescueLevel.floor_weight``; None: unchanged)."""

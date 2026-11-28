@@ -122,17 +122,29 @@ def default_stack(
     TIRust in binary64 with a per-point NinjaRS fallback (``fallback``, the
     native policy's choice there: none on a TIR-only artifact or in a build
     without TIRust); any other policy as given. A call naming a backend runs
-    the default ladder on it at every level (its levels are ``"auto"``)."""
+    the default ladder on it at every level (its levels are ``"auto"``).
+    The ladder is chosen on the policy apart from its floor weights (a
+    policy that differs from the default only by weights is the default
+    policy here); the stack's levels then take the weights of the levels
+    they stand for (both binary64 rungs the first level's)."""
 
     if (
         policy is None
-        or policy != VirtualRescuePolicy()
+        or policy.without_floor_weight() != VirtualRescuePolicy()
         or contribution != "loop-induced"
         or requested != "auto"
         or fallback != "ninjars"
     ):
         return policy
-    return loop_induced_stack()
+    first, *rest = (level.floor_weight for level in policy.levels)
+    return VirtualRescuePolicy(
+        tuple(
+            replace(level, floor_weight=weight)
+            for level, weight in zip(
+                loop_induced_stack().levels, (first, first, *rest), strict=True
+            )
+        )
+    )
 
 
 def rescue_policy(

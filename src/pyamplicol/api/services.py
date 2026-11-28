@@ -1221,6 +1221,8 @@ class Runtime:
         options: dict[str, object] = {}
         if poles is None:
             poles = cast(Any, self._call_defaults.get("poles"))
+        if checks is not None and not isinstance(checks, VirtualStabilityChecks):
+            raise TypeError("stability_checks requires VirtualStabilityChecks")
         card = cast(Any, self._call_defaults.get("stability_checks"))
         weight = None if card is None else card.floor_weight
         if checks is None and not rescue:
