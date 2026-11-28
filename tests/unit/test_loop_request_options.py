@@ -519,23 +519,122 @@ def test_an_append_cannot_take_a_served_member_id_for_another_process(
     assert _born(artifact, "first") == born
 
 
-def test_an_append_may_promote_a_served_member_of_the_same_process(
+def test_an_append_cannot_reuse_a_served_member_id_for_the_same_process(
     grouped_artifact, tmp_path
 ):
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    # An ID keeps what it serves: even the same process, generated anew,
+    # need not serve the same observables and values.
     card, stored = grouped_artifact
     artifact = _copy(stored, tmp_path)
-    served = _values(artifact, "first")
-    Generator(resolve_config(card)).generate(
-        ProcessRequest.parse("s s > s s", name="first"), artifact, mode="append"
+    before, values = _digest(artifact), _values(artifact, "first")
+    with pytest.raises(ProcessIdCollisionError, match="'first'"):
+        Generator(resolve_config(card)).generate(
+            ProcessRequest.parse("s s > s s", name="first"), artifact, mode="append"
+        )
+    assert _digest(artifact) == before
+    assert _values(artifact, "first") == values
+
+
+def _history(name, i, j):
+    """The colour correlation ``name``: T_i (bra) . T_j (ket)."""
+
+    return {
+        "id": name,
+        "bra": [{"kind": "emit-gluon", "emitter": i, "emitted": -1}],
+        "ket": [{"kind": "emit-gluon", "emitter": j, "emitted": -1}],
+    }
+
+
+def _correlated(artifact, process, name):
+    result = Runtime.load(artifact, process=process).evaluate_correlated(
+        _points(), color_correlation=name, mu_r2=[8315.0, 8315.0]
     )
-    assert [row["id"] for row in _manifest(artifact)["processes"]] == ["up", "first"]
-    # The promoted member keeps its contract: the same process and value
-    # (its own generation now, equal to the exact relation it was served by).
-    assert Runtime.load(artifact, process="first").physics.process == "s s > s s"
-    promoted = np.array(_born(artifact, "first"))
-    assert np.allclose(promoted, _born(stored, "first"), rtol=1e-13, atol=0)
-    assert _values(artifact, "second") == _values(stored, "second")
-    assert served is not None
+    return repr(result.values)
+
+
+@pytest.mark.parametrize(
+    "appended", [None, ("T12", 1, 2), ("T12", 1, 3)], ids=["none", "same", "moved"]
+)
+def test_an_append_cannot_change_what_a_served_id_correlates(
+    tmp_path, model_cache, appended
+):
+    from pyamplicol.api.errors import ProcessIdCollisionError
+    from pyamplicol.correlators import CorrelatorConfig
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="d d > d d",
+        name="base",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("d d > d d", name="base"),
+                ProcessRequest.parse("s s > s s", name="member"),
+            )
+        ),
+        artifact,
+        correlators=CorrelatorConfig.from_json_dict(
+            {"color_correlations": [_history("T12", 1, 2)]}
+        ),
+    )
+    before, t12 = _digest(artifact), _correlated(artifact, "member", "T12")
+    correlators = (
+        None
+        if appended is None
+        else CorrelatorConfig.from_json_dict(
+            {"color_correlations": [_history(*appended)]}
+        )
+    )
+    with pytest.raises(ProcessIdCollisionError, match="'member'"):
+        generator.generate(
+            ProcessRequest.parse("s s > s s", name="member"),
+            artifact,
+            mode="append",
+            correlators=correlators,
+        )
+    assert _digest(artifact) == before
+    assert _correlated(artifact, "member", "T12") == t12
+
+
+def test_an_incoming_member_cannot_take_a_stored_id_with_other_observables(
+    tmp_path, model_cache
+):
+    from pyamplicol.api.errors import ProcessIdCollisionError
+    from pyamplicol.correlators import CorrelatorConfig
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="s s > s s",
+        name="member",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(ProcessRequest.parse("s s > s s", name="member"), artifact)
+    before = _digest(artifact)
+    with pytest.raises(ProcessIdCollisionError, match="'member'"):
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("d d > d d", name="base"),
+                    ProcessRequest.parse("s s > s s", name="member"),
+                )
+            ),
+            artifact,
+            mode="append",
+            correlators=CorrelatorConfig.from_json_dict(
+                {"color_correlations": [_history("T12", 1, 2)]}
+            ),
+        )
+    assert _digest(artifact) == before
 
 
 def test_an_incoming_member_cannot_take_a_stored_id(tmp_path, model_cache):
@@ -670,6 +769,52 @@ max_coupling_orders = { QCD = 2, QED = 2 }""",
     assert record["id"] == "sample_1"
     assert [alias["id"] for alias in record["aliases"]] == ["twophotons"]
     assert Runtime.load(tmp_path / "artifact", process="twophotons").physics.process
+
+
+@pytest.mark.parametrize("direction", ["member-then-record", "record-then-member"])
+def test_the_arrow_is_part_of_a_process_identity(tmp_path, model_cache, direction):
+    # Z > g s s~ (a decay) and Z g > s s~ (a scattering) list the same PDGs in
+    # the same order; they are different processes, so neither may take the
+    # other's ID.
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="z > s s~ g",
+        name="base",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    if direction == "member-then-record":
+        # `take` is served through `base` (a side permutation of it).
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("z > s s~ g", name="base"),
+                    ProcessRequest.parse("z > g s s~", name="take"),
+                )
+            ),
+            artifact,
+        )
+        incoming = ProcessRequest.parse("z g > s s~", name="take")
+        kept = "Z > G s s~"
+    else:
+        generator.generate(ProcessRequest.parse("z g > s s~", name="take"), artifact)
+        incoming = ProcessSet(
+            (
+                ProcessRequest.parse("z > s s~ g", name="base"),
+                ProcessRequest.parse("z > g s s~", name="take"),
+            )
+        )
+        kept = "Z G > s s~"
+    before = _digest(artifact)
+    assert Runtime.load(artifact, process="take").physics.process == kept
+    with pytest.raises(ProcessIdCollisionError, match="'take'"):
+        generator.generate(incoming, artifact, mode="append")
+    assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="take").physics.process == kept
 
 
 # process.consider_charge_conjugation at one loop -----------------------------

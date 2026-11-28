@@ -5437,38 +5437,25 @@ def _validate_public_process_ids(
     and the native one's alike): process IDs, process alias IDs and the IDs
     of the process-group members that are served through a representative
     (not generated), of ``existing`` and of the call (``processes``,
-    ``process_groups``). One ID may name one process only: an appended
-    process that takes the ID of a served member of the same process
-    (equal external PDGs in order) promotes that member to a stored process,
-    and an incoming member whose ID already names the same process is the
-    one already served; any other reuse is refused."""
+    ``process_groups``). An ID keeps what it serves: an append never reuses
+    one, not even for the same process (a stored ID serves the observables,
+    such as declared colour and spin correlations, and the values it was
+    generated with, which another generation need not reproduce)."""
 
-    owners: dict[str, tuple[str, tuple[int, ...] | None, bool]] = {}
+    owners: dict[str, str] = {}
 
-    def claim(
-        public_id: str,
-        owner: str,
-        pdgs: tuple[int, ...] | None = None,
-        *,
-        member: bool = False,
-        incoming: bool = False,
-    ) -> None:
+    def claim(public_id: str, owner: str) -> None:
         previous = owners.get(public_id)
         if previous is not None:
-            label, previous_pdgs, previous_member = previous
-            same = pdgs is not None and pdgs == previous_pdgs
-            # A stored record replaces a served member of the same process
-            # (promotion), and a served member that is already public under
-            # its ID keeps it; nothing else may share an ID.
-            if incoming and same and (previous_member or member):
-                return
             raise ProcessIdCollisionError(
-                f"public process ID {public_id!r} would name both {label} "
-                f"and {owner}; nothing was written. Name the process or alias "
-                "differently (an unnamed request takes a digest-suffixed name)",
+                f"public process ID {public_id!r} would name both {previous} "
+                f"and {owner}; nothing was written. An ID keeps what it "
+                "serves (an append never reuses one, not even for the same "
+                "process): name the process or alias differently (an unnamed "
+                "request takes a digest-suffixed name)",
                 process_ids=(public_id,),
             )
-        owners[public_id] = (owner, pdgs, member)
+        owners[public_id] = owner
 
     def served_members(
         group_map: ProcessGroupMap | None,
@@ -5483,14 +5470,7 @@ def _validate_public_process_ids(
     if existing is not None:
         for record in existing.processes:
             process_id = str(record["id"])
-            claim(
-                process_id,
-                f"the artifact's process {process_id!r}",
-                tuple(
-                    int(cast(int, pdg))
-                    for pdg in _sequence(record.get("external_pdgs", ()))
-                ),
-            )
+            claim(process_id, f"the artifact's process {process_id!r}")
             for alias in _sequence(record.get("aliases", ())):
                 claim(
                     str(_mapping(alias)["id"]),
@@ -5505,31 +5485,23 @@ def _validate_public_process_ids(
                     item.process_id,
                     f"the artifact's process {item.expression!r} (served "
                     f"through {representative!r})",
-                    tuple(item.pdgs),
-                    member=True,
                 )
     incoming = "appended" if existing is not None else "generated"
     for process in processes:
         claim(
             process.process_id,
             f"the {incoming} process {process.process_id!r}",
-            tuple(int(pdg) for pdg in process.external_pdgs),
-            incoming=True,
         )
         for alias in process.aliases:
             claim(
                 str(alias["id"]),
                 f"an alias of the {incoming} process {process.process_id!r}",
-                incoming=True,
             )
     for representative, item in served_members(process_groups):
         claim(
             item.process_id,
             f"the {incoming} process {item.expression!r} (served through "
             f"{representative!r})",
-            tuple(item.pdgs),
-            member=True,
-            incoming=True,
         )
 
 
