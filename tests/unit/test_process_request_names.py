@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: 0BSD
 """Automatic process names stay readable and are unique within one call.
 
 The readable default name drops charge signs, case and punctuation, so two
