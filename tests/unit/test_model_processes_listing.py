@@ -398,3 +398,95 @@ output = {json.dumps(str(tmp_path / "artifact"))}
     else:
         assert listed[0] != 0 and generated[0] != 0
         assert listed[1][:80] in generated[1]
+
+
+_LOOP_DECLARATION = """
+[loop]
+r2_strategy = "model"
+[loop.model]
+loop_coupling_orders = ["QCD"]
+uv_complete = true
+model_r2_complete = true
+[loop.model.scheme]
+dimensional_regularization = "HV"
+external_states = "physical-four-dimensional"
+gamma5 = "source-UFO-four-dimensional-prescription"
+renormalization = "source-UFO mass-dependent decoupling"
+mass_scheme = "real-on-shell"
+finite_restoration = "source-UFO-local-rules"
+model_convention = "loop_sm lhv=1 supplied QCD rules"
+"""
+
+
+@pytest.mark.parametrize("cache", ["cold", "off"])
+def test_a_one_loop_listing_prepares_its_model_as_one_loop_generation(tmp_path, cache):
+    # loop_sm with a UFO function of its own (sqr), which one-loop generation
+    # admits (the tree model gate does not): listed before and after a
+    # generation, with a cold cache and with caching off, as stored.
+    import shutil
+    from pathlib import Path
+
+    import pyamplicol
+
+    model = tmp_path / "sm"
+    shutil.copytree(
+        Path(pyamplicol.__file__).parent / "assets" / "models" / "ufo" / "loop_sm",
+        model,
+    )
+    with (model / "function_library.py").open("a") as library:
+        library.write(
+            "sqr = Function(name = 'sqr', arguments = ('z',), expression = 'z*z')\n"
+        )
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = {json.dumps(str(model))}
+restriction = "no_b_mass"
+{"cache = false" if cache == "off" else ""}
+cache_dir = {json.dumps(str(tmp_path / "cache"))}
+[process]
+entries = [{{ expression = "u g > u g", name = "up" }},
+           {{ expression = "c g > c g", name = "charm" }}]
+loop_coupling_orders = ["QCD"]
+{_LOOP_DECLARATION}
+[loop.preparation]
+fixed_parameters = {{ WT = "0", WZ = "0", WW = "0", WH = "0" }}
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    before = _outcome("model", "processes", "--card", str(card), "--json")
+    _cli("generate", "--card", str(card))
+    manifest = json.loads((tmp_path / "artifact" / "artifact.json").read_text())
+    stored = sorted(row["id"] for row in manifest["processes"])
+    after = _outcome("model", "processes", "--card", str(card), "--json")
+    assert before[0] == 0 and sorted(before[1]) == stored
+    assert after == before
+
+
+@pytest.mark.parametrize("mode", ["recurrence", "on-the-fly"])
+def test_a_listing_keeps_the_dry_runs_own_model_refusal(tmp_path, mode):
+    # The packaged HEFT model takes no restriction in these modes: the
+    # listing refuses with the dry run's own reason, not another one.
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = "built-in-sm-heft"
+restriction = "no_b_mass"
+cache = false
+[process]
+entries = [{{ expression = "u u~ > g g", name = "up" }}]
+[evaluator]
+execution_mode = "{mode}"
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    planned = _outcome("generate", "--card", str(card), "--dry-run", "--json")
+    listed = _outcome("model", "processes", "--card", str(card), "--json")
+    assert planned[0] != 0 and "uses the default restriction" in planned[1]
+    assert listed == planned

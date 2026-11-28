@@ -102,26 +102,37 @@ def list_request_processes(
     }
 
 
+# The dry run's refusals of a model it would have to compile (the cache
+# holds none yet, or caching is off): the only ones the listing resolves by
+# preparing the model; every other model error is the listing's too.
+_DRY_RUN_COMPILES_NO_MODEL = "dry-run does not compile external model sources"
+
+
 def _model_for(backend: Any, source: ModelSource) -> Any:
     """The model the listing plans with. The configured source as the dry
-    run resolves it (built-in packaged preparations, the model cache); a
-    model the dry run cannot load yet (not compiled or cached, or caching
-    off) is prepared on demand through its normal preparation, as
-    generation prepares it: compiled into the cache (then planned through
+    run resolves it (built-in packaged preparations, the model cache). A
+    model the dry run cannot load only because it would have to compile it
+    is prepared on demand by the generation's own model resolution
+    (``GenerationBackend._resolve_model``: the route's admission, one-loop or
+    tree, and its own errors): compiled into the cache (then planned through
     the dry run's path), or in memory without the cache (then planned with
-    the prepared model). Listed refusals of a model source stay refusals."""
+    the prepared model). Any other model refusal of the dry run (a listed
+    source refusal, a restriction the mode's packaged model does not take)
+    stays the listing's, unchanged."""
 
     from pyamplicol.api.errors import ModelError
+    from pyamplicol.api.models import _compiled_model_from_payload
 
     try:
         backend._resolve_model_for_plan(source)
         return source
     except ModelError as error:
-        if getattr(error, "key", None) is not None:
+        if not str(error).startswith(_DRY_RUN_COMPILES_NO_MODEL):
             raise
-    run = backend._run_config
-    compiled = source.compile(cache_dir=run.model.cache_dir, use_cache=run.model.cache)
-    return source if run.model.cache else compiled
+    resolved = backend._resolve_model(source)
+    if backend._run_config.model.cache:
+        return source
+    return _compiled_model_from_payload(resolved.compiled)
 
 
 def _row(name: str, process_ir: Any, serves: Sequence[str] = ()) -> dict[str, Any]:
