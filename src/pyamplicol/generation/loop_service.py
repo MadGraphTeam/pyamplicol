@@ -22,7 +22,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
-from pyamplicol.api.errors import GenerationError, PyAmpliColError
+from pyamplicol.api.errors import GenerationError, PyAmpliColError, RequestFilterError
 from pyamplicol.api.requests import ProcessSet
 from pyamplicol.api.results import GenerationPlan, GenerationResult
 from pyamplicol.config import ColorContraction
@@ -337,9 +337,11 @@ def _prepare(
     from pyamplicol.models.external import CompiledUFOModel
 
     resolved = replace(resolved, compiled=compiled, model=CompiledUFOModel(compiled))
-    expanded = _quark_line_cut(
-        run.process.max_quark_lines,
-        backend._expand_process_set(processes, resolved, phase),
+    expanded = backend._expand_process_set(
+        processes,
+        resolved,
+        phase,
+        member_filter=_quark_line_cut(run.process.max_quark_lines),
     )
     backend._apply_symbolica_resource_policy(license_state, process_count=len(expanded))
     entry_limits = []
@@ -372,25 +374,6 @@ def _prepare(
     )
 
 
-class _RequestFilterError(GenerationError):
-    """A setting of a one-loop request removes every concrete process of
-    one of its requests (``key`` ``"request-filter"``; ``processes``: the
-    request expressions so emptied, ``settings``: the settings)."""
-
-    key = "request-filter"
-
-    def __init__(
-        self,
-        message: str,
-        *,
-        processes: tuple[str, ...] = (),
-        settings: tuple[str, ...] = (),
-    ) -> None:
-        super().__init__(message)
-        self.processes = processes
-        self.settings = settings
-
-
 def quark_lines(process_ir: Any) -> int:
     """The external quark lines of a concrete process as
     ``process.max_quark_lines`` counts them, on every route: its colour
@@ -400,47 +383,43 @@ def quark_lines(process_ir: Any) -> int:
     return int(process_ir.color_endpoints.pair_count)
 
 
-def _quark_line_cut(limit: int | None, expanded: tuple[Any, ...]) -> tuple[Any, ...]:
+def _quark_line_cut(limit: int | None):
     """``process.max_quark_lines`` on the one-loop route, as on the tree
-    route: the concrete processes with more external quark lines
-    (``quark_lines``) than ``limit`` are dropped, the others keep their
-    names; a request every concrete process of which it drops is refused
-    (``_RequestFilterError``), before anything is generated."""
+    route: the member filter of the shared expansion
+    (``_expand_process_set(member_filter=...)``, applied before a request's
+    aliases are resolved) that keeps the concrete processes with at most
+    ``limit`` external quark lines (``quark_lines``); they keep the names of
+    the whole expansion. A request every concrete process of which it drops
+    is refused (``RequestFilterError``), before anything is generated."""
 
     if limit is None:
-        return expanded
-    kept = tuple(entry for entry in expanded if quark_lines(entry.process_ir) <= limit)
-    if len(kept) == len(expanded):
-        return expanded
-    requests: dict[str, Any] = {}
-    for entry in expanded:
-        source = entry.source_request or entry.request
-        requests.setdefault(source.name, source)
-    survivors = {(entry.source_request or entry.request).name for entry in kept}
-    emptied = [request for name, request in requests.items() if name not in survivors]
-    if emptied:
-        request = emptied[0]
-        fewest = min(
-            quark_lines(entry.process_ir)
-            for entry in expanded
-            if (entry.source_request or entry.request).name == request.name
-        )
-        raise _RequestFilterError(
-            f"request filter: process.max_quark_lines = {limit} removes every "
-            f"concrete process of {request.expression!r} (each has at least "
-            f"{fewest} quark lines), so there is nothing to generate; "
-            f"process.max_quark_lines >= {fewest} keeps them",
-            processes=tuple(request.expression for request in emptied),
-            settings=("process.max_quark_lines",),
-        )
-    notice(
-        _LOGGER,
-        "processes",
-        "process.max_quark_lines = %d drops %d of %d concrete processes",
-        limit,
-        len(expanded) - len(kept),
-        len(expanded),
-    )
+        return None
+
+    def kept(request, expanded) -> tuple[int, ...]:
+        lines = [quark_lines(process) for process in expanded]
+        indices = tuple(index for index, count in enumerate(lines) if count <= limit)
+        if not indices:
+            fewest = min(lines)
+            raise RequestFilterError(
+                f"request filter: process.max_quark_lines = {limit} removes "
+                f"every concrete process of {request.expression!r} (each has at "
+                f"least {fewest} quark lines), so there is nothing to generate; "
+                f"process.max_quark_lines >= {fewest} keeps them",
+                processes=(request.expression,),
+                settings=("process.max_quark_lines",),
+            )
+        if len(indices) < len(expanded):
+            notice(
+                _LOGGER,
+                "processes",
+                "process.max_quark_lines = %d drops %d of %d concrete processes of %s",
+                limit,
+                len(expanded) - len(indices),
+                len(expanded),
+                request.name,
+            )
+        return indices
+
     return kept
 
 

@@ -4679,11 +4679,19 @@ class GenerationBackend:
         phase: PhaseHandle,
         *,
         tree_refusal: bool = False,
+        member_filter: Callable[
+            [ProcessRequest, Sequence[CanonicalProcessIR]], Sequence[int]
+        ]
+        | None = None,
     ) -> tuple[_ExpandedProcess, ...]:
         """Expand every request. ``tree_refusal=True`` (tree generation and
         planning) refuses, before any lane is built and in one
         ``NoTreeDiagramError``, every request without a tree-level diagram
-        (``_refuse_requests_without_tree_diagrams``)."""
+        (``_refuse_requests_without_tree_diagrams``). ``member_filter`` (a
+        request filter of the caller's, the one-loop route's quark-line cut)
+        gives the indices of a request's concrete processes it keeps, before
+        the request's aliases are resolved; the kept processes keep the names
+        of the whole expansion."""
 
         without_diagram: list[_RequestWithoutTreeDiagram] = []
         aliases_by_target: dict[str, list[ProcessAlias]] = {}
@@ -4699,8 +4707,11 @@ class GenerationBackend:
             except _RequestWithoutTreeDiagram as refusal:
                 without_diagram.append(refusal)
                 continue
+            kept: Sequence[int] = range(len(expanded))
+            if member_filter is not None:
+                kept = member_filter(request, expanded)
             request_aliases = aliases_by_target.get(request.name, [])
-            if request_aliases and len(expanded) != 1:
+            if request_aliases and len(kept) != 1:
                 raise GenerationError(
                     f"process aliases for {request.name!r} are ambiguous after "
                     f"expansion into {len(expanded)} concrete processes"
@@ -4709,6 +4720,9 @@ class GenerationBackend:
                 set()
             )
             for concrete_index, process_ir in enumerate(expanded, start=1):
+                if concrete_index - 1 not in kept:
+                    # Filtered: the others keep the names of the whole expansion.
+                    continue
                 permutation_class = _process_side_permutation_class(process_ir)
                 if permutation_class in side_permutation_classes:
                     continue
