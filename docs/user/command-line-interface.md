@@ -1637,49 +1637,62 @@ kinematics_improvement`, default `z-shift`) in its own carrier, exactly as
 beam axis at twice the rung's digits already, so this moves them by about
 the rung's rounding, and
 each row records it (`CheckRow.kinematics`: the producing variant, `exact` or
-`not-improved`). A Born-interfered Ward coefficient that vanishes physically
-(the double pole of a QED correction with massive emitters) has a value and
-parts of the size of its own rounding: its P and T are at least
-|physical Born| x alpha / (2 pi), so rounding over rounding is not judged as
-a violation.
+`not-improved`). A Born-interfered Ward pole coefficient that vanishes
+physically (Catani's prediction is exactly zero: the double pole of a QED
+correction with massive emitters) has a value and parts of the size of its own
+rounding: it is judged as a known zero against its terms, with T at least
+|physical Born| x alpha / (2 pi). Every other coefficient, the finite one and
+a small but nonzero pole included, is judged against its own size.
 
 **Unstable external legs.** In the real on-shell mass scheme (zero widths)
 an external particle that can decay at its own mass keeps the absorptive
 part of its self-energy (the mass counterterm renormalises its real part
-only), so the Ward identity fails in the absorptive part of the amplitude by
-about Gamma / m, although the values a run serves are unaffected: with
-electroweak corrections, a top above MW + MB decays to W b, and
-`g g > t t~` [QED] has a c = 1 Ward residue of about 1 % of its physical
-scale while its values equal MadLoop, Recola and OpenLoops. `check` finds
-such legs from the request itself: external legs charged under a substituted
-gluon (colour) or photon (electric charge), massive, of zero width, with an
-open tree-level two-body channel among the three-point vertices of a
-requested correction's order. The Ward rows of such a request are evaluated
-at the requested spectrum AND on a stabilised spectrum: every runtime mass
-input of a massive vector boson scaled by one common factor (the weak mixing
-angle kept), the smallest multiple of 0.01 that closes every open channel
-with a 4 % margin (for the top at 173.3 GeV: MW = 180.94275, MZ = 205.173).
-Each (leg, factor) row's verdict comes from the stabilised spectrum where the
-requested one does not pass; the reason then reads "requested spectrum:
-inconclusive" with the leg, its channel and the moved inputs. A failure on
-the stabilised spectrum fails the row, so a broken amplitude still fails. A
-row passing at the requested spectrum keeps that pass, with the stabilised
-verdict in its reason. The stabilised spectrum serves the Ward rows only:
-every evaluation takes its parameters per call, the pole rows and every
-value keep the requested inputs, and nothing is written to an artifact.
-Cost: one more Ward evaluation set (every leg and factor) per point, only for
-a request with such a leg; its requested-spectrum Ward rows skip the
-arbitrary-precision rung. This refines the earlier rule, under which every
-request with electroweak corrections and an external zero-width massive
-quark read "not applicable": a stable top (below MW + MB) is now checked as
-any process, and an unstable one on the stabilised spectrum. Where no
-stabilised spectrum exists (no runtime vector-boson mass input, or one that
-would move an external mass, as for an external W, whose decays to massless
-fermions are always open), the Ward rows still read "not applicable" with
-that reason and are not evaluated, never a pass; Ward rows are not split by
-squared-order sector, so that request's QCD-loop sectors are not Ward-checked
-either. The loop-induced Ward probes take no stabilised spectrum: with an
-unstable leg they read "not applicable". A sector Catani's operators
+only), so the Ward identity fails in the absorptive part of the one-loop
+finite coefficient by about Gamma / m, although the values a run serves are
+unaffected: with electroweak corrections, a top above MW + MB decays to W b,
+and `g g > t t~` [QED] has a c = 1 Ward residue of about 1 % of its physical
+scale while its values equal MadLoop, Recola and OpenLoops. `check` decides
+this per substituted leg, from the request itself: an external leg charged
+under that leg's boson (colour for a gluon, electric charge for a photon),
+massive, of zero width, with an open tree-level two-body channel among the
+three-point vertices of a requested correction's order. An external W, for
+example, does not affect a gluon's Ward rows.
+
+Such a leg's Ward rows have two scopes. At the requested spectrum the Born
+and every pole coefficient are judged as always: a failure there fails the
+row. Only a failing FINITE coefficient is the unstable leg's: it reads
+inconclusive at the requested spectrum and is decided by the same
+coefficient on a stabilised spectrum, where the rows are evaluated again.
+The stabilised spectrum scales every mass input of a massive vector boson by
+one common factor (the weak mixing angle kept), the smallest multiple of 0.01
+that closes every open channel with a 4 % margin: for the top at 173.3 GeV,
+MW = 180.94275 and MZ = 205.173. It must be an admissible point of the model:
+every such input must be free (one fixed at generation, such as MZ in
+`fixed_parameters`, makes the comparison unavailable), no external mass may
+move, and every real derived parameter must stay real (MW above MZ would
+make sin(theta_W) imaginary). Any failure on the stabilised spectrum fails
+the row, so a broken amplitude still fails. The row's reason names each
+scope ("requested spectrum: Born, poles: pass; finite: inconclusive
+(unstable external leg); stabilised spectrum: pass"), the leg, its channel,
+the moved inputs and the derived inputs the move changes and keeps (in the
+G_mu scheme alpha is recomputed, from 0.00754677 to 0.0382055, with G_F and
+sin^2(theta_W) kept). A pass on the stabilised spectrum does not show that
+the requested finite part is right (a defect confined to the open channel
+would close with it): it is reported as such. Where no admissible
+stabilised spectrum exists (a fixed vector-boson mass, or an external W,
+whose decays to massless fermions are always open), the Born and poles are
+still judged and a failing finite coefficient makes its row "not
+applicable" with the reason, never a pass. The stabilised spectrum serves
+the Ward rows only: every evaluation takes its parameters per call, the
+pole rows and every value keep the requested inputs, and nothing is written
+to an artifact. Cost: one more Ward evaluation set per point for the
+unstable legs' rows, only for a request with such a leg. This refines the
+earlier rule, under which every request with electroweak corrections and an
+external zero-width massive quark read "not applicable" for every Ward row
+without evaluating it: a stable top (below MW + MB) is now checked as any
+process, and an unstable one as above. The loop-induced Ward probes take no
+stabilised spectrum: a leg with an unstable external leg charged under its
+boson reads "not applicable" there. A sector Catani's operators
 do not predict (a QCD correction of a process with photon-exchange Borns,
 ...) is listed as "no prediction" with its reason; a sector they predict
 that got no pole row at a point reads "not run" (exit 3: an applicable

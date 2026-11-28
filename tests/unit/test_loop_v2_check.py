@@ -787,6 +787,8 @@ def _toy_target(legs, corrections, fixed):
         vertex(("mu+", "mu-", "a"), "QED"),
         vertex(("b~", "t", "W-"), "QED"),
         vertex(("t~", "b", "W+"), "QED"),
+        vertex(("b~", "u", "W-"), "QED"),
+        vertex(("u~", "b", "W+"), "QED"),
     ]
     compiled = NS(ir=NS(particles=particles, parameters=[], vertex_terms=vertices))
     return NS(
@@ -878,9 +880,9 @@ def test_ward_is_not_applicable_only_without_a_stabilised_spectrum(monkeypatch):
         ward, "stabilised_parameters", lambda *a, **k: (None, "no input to move")
     )
     reason = checks.ward_applicability(target, [1, 2])
-    assert reason.startswith("unstable external leg: leg 3 (t, mass 173.3)")
-    assert "no stabilised spectrum (no input to move)" in reason
-    assert reason.endswith("not evaluated, every squared-order sector alike")
+    assert reason.startswith("legs 1, 2: unstable external leg: leg 3 (t, mass 173.3)")
+    assert "no admissible stabilised spectrum (no input to move)" in reason
+    assert "the stable comparison is unavailable" in reason
     monkeypatch.setattr(
         ward, "stabilised_parameters", lambda *a, **k: ({"MW": "180"}, None)
     )
@@ -891,11 +893,43 @@ def test_ward_is_not_applicable_only_without_a_stabilised_spectrum(monkeypatch):
 
 
 @pytest.mark.loop_fast
-def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch):
-    """The Born-interfered rows of an in-class request: its passing poles,
-    one "not applicable" Ward row naming the legs and the reason, the Ward
-    evaluation never called; the process passes (the row is neutral). The
-    loop-induced rows probe finiteness only, with the same Ward row."""
+def test_instability_is_decided_per_substituted_leg(monkeypatch):
+    """u b~ > g a w+ with QED corrections (toy model: a massless u b W
+    vertex): the W carries no colour, so the gluon leg's rows are checked
+    as any process; the photon sees the unstable W (W+ -> u b~ open) and,
+    without a stabilised spectrum, its rows alone are not applicable."""
+
+    from pyamplicol.loops.v2 import checks, ward
+
+    _toy_masses(monkeypatch)
+    target = _toy_target([2, -5, 21, 22, 24], ("QCD", "QED"), {"WW": "0"})
+    assert ward.unstable_external_legs(target, [3]) == ()
+    (w,) = ward.unstable_external_legs(target, [4])
+    assert (w.leg, w.particle, w.channel) == (5, "W+", ("b~", "u"))
+    monkeypatch.setattr(
+        ward, "stabilised_parameters", lambda *a, **k: (None, "it moves leg 5")
+    )
+    groups = checks.ward_groups(target, [3, 4])
+    assert groups == [
+        ([3], (), {}, None, ""),
+        ([4], (w,), None, "it moves leg 5", ""),
+    ]
+    reason = checks.ward_applicability(target, [3, 4])
+    assert reason.startswith("leg 4: unstable external leg: leg 5 (W+, mass 80.419)")
+    assert checks.ward_applicability(target, [3]) is None
+
+
+@pytest.mark.loop_fast
+def test_without_an_admissible_stabilised_spectrum_only_the_finite_part_is_excused(
+    monkeypatch,
+):
+    """The Born-interfered rows of a request with an unstable external leg
+    and no admissible stabilised spectrum (the USER ruling 2026-11-10,
+    refined): the Ward rows are evaluated at the requested spectrum; a
+    failing finite coefficient makes its row "not applicable" with the
+    reason, the Born and the poles still judged (a planted Born residual
+    fails); the process passes otherwise. The loop-induced Ward probes are
+    not applicable for such a leg."""
 
     from types import SimpleNamespace as NS
 
@@ -914,31 +948,72 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
         )
         return _pole_result(sector, (0.0, 2.0, -3.0), (2.0, -3.0), stability=estimate)
 
-    def never(*_args, **_options):
-        raise AssertionError("the Ward evaluation runs for a not-applicable class")
+    def scripted(born_residual):
+        def ward_check(_executor, _point, _scale, _name, *, legs, factors, **options):
+            assert options.get("parameters") is None
+            physical = NS(
+                components={"virtual": {sector: _laurent(0.05, 2.0, -3.0)}},
+                born={sector: 1.0},
+                loop_born=None,
+                stability=None,
+                ir_poles={sector: (2.0, -3.0)},
+            )
+            labels = [(leg, factor) for leg in legs for factor in factors]
+            results = [
+                NS(
+                    components={
+                        "virtual": {
+                            sector: _laurent(
+                                4e-4 if tuple(factor) == (1, 0) else 0.0, 0.0, 0.0
+                            )
+                        }
+                    },
+                    born={sector: 1.0},
+                    loop_born={sector: born_residual},
+                    stability=None,
+                )
+                for _leg, factor in labels
+            ]
+            return {
+                "physical": physical,
+                "results": results,
+                "rows": [{"leg": leg, "factor": factor} for leg, factor in labels],
+            }
+
+        return ward_check
 
     monkeypatch.setattr(plan_export, "NativeExecutor", lambda *a, **k: None)
     monkeypatch.setattr(checks, "_evaluate", evaluate)
-    monkeypatch.setattr(ward, "ward_check", never)
     monkeypatch.setattr(ward, "gauge_legs", lambda _target: (1, 2))
     monkeypatch.setattr(induced, "goldstone_applicability", lambda _t: "n/a")
+    monkeypatch.setattr(checks, "_improved", lambda *a: (None, None))
     _toy_masses(monkeypatch)
     monkeypatch.setattr(
         ward, "stabilised_parameters", lambda *a, **k: (None, "no input to move")
     )
     target = _toy_target([21, 21, 6, -6], ("QCD", "QED"), {"WT": "0"})
     carriers = (NS(arithmetic="double"), NS(arithmetic="double-double"))
+    monkeypatch.setattr(ward, "ward_check", scripted(0.0))
     rows = checks.born_interfered_rows(target, [(None, 1)], carriers)
-    (row,) = [row for row in rows if row.check == "ward"]
-    assert row.verdict == checks.NOT_APPLICABLE and row.point is None
-    assert row.reason.startswith("legs 1, 2 not checked: unstable external leg: leg 3")
-    assert "no stabilised spectrum (no input to move)" in row.reason
-    poles = [row for row in rows if row.check == "poles"]
-    assert len(poles) == 2 and {row.verdict for row in poles} == {checks.PASS}
+    ward_rows = {row.subject: row for row in rows if row.check == "ward"}
+    assert set(ward_rows) == {f"leg {leg}, c = {c}" for leg in (1, 2) for c in "1i"}
+    for leg in (1, 2):
+        excused = ward_rows[f"leg {leg}, c = 1"]
+        assert excused.verdict == checks.NOT_APPLICABLE
+        assert (
+            "requested spectrum: Born, poles: pass; finite: not applicable; "
+            "stabilised spectrum: unavailable"
+        ) in excused.reason
+        assert "no admissible stabilised spectrum (no input to move)" in excused.reason
+        assert ward_rows[f"leg {leg}, c = i"].verdict == checks.PASS
     process = checks.ProcessCheck(
         "p", "g g > t t~", "virtual", "zero", (), "ninjars", tuple(rows), 0.0
     )
     assert process.status == checks.PASSED
+    # A planted Born residual at the requested spectrum fails.
+    monkeypatch.setattr(ward, "ward_check", scripted(0.0995))
+    rows = checks.born_interfered_rows(target, [(None, 1)], carriers)
+    assert {row.verdict for row in rows if row.check == "ward"} == {checks.FAIL}
     # Loop-induced: the Ward probes are not evaluated (no legs probed).
     probed = []
 
@@ -1212,10 +1287,12 @@ def test_ward_rows_take_the_rung_by_the_threshold_rule(monkeypatch):
 def test_an_unstable_leg_is_judged_on_the_stabilised_spectrum(monkeypatch):
     """With an unstable external leg (module docstring, "Unstable external
     legs") each (leg, factor) Ward row is evaluated at the requested
-    spectrum and on the stabilised one, for the Ward rows only: a failure at
-    the requested spectrum is reported as inconclusive there and the
-    stabilised row decides; a failure on the stabilised spectrum fails the
-    row whatever the requested one did (a broken amplitude still fails)."""
+    spectrum and on the stabilised one, in two scopes: at the requested
+    spectrum the Born and every pole coefficient are judged as always (a
+    planted Born or double-pole residual FAILS whatever the stabilised
+    spectrum says); only a failing finite coefficient is the unstable leg's
+    and is decided by the stabilised spectrum's finite coefficient; any
+    stabilised failure fails the row (a broken amplitude still fails)."""
 
     from types import SimpleNamespace as NS
 
@@ -1223,32 +1300,40 @@ def test_an_unstable_leg_is_judged_on_the_stabilised_spectrum(monkeypatch):
     from pyamplicol.loops.v2.assemble import Precision
 
     sector = (("QCD", 4), ("QED", 2))
+    born_sector = (("QCD", 4),)
     calls = []
     stable = {"MW": "180.94275", "MZ": "205.173"}
 
     def script(requested, stabilised):
+        """Per spectrum, per factor: (finite, 1/eps, 1/eps^2, loop-side Born)
+        of the Ward evaluation; the physical one is (0.05, 3e-3, 1e-35) with
+        Catani's double pole exactly zero and Born 1."""
+
         def ward_check(_executor, _point, _scale, _name, *, legs, factors, **options):
             parameters = options.get("parameters")
             calls.append(parameters)
             values = requested if parameters is None else stabilised
             physical = NS(
-                components={"virtual": {sector: _laurent(0.05, 0.003, 0.0)}},
-                born={(("QCD", 4),): 1.0},
+                components={"virtual": {sector: _laurent(0.05, 3e-3, 1e-35)}},
+                born={born_sector: 1.0},
                 loop_born=None,
                 stability=None,
+                ir_poles={sector: (3e-3, 0.0)},
             )
-            labels = [(leg, factor) for leg in legs for factor in factors]
-            results = [
-                NS(
-                    components={
-                        "virtual": {sector: _laurent(values[tuple(factor)], 0.0, 0.0)}
-                    },
-                    born={(("QCD", 4),): 1.0},
-                    loop_born={(("QCD", 4),): 0.0},
-                    stability=None,
+            labels = [(leg, factor) for leg, factor in labels_of(legs, factors)]
+            results = []
+            for _leg, factor in labels:
+                finite, single, double, born = values[tuple(factor)]
+                results.append(
+                    NS(
+                        components={
+                            "virtual": {sector: _laurent(finite, single, double)}
+                        },
+                        born={born_sector: 1.0},
+                        loop_born={born_sector: born},
+                        stability=None,
+                    )
                 )
-                for _leg, factor in labels
-            ]
             return {
                 "physical": physical,
                 "results": results,
@@ -1256,6 +1341,9 @@ def test_an_unstable_leg_is_judged_on_the_stabilised_spectrum(monkeypatch):
             }
 
         return ward_check
+
+    def labels_of(legs, factors):
+        return [(leg, factor) for leg in legs for factor in factors]
 
     unstable = (ward.UnstableLeg(3, "t", 173.3, ("W+", "b"), 80.419),)
     stages = checks._stages((Precision.double_double(),), None)
@@ -1272,34 +1360,102 @@ def test_an_unstable_leg_is_judged_on_the_stabilised_spectrum(monkeypatch):
         assert calls == [None, stable]
         return {row.subject: row for row in found}
 
-    # g g > t t~ [QED]: the requested c = 1 row fails by the unstable top
-    # alone, c = i passes; the stabilised spectrum passes both.
-    found = rows({(1, 0): 4e-4, (0, 1): 1e-33}, {(1, 0): 1e-33, (0, 1): 1e-33})
+    clean = (1e-33, 1e-36, 1e-38, 0.0)
+    # g g > t t~ [QED]: the requested c = 1 finite part fails by the
+    # unstable top alone, everything else passes (the double pole, zero by
+    # Catani, on the floor); the stabilised spectrum passes.
+    found = rows(
+        {(1, 0): (4e-4, 1e-36, 1e-38, 0.0), (0, 1): clean},
+        {(1, 0): clean, (0, 1): clean},
+    )
     one, i = found["leg 1, c = 1"], found["leg 1, c = i"]
     assert one.verdict == checks.PASS and i.verdict == checks.PASS
-    assert "requested spectrum: inconclusive" in one.reason
+    assert (
+        "requested spectrum: Born, poles: pass; finite: inconclusive (unstable "
+        "external leg); stabilised spectrum: pass"
+    ) in one.reason
     assert "leg 3 (t, mass 173.3) decays to W+ b" in one.reason
     assert (
         "judged on the stabilised spectrum MW = 180.94275, MZ = 205.173" in one.reason
     )
-    assert i.reason.endswith("stabilised spectrum: pass")
-    # A broken amplitude (the dispersive c = i row off on both spectra, the
-    # requested c = 1 row off by the unstable leg too): the stabilised rows
-    # fail it.
-    found = rows({(1, 0): 4e-4, (0, 1): 1e-7}, {(1, 0): 1e-33, (0, 1): 1e-7})
+    assert "requested spectrum: Born, poles: pass; finite: pass" in i.reason
+    # Residuals planted at the requested spectrum, the stabilised
+    # spectrum clean: a Born residual (0.0995 of the Born) and a double-pole
+    # residual (0.1 of the finite scale) fail.
+    for planted in ((4e-4, 1e-36, 1e-38, 0.0995), (4e-4, 1e-36, 5e-3, 0.0)):
+        found = rows({(1, 0): planted, (0, 1): clean}, {(1, 0): clean, (0, 1): clean})
+        failed = found["leg 1, c = 1"]
+        assert failed.verdict == checks.FAIL, planted
+        assert "requested spectrum: Born, poles: fail" in failed.reason
+    # A broken amplitude: the finite part fails on both spectra; the
+    # stabilised finite coefficient decides it: FAIL.
+    found = rows(
+        {(1, 0): (4e-4, 1e-36, 1e-38, 0.0), (0, 1): (1e-7, 1e-36, 1e-38, 0.0)},
+        {(1, 0): clean, (0, 1): (1e-7, 1e-36, 1e-38, 0.0)},
+    )
     assert found["leg 1, c = 1"].verdict == checks.PASS
     broken = found["leg 1, c = i"]
     assert broken.verdict == checks.FAIL
-    assert "fails on the stabilised spectrum" in broken.reason
+    assert "stabilised spectrum: fail" in broken.reason
     # A row passing at the requested spectrum fails where the stabilised
     # spectrum fails.
-    found = rows({(1, 0): 1e-33, (0, 1): 1e-33}, {(1, 0): 1e-7, (0, 1): 1e-33})
+    found = rows(
+        {(1, 0): clean, (0, 1): clean},
+        {(1, 0): (1e-7, 1e-36, 1e-38, 0.0), (0, 1): clean},
+    )
     assert found["leg 1, c = 1"].verdict == checks.FAIL
-    assert "fails on the stabilised spectrum" in found["leg 1, c = 1"].reason
     process = checks.ProcessCheck(
         "p", "g g > t t~", "virtual", "zero", (), "ninjars", tuple(found.values()), 0.0
     )
     assert process.status == checks.FAILED
+
+
+@pytest.mark.loop_fast
+def test_the_floor_excuses_only_a_coefficient_that_vanishes_physically():
+    """``_ward_measures``: a pole coefficient Catani predicts exactly zero is
+    a known-zero reference on the Born x alpha / (2 pi) floor (rounding
+    passes; a planted residual of 0.1 fails); a small but NONZERO pole
+    coefficient (a 1/eps of 2.7073e-8 near threshold) keeps its
+    own P and T, so a residual of 1 % of it fails at K = 1e-5."""
+
+    from types import SimpleNamespace as NS
+
+    from pyamplicol.loops.v2 import checks
+
+    sector = (("QCD", 4), ("QED", 2))
+    born_sector = (("QCD", 4),)
+
+    def measures(physical_poles, ward_values, predicted):
+        physical = NS(
+            components={"virtual": {sector: _laurent(0.05, *physical_poles)}},
+            born={born_sector: 1.0},
+            loop_born=None,
+            stability=None,
+            ir_poles={sector: predicted},
+        )
+        result = NS(
+            components={"virtual": {sector: _laurent(*ward_values)}},
+            born={born_sector: 1.0},
+            loop_born={born_sector: 0.0},
+            stability=None,
+        )
+        return checks._ward_measures(physical, result)
+
+    def verdict(measure):
+        return checks.judge(measure, 1e-5).verdict
+
+    label = f"{checks._sector_name(sector)} 1/eps"
+    double = f"{checks._sector_name(sector)} 1/eps^2"
+    # The double pole vanishes physically: rounding passes, 0.1 fails.
+    found = measures((2.7073e-8, 1e-35), (0.0, 0.0, 1e-35), (2.7073e-8, 0.0))
+    assert found[double].zero_reference and verdict(found[double]) == checks.PASS
+    found = measures((2.7073e-8, 1e-35), (0.0, 0.0, 0.1), (2.7073e-8, 0.0))
+    assert verdict(found[double]) == checks.FAIL
+    # The single pole is small but nonzero: no floor, 1 % of it fails.
+    found = measures((2.7073e-8, 1e-35), (0.0, 2.7073e-10, 0.0), (2.7073e-8, 0.0))
+    assert not found[label].zero_reference
+    assert found[label].physical == pytest.approx(2.7073e-8)
+    assert verdict(found[label]) == checks.FAIL
 
 
 # --------------------------------------------------------------- physics
