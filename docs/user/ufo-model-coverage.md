@@ -215,7 +215,7 @@ carry a `ValueError` message instead of a code; they are marked below.
 | Model inputs at generation | supported | any accepted source kind; restriction and simplification choices apply only when compiling from UFO or JSON. |
 | Preflight gate | rejected | a model with any error code cannot generate or enumerate processes. |
 | Process shape | supported | `a b > c d ...` with exactly two incoming and at least one outgoing particle; several requests may be joined with `\|`. |
-| Loop-induced channels | conditional | a tree-level request has none: a channel without tree amplitudes is skipped with a warning inside a multiparticle request and is an error when requested alone; a one-loop request (`process.loop_coupling_orders`) serves it as \|A_loop\|^2 (see the one-loop table below). |
+| Loop-induced channels | conditional | a tree-level request has none: a channel without tree amplitudes is skipped with a warning inside a multiparticle request and is refused when requested alone (or when no member of the request has one) with `NoTreeDiagramError`, before any execution lane is built; a one-loop request (`process.loop_coupling_orders`) serves it as \|A_loop\|^2 (see the one-loop table below). |
 | Multiparticle labels | conditional | `all` always exists; `p` and `j` exist only when the model has massless triplet fermions or octet vectors; define your own labels otherwise. |
 | Repetition syntax | conditional | write `3*g`; the built-in shorthands `3g` and `[d g]` are not understood by generic expansion. |
 | `flavor_scheme` | ignored | no effect on generic models; use multiparticle labels instead. |
