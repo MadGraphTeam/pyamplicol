@@ -205,6 +205,9 @@ def test_model_processes_applies_max_quark_lines(model, expected):
         assert code == 0, stderr
         return json.loads(stdout)
 
+    # As a dry run, the listing compiles no model: fill the cache first.
+    code, _, stderr = _cli("model", "inspect", *model[:4], "--json")
+    assert code == 0, stderr
     full = listed()
     cut = listed("--max-quark-lines", "1")
     lines = {
