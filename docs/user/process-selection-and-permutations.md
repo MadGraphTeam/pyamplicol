@@ -291,6 +291,19 @@ process.
 Those seven evaluators cover all 18 ordered tree-level channels, including
 public orderings not stored as explicit aliases.
 
+Expanded processes are named `<request>_<k>`, numbered in the order of the
+expansion. Concrete processes without a tree-level diagram within the active
+coupling-order limits are dropped (with a warning) when other members of the
+request have one, in every mode and in plans, before flavour-blind grouping;
+the others keep their numbers. `max_quark_lines` differs by catalogue: a UFO
+model applies it after expansion, so the processes it keeps keep the numbers
+they have without it, while the built-in model applies it in its enumeration,
+so its numbers count only the processes the bound leaves (changing the bound
+can renumber them). An alias of a request names its one concrete process after
+these filters: its ID is that process's number on a UFO model. A request with
+an alias that keeps several concrete processes is refused before anything is
+written.
+
 With `--flavor-blind`, expansion keeps one representative per flavour class
 as well (see
 [Flavour-blind generation](models-and-processes.md#flavour-blind-generation)).

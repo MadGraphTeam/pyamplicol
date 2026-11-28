@@ -1649,8 +1649,8 @@ for r in R:
 # Extras the harness checks (``mqcd.IMPLEMENTED_EXTRAS``) and why the others
 # wait (m-sm/PLAN.md §4.1 extras).
 # PLAN §4.1's nc extra (rule 7, EW LC/NLC) is dropped: the user ruled Q4
-# (2026-10-30 ~08:10) that EW LC/NLC is never supported (the typed
-# colour-declaration-coverage refusal is permanent).
+# (2026-10-30 ~08:10) that EW LC/NLC is not served (the typed refusal is now
+# lc-electroweak-corrections: not implemented yet).
 PENDING_EXTRAS = {
     "hel": "MS-REF (per-helicity SLOOPMATRIXHEL references)",
     "sp": "MS-REF (special points S1-S4)",

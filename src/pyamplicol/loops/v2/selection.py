@@ -269,6 +269,23 @@ def require_leg_helicities(
             )
 
 
+def require_reference_order(
+    compiled: Any, process: str, reference_color_order: Sequence[int] | None
+) -> None:
+    """``reference_color_order`` is an ordering of the coloured legs of
+    ``process`` (``color.plan_build.validate_reference_color_order``, the
+    tree engine's rule): a malformed one is a configuration error before any
+    generation (the dry run)."""
+
+    from pyamplicol.color.plan_build import validate_reference_color_order
+    from pyamplicol.processes.model import build_model_process_ir
+
+    if not reference_color_order:
+        return
+    ir = build_model_process_ir(process, compiled.ir, color_accuracy="lc")
+    validate_reference_color_order(ir, reference_color_order)
+
+
 def _item_flow(item: Any) -> Any:
     from .colour import _canonical_rotation
 

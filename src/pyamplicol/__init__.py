@@ -112,6 +112,7 @@ if TYPE_CHECKING:
         ReductionUnavailable,
         RequestFilterError,
         ResolvedEvaluation,
+        ResourceExhaustedError,
         Runtime,
         TreeGradedEvaluation,
         TreeOrderEvaluation,
@@ -226,6 +227,7 @@ __all__ = [
     "RequestFilterError",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
+    "ResourceExhaustedError",
     "ResultWarning",
     "RunConfig",
     "Runtime",
@@ -267,6 +269,7 @@ _ERROR_EXPORTS = (
     "PyAmpliColError",
     "ReductionUnavailable",
     "RequestFilterError",
+    "ResourceExhaustedError",
 )
 _REQUEST_EXPORTS = (
     "ModelSource",

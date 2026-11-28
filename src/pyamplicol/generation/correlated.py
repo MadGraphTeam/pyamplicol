@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from fractions import Fraction
 from os import PathLike
 from pathlib import Path
 from types import MappingProxyType
@@ -28,6 +29,7 @@ from pyamplicol.color.correlator_matrices import (
 )
 from pyamplicol.color.nc_expansion import NcExpansion
 from pyamplicol.color.plan import GenericColorPlan, build_color_plan
+from pyamplicol.color.plan_types import _canonical_open_string_product_key
 from pyamplicol.config import (
     Action,
     ColorContraction,
@@ -408,15 +410,19 @@ class CorrelatedGenerationBackend(GenerationBackend):
     def _construct_evaluator(
         self, process: _CompiledProcess, model: Model, phase: PhaseHandle
     ) -> _EvaluatorProcess:
-        result = super()._construct_evaluator(process, model, phase)
-        if (
-            result.helicity_sum_runtime_schema is not None
-            or result.helicity_selector_lanes
-            or result.color_selector_lanes
-        ):
+        full_colour_plan = process.dag.color_plan
+        result = super()._construct_evaluator(
+            replace(process, dag=self._ordinary_consumer_dag(process.dag)),
+            model,
+            phase,
+        )
+        if result.helicity_sum_runtime_schema is not None:
             raise GenerationError(
                 "correlated generation cannot contain companion or replay lanes"
             )
+        # An LC consumer brings the ordinary LC selector lanes; the correlated
+        # executor selects its coherent groups itself, without them.
+        result = replace(result, helicity_selector_lanes=(), color_selector_lanes=())
         # Full source coverage does not promise the separate native per-point
         # selector ABI.  This lane deliberately has no selector/recurrence
         # schedules; the correlated executor selects its coherent groups itself.
@@ -435,12 +441,63 @@ class CorrelatedGenerationBackend(GenerationBackend):
         self._correlated_processes[process.expanded.request.name] = (
             CorrelatedProcessMetadata(
                 process=process.dag.process,
-                color_plan=process.dag.color_plan,
+                color_plan=full_colour_plan,
                 runtime_schema=result.runtime_schema,
                 aliases=process.expanded.aliases,
             )
         )
         return result
+
+    def _ordinary_consumer_dag(self, dag: GenericDAG) -> GenericDAG:
+        """The full-colour amplitudes contracted at the requested accuracy.
+
+        Every amplitude stays full colour (the correlators need them); the
+        artifact's ordinary value -- Runtime.evaluate and every native
+        consumer -- is the requested accuracy's, as for an ordinary artifact.
+        NLC contracts the same sectors with the NLC colour matrix; LC is the
+        diagonal over one sector per colour tensor, the LC plan's flows
+        (structural zeros included)."""
+
+        requested = (
+            str(self._run_config.color.accuracy)
+            if self._run_config is not None
+            else "full"
+        )
+        if requested == "full" or self._nc_expansion is not None:
+            return dag
+        process = replace(dag.process, color_accuracy=requested)
+        plan = replace(dag.color_plan, process=process, color_accuracy=requested)
+        if requested == "lc":
+            # The LC metric of the complete plan is diagonal up to the
+            # block-permutation aliases of open-line products (the same colour
+            # tensor in another line order). LC keeps one sector per tensor --
+            # its first, as the LC plan does -- including those with no tree
+            # (structural zeros, which the ordinary LC artifact exposes too).
+            seen: set[tuple[object, ...]] = set()
+            canonical = []
+            for sector in plan.sectors:
+                key: tuple[object, ...] = (
+                    (
+                        sector.kind,
+                        _canonical_open_string_product_key(
+                            (
+                                line.fundamental_label,
+                                line.adjoint_labels,
+                                line.antifundamental_label,
+                                line.singlet_labels,
+                            )
+                            for line in sector.open_color_lines
+                        ),
+                    )
+                    if sector.kind == "open-lines"
+                    else (sector.kind, int(sector.id))
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                canonical.append(sector)
+            plan = replace(plan, sectors=tuple(canonical))
+        return replace(dag, process=process, color_plan=plan)
 
     def correlator_payload(self) -> dict[str, object]:
         """Build the declared exact matrices once, at the ordinary write boundary."""
@@ -489,6 +546,30 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 ),
                 nc_expansion=expansion,
             )
+            # The runtime multiplies every correlated value by the artifact's
+            # normalization, whose colour factor is the leading-colour one when
+            # the ordinary consumer is LC (its diagonal reduction carries no
+            # colour factor); the stored entries, which include their colour
+            # factor, are divided by it so that the product is unchanged.
+            colour_normalization = _ordinary_colour_normalization(
+                metadata.runtime_schema
+            )
+            if colour_normalization != 1:
+                matrices = tuple(
+                    replace(
+                        matrix,
+                        entries=tuple(
+                            replace(
+                                entry,
+                                weight=entry.weight.scaled(
+                                    Fraction(1, colour_normalization)
+                                ),
+                            )
+                            for entry in matrix.entries
+                        ),
+                    )
+                    for matrix in matrices
+                )
             records = [matrix.to_json_dict() for matrix in matrices]
             if expansion is not None:
                 for record in records:
@@ -544,6 +625,24 @@ class CorrelatedGenerationBackend(GenerationBackend):
             return out
 
         return super()._write_artifact(*args, **kwargs, payload_hook=payload)
+
+
+def _ordinary_colour_normalization(schema: RuntimeExpressionSchema) -> int:
+    """The colour factor of the ordinary consumer's normalization: 1 when its
+    contraction carries the colour factors (NLC, full colour), the
+    leading-colour factor (a power of N_c) for an LC consumer."""
+
+    payload = schema.to_mapping()
+    physics = cast(Mapping[str, object], payload["physics"])
+    if str(physics.get("color_accuracy")) != "lc":
+        return 1
+    normalization = cast(Mapping[str, object], payload.get("normalization", {}))
+    factor = float(cast(float, normalization.get("color_factor", 1.0)))
+    if factor < 1 or factor != int(factor):
+        raise GenerationError(
+            f"leading-colour normalization factor {factor!r} is not an integer"
+        )
+    return int(factor)
 
 
 def _certified_zero_groups(

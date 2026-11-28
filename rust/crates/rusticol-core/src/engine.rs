@@ -5093,8 +5093,7 @@ pub(crate) use evaluator::symjit_direct::tests::count_allocations;
 pub(crate) use evaluator::symjit_eager_direct;
 #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
 pub(crate) use evaluator::symjit_plane::{
-    PlaneDescriptor, SymjitPlaneKernel, SymjitPlaneLayout, symjit_cpu_features,
-    symjit_host_cpu_supported,
+    PlaneDescriptor, SymjitPlaneKernel, SymjitPlaneLayout, symjit_host_cpu_supported,
 };
 #[cfg(all(
     feature = "symbolica-runtime",
@@ -5106,6 +5105,10 @@ pub(crate) use evaluator::symjit_plane::{
 #[cfg(any(test, feature = "python-generation-bridge"))]
 pub(crate) use evaluator::symjit_plane::{
     compile_symbolica_program_to_plane_application_bytes, evaluate_plane_application_bytes,
+};
+#[cfg(feature = "python-generation-bridge")]
+pub(crate) use evaluator::symjit_plane::{
+    plane_code_builds, plane_code_cache_len, symjit_cpu_features,
 };
 use evaluator::*;
 #[cfg(feature = "symbolica-runtime")]

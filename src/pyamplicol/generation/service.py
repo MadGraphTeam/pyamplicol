@@ -29,6 +29,7 @@ from pyamplicol._internal.versions import (
 )
 from pyamplicol.api.errors import (
     ArtifactError,
+    ConfigurationError,
     GenerationError,
     ModelError,
     NoTreeDiagramError,
@@ -71,6 +72,12 @@ from ..color.plan import (
     build_color_plan,
     build_color_topology_replay_certificate,
     build_lc_topology_replay_plan,
+)
+from ..color.plan_build import (
+    _canonical_cycle,
+    _reference_lc_color_sectors,
+    _sector_tensor_key,
+    validate_reference_color_order,
 )
 from ..models.adjoint_color_certificate import adjoint_tree_color_basis_is_proven
 from ..models.base import CouplingOrders, Model
@@ -2717,6 +2724,83 @@ class _ExpandedProcess:
     group_members: tuple[GroupMember, ...] = ()
 
 
+def _unfolded_subset(
+    process: CanonicalProcessIR,
+    folded: GenericColorPlan,
+    selected: Iterable[int] | None,
+    *,
+    reference_color_order: Sequence[int] | None,
+) -> tuple[GenericColorPlan, frozenset[int]]:
+    """The unfolded plan of ``folded`` and the ids of both orientations of
+    every kept sector (the ``selected`` ids of ``folded``, or all of its
+    capped sectors)."""
+
+    chosen = None if selected is None else {int(sector_id) for sector_id in selected}
+    keys = {
+        _sector_tensor_key(sector, folded=True)
+        for sector in folded.sectors
+        if chosen is None or int(sector.id) in chosen
+    }
+    unfolded = build_color_plan(
+        process,
+        basis="trace",
+        color_accuracy=folded.color_accuracy,
+        max_sectors=None,
+        reference_color_order=reference_color_order,
+        fold_trace_reflections=False,
+    )
+    return unfolded, frozenset(
+        int(sector.id)
+        for sector in unfolded.sectors
+        if _sector_tensor_key(sector, folded=True) in keys
+    )
+
+
+def _optional_list(values: Sequence[int] | None) -> list[int] | None:
+    return None if values is None else list(values)
+
+
+def _canonical_reference_word(
+    process: CanonicalProcessIR,
+    reference: Sequence[int] | None,
+    *,
+    folded: bool,
+) -> tuple[int, ...] | None:
+    """A reference colour order in the spelling of the sector it names: its
+    coloured labels, and without a quark line the trace from its smallest
+    label (the smaller orientation where reflections are folded). A cyclic
+    respelling or a reflection names the same sector, never another."""
+
+    if reference is None or not _reference_lc_color_sectors(process, reference):
+        # A reference that names no sector reorders nothing in any lane.
+        return None
+    coloured = {
+        *process.fundamental_labels,
+        *process.antifundamental_labels,
+        *process.adjoint_labels,
+    }
+    word = tuple(int(label) for label in reference if int(label) in coloured)
+    if process.fundamental_labels or process.antifundamental_labels:
+        # Open lines in the selector's canonical spelling: each from its
+        # fundamental end (a reference may start a line at its antiquark), in
+        # the process's fundamental-label order (another order of whole lines
+        # is the same colour tensor).
+        named = _reference_lc_color_sectors(process, reference)
+        if not named:
+            return word
+        position = {
+            int(label): index for index, label in enumerate(process.fundamental_labels)
+        }
+        lines = tuple(
+            sorted(
+                named[0].open_color_lines,
+                key=lambda line: position[int(line.fundamental_label)],
+            )
+        )
+        return tuple(int(label) for line in lines for label in line.coloured_labels)
+    return _canonical_cycle(word, folded=folded)
+
+
 class _NoModelSupportedAmplitudes(GenerationError):
     """A concrete tree-level subprocess has no amplitude in the active model."""
 
@@ -2761,6 +2845,23 @@ _BUILTIN_CONSERVATION_REJECTIONS = {
     "model conserves",
     "single-coloured-state": "a single coloured particle cannot be colour neutral",
 }
+
+
+def _concrete_aliases(
+    processes: ProcessSet, expanded: Iterable[_ExpandedProcess]
+) -> tuple[ProcessAlias, ...]:
+    """The aliases of ``processes`` bound to the concrete process that
+    carries each (the one member of its request that the filters keep, under
+    the ID of the whole expansion)."""
+
+    carrier: dict[str, str] = {}
+    for entry in expanded:
+        for record in entry.aliases:
+            carrier[str(record["id"])] = entry.request.name
+    return tuple(
+        replace(alias, process_name=carrier.get(alias.name, alias.process_name))
+        for alias in processes.aliases
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -3487,6 +3588,7 @@ class GenerationBackend:
                 PhaseHandle(task_id, self._progress, len(processes.requests)),
                 tree_refusal=True,
             )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -3537,7 +3639,7 @@ class GenerationBackend:
                 self._progress.emit(
                     ProgressEnd(task_id, success=False, message=str(exc))
                 )
-            if isinstance(exc, (GenerationError, ModelError)):
+            if isinstance(exc, (GenerationError, ModelError, ConfigurationError)):
                 raise
             raise GenerationError(str(exc)) from exc
         if self._progress is not None:
@@ -3685,6 +3787,7 @@ class GenerationBackend:
                 phase.summary = f"{len(expanded):,} concrete " + (
                     "process" if len(expanded) == 1 else "processes"
                 )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -3932,6 +4035,9 @@ class GenerationBackend:
                     )
 
                 concrete_requests = tuple(entry.expanded.request for entry in prepared)
+                concrete_aliases = _concrete_aliases(
+                    processes, (entry.expanded for entry in prepared)
+                )
                 validation_points_by_process = {
                     process.expanded.request.name: process.validation_points
                     for process in prepared
@@ -3985,7 +4091,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4116,6 +4222,9 @@ class GenerationBackend:
                 process.process_id for process in artifact_processes
             )
             concrete_requests = tuple(item.expanded.request for item in generated)
+            concrete_aliases = _concrete_aliases(
+                requested_processes, (item.expanded for item in generated)
+            )
             del artifact_processes
             del generated
             gc.collect()
@@ -4161,7 +4270,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=requested_processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4210,7 +4319,11 @@ class GenerationBackend:
                 coupling_policy,
             ),
             coupling_order_limits=explicit_limits,
-            reference_color_order=self._process_selection.reference_color_order,
+            reference_color_order=_canonical_reference_word(
+                expanded.process_ir,
+                self._process_selection.reference_color_order,
+                folded=False,
+            ),
             color_basis=self._fft_color_basis(expanded.process_ir, model),
         )
         return _ProjectedOnTheFlyProcess(
@@ -4241,6 +4354,78 @@ class GenerationBackend:
             "run time on a complete artifact (eager, compiled, recurrence or "
             "on-the-fly)"
         )
+
+    def _validate_concrete_colour_selection(
+        self,
+        expanded: Sequence[_ExpandedProcess],
+        resolved_model: _ResolvedModel,
+    ) -> None:
+        """The colour selectors checked against each concrete process, before
+        any colour plan or generation: a malformed reference order is a
+        configuration error in every mode, and the eager mode refuses a
+        colour-sector subset of a plan with folded trace reflections."""
+
+        selection = self._process_selection
+        for entry in expanded:
+            validate_reference_color_order(
+                entry.process_ir, selection.reference_color_order
+            )
+        if (
+            not self._eager_execution_enabled
+            or self._color_accuracy != "lc"
+            or (
+                selection.max_color_sectors is None
+                and selection.selected_color_sector_ids is None
+            )
+        ):
+            return
+        model = resolved_model.model
+        if model is None and resolved_model.compiled is not None:
+            from ..models.external import CompiledUFOModel
+
+            model = CompiledUFOModel(resolved_model.compiled)
+        if model is None:  # pragma: no cover - model preflight invariant
+            raise GenerationError("eager colour selection requires a resolved model")
+        for entry in expanded:
+            process = entry.process_ir
+            if self._fft_color_basis(
+                process, model
+            ) != "trace" or not model.lc_trace_reflection_equivalence_is_proven(
+                process
+            ):
+                continue
+            plan = build_color_plan(
+                process,
+                basis="trace",
+                color_accuracy="lc",
+                max_sectors=selection.max_color_sectors,
+                reference_color_order=selection.reference_color_order,
+                fold_trace_reflections=True,
+            )
+            selected = selection.selected_color_sector_ids
+            if not plan.truncated and (
+                selected is None
+                or {int(sector.id) for sector in plan.sectors} <= set(selected)
+            ):
+                continue
+            settings = ", ".join(
+                f"process.{name}={value}"
+                for name, value in (
+                    ("max_color_sectors", selection.max_color_sectors),
+                    (
+                        "selected_color_sector_ids",
+                        None if selected is None else sorted(selected),
+                    ),
+                )
+                if value is not None
+            )
+            raise GenerationError(
+                "the eager mode does not generate a subset of the colour sectors "
+                f"of {process.process!r}, whose leading-colour traces are folded "
+                f"with their reflections ({settings}); generate the subset in the "
+                "compiled or recurrence mode, or select the flows at run time on "
+                "a complete artifact (eager, compiled, recurrence or on-the-fly)"
+            )
 
     def _validate_on_the_fly_process_selection(self) -> None:
         if not self._on_the_fly_execution_enabled:
@@ -4430,11 +4615,18 @@ class GenerationBackend:
                 "reference_color_word": (
                     None
                     if selection.reference_color_order is None
-                    else list(
-                        projection.color_plan.sectors[0].trace_labels
-                        if projection.color_plan is not None
-                        and projection.color_plan.basis == "adjoint"
-                        else selection.reference_color_order
+                    else list(projection.color_plan.sectors[0].trace_labels)
+                    if projection.color_plan is not None
+                    and projection.color_plan.basis == "adjoint"
+                    else _optional_list(
+                        _canonical_reference_word(
+                            expanded.process_ir,
+                            selection.reference_color_order,
+                            folded=contracted_color is None
+                            and model.lc_trace_reflection_equivalence_is_proven(
+                                expanded.process_ir
+                            ),
+                        )
                     )
                 ),
                 "trace_reflections_folded": bool(
@@ -4625,6 +4817,9 @@ class GenerationBackend:
                 process.process_id for process in artifact_processes
             )
             concrete_requests = tuple(item.expanded.request for item in generated)
+            concrete_aliases = _concrete_aliases(
+                requested_processes, (item.expanded for item in generated)
+            )
             del artifact_processes
             del generated
             gc.collect()
@@ -4659,7 +4854,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=requested_processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4687,13 +4882,21 @@ class GenerationBackend:
         """Expand every request. ``tree_refusal=True`` (tree generation and
         planning) refuses, before any lane is built and in one
         ``NoTreeDiagramError``, every request without a tree-level diagram
-        (``_refuse_requests_without_tree_diagrams``). ``member_filter`` (a
-        request filter of the caller's, the one-loop route's quark-line cut)
-        gives the indices of a request's concrete processes it keeps, before
-        the request's aliases are resolved; the kept processes keep the names
-        of the whole expansion."""
+        (``_refuse_requests_without_tree_diagrams``), applies the quark-line
+        cut of a model's own catalog and drops the members without a Born
+        within the bounds. ``member_filter`` (a request filter of the
+        caller's, the one-loop route's quark-line cut) gives the indices of a
+        request's concrete processes it keeps. Filtered processes leave the
+        others the names of the whole expansion, and a request's aliases are
+        resolved on the processes every filter keeps."""
 
         without_diagram: list[_RequestWithoutTreeDiagram] = []
+        # Requests of a model's own catalog (UFO) that the quark-line cut
+        # partly removes: the cut members, for the refusal step.
+        partly_cut: dict[str, _RequestWithoutTreeDiagram] = {}
+        builtin_selection = (
+            resolved.compiled is None or not resolved.use_compiled_process_catalog
+        )
         aliases_by_target: dict[str, list[ProcessAlias]] = {}
         for alias in processes.aliases:
             aliases_by_target.setdefault(alias.process_name, []).append(alias)
@@ -4710,12 +4913,18 @@ class GenerationBackend:
             kept: Sequence[int] = range(len(expanded))
             if member_filter is not None:
                 kept = member_filter(request, expanded)
+            if tree_refusal and not builtin_selection:
+                # The built-in enumeration applies the cut itself.
+                cut_kept, cut = self._model_quark_line_cut(request, expanded)
+                kept = tuple(index for index in cut_kept if index in kept)
+                if cut is not None and not kept:
+                    without_diagram.append(cut)
+                    continue
+                if cut is not None:
+                    partly_cut[request.name] = cut
+            # Whether an alias names one concrete process is decided on the
+            # members that every filter keeps (below).
             request_aliases = aliases_by_target.get(request.name, [])
-            if request_aliases and len(kept) != 1:
-                raise GenerationError(
-                    f"process aliases for {request.name!r} are ambiguous after "
-                    f"expansion into {len(expanded)} concrete processes"
-                )
             side_permutation_classes: set[tuple[tuple[str, ...], tuple[str, ...]]] = (
                 set()
             )
@@ -4777,6 +4986,39 @@ class GenerationBackend:
                     )
                 )
             phase.update(request_index, message=request.name)
+        if tree_refusal:
+            # Every member without a Born within the bounds goes before the
+            # flavour grouping, so that no excluded member stands for a class.
+            model = resolved.model
+            if model is None and resolved.compiled is not None:
+                # Planning resolves no model object for every mode: the same
+                # check needs the compiled model's.
+                from ..models.external import CompiledUFOModel
+
+                model = CompiledUFOModel(resolved.compiled)
+            result = list(
+                self._refuse_requests_without_tree_diagrams(
+                    result,
+                    model,
+                    without_diagram,
+                    partly_cut=partly_cut,
+                    builtin_selection=builtin_selection,
+                    request_order=tuple(
+                        request.expression for request in processes.requests
+                    ),
+                )
+            )
+        carriers: dict[str, int] = {}
+        for entry in result:
+            if entry.aliases:
+                source = _source_request(entry).name
+                carriers[source] = carriers.get(source, 0) + 1
+        for name, count in carriers.items():
+            if count != 1:
+                raise GenerationError(
+                    f"process aliases for {name!r} are ambiguous after "
+                    f"expansion into {count} concrete processes"
+                )
         if self._flavor_blind and not self._loop_execution_enabled:
             # Names are assigned above, so process IDs do not depend on the flag.
             table = self._grouping_particle_table(resolved)
@@ -4786,19 +5028,12 @@ class GenerationBackend:
                 consider_charge_conjugation=self._consider_charge_conjugation,
                 relation_warning=self._flavor_blind_relation_warning(resolved, table),
             )
-        if tree_refusal:
-            self._refuse_requests_without_tree_diagrams(
-                result,
-                resolved.model,
-                without_diagram,
-                builtin_selection=(
-                    resolved.compiled is None
-                    or not resolved.use_compiled_process_catalog
-                ),
-                request_order=tuple(
-                    request.expression for request in processes.requests
-                ),
-            )
+        # The aliases of the call bound to the concrete processes that carry
+        # them, checked before any lane runs or anything is written.
+        ProcessSet(
+            requests=tuple(entry.request for entry in result),
+            aliases=_concrete_aliases(processes, result),
+        )
         return tuple(result)
 
     def _grouping_particle_table(
@@ -5775,6 +6010,49 @@ class GenerationBackend:
             lines=lines,
         )
 
+    def _model_quark_line_cut(
+        self,
+        request: ProcessRequest,
+        expanded: Sequence[CanonicalProcessIR],
+    ) -> tuple[tuple[int, ...], _RequestWithoutTreeDiagram | None]:
+        """``process.max_quark_lines`` on the concrete processes of a model's
+        own catalog (UFO), as the compiled lane applies it (colour-triplet
+        endpoint pairs): the indices it keeps and, when it removes any, the
+        removal with every concrete process (``_filter_refusal`` decides)."""
+
+        limit = self._max_quark_pairs
+        everything = tuple(range(len(expanded)))
+        if limit is None:
+            return everything, None
+        counts = [process.color_endpoints.pair_count for process in expanded]
+        kept = tuple(index for index in everything if counts[index] <= limit)
+        if len(kept) == len(expanded):
+            return everything, None
+        removed = sorted({count for count in counts if count > limit})
+        counted = " or ".join(str(count) for count in removed)
+        noun = "line" if removed == [1] else "lines"
+        cut = f"process.max_quark_lines = {limit}"
+        if kept:
+            # What the kept members lack is said with the active bounds
+            # (``_filter_refusal``).
+            reason = (
+                f"{cut} removes {len(expanded) - len(kept)} of the {len(expanded)} "
+                f"concrete processes of {request.expression!r} (those with "
+                f"{counted} quark {noun})"
+            )
+        else:
+            reason = (
+                f"{cut} removes every concrete process of {request.expression!r} "
+                f"(they have {counted} quark {noun})"
+            )
+        return kept, _RequestWithoutTreeDiagram(
+            request.expression,
+            reason,
+            cut=cut,
+            uncut=tuple(expanded),
+            lines=tuple(counts),
+        )
+
     def _builtin_request_without_process(
         self,
         expression: str,
@@ -5828,13 +6106,16 @@ class GenerationBackend:
         *,
         request_order: Sequence[str] = (),
         builtin_selection: bool = False,
-    ) -> None:
+        partly_cut: Mapping[str, _RequestWithoutTreeDiagram] | None = None,
+    ) -> tuple[_ExpandedProcess, ...]:
         """Refuse, before any lane is built, the requests none of whose
         concrete processes has a tree-level closure within the coupling-order
         limits (``has_model_supported_amplitudes``: it never rejects a process
         with amplitudes), with those that expanded to no concrete process.
         Members without one inside a multiparticle request that has others
-        stay the lanes' business (skipped with a warning). The on-the-fly
+        are dropped here, with a warning, for every mode and the plan alike
+        (the others keep their IDs); the kept members are returned. The
+        on-the-fly
         lane builds no colour plan before its seeds: there the check is the
         colour-blind closure sweep its Born coupling orders come from
         (``process_born_amplitude_orders``), which over-estimates no less."""
@@ -5904,16 +6185,17 @@ class GenerationBackend:
         requests: dict[str, ProcessRequest] = {}
         supported: set[str] = set()
         members: dict[str, list[CanonicalProcessIR]] = {}
+        # Every member is checked: those without a Born inside a request
+        # that has one are dropped here, once for every mode and the plan.
+        without_born: list[_ExpandedProcess] = []
         for entry in expanded:
             source = _source_request(entry)
             requests.setdefault(source.name, source)
-            if source.name in supported or model is None:
-                supported.add(source.name)
-                continue
-            if has_diagram(entry.process_ir, bounds or None):
+            if model is None or has_diagram(entry.process_ir, bounds or None):
                 supported.add(source.name)
             else:
                 members.setdefault(source.name, []).append(entry.process_ir)
+                without_born.append(entry)
 
         def totals(process: CanonicalProcessIR) -> tuple[dict[str, int], ...]:
             """The total coupling orders of every tree-level closure, without
@@ -5979,13 +6261,13 @@ class GenerationBackend:
             if name not in supported:
                 kept = members.get(name, ())
                 # The members the built-in quark-line cut removed count too.
-                partly_cut = (
+                cut = (
                     self._builtin_partly_cut_request(request)
                     if builtin_selection and model is not None
-                    else None
+                    else (partly_cut or {}).get(name)
                 )
                 refused.setdefault(
-                    request.expression, decide(request.expression, kept, partly_cut)
+                    request.expression, decide(request.expression, kept, cut)
                 )
         if refused:
             # In request order.
@@ -5998,6 +6280,20 @@ class GenerationBackend:
                     key=lambda refusal: order.get(refusal.expression, -1),
                 )
             )
+        dropped = {id(entry) for entry in without_born}
+        _warn_unsupported_processes(
+            [
+                _UnsupportedProcess(
+                    expanded=entry,
+                    reason=(
+                        f"process {entry.process_ir.process!r} has no "
+                        "model-supported tree-level amplitudes"
+                    ),
+                )
+                for entry in without_born
+            ]
+        )
+        return tuple(entry for entry in expanded if id(entry) not in dropped)
 
     @staticmethod
     def _filter_refusal(
@@ -9338,12 +9634,39 @@ class GenerationBackend:
         limits = dict(prepared.coupling_order_limits)
         replay_plan = prepared.topology_replay
         selection = self._process_selection
+        dag_color_plan = complete_color_plan
+        dag_max_color_sectors = selection.max_color_sectors
+        if (
+            not self._eager_execution_enabled
+            and complete_color_plan.color_accuracy == "lc"
+            and complete_color_plan.basis == "trace"
+            and complete_color_plan.trace_reflections_folded
+            and (
+                complete_color_plan.truncated
+                or selection.selected_color_sector_ids is not None
+            )
+        ):
+            # A subset of a plan with folded trace reflections has no topology
+            # replay to evaluate a kept trace's other orientation, which its
+            # public flows list: build the unfolded plan and keep both
+            # orientations of every kept sector, each its own sector.
+            # The user's subset (a truncating cap, fixed ids); a topology
+            # replay's representatives are not one.
+            dag_color_plan, materialized_sector_ids = _unfolded_subset(
+                process,
+                complete_color_plan,
+                selection.selected_color_sector_ids,
+                reference_color_order=selection.reference_color_order,
+            )
+            dag_max_color_sectors = None
+            replay_plan = None
         dag = compile_generic_dag(
             process,
             model=model,
-            color_plan=complete_color_plan,
-            max_color_sectors=selection.max_color_sectors,
-            reference_color_order=selection.reference_color_order,
+            color_plan=dag_color_plan,
+            max_color_sectors=dag_max_color_sectors,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=materialized_sector_ids,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,
@@ -9385,7 +9708,8 @@ class GenerationBackend:
                     model=model,
                     color_plan=complete_color_plan,
                     max_color_sectors=selection.max_color_sectors,
-                    reference_color_order=selection.reference_color_order,
+                    # The plan already starts with the reference sector.
+                    reference_color_order=None,
                     selected_color_sector_ids=None,
                     max_coupling_orders=limits or None,
                     max_quark_pairs=self._max_quark_pairs,
@@ -9674,13 +9998,13 @@ class GenerationBackend:
         if not isinstance(limits_payload, Mapping):
             raise GenerationError("process coupling-order coverage is not a mapping")
         limits = {str(name): int(value) for name, value in limits_payload.items()}
-        selection = self._process_selection
         union = compile_generic_dag(
             process.expanded.process_ir,
             model=model,
             color_plan=parent.color_plan,
             max_color_sectors=None,
-            reference_color_order=selection.reference_color_order,
+            # The plan already starts with the reference sector.
+            reference_color_order=None,
             selected_color_sector_ids=None,
             max_coupling_orders=limits or None,
             max_quark_pairs=self._max_quark_pairs,

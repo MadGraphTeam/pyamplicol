@@ -32,6 +32,7 @@ import os
 import shutil
 import struct
 import subprocess
+import sys
 from decimal import Decimal
 from pathlib import Path
 
@@ -1299,3 +1300,80 @@ def test_the_runtime_options_calls_through_every_wrapper(artifacts, tmp_path):
         )
         if language in ("cpp", "rust"):
             assert states["file"] == {**set_state, "on_failure": "return"}, language
+
+
+_COLD_OPENS = """
+import ctypes, sys, threading
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+sdk = ctypes.CDLL(sys.argv[1])
+artifact, process, count = sys.argv[2].encode(), sys.argv[3].encode(), int(sys.argv[4])
+
+
+def executable_maps():
+    return sum(
+        1
+        for line in Path("/proc/self/maps").read_text().splitlines()
+        if line.split()[1] == "r-xp" and "/" not in line and "[" not in line
+    )
+
+
+barrier = threading.Barrier(count)
+
+
+def open_and_free(_):
+    handle = ctypes.c_void_p()
+    barrier.wait()
+    status = sdk.rusticol_virtual_open_with_options(
+        artifact, process, None, None, b"[evaluation]\\nthreads = 1\\n",
+        ctypes.byref(handle),
+    )
+    assert status == 0, status
+    barrier.wait()
+    sdk.rusticol_virtual_free(handle)
+
+
+counts = []
+with ThreadPoolExecutor(count) as pool:
+    for _ in range(2):
+        list(pool.map(open_and_free, range(count)))
+        counts.append(executable_maps())
+print(counts)
+"""
+
+
+@pytest.mark.skipif(not Path("/proc/self/maps").is_file(), reason="Linux maps")
+def test_concurrent_cold_opens_compile_each_kernel_once(artifacts):
+    """1, 2 and 8 simultaneous cold opens of one artifact through the C ABI,
+    each in a fresh process (the race is timing dependent: the 8-way case
+    three times) leave the same anonymous executable mappings as one open,
+    and a second round adds none: each kernel is compiled once, the
+    concurrent openers share it. Before the per-key coordination, two opens
+    left 84 mappings where one left 44, eight 200 or 232."""
+
+    library = str(_staged_sdk() / "librusticol_loop_sdk.so")
+
+    def run(count: int) -> list[int]:
+        done = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _COLD_OPENS,
+                library,
+                str(artifacts["uuddg"]),
+                "uuddg",
+                str(count),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            check=False,
+        )
+        assert done.returncode == 0, done.stderr[-3000:]
+        return json.loads(done.stdout.strip().splitlines()[-1])
+
+    single = run(1)
+    assert single[0] == single[1] > 0
+    for count in (2, 8, 8, 8):
+        assert run(count) == single, count

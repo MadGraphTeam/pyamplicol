@@ -576,6 +576,9 @@ quark lines. For one-loop requests, `lc` and `nlc` are the loop engine's
 formal-N_c projection (every U(1)-subtraction piece graded, each squared
 coupling-order sector truncated at its own leading degree; see the one-loop
 section below), and `strict-lc`, `strict-nlc` and `graded` are refused.
+One-loop `lc` and `nlc` are not implemented yet for QED or mixed QCD+QED
+corrections (`lc-electroweak-corrections`; full colour serves them, see
+[One-loop QCD+QED](electroweak-and-madloop.md)).
 For trees, `strict-lc` and
 `strict-nlc` are the formal 1/N_c expansion of the squared amplitude: every
 U(1)-subtraction piece counts as a power `1/N_c`, LC keeps the leading degree
@@ -780,6 +783,11 @@ Generation validation checks symbolic/numerical construction before
 publication. Structural artifact checks always run. The optional
 `post_build_validation` reopens the finished artifact and evaluates it again;
 it is disabled by default because its cost can dominate large process builds.
+For a one-loop request, it also keeps every generated subprocess in memory
+until the artifact is validated (its reference executor), so the memory of a
+multiprocess one-loop generation grows with the number of subprocesses when
+post-build validation is on; without it, a written subprocess is released
+before the next one is generated.
 Enable it when you explicitly want that additional runtime smoke:
 
 ```console
