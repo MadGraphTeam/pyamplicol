@@ -202,7 +202,6 @@ def test_model_processes_applies_max_quark_lines(model, expected):
     assert {entry["key"] for entry in cut["entries"]} == kept
     assert cut["n_entries"] == len(kept) < full["n_entries"]
     assert cut["max_quark_lines"] == 1
-    assert cut["n_dropped_by_max_quark_lines"] == full["n_entries"] - len(kept)
     if expected is not None:
         assert len(kept) == expected
 

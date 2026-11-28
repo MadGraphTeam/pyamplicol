@@ -330,16 +330,9 @@ def test_model_compile_service_rejects_nondefault_card_evaluator_for_ir(
         DefaultCliServices().model_compile(config, NullProgressSink())
 
 
-def test_default_model_processes_uses_compiled_model_catalog(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from pyamplicol.models import loading
-
-    monkeypatch.setattr(
-        loading,
-        "compile_model_source",
-        lambda *args, **kwargs: _CompiledModel(),
-    )
+def test_default_model_processes_lists_the_generation_expansion() -> None:
+    # The built-in SM's listing is its generation's own expansion (the
+    # built-in catalogue and filters), not the compiled model's catalogue.
     invocation = parse_cli(("model", "processes", "d d~ > z"))
     result = DefaultCliServices().model_processes(
         invocation.resolve().effective,
@@ -347,7 +340,7 @@ def test_default_model_processes_uses_compiled_model_catalog(
     )
 
     assert isinstance(result, dict)
-    assert result["model"] == "toy"
+    assert result["route"] == "tree"
     assert result["n_entries"] == 1
     entry = result["entries"][0]
     assert entry["process"] == "d d~ > z"

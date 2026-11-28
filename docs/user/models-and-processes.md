@@ -579,12 +579,21 @@ and quark or lepton numbers per generation whenever the vertices conserve
 them (quark numbers reduce to baryon number with a non-diagonal CKM matrix).
 With the shipped serialized Standard Model (`sm.json`, default
 restriction) this leaves exactly the 385 tree-level subprocesses of
-`p p > j j j j`. `model processes` applies the same filter, but not the
-colour and amplitude checks. `max_quark_lines` bounds the external quark lines
+`p p > j j j j`. `max_quark_lines` bounds the external quark lines
 of every concrete process on every model, at tree level and at one loop (and in
 `model processes`); the built-in SM also keeps its catalogue prefilter
 `flavor_scheme`. See
 [Conserved charges in UFO expansion](process-grouping.md#conserved-charges-in-ufo-expansion).
+
+`pyamplicol model processes` lists exactly the processes a generation of the
+same request stores, in its order and under its names: it runs the
+generator's own expansion with every filter (the built-in SM's catalogue,
+conserved charges, `max_quark_lines`, coupling-order limits). For a tree-level
+request it leaves out the members without a tree-level diagram, which
+generation skips; for a one-loop request (`--loop-coupling-order`) it is the
+one-loop dry run's list, with the Born-less members its `process.loop_induced`
+policy skips under `skipped`. A request generation refuses is refused with
+the same error.
 
 ## Permutation-equivalent processes
 

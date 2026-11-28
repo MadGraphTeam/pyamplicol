@@ -378,8 +378,9 @@ external quark lines than the limit (colour triplet-antitriplet pairs, every
 leg counted as outgoing) is dropped, the other processes keep their names, and
 a request it empties is refused with an error that names the setting. The
 built-in SM also keeps its own catalogue prefilter `flavor_scheme`.
-`pyamplicol model processes` applies the same charge filter, but not the
-colour and amplitude checks. See
+`pyamplicol model processes` lists exactly what generation stores, with
+these filters and the amplitude checks (see
+[Models and Processes](models-and-processes.md#multiparticles)). See
 [Models and Processes](models-and-processes.md#multiparticles)
 for the expansion syntax.
 
