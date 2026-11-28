@@ -643,3 +643,93 @@ fn validate_public_id(value: &str, description: &str) -> RusticolResult<()> {
 #[cfg(test)]
 #[path = "metadata_tests.rs"]
 mod tests;
+
+/// The canonical spelling of a leading-colour flow word given in any
+/// spelling (a stored flow read on another leg order): open colour lines,
+/// each from a fundamental label (3) through adjoint labels (8) to an
+/// antifundamental label (-3), ordered by their fundamental label, the
+/// order the leading-colour plan writes them in (`color.plan_build`, the
+/// on-the-fly selector's canonical block order), or one adjoint trace
+/// rotated to start at its smallest label. `colour(label)` is a 1-based
+/// label's representation with every leg outgoing. `None` for a word of
+/// another shape (a caller keeps it as given).
+pub fn canonical_lc_flow_word(
+    word: &[usize],
+    colour: impl Fn(usize) -> Option<i32>,
+) -> Option<Vec<usize>> {
+    if word.is_empty() {
+        return Some(Vec::new());
+    }
+    if word.iter().all(|label| colour(*label) == Some(8)) {
+        let start = word
+            .iter()
+            .enumerate()
+            .min_by_key(|(_, label)| **label)
+            .map(|(index, _)| index)?;
+        return Some(
+            word[start..]
+                .iter()
+                .chain(&word[..start])
+                .copied()
+                .collect(),
+        );
+    }
+    let mut blocks: Vec<&[usize]> = Vec::new();
+    let mut start = 0;
+    while start < word.len() {
+        if colour(word[start]) != Some(3) {
+            return None;
+        }
+        let mut end = start + 1;
+        while end < word.len() && colour(word[end]) == Some(8) {
+            end += 1;
+        }
+        if end >= word.len() || colour(word[end]) != Some(-3) {
+            return None;
+        }
+        blocks.push(&word[start..=end]);
+        start = end + 1;
+    }
+    blocks.sort_by_key(|block| block[0]);
+    Some(blocks.concat())
+}
+
+#[cfg(test)]
+mod canonical_flow_tests {
+    use super::canonical_lc_flow_word;
+
+    #[test]
+    fn open_lines_sort_by_their_fundamental_label_and_traces_start_at_the_smallest() {
+        // u d > u d: legs 3, 4 outgoing quarks (3), 1, 2 incoming quarks (-3).
+        let quarks = |label: usize| Some(if label >= 3 { 3 } else { -3 });
+        assert_eq!(
+            canonical_lc_flow_word(&[4, 2, 3, 1], quarks),
+            Some(vec![3, 1, 4, 2])
+        );
+        assert_eq!(
+            canonical_lc_flow_word(&[3, 2, 4, 1], quarks),
+            Some(vec![3, 2, 4, 1])
+        );
+        // g u > g u: gluons 1, 3; incoming u 2 (-3), outgoing u 4 (3).
+        let mixed = |label: usize| {
+            Some(match label {
+                1 | 3 => 8,
+                2 => -3,
+                _ => 3,
+            })
+        };
+        assert_eq!(
+            canonical_lc_flow_word(&[4, 3, 1, 2], mixed),
+            Some(vec![4, 3, 1, 2])
+        );
+        let gluons = |_: usize| Some(8);
+        assert_eq!(
+            canonical_lc_flow_word(&[3, 4, 1, 2], gluons),
+            Some(vec![1, 2, 3, 4])
+        );
+        assert_eq!(canonical_lc_flow_word(&[], gluons), Some(vec![]));
+        // Not a flow: a line starting at an antifundamental label.
+        assert_eq!(canonical_lc_flow_word(&[1, 3, 2, 4], quarks), None);
+        assert_eq!(canonical_lc_flow_word(&[3, 1, 4], quarks), None);
+    }
+}

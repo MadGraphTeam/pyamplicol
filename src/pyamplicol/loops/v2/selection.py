@@ -551,6 +551,16 @@ def _plan_order(
     )
 
 
+def member_colours(legs: Sequence[int], colours: Mapping[int, int]) -> dict[int, int]:
+    """A mapped process's legs' outgoing colour representations (1-based
+    labels) from its stored process's (``outgoing_colours``), ``legs[i]``
+    the stored leg of its leg i."""
+
+    return {
+        leg + 1: colours[rep + 1] for leg, rep in enumerate(legs) if rep + 1 in colours
+    }
+
+
 def member_flows(
     flows: Sequence[Flow],
     legs: Sequence[int],
@@ -601,6 +611,11 @@ class Catalogue:
     # process's order, which is not the order a single-process artifact of
     # its own spelling lists them in, so a flow is selected by its ID only.
     ordinals: bool = True
+    # A mapped process's legs' outgoing colour representations (1-based
+    # labels): a flow named in another valid spelling of the same flow (its
+    # lines in another order, a trace from another label: the stored block
+    # order a tree runtime keeps, ``canonical_flow_word``) selects it too.
+    colours: Mapping[int, int] | None = None
 
     def resolve(
         self,
@@ -634,6 +649,8 @@ class Catalogue:
             for name in color_flows:
                 flow = by_id.get(str(name).strip())
                 if flow is None:
+                    flow = by_id.get(self._canonical_id(str(name)))
+                if flow is None:
                     flow = self._ordinal(str(name))
                 if flow.basis is None:
                     raise EvaluationError(
@@ -642,6 +659,19 @@ class Catalogue:
                 chosen_basis.add(flow.basis)
             basis = frozenset(chosen_basis)
         return rows, basis
+
+    def _canonical_id(self, name: str) -> str:
+        """The canonical ID of a flow ID given in another spelling (``""``
+        when it is not a word of the process's labels)."""
+
+        if self.colours is None or not name.strip().startswith("flow:"):
+            return ""
+        try:
+            word = tuple(int(x) for x in name.strip()[5:].split(","))
+        except ValueError:
+            return ""
+        canonical = canonical_flow_word(word, self.colours)
+        return "" if canonical is None else flow_id(canonical)
 
     def _ordinal(self, name: str) -> Flow:
         try:

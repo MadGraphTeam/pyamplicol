@@ -363,7 +363,11 @@ libraries and executables outside the artifact in the same way.
 The following commands deliberately request `d d~ > g z g`, even though its
 stored representative uses another outgoing order. Rusticol resolves the
 unique representative and permutes momenta, particles, helicities, color
-flows, reductions, and resolved output metadata consistently.
+flows, reductions, and resolved output metadata consistently. A colour flow
+of the requested order is named by its canonical ID, the one a
+single-process artifact of that expression uses, and every selector takes
+it; the listing positions (per-point indices, resolved output order) stay the
+stored process's.
 
 ```console
 python artifacts/pp_zjj/API/python/check_standalone.py \

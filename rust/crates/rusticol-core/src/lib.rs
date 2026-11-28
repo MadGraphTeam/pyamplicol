@@ -111,7 +111,7 @@ pub use error::{RusticolError, RusticolErrorKind, RusticolResult};
 pub use metadata::{
     ColorAccuracy, ColorComponent, ContractedColor, Coverage, ExternalParticle, Helicity,
     LcColorFlow, ModelParameter, ParameterKind, ParticleRole, ProcessPhysics, Reduction,
-    ReductionGroup, ReductionKind, SelectorCapabilities,
+    ReductionGroup, ReductionKind, SelectorCapabilities, canonical_lc_flow_word,
 };
 
 pub const PYTHON_API_VERSION: u32 = 1;
