@@ -1382,7 +1382,13 @@ def admit_programs(
     return cast(dict[str, Any], json.loads(described)), plan, scaleless
 
 
-def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]:
+def _select(
+    manifest: Any,
+    process: str | None,
+    *,
+    groups: Any = None,
+    any_basis: bool = False,
+) -> tuple[Mapping[str, Any], Any]:
     """The selected stored process record and, for a process it serves
     through a leg mapping (``mapping``: a permutation alias or a process-group
     member), that process as a ``GroupMember`` (its id, expression, PDGs and
@@ -1395,7 +1401,12 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
     several), then a process-group member (basis ``exact-loop-flavor``, a
     relation proved exactly at generation): its id, its expression, the
     unique permutation of it within each side. Expressions compare
-    whitespace-normalised, exactly and then letter-case-insensitively."""
+    whitespace-normalised, exactly and then letter-case-insensitively.
+
+    ``groups`` (a process-group map) replaces the artifact's stored one and
+    ``any_basis`` admits a member of any basis: the resolution of a
+    hypothetical artifact, as the append check builds it
+    (``generation.artifact_writer._validate_append_invariant``)."""
 
     from dataclasses import replace
 
@@ -1434,7 +1445,9 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
             for record in records
             if _selector_text(str(record["expression"]), fold=fold) == wanted
         ]
-        if fold and len(matches) > 1:
+        # Two stored processes of one expression (overlapping requests) are
+        # ambiguous in every spelling, as in the tree artifacts' selector.
+        if len(matches) > 1:
             choices = ", ".join(sorted(str(record["id"]) for record in matches))
             raise ProcessSelectionError(
                 f"process expression {process!r} is ambiguous; select one of "
@@ -1478,45 +1491,79 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         )
     if permuted:
         return permuted[0][0], _permuted_member(*permuted[0])
-    groups = read_process_groups(manifest.root)
+    if groups is None:
+        groups = read_process_groups(manifest.root)
     members = [
         (representative, member)
         for representative, group in (groups.groups if groups else {}).items()
         for member in group.members
         if member.process_id != representative and not member.generated
     ]
-    for fold in (None, False, True):
-        for representative, member in members:
-            if (
-                member.process_id == process
-                if fold is None
-                else _selector_text(member.expression, fold=fold)
-                == _selector_text(process, fold=fold)
-            ):
-                return _group_record(records, representative, member, process)
     for representative, member in members:
-        permutation = side_permutation(member.expression, process)
-        if permutation is not None:
-            # Representative leg r -> member leg -> public leg.
-            composed = replace(
-                member,
-                expression=permuted_expression(member.expression, permutation),
-                pdgs=_permuted(member.pdgs, permutation),
-                permutation=tuple(permutation[m] for m in member.permutation),
+        if member.process_id == process:
+            return _group_record(records, representative, member, process, any_basis)
+    # As the native selector: one member of an expression, else the ids of
+    # every member it names (a process stored twice is ambiguous in every
+    # spelling); then the least displaced side permutation, likewise.
+    for fold in (False, True):
+        found = [
+            (representative, member)
+            for representative, member in members
+            if _selector_text(member.expression, fold=fold)
+            == _selector_text(process, fold=fold)
+        ]
+        if len(found) > 1:
+            choices = ", ".join(sorted(member.process_id for _r, member in found))
+            raise ProcessSelectionError(
+                f"process expression {process!r} is ambiguous; select one of "
+                f"these process-group member ids: {choices}",
+                key="process-ambiguous",
             )
-            return _group_record(records, representative, composed, process)
+        if found:
+            return _group_record(records, *found[0], process, any_basis)
+    permuted_members = [
+        (representative, member, permutation)
+        for representative, member in members
+        if (permutation := side_permutation(member.expression, process)) is not None
+    ]
+    if len(permuted_members) > 1:
+        least = min(_displacement(item[2]) for item in permuted_members)
+        permuted_members = [
+            item for item in permuted_members if _displacement(item[2]) == least
+        ]
+    if len(permuted_members) > 1:
+        choices = ", ".join(sorted(item[1].process_id for item in permuted_members))
+        raise ProcessSelectionError(
+            f"process expression {process!r} is permutation-ambiguous; select "
+            f"one of these process-group member ids: {choices}",
+            key="process-ambiguous",
+        )
+    if permuted_members:
+        representative, member, permutation = permuted_members[0]
+        # Representative leg r -> member leg -> public leg.
+        composed = replace(
+            member,
+            expression=permuted_expression(member.expression, permutation),
+            pdgs=_permuted(member.pdgs, permutation),
+            permutation=tuple(permutation[m] for m in member.permutation),
+        )
+        return _group_record(records, representative, composed, process, any_basis)
     raise ProcessSelectionError(f"artifact has no process {process!r}")
 
 
 def _group_record(
-    records: Sequence[Mapping[str, Any]], representative: str, member: Any, process: str
+    records: Sequence[Mapping[str, Any]],
+    representative: str,
+    member: Any,
+    process: str,
+    any_basis: bool = False,
 ) -> tuple[Mapping[str, Any], Any]:
     """The stored representative of a process-group member a loop artifact
     serves: a relation proved exactly at generation (basis
     ``exact-loop-flavor``, factor 1, no charge conjugation). A relation of
     any other basis (a numerical process-group analysis) is refused."""
 
-    if (
+    if not any_basis and (
         str(member.basis) != "exact-loop-flavor"
         or member.factor != 1
         or (member.conjugated)
@@ -2500,9 +2547,16 @@ class V2VirtualRuntime:
             if member is None
             else list(member.pdgs)
         )
+        expression = self._expression if member is None else str(member.expression)
+        # The model's particle names, as tree runtimes give them: the tokens
+        # of the served expression, in leg order (artifacts store no names).
+        initial, _, final = expression.partition(">")
+        names = [*initial.split(), *final.split()]
+        if len(names) != len(pdgs):
+            names = [str(pdg) for pdg in pdgs]
         return ProcessPhysics(
             process_id=self._public_id,
-            process=self._expression if member is None else str(member.expression),
+            process=expression,
             color_accuracy=accuracy,
             helicity_coverage=helicity_coverage,
             color_coverage=color_coverage,
@@ -2512,13 +2566,13 @@ class V2VirtualRuntime:
                 ExternalParticle(
                     index=i,
                     label=i + 1,
-                    name=str(pdg),
+                    name=name,
                     pdg_id=pdg,
                     state="incoming" if leg["incoming"] else "outgoing",
                     momentum_slot=i,
                 )
-                for i, (leg, pdg) in enumerate(
-                    zip(self._physics["state_legs"], pdgs, strict=True)
+                for i, (leg, pdg, name) in enumerate(
+                    zip(self._physics["state_legs"], pdgs, names, strict=True)
                 )
             ),
             helicities=tuple(

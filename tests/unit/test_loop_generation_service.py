@@ -132,6 +132,10 @@ def test_shared_resource_cores_are_not_rejected_as_tree_tuning():
 
 def _colour_backend(monkeypatch, accuracy, declaration):
     """Transport fixture: no tensor/graph numerical work at this boundary."""
+    # Modules that bind CompiledUFOModel when first imported are imported
+    # before it is patched below, so the stand-in never outlives the test.
+    import pyamplicol.loops.v2.assemble
+    import pyamplicol.loops.v2.catalogue  # noqa: F401
     from pyamplicol.generation import loop_service as service
     from pyamplicol.generation.service import _ResolvedModel
     from pyamplicol.models.loop_declaration import (

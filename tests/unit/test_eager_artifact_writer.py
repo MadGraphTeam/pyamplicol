@@ -219,15 +219,17 @@ def _v3_process(
     *,
     process_id: str,
     kernel_ids: frozenset[int],
+    expression: str = "d d~ > z",
+    external_pdgs: tuple[int, ...] = (1, -1, 23),
 ) -> EagerPlanV3ProcessArtifact:
     runtime = tmp_path / f"{process_id}.pacbin"
     runtime_bytes = f"native-eager-runtime:{process_id}".encode()
     runtime.write_bytes(runtime_bytes)
     return EagerPlanV3ProcessArtifact(
         process_id=process_id,
-        expression="d d~ > z",
+        expression=expression,
         color_accuracy="full",
-        external_pdgs=(1, -1, 23),
+        external_pdgs=external_pdgs,
         aliases=(),
         physics={
             "schema_version": 1,
@@ -488,6 +490,9 @@ def test_plan_v3_writer_filters_pack_and_appends_atomically(
     second = _v3_process(
         tmp_path,
         process_id="u_ubar_to_z",
+        # An append adds another process than the artifact's.
+        expression="u u~ > z",
+        external_pdgs=(2, -2, 23),
         kernel_ids=frozenset({20}),
     )
     write_schema_v3_artifact(
