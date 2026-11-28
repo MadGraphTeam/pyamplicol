@@ -880,6 +880,7 @@ fn stored_alias_selection(
         external_permutation: alias.external_permutation.clone(),
         inferred_permutation: false,
         process_group: None,
+        stored_leg_colours: None,
     }
 }
 

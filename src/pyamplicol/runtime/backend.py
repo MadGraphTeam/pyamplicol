@@ -1808,12 +1808,54 @@ class RusticolRuntimeBackend:
             include_values=include_values,
         )
 
+    def _released_color_flow_aliases(
+        self, color_flows: Sequence[str]
+    ) -> tuple[str, ...]:
+        """The listed ID of each requested flow named by the spelling earlier
+        releases listed for it: a permuted selection lists each LC flow under
+        its canonical ID, while its word keeps the stored block order, which
+        is what releases before the canonical naming published (and still
+        select); an ID that is listed, or names no flow word, is unchanged.
+        Every selection path (global and per point, every carrier) passes its
+        flow IDs through here (``_resolve_color_flows``). Nothing is read for
+        an on-the-fly handle (its native selector accepts both spellings,
+        and its catalogue stays unbuilt) or a handle in its stored leg order
+        (its IDs never changed): neither builds the physics catalogue."""
+
+        if self._execution_mode == "on-the-fly":
+            return tuple(color_flows)
+        try:
+            permutation = self.external_permutation
+        except CompatibilityError:
+            return tuple(color_flows)
+        if all(index == image for index, image in enumerate(permutation)):
+            return tuple(color_flows)
+        listed = {flow.id for flow in self.physics.color_flows}
+        if all(requested in listed for requested in color_flows):
+            return tuple(color_flows)
+        published: dict[str, str] = {}
+        for flow in self.physics.color_flows:
+            spelling = (
+                "flow:" + ",".join(str(label) for label in flow.word)
+                if flow.word
+                else "flow:singlet"
+            )
+            if spelling != flow.id:
+                published.setdefault(spelling, flow.id)
+        return tuple(
+            requested
+            if requested in listed
+            else published.get(requested.strip(), requested)
+            for requested in color_flows
+        )
+
     def _resolve_color_flows(
         self,
         color_flows: Sequence[str] | None,
     ) -> tuple[str, ...] | None:
         if color_flows is None or not color_flows:
             return None
+        color_flows = self._released_color_flow_aliases(color_flows)
         if self._execution_mode == "on-the-fly":
 
             def is_ordinal(value: str) -> bool:
@@ -2236,14 +2278,30 @@ def load_runtime_backend(
             "select precision when evaluating a tree artifact"
         )
     module = _load_native_module()
-    runtime = _invoke(
-        module,
-        module.Runtime.load,
-        path,
-        process=process,
-        model_parameters=parameters,
-        mute_warnings=mute_warnings,
-    )
+    try:
+        runtime = _invoke(
+            module,
+            module.Runtime.load,
+            path,
+            process=process,
+            model_parameters=parameters,
+            mute_warnings=mute_warnings,
+        )
+    except EvaluationError as error:
+        # The artifact selector's refusal of the process selector (rusticol
+        # ``Selector`` errors at load): typed, with the loop runtime's keys.
+        native = getattr(module, "SelectorError", None)
+        if isinstance(native, type) and isinstance(error.__cause__, native):
+            from pyamplicol.api.errors import ProcessSelectionError
+
+            message = str(error)
+            raise ProcessSelectionError(
+                message,
+                key="process-ambiguous"
+                if "ambiguous" in message
+                else "process-not-served",
+            ) from error
+        raise
     backend = RusticolRuntimeBackend(
         runtime,
         module,

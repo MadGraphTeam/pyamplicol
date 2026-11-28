@@ -632,6 +632,7 @@ class V2ObservablesRuntime:
         mapping: str | None = None,
         flows: Sequence[Any] | None = None,
         flow_reference: bool | None = None,
+        flow_colours: Mapping[int, int] | None = None,
         lanes: int | None = None,
         threads: int | None = None,
     ) -> None:
@@ -650,6 +651,9 @@ class V2ObservablesRuntime:
         # Whether a mapped process's flow ordinals are refused (given with
         # ``flows`` by an artifact runtime; None: read from the slice).
         self._flow_reference = flow_reference
+        # A mapped process's legs' colour representations (an artifact
+        # runtime's): a flow ID in another valid spelling selects the flow.
+        self._flow_colours = None if flow_colours is None else dict(flow_colours)
         self._executor = executor
         self._native_options = {
             key: value
@@ -1413,7 +1417,10 @@ class V2ObservablesRuntime:
                 if self._member is not None:
                     rows = tuple(sorted(self._member.row(row) for row in rows))
                 self._catalogue = selection.Catalogue(
-                    rows, self._member_flows(), ordinals=not self._referenced_member()
+                    rows,
+                    self._member_flows(),
+                    ordinals=not self._referenced_member(),
+                    colours=self._flow_colours,
                 )
             return self._catalogue
 
