@@ -18,6 +18,7 @@ if TYPE_CHECKING:
         NativePlatformError,
         PyAmpliColError,
         ReductionUnavailable,
+        ResourceExhaustedError,
     )
     from .models import (
         CompiledModel,
@@ -158,6 +159,7 @@ __all__ = [
     "ReductionUnavailable",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
+    "ResourceExhaustedError",
     "ResultWarning",
     "Runtime",
     "RuntimeBackend",
@@ -201,6 +203,7 @@ _ERROR_EXPORTS = (
     "NativePlatformError",
     "PyAmpliColError",
     "ReductionUnavailable",
+    "ResourceExhaustedError",
 )
 _PROTOCOL_EXPORTS = (
     "BenchmarkBackend",

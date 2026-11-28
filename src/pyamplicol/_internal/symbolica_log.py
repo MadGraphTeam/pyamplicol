@@ -222,10 +222,12 @@ def capture(where: str) -> Iterator[Captured]:
         sink._ready.wait(threads.START_SECONDS + 1.0)
         yield sink
         return
-    logger = logging.getLogger(LOADER_LOGGER)
-    logger.addFilter(_FILTER)
     redirected = None
     try:
+        # Inside the owner's try: a failure here (MemoryError in a process
+        # out of memory) still clears the sink below, so no later caller
+        # finds a stale capture and waits for its setup.
+        logging.getLogger(LOADER_LOGGER).addFilter(_FILTER)
         try:
             for stream in (sys.stdout, sys.stderr):
                 stream.flush()
@@ -265,6 +267,7 @@ def capture(where: str) -> Iterator[Captured]:
             sink._ready.set()
         yield sink
     finally:
+        sink._ready.set()
         if redirected is not None:
             saved, reader, done = redirected
             with suppress(OSError, ValueError, AttributeError):
@@ -275,9 +278,11 @@ def capture(where: str) -> Iterator[Captured]:
             # nothing more, and closes the descriptors when the pipe ends.
             reader.join(LINGER_SECONDS)
             done.set()
-        logger.removeFilter(_FILTER)
-        with _GUARD:
-            _ACTIVE.clear()
+        try:
+            logging.getLogger(LOADER_LOGGER).removeFilter(_FILTER)
+        finally:
+            with _GUARD:
+                _ACTIVE.clear()
 
 
 _MODEL_LOG = logging.getLogger("pyamplicol.models")

@@ -2081,6 +2081,9 @@ can handle; catch `PyAmpliColError` at an application boundary.
 load a native library at all (for example a glibc that lacks a version the
 library needs; see
 [Native libraries and glibc](installation.md#native-libraries-and-glibc)).
+`ResourceExhaustedError` means that this process can no longer map native
+code (its memory maps are exhausted): start a new process (see
+[Troubleshooting](troubleshooting.md#resourceexhaustederror-memory-maps-exhausted-in-this-process)).
 
 ## API design notes
 
