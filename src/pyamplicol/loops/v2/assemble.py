@@ -1933,7 +1933,9 @@ def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
     ``models.loop_color_declarations``) when the request names none; its
     ``particle_veto`` with the ghosts of the vector bosons it removes
     (``ew_policy.gauge_closed_veto``). Unchanged when it names both and its
-    veto is so closed."""
+    veto is so closed. LC and NLC of corrections other than the model's
+    strong one are refused here (``ew_policy.require_projectable_corrections``,
+    ``lc-electroweak-corrections``)."""
 
     if request.corrections is None:
         request = replace(
@@ -1957,7 +1959,41 @@ def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
         declaration = resolve_loop_color_declaration(raw)
         if declaration is not None:
             request = replace(request, colour_declaration=declaration)
+    if request.accuracy != "full":
+        # LC/NLC of corrections other than the model's strong one: not
+        # implemented yet (``lc-electroweak-corrections``), on every entry
+        # point (the service, direct slices, artifacts).
+        colour_declared = request.colour_declaration is not None
+        ew_policy.require_projectable_corrections(
+            compiled,
+            request.accuracy,
+            request.corrections,
+            request.fixed_parameters,
+            declared=() if colour_declared else _declared_corrections(raw),
+            colour_declared=colour_declared,
+        )
     return request
+
+
+def _declared_corrections(raw: Any) -> tuple[str, ...]:
+    """The corrections ``raw``'s loop model declaration covers: its
+    metadata's (the public route attaches the effective one), else its
+    shipped profile's (``loops.shipped_profiles``), else none."""
+
+    if raw is None:
+        return ()
+    from pyamplicol.models.loop_declaration import (
+        LOOP_DECLARATION_KEY,
+        LoopModelDeclaration,
+    )
+
+    payload = raw.metadata.get(LOOP_DECLARATION_KEY)
+    if payload is not None:
+        return LoopModelDeclaration.from_dict(payload).loop_coupling_orders
+    from pyamplicol.loops.shipped_profiles import shipped_loop_profile
+
+    profile = shipped_loop_profile(raw)
+    return () if profile is None else profile.declaration.loop_coupling_orders
 
 
 def check_model_parameters(

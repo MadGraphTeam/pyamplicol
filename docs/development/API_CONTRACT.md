@@ -50,7 +50,11 @@ review.
   needs; raised before the library is loaded, or in place of the dynamic
   loader's missing-version error), and `ReductionUnavailable` (a
   `CompatibilityError` with key `reduction-unavailable`: an explicitly
-  requested one-loop reduction backend cannot serve the call).
+  requested one-loop reduction backend cannot serve the call), and
+  `ResourceExhaustedError` (the process ran out of an operating-system
+  resource native code needs, at present its memory maps; raised by
+  `generate` and `Runtime.load` in place of the failure it caused: a new
+  process is needed).
 
 No DAG, evaluator, stage, color-sector, Symbolica, or legacy-reference class is
 exported from the package root.

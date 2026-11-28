@@ -253,6 +253,29 @@ and ASM artifacts are target-specific and may require particular CPU features.
 Regenerate a target-specific artifact on the destination, or use a portable
 JIT configuration. See [Artifacts and Portability](artifacts-and-portability.md).
 
+## `ResourceExhaustedError`: memory maps exhausted in this process
+
+```text
+ResourceExhaustedError: memory maps exhausted in this process: it holds 65530
+memory maps of its limit vm.max_map_count = 65530, so native code can no
+longer be mapped. Start a new process ...
+```
+
+Code that is compiled at run time (SymJIT, inside Symbolica and pyAmpliCol's
+native runtime) needs new executable memory mappings, and SymJIT does not
+release them. pyAmpliCol compiles each distinct kernel once per process and
+shares it between every load, but a process that generates or loads very many
+different artifacts can still reach the operating system's limit
+(`vm.max_map_count`, often 65,530; `sysctl vm.max_map_count`). From then on no
+generation or load can succeed in that process: `generate` and `Runtime.load`
+raise this error in place of the failure (chained as its cause), with
+`resource == "memory maps"`, when the failure is an allocation failure and the
+process holds its limit of maps; any other failure keeps its own error. Start a
+new process, for example one per batch of artifacts, or raise the limit
+(`sysctl -w vm.max_map_count=1048576`, as root). The same error with
+`resource == "memory"` reports a native allocation failure (out of memory)
+while maps remain.
+
 ## `NativePlatformError`: a native library needs a newer glibc
 
 ```text

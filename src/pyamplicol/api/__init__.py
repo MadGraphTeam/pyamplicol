@@ -21,6 +21,7 @@ if TYPE_CHECKING:
         PyAmpliColError,
         ReductionUnavailable,
         RequestFilterError,
+        ResourceExhaustedError,
     )
     from .models import (
         CompiledModel,
@@ -164,6 +165,7 @@ __all__ = [
     "RequestFilterError",
     "ResolvedEvaluation",
     "ResolvedVirtualEvaluation",
+    "ResourceExhaustedError",
     "ResultWarning",
     "Runtime",
     "RuntimeBackend",
@@ -210,6 +212,7 @@ _ERROR_EXPORTS = (
     "PyAmpliColError",
     "ReductionUnavailable",
     "RequestFilterError",
+    "ResourceExhaustedError",
 )
 _PROTOCOL_EXPORTS = (
     "BenchmarkBackend",

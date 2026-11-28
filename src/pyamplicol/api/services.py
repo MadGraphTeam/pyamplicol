@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 import pyamplicol as _pyamplicol
 from pyamplicol import _collector
+from pyamplicol._internal.process_limits import translates_resource_exhaustion
 from pyamplicol.config import (
     Action,
     BenchmarkConfig,
@@ -109,20 +110,24 @@ def install_backend_factories(
 
 def _discover(attribute: str, modules: Sequence[str]) -> Any:
     failures: list[str] = []
+    failed_import: ImportError | None = None
     for module_name in modules:
         try:
             module = importlib.import_module(module_name)
         except ImportError as exc:
             failures.append(f"{module_name}: {exc}")
+            failed_import = exc
             continue
         factory = getattr(module, attribute, None)
         if factory is not None:
             return factory
         failures.append(f"{module_name}: missing {attribute}")
     detail = "; ".join(failures)
+    # Chained to the last failed import: its cause (a library that could not
+    # be mapped, say) stays visible to callers and to the error translation.
     raise DependencyError(
         f"no pyAmpliCol backend provides {attribute}; backend discovery tried {detail}"
-    )
+    ) from failed_import
 
 
 def _get_generator_factory() -> GeneratorFactory:
@@ -557,6 +562,7 @@ class Generator:
             )
         return result
 
+    @translates_resource_exhaustion
     def generate(
         self,
         processes: ProcessSet | ProcessRequest | str | Iterable[ProcessRequest | str],
@@ -712,6 +718,7 @@ class Runtime:
         self._call_defaults = MappingProxyType({})
 
     @classmethod
+    @translates_resource_exhaustion
     def load(
         cls,
         artifact: os.PathLike[str] | str,

@@ -292,14 +292,25 @@ def _prepare(
     # MG5_aMC's complex-mass model of the source at the card of the fixed
     # parameters (``loops.model_cms``); its refusals are listed, so the dry
     # run reports them.
+    real_fixed = require_real_fixed_parameters(preparation.fixed_parameters)
     compiled = apply_mass_scheme(
         compiled,
         declaration.scheme.mass_scheme,
-        fixed_parameters=require_real_fixed_parameters(preparation.fixed_parameters),
+        fixed_parameters=real_fixed,
         cache_dir=run.model.cache_dir,
     )
     color_data = None
     projected = run.color.accuracy in ("lc", "nlc")
+    from pyamplicol.loops.v2.ew_policy import require_projectable_corrections
+
+    if projected:
+        # Corrections other than the model's strong one at LC/NLC: not
+        # implemented yet, whatever colour data the model carries
+        # (``lc-electroweak-corrections``; the shared request preparation,
+        # ``assemble.resolve_request``, applies the same rule).
+        require_projectable_corrections(
+            compiled, run.color.accuracy, corrections, real_fixed
+        )
     if projected or run.resolved_color.contraction != "direct":
         # LC and NLC take the shipped declaration of a model that carries
         # none (MQ-NC, ``models.loop_color_declarations``); a full-colour
@@ -315,7 +326,17 @@ def _prepare(
         if color_data is None and projected:
             # No declaration covers this source and scheme (the shipped
             # N_c data are scheme-gated, MQ-NC: the QCD+QED models' scheme
-            # resolves none).
+            # resolves none). A model declaring corrections other than its
+            # strong one is refused for that reason, also for its strong
+            # corrections alone.
+            require_projectable_corrections(
+                compiled,
+                run.color.accuracy,
+                corrections,
+                real_fixed,
+                declared=declaration.loop_coupling_orders,
+                colour_declared=False,
+            )
             from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
 
             raise LoopRequestUnsupported(
@@ -720,6 +741,7 @@ def _v2_selection(backend, compiled, process: str, label: str):
         if chosen.reference_color_order
         else None
     )
+    lc.require_reference_order(compiled, process, order)
     flows = None
     if (
         chosen.max_color_sectors is not None
@@ -1729,12 +1751,40 @@ def _skipped_members_hook(skipped):
     return hook
 
 
-def _v2_member(generated, request, expression):
+@dataclass(frozen=True)
+class _Representative:
+    """What flavour grouping reads of a written representative
+    (``_v2_member``): its request record, its member admission record
+    (``observables.MemberAdmission``) and its declared colour histories and
+    spin classes. ``_generate_v2`` keeps this instead of the generated
+    process, whose slice it releases once the process is written."""
+
+    request: Mapping[str, Any]
+    admission: Any
+    histories: tuple[Any, ...]
+    spin_classes: tuple[Any, ...]
+
+    @classmethod
+    def of(cls, process) -> _Representative:
+        from pyamplicol.loops.v2.observables import MemberAdmission
+
+        observables = process.observables
+        return cls(
+            process.request,
+            MemberAdmission.of(process.slice),
+            tuple(observables.histories),
+            tuple(observables.spin_classes),
+        )
+
+
+def _v2_member(representatives, request, expression):
     """A member of an already generated process (``observables.
     admit_member``: an exact species substitution proved on the
     representative's retained source plan, a permutation within each side,
-    or both), or None. The member's request must equal the representative's
-    but for the process; a permuted member's leg-keyed request fields must
+    or both), or None. ``representatives`` maps each written
+    representative to its ``_Representative`` record. The member's request
+    must equal the representative's but for the process; a permuted
+    member's leg-keyed request fields must
     be invariant under its permutation (``_permutation_invariant``) and the
     representative must store the image of every declared colour history and
     spin class (``_correlations_closed``): otherwise the member is generated
@@ -1750,11 +1800,11 @@ def _v2_member(generated, request, expression):
         }
 
     wanted = recipe(request_record(request))
-    for name, process in generated.items():
-        if recipe(process.request) != wanted:
+    for name, representative in representatives.items():
+        if recipe(representative.request) != wanted:
             continue
         try:
-            member = admit_member(process.slice, expression)
+            member = admit_member(representative.admission, expression)
         except (ValueError, NotImplementedError):
             continue
         if not (member.alias or member.species):
@@ -1762,7 +1812,7 @@ def _v2_member(generated, request, expression):
             continue
         if member.alias and not (
             _permutation_invariant(request, member.legs)
-            and _correlations_closed(process.observables, member)
+            and _correlations_closed(representative, member)
         ):
             continue
         return name, member
@@ -1770,10 +1820,11 @@ def _v2_member(generated, request, expression):
 
 
 def _correlations_closed(observables, member) -> bool:
-    """Whether the representative stores the image of every declared colour
-    history and spin class read on the member's labels (``loops.v2.mapping``
-    ``mapped_histories`` / ``mapped_spin_classes``), so that folding the
-    member loses none of its declared correlations."""
+    """Whether the representative (its observables or its ``_Representative``
+    record: their ``histories`` and ``spin_classes``) stores the image of
+    every declared colour history and spin class read on the member's labels
+    (``loops.v2.mapping`` ``mapped_histories`` / ``mapped_spin_classes``), so
+    that folding the member loses none of its declared correlations."""
     from pyamplicol.loops.v2.mapping import mapped_histories, mapped_spin_classes
 
     histories = observables.histories
@@ -1832,6 +1883,17 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     of lowered programs (``preparation_cache.store_for``, unless off) serves
     them across generations. Its state is logged, never written into the
     artifact.
+
+    A written process is released before the next one is generated: only
+    its artifact record (and, with ``process.flavor_blind``, the small
+    ``_Representative`` record its members are admitted on) stays, so the
+    peak memory is the largest subprocess's, not their sum. With
+    ``generation.validation.post_build_validation`` every process is kept
+    for the staged validation (its reference executor), and the memory then
+    grows with the number of subprocesses. The bounded model caches the
+    subprocesses share are the generation's own (``ct_closure.
+    lowered_model_scope``, ``dag_input.model_rows_scope``): a concurrent
+    generation never reads or evicts them, and they are dropped with it.
     """
     from pyamplicol.artifacts.process_groups import (
         grouping_process,
@@ -1841,6 +1903,8 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     from pyamplicol.loops.preparation_cache import PreparationMemo, store_for
     from pyamplicol.loops.v2.artifact import generate_process, write_plan
     from pyamplicol.loops.v2.blocks import born_dag_scope
+    from pyamplicol.loops.v2.ct_closure import lowered_model_scope
+    from pyamplicol.loops.v2.dag_input import model_rows_scope
 
     from .process_grouping import (
         GroupingBasis,
@@ -1874,6 +1938,12 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
             "Preparing the loop model and the requests",
             total=len(processes.requests),
         ) as phase:
+            # The model caches the subprocesses share (the lowered
+            # counterterm models and their vertex rows, bounded) are this
+            # generation's own: no concurrent generation reads or evicts
+            # them, and they are dropped with it, as the memo is.
+            stack.enter_context(lowered_model_scope())
+            stack.enter_context(model_rows_scope())
             context = _prepare(
                 backend,
                 processes,
@@ -1898,8 +1968,12 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
         native = load_loop_native()
         compiled = context.resolved.compiled
         validation = backend._generation_config.validation
+        validate = validation.post_build_validation
         with TemporaryDirectory(prefix="pyamplicol-loop-v2-") as temporary:
-            artifacts, generated, members = [], {}, {}
+            # ``generated`` keeps the written processes only for the staged
+            # validation (its reference executors); flavour grouping reads
+            # their ``_Representative`` records.
+            artifacts, generated, members, representatives = [], {}, {}, {}
             with reporter.phase(
                 "loop-compile",
                 "Generating the loop processes",
@@ -1909,7 +1983,7 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                     request = requests[index]
                     name = entry.request.name
                     found = (
-                        _v2_member(generated, request, entry.request.expression)
+                        _v2_member(representatives, request, entry.request.expression)
                         if grouping and not entry.aliases
                         else None
                     )
@@ -1970,7 +2044,10 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                             probes = _loop_induced_probes(
                                 backend, context, process, native, candidates, memo
                             )
-                        generated[name] = process
+                        if grouping:
+                            representatives[name] = _Representative.of(process)
+                        if validate:
+                            generated[name] = process
                         path = Path(temporary) / f"{name}.pacbin"
                         with step("write", "Writing the loop plan") as writing:
                             write_plan(
@@ -2111,6 +2188,10 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                         process_handle.summary = (
                             f"{len(process.exported.families):,} families"
                         )
+                        # The written process (its slice and plans) is
+                        # released before the next one is generated, unless
+                        # the staged validation keeps it.
+                        del process, candidates
                     phase.update(index + 1, message=name)
                 phase.summary = _plural(len(artifacts), "process") + " generated"
             # The preparation memo and store state (log only: the artifact
@@ -2178,7 +2259,6 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
                         for representative, admitted in members.items()
                     },
                 )
-            validate = validation.post_build_validation
             with reporter.phase(
                 "artifact-writing",
                 "Writing and validating virtual artifact"
