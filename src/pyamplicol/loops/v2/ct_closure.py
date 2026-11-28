@@ -37,7 +37,9 @@ from __future__ import annotations
 
 import logging
 from collections import OrderedDict, defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from itertools import permutations, product
 from typing import Any, Literal, cast
@@ -1032,18 +1034,39 @@ def program_propagated_currents(dag: Any) -> tuple[int, ...]:
 
 # The lowered models of the most recent (model, fixed parameters, veto,
 # declaration, request scope) keys; a request of another key evicts the oldest.
-# The subprocesses of one generation share them (consecutive like-flavour
-# subprocesses mostly reuse an entry); a generation releases them when it
-# ends (``release_lowered_models``).
+# Inside a ``lowered_model_scope`` (a generation, ``generation.loop_service.
+# _generate_v2``) the scope's own cache serves them: the subprocesses of one
+# generation share it (consecutive like-flavour subprocesses mostly reuse an
+# entry), no other generation reads or evicts it, and it is dropped with the
+# scope. Outside every scope the module cache serves them.
 _LOWERED: OrderedDict[tuple[object, ...], tuple[Any, Any]] = OrderedDict()
 _LOWERED_KEPT = 4
+_LOWERED_SCOPE: ContextVar[OrderedDict[tuple[object, ...], tuple[Any, Any]] | None] = (
+    ContextVar("lowered_counterterm_models", default=None)
+)
 
 
-def release_lowered_models() -> None:
-    """Drop every cached lowered model (``lowered_counterterm_model``): the
-    end of a generation (``generation.loop_service._generate_v2``)."""
+@contextmanager
+def lowered_model_scope() -> Iterator[None]:
+    """Serve ``lowered_counterterm_model`` from a cache of the scope's own
+    (bounded as the module cache), dropped when the scope closes. Nested
+    scopes share the outermost one's; a thread starts outside every scope."""
 
-    _LOWERED.clear()
+    if _LOWERED_SCOPE.get() is not None:
+        yield
+        return
+    token = _LOWERED_SCOPE.set(OrderedDict())
+    try:
+        yield
+    finally:
+        _LOWERED_SCOPE.reset(token)
+
+
+def _lowered_models() -> OrderedDict[tuple[object, ...], tuple[Any, Any]]:
+    """The cache of the open ``lowered_model_scope``, else the module's."""
+
+    scope = _LOWERED_SCOPE.get()
+    return _LOWERED if scope is None else scope
 
 
 def program_order_limits(
@@ -1109,7 +1132,8 @@ def lowered_counterterm_model(
         None if order_limits is None else tuple(sorted(order_limits.items())),
         bool(allow_anomalous_veto),
     )
-    found = _LOWERED.get(key)
+    cache = _lowered_models()
+    found = cache.get(key)
     if found is None or found[0] is not compiled:
         if request is not None:
             _scope, prepared, continuation = request
@@ -1141,10 +1165,10 @@ def lowered_counterterm_model(
             species_orders=prepared.structure.perturbative_species_orders,
             allow_anomalous_veto=key[-1],
         )
-        found = _LOWERED[key] = (compiled, lowered)
-        while len(_LOWERED) > _LOWERED_KEPT:
-            _LOWERED.popitem(last=False)
-    _LOWERED.move_to_end(key)
+        found = cache[key] = (compiled, lowered)
+        while len(cache) > _LOWERED_KEPT:
+            cache.popitem(last=False)
+    cache.move_to_end(key)
     return found[1]
 
 

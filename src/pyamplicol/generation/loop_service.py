@@ -1744,18 +1744,6 @@ def _size_text(path: Path) -> str:
     return f"{size} B"
 
 
-def _release_model_caches() -> None:
-    """Drop the module caches of the loop model preparation that the
-    subprocesses of a generation share (``ct_closure._LOWERED``,
-    ``dag_input._MODEL_ROWS``)."""
-
-    from pyamplicol.loops.v2.ct_closure import release_lowered_models
-    from pyamplicol.loops.v2.dag_input import release_model_rows
-
-    release_lowered_models()
-    release_model_rows()
-
-
 def _generate_v2(backend, processes, output, *, model, mode, correlators):
     """Generate every process through v2 and publish plan v4 atomically.
 
@@ -1781,8 +1769,9 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     ``generation.validation.post_build_validation`` every process is kept
     for the staged validation (its reference executor), and the memory then
     grows with the number of subprocesses. The bounded model caches the
-    subprocesses share are released when the generation ends
-    (``_release_model_caches``).
+    subprocesses share are the generation's own (``ct_closure.
+    lowered_model_scope``, ``dag_input.model_rows_scope``): a concurrent
+    generation never reads or evicts them, and they are dropped with it.
     """
     from pyamplicol.artifacts.process_groups import (
         grouping_process,
@@ -1792,6 +1781,8 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     from pyamplicol.loops.preparation_cache import PreparationMemo, store_for
     from pyamplicol.loops.v2.artifact import generate_process, write_plan
     from pyamplicol.loops.v2.blocks import born_dag_scope
+    from pyamplicol.loops.v2.ct_closure import lowered_model_scope
+    from pyamplicol.loops.v2.dag_input import model_rows_scope
 
     from .process_grouping import (
         GroupingBasis,
@@ -1819,6 +1810,12 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
             "Preparing the loop model and the requests",
             total=len(processes.requests),
         ) as phase:
+            # The model caches the subprocesses share (the lowered
+            # counterterm models and their vertex rows, bounded) are this
+            # generation's own: no concurrent generation reads or evicts
+            # them, and they are dropped with it, as the memo is.
+            stack.enter_context(lowered_model_scope())
+            stack.enter_context(model_rows_scope())
             context = _prepare(
                 backend,
                 processes,
@@ -2177,10 +2174,6 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
         raise GenerationError(str(error)) from error
     finally:
         stack.close()
-        # The model caches the subprocesses share (the lowered counterterm
-        # models and their vertex rows, bounded) are released with the
-        # generation, as the memo is.
-        _release_model_caches()
     reporter.finish_generation()
     return GenerationResult(
         output=result.output,

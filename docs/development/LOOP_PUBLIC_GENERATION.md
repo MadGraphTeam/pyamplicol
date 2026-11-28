@@ -242,8 +242,10 @@ The check reads every subprocess's generated slice, so with it the generation
 keeps them all until the artifact is validated: memory grows with the number of
 subprocesses when post-build validation is on. Without it, each subprocess is
 released once it is written (flavour grouping keeps only a small admission
-record of each representative) and the bounded model caches the subprocesses
-share are released when the generation ends.
+record of each representative). The bounded model caches the subprocesses share
+(lowered counterterm models, model vertex rows) are the generation's own: a
+concurrent generation in another thread never reads or evicts them, and they are
+dropped when the generation ends.
 
 All model, graph, tensor and reducer failures retain their explicit diagnostics.
 Unsupported virtual correlation compositions fail at the public dispatch
