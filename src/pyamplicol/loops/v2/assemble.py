@@ -1800,6 +1800,14 @@ class SliceRequest:
     # generation prunes its recursion; None (the default) keeps every
     # helicity and flow (the request record then has no entry).
     selection: Any = None
+    # The card's leading-colour selectors as the user gave them
+    # (``reference_color_order``, ``max_color_sectors``,
+    # ``selected_color_sector_ids``; only those set), recorded so that a
+    # process served through a leg mapping can rebuild the flow list a fresh
+    # artifact of its own spelling would publish (``artifact.
+    # V2VirtualRuntime._fresh_flow_order``); None (the default) when the card
+    # sets none (the request record then has no entry). It selects nothing.
+    colour_selectors: Mapping[str, Any] | None = None
     # The on-shell external photons that couple with alpha(0) (MG5_aMC's
     # ``!a!`` tags; m-sm/PLAN.md Q1 (a), ``ew_policy.photon_tags``): "final"
     # (the default: final-state photons, isolated photons; initial ones are

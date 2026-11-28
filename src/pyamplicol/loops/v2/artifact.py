@@ -246,6 +246,8 @@ OPTIONAL_REQUEST_FIELD = "selection"
 # bytes, and records written before a field existed keep their meaning.
 OPTIONAL_REQUEST_DEFAULTS: dict[str, object] = {
     OPTIONAL_REQUEST_FIELD: None,
+    # The card's leading-colour selectors, named only when the card sets one.
+    "colour_selectors": None,
     "external_photons": "final",
     "alpha0_conversion": "eCoup_DGmua0_UV_EW",
     "alpha0_inverse": None,
@@ -1914,7 +1916,9 @@ class V2VirtualRuntime:
         # ``_public_flows`` lists the mapped flows in that order when the two
         # lists hold the same flows; otherwise ordinals are refused.
         self._fresh_flow_order: tuple[str, ...] | None = None
-        card = self._card_selectors = _card_colour_selectors(manifest)
+        card = self._card_selectors = _card_colour_selectors(
+            manifest, execution["request"]
+        )
         if (
             group_member is not None
             and self._member is not None
@@ -2580,13 +2584,15 @@ class V2VirtualRuntime:
 
     def _color_reference(self) -> bool:
         """Whether the card's colour selectors may shape the flow list (a
-        reference colour order, a sector cap or fixed sector ids; the
-        artifact's effective configuration, else the stored request)."""
+        reference colour order, a sector cap or fixed sector ids, from the
+        artifact's verified effective configuration), or cannot be
+        established (no verified configuration): the mapped process's flows
+        then keep the stored order and are selected by ID
+        (``_ordinals_refused``)."""
 
-        if self._card_selectors is not None:
-            return bool(self._card_selectors)
-        chosen = self._execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
-        return chosen.get("color_order") is not None or chosen.get("flows") is not None
+        if self._card_selectors is None:
+            return True
+        return bool(self._card_selectors)
 
     def _ordinals_refused(self) -> bool:
         """Whether a mapped process's flow ordinals are refused: its
@@ -3776,20 +3782,54 @@ class V2VirtualRuntime:
         """No effect: v2 runtimes emit no runtime warnings."""
 
 
-def _card_colour_selectors(manifest: Any) -> dict[str, Any] | None:
-    """The card's leading-colour selectors (``[process]``
-    ``reference_color_order``, ``max_color_sectors``,
-    ``selected_color_sector_ids``, those that are set) from the artifact's
-    effective configuration (``config/effective.toml``), or None when it
-    cannot be read."""
+def _card_colour_selectors(
+    manifest: Any, request: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The card's leading-colour selectors (``reference_color_order``,
+    ``max_color_sectors``, ``selected_color_sector_ids``, those that are
+    set): the request record's ``colour_selectors`` (written by this build
+    whenever the card sets one; the record is covered by the artifact's
+    identity); for a record without it, the artifact's effective
+    configuration as the manifest declares it (the ``configuration-
+    effective`` payload at the manifest's ``configuration.effective_path``,
+    read only after its size and digest match the manifest's record,
+    ``artifacts.manifest.verify_payload``). None when that payload is not
+    declared, cannot be read, differs from
+    its record or does not parse: the card's selectors cannot be
+    established then (a mapped process's ordinals are refused)."""
 
     import tomllib
 
-    try:
-        text = (manifest.root / "config" / "effective.toml").read_text()
-        process = tomllib.loads(text).get("process", {})
-    except (OSError, tomllib.TOMLDecodeError):
+    from pyamplicol.artifacts.manifest import verify_payload
+
+    recorded = request.get("colour_selectors")
+    if isinstance(recorded, Mapping):
+        return _colour_selectors(recorded)
+    # The manifest names its effective configuration's path; the payload
+    # declared there must be the configuration-effective record.
+    path_name = (manifest.configuration or {}).get("effective_path")
+    records = [
+        item
+        for item in manifest.payloads
+        if item.role == "configuration-effective" and item.path == path_name
+    ]
+    if not isinstance(path_name, str) or len(records) != 1:
         return None
+    record = records[0]
+    try:
+        path = verify_payload(manifest, record)
+        process = tomllib.loads(path.read_text()).get("process", {})
+    except (OSError, ArtifactError, tomllib.TOMLDecodeError, UnicodeDecodeError):
+        return None
+    if not isinstance(process, dict):
+        return None
+    return _colour_selectors(process)
+
+
+def _colour_selectors(process: Mapping[str, Any]) -> dict[str, Any]:
+    """The set leading-colour selectors of a ``[process]`` table or of a
+    request record's ``colour_selectors``."""
+
     out: dict[str, Any] = {}
     order = process.get("reference_color_order")
     if order:

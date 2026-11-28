@@ -358,7 +358,8 @@ is served by the stored `u G > u G` and `u d > u d` by `d u > d u`.
   selects what it selects there; when it publishes other flows (a sector cap
   or fixed sector ids that keep another flow on the mapped legs), an ordinal
   is refused (`CompatibilityError`) and the flows are selected by ID, which
-  keep their meaning.
+  keep their meaning. The card's selectors are recorded with the request
+  (see [Artifact identity](artifacts-and-portability.md#artifact-identity)).
 - Every call that takes or returns per-helicity, per-flow or resolved values
   follows: `evaluate(helicities=..., color_flows=...)`,
   `evaluate_resolved(...)` with or without a selection and `evaluate_orders`

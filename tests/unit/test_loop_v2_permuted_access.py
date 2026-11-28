@@ -777,3 +777,185 @@ def test_the_native_sdk_refuses_a_spin_source_the_mapped_process_is_not_served(
             assert f"spin legs [{leg}] are not a declared spin class" in _error(sdk)
     finally:
         sdk.rusticol_virtual_free(handle)
+
+
+def _tampered(artifact, tmp_path, edit):
+    """A copy of ``artifact`` whose ``config/effective.toml`` is edited
+    (``edit(text)``, None deletes it); its manifest is left untouched."""
+
+    import shutil
+
+    copy = tmp_path / f"copy-{len(list(tmp_path.iterdir()))}"
+    shutil.copytree(artifact, copy)
+    path = copy / "config" / "effective.toml"
+    text = edit(path.read_text())
+    if text is None:
+        path.unlink()
+    else:
+        path.write_text(text)
+    return copy
+
+
+def _moved_card(artifact, tmp_path):
+    """A copy of ``artifact`` whose genuine effective configuration is moved
+    to ``config/card-at-generation.toml`` (the manifest's record and
+    identity updated, so its payloads verify) and an undeclared
+    ``config/effective.toml`` holding only an empty ``[process]`` table is
+    put beside it."""
+
+    import json
+    import shutil
+
+    from pyamplicol.artifacts import compute_artifact_id, load_manifest
+
+    copy = tmp_path / f"moved-{len(list(tmp_path.iterdir()))}"
+    shutil.copytree(artifact, copy)
+    (copy / "config" / "effective.toml").rename(
+        copy / "config" / "card-at-generation.toml"
+    )
+    manifest = json.loads((copy / "artifact.json").read_text())
+    for payload in manifest["payloads"]:
+        if payload["path"] == "config/effective.toml":
+            payload["path"] = "config/card-at-generation.toml"
+    manifest["configuration"]["effective_path"] = "config/card-at-generation.toml"
+    manifest["artifact_id"] = compute_artifact_id(manifest)
+    (copy / "artifact.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (copy / "config" / "effective.toml").write_text("[process]\n")
+    load_manifest(copy, verify_payloads=True)
+    return copy
+
+
+EDITS = {
+    "cap-byte": lambda text: text.replace("max_color_sectors", "#ax_color_sectors"),
+    "reference": lambda text: text.replace("[3, 4, 2, 1]", "[3, 4, 1, 2]"),
+    "deleted": lambda text: None,
+}
+
+
+def _first_ordinal_refused(artifact, name: str) -> bool:
+    from pyamplicol.api.errors import CompatibilityError
+
+    runtime = _load(artifact, name)
+    listed = [a.id for a in runtime.physics.born_anchored_color_components]
+    # The IDs always work.
+    runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=[listed[0]])
+    try:
+        runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=["1"])
+    except CompatibilityError as error:
+        assert "select the flow by its ID" in str(error)
+        return True
+    return False
+
+
+def _old_format(loop_sm_compiled_model, root, entries, aliases, option):
+    """An artifact as written before the request recorded the card's colour
+    selectors (``SliceRequest.colour_selectors`` absent)."""
+
+    from pyamplicol.generation import loop_service
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(loop_service, "_card_colour_selectors", lambda backend: None)
+        return _generate(
+            loop_sm_compiled_model,
+            root,
+            entries,
+            aliases,
+            process=option,
+            histories=[],
+            spin=[],
+            accuracy="lc",
+        )
+
+
+@pytest.fixture(scope="module")
+def old_format(loop_sm_compiled_model, loop_native, tmp_path_factory):
+    """Old-format artifacts: the capped u u~ > g g with its gluon-swapping
+    alias, and u g > u g with the uncapped reference [3, 4, 2, 1]."""
+
+    del loop_native
+    return {
+        "cap": _old_format(
+            loop_sm_compiled_model,
+            tmp_path_factory.mktemp("old-cap"),
+            (("uugg", "u u~ > g g"),),
+            (SWAP,),
+            SUBSETS["cap"],
+        ),
+        "reference": _old_format(
+            loop_sm_compiled_model,
+            tmp_path_factory.mktemp("old-reference"),
+            (("ug", "u g > u g"),),
+            (),
+            "reference_color_order = [3, 4, 2, 1]",
+        ),
+    }
+
+
+def test_new_artifacts_record_the_card_selectors(subset, referenced, tmp_path):
+    """A new artifact records the card's colour selectors with its request
+    (covered by its identity): its mapped ordinals follow them and no edit,
+    move or removal of the effective configuration changes that."""
+
+    import json
+
+    stored, _single, (_name, spelling), stored_name = referenced
+    if len(spelling.split()) != 5:
+        pytest.skip("2 -> 2 cases")
+    request = json.loads(
+        (stored / "processes" / stored_name / "execution.json").read_text()
+    )["request"]
+    assert request["colour_selectors"]
+    expected = _first_ordinal_refused(stored, spelling)
+    for artifact, name, wanted in (
+        (subset, "uugg_swap", True),
+        (stored, spelling, expected),
+    ):
+        assert _first_ordinal_refused(artifact, name) is wanted
+        for edit in EDITS.values():
+            copy = _tampered(artifact, tmp_path, edit)
+            assert _first_ordinal_refused(copy, name) is wanted
+        assert _first_ordinal_refused(_moved_card(artifact, tmp_path), name) is wanted
+
+
+def test_old_artifacts_read_only_the_verified_declared_card(old_format, tmp_path):
+    """An artifact without the selector record reads the card's selectors from
+    its manifest-declared effective configuration after checking its digest:
+    intact, the uncapped reference serves its ordinals and the capped alias
+    refuses; an edited or deleted card refuses the ordinals; a card moved to
+    another declared path is read there (an undeclared effective.toml beside
+    it is ignored)."""
+
+    import json
+
+    for name in ("cap", "reference"):
+        request = json.loads(
+            next((old_format[name] / "processes").glob("*/execution.json")).read_text()
+        )["request"]
+        assert "colour_selectors" not in request
+    cap, reference = old_format["cap"], old_format["reference"]
+    assert _first_ordinal_refused(cap, "uugg_swap")
+    assert not _first_ordinal_refused(reference, "g u > g u")
+    for edit in ("cap-byte", "deleted"):
+        assert _first_ordinal_refused(
+            _tampered(cap, tmp_path, EDITS[edit]), "uugg_swap"
+        )
+    for edit in ("reference", "deleted"):
+        copy = _tampered(reference, tmp_path, EDITS[edit])
+        assert _first_ordinal_refused(copy, "g u > g u"), edit
+    assert _first_ordinal_refused(_moved_card(cap, tmp_path), "uugg_swap")
+    assert not _first_ordinal_refused(_moved_card(reference, tmp_path), "g u > g u")
+
+
+def test_selector_free_requests_keep_their_record():
+    """A request without colour selectors records no ``colour_selectors``
+    entry (selector-free artifacts keep their bytes)."""
+
+    from pyamplicol.loops.v2.artifact import request_record
+    from pyamplicol.loops.v2.assemble import SliceRequest
+
+    request = SliceRequest("u u~ > g g", {"QCD": 2}, {"QCD": 4})
+    assert "colour_selectors" not in request_record(request)
+    selected = SliceRequest(
+        "u u~ > g g", {"QCD": 2}, {"QCD": 4}, colour_selectors={"max_color_sectors": 1}
+    )
+    assert request_record(selected)["colour_selectors"] == {"max_color_sectors": 1}

@@ -945,6 +945,9 @@ def _v2_request(backend, context, index, born_dags=None, member=None):
         accuracy=accuracy,
         colour_declaration=context.color_declaration if accuracy != "full" else None,
         selection=selection,
+        colour_selectors=(
+            _card_colour_selectors(backend) if _leading_colour(run) else None
+        ),
     )
     if set(context.corrections) - {correction_orders(compiled, fixed).strong}:
         # An electroweak correction ([U8], ``ew_policy.require_zero_widths``):
@@ -954,6 +957,24 @@ def _v2_request(backend, context, index, born_dags=None, member=None):
     if born_dags is not None:
         born_dags.append(dag)
     return request
+
+
+def _card_colour_selectors(backend: Any) -> dict[str, Any] | None:
+    """The card's leading-colour selectors as the user gave them (only those
+    set; None when it sets none), recorded with the request
+    (``SliceRequest.colour_selectors``)."""
+
+    chosen = backend._process_selection
+    out: dict[str, Any] = {}
+    if chosen.reference_color_order:
+        out["reference_color_order"] = [int(x) for x in chosen.reference_color_order]
+    if chosen.max_color_sectors is not None:
+        out["max_color_sectors"] = int(chosen.max_color_sectors)
+    if chosen.selected_color_sector_ids:
+        out["selected_color_sector_ids"] = [
+            int(x) for x in chosen.selected_color_sector_ids
+        ]
+    return out or None
 
 
 def _slice_request(backend, context, member, loop_orders, **fields):
