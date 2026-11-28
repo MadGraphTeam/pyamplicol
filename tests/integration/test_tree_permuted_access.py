@@ -73,6 +73,19 @@ SPELLINGS = {
     "s~ s > g g": "sxs",
 }
 NOT_SERVED = ("u u > d d", "u g > d g", "u u~ > g")
+# The flow IDs released versions listed for u d > u d served by the stored
+# d u > d u (the stored word relabelled in the stored block order), and the
+# canonical IDs of the same flows: the old spellings stay selectable.
+PUBLISHED = {"flow:4,2,3,1": "flow:3,1,4,2", "flow:4,1,3,2": "flow:3,2,4,1"}
+
+
+def _published(flow) -> str:
+    """The ID a released version listed for a flow of a permuted selection:
+    its word as the stored process orders it."""
+
+    return "flow:" + ",".join(str(label) for label in flow.word)
+
+
 _FIRST = ((500.0, 0.0, 0.0, 500.0), (500.0, 0.0, 0.0, -500.0))
 _SECOND = ((650.0, 0.0, 0.0, 650.0), (650.0, 0.0, 0.0, -650.0))
 POINTS = [
@@ -208,6 +221,19 @@ def test_flow_and_helicity_ids_are_a_single_artifacts(artifacts):
             assert abs(x - y) <= 1e-12 * scale, spelling
         with pytest.raises(PyAmpliColError):
             mapped.evaluate(POINTS, color_flows=["flow:1,3,2,4"])
+        # The spellings released versions listed select the same flows.
+        for flow in mapped.physics.color_flows:
+            old = mapped.evaluate(POINTS, color_flows=[_published(flow)])
+            assert _values(old) == _values(
+                mapped.evaluate(POINTS, color_flows=[flow.id])
+            ), (spelling, flow.id)
+        if spelling == "u d > u d":
+            assert sorted(flows) == sorted(PUBLISHED.values())
+            assert {_published(f) for f in mapped.physics.color_flows} == set(PUBLISHED)
+            for old, canonical in PUBLISHED.items():
+                assert _values(mapped.evaluate(POINTS, color_flows=[old])) == (
+                    _values(mapped.evaluate(POINTS, color_flows=[canonical]))
+                )
 
 
 def test_the_listing_and_its_positions_refer_to_each_other(artifacts):
@@ -327,8 +353,16 @@ def test_the_native_tree_sdk_names_and_serves_the_canonical_ids(
     for spelling in SPELLINGS:
         mapped = _load(stored, spelling)
         flows = [f.id for f in mapped.physics.color_flows]
+        published = {_published(f): f.id for f in mapped.physics.color_flows}
         run = subprocess.run(
-            [str(binary), str(stored), spelling, *flows, "flow:1,3,2,4"],
+            [
+                str(binary),
+                str(stored),
+                spelling,
+                *flows,
+                *published,
+                "flow:1,3,2,4",
+            ],
             capture_output=True,
             text=True,
             env=_source_environment(),
@@ -352,6 +386,10 @@ def test_the_native_tree_sdk_names_and_serves_the_canonical_ids(
             if line.startswith("SELECT")
         }
         assert selected["flow:1,3,2,4"][0] != "0", spelling
+        # The spellings released versions listed select the same flows.
+        for old, canonical in published.items():
+            assert selected[old][0] == "0", (spelling, old)
+            assert selected[old][1:] == selected[canonical][1:], (spelling, old)
     for spelling in NOT_SERVED:
         run = subprocess.run(
             [str(binary), str(stored), spelling],

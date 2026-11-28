@@ -131,6 +131,34 @@ pub(super) fn apply_rational_factor(values: &mut [f64], factor: NativeRationalFa
     }
 }
 
+/// The canonical ID of an LC flow named by its formerly published spelling:
+/// the flow whose word (a permuted selection keeps the stored word relabelled
+/// in the stored block order, `apply_process_permutation_metadata`) spells
+/// `id`, when its ID differs from that spelling; None otherwise.
+fn execution_flow_alias(physics: &ProcessPhysicsV1, id: &str) -> Option<String> {
+    physics
+        .color_components
+        .iter()
+        .find_map(|color| match color {
+            PhysicsColorComponentV1::LcFlow(flow) => {
+                let spelled = if flow.word.is_empty() {
+                    "flow:singlet".to_owned()
+                } else {
+                    format!(
+                        "flow:{}",
+                        flow.word
+                            .iter()
+                            .map(usize::to_string)
+                            .collect::<Vec<_>>()
+                            .join(",")
+                    )
+                };
+                (spelled == id && flow.id != id).then(|| flow.id.clone())
+            }
+            PhysicsColorComponentV1::ContractedColor(_) => None,
+        })
+}
+
 /// Public metadata of `selection`: the representative physics remapped to the
 /// requested order and, for a process-group member, relabelled as the member.
 fn public_process_physics(
@@ -2399,13 +2427,17 @@ impl NativeRuntime {
         apply_rational_factor(values, group.factor);
     }
 
-    /// Translate caller color IDs to the IDs the execution lanes use.
+    /// Translate caller color IDs to the IDs the execution lanes use: a
+    /// charge-conjugated member's IDs reversed, then a formerly published
+    /// spelling of a permuted selection's flow (the stored word relabelled
+    /// in the stored block order, the ID releases before the canonical
+    /// naming listed) taken as its canonical ID (`execution_flow_alias`).
     pub(super) fn execution_color_ids<'a>(
         &self,
         ids: Option<&'a [String]>,
     ) -> Option<Cow<'a, [String]>> {
         let ids = ids?;
-        Some(if self.charge_conjugated() {
+        let ids: Cow<'a, [String]> = if self.charge_conjugated() {
             Cow::Owned(
                 ids.iter()
                     .map(|id| charge_conjugate_color_id(id).into_owned())
@@ -2413,7 +2445,21 @@ impl NativeRuntime {
             )
         } else {
             Cow::Borrowed(ids)
-        })
+        };
+        let Some(physics) = self.runtime.physics.as_deref() else {
+            return Some(ids);
+        };
+        if ids
+            .iter()
+            .all(|id| physics.color_index_by_id.contains_key(id))
+        {
+            return Some(ids);
+        }
+        Some(Cow::Owned(
+            ids.iter()
+                .map(|id| execution_flow_alias(&physics.manifest, id).unwrap_or_else(|| id.clone()))
+                .collect(),
+        ))
     }
 
     /// Translate execution color IDs back to the caller's labels.

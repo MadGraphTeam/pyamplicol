@@ -217,7 +217,8 @@ order: an LC flow's ID is its canonical spelling on the member's legs (open
 lines ordered by their fundamental label, a trace from its smallest label),
 the ID a single-process artifact of that expression gives it, also for a
 stored expression in another side order or an alias, and every selector
-takes it. IDs are stable across spellings; positions are those of the stored
+takes it, as well as the spelling earlier releases listed (the stored flow
+word relabelled in the stored block order) for the same flow. IDs are stable across spellings; positions are those of the stored
 process on tree artifacts: the listing order, the per-point selector
 indices, the resolved output's order and a reference colour order are read
 in the stored process's listing (the one-loop runtime lists a mapped process
