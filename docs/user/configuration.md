@@ -1012,7 +1012,22 @@ value on projections of stored estimates (693 points), where the full floor
 overestimates the error by about four digits and 4 units leave a typical
 one-digit overestimate (g g > z z g g g). w = 0 leaves twice the checks
 plus the second-order term (16 u)^2 S S', which keeps an exact zero "zero
-within its estimate". A weight that is set applies to every process. The weight changes no value
+within its estimate". A weight that is set applies to every process.
+
+The weight has one precedence, resolved per call: a rescue level's own
+`floor_weight` (`VirtualRescueLevel(..., floor_weight=)`), else the call's
+checks' (`evaluate(stability_checks=VirtualStabilityChecks(...,
+floor_weight=))`), else the runtime options' (`stability_checks.floor_weight`,
+the CLI flag), else the process's default. A layer that names no weight keeps
+the one below it (a call requesting one rotation without a weight keeps the
+runtime options' weight). A weight given without any check runs no check: an
+ordinary call forms no estimate, and the weight reaches the estimates the call
+forms with checks of its own (the best-effort pass, the profile's default set,
+the levels of a rescue policy). Empty checks per call
+(`VirtualStabilityChecks()`, no check and no weight) still select a plain call
+under a load-time rescue policy. In the SDKs the weight setter and the
+runtime-options TOML set the same runtime setting (the last call wins; NaN
+restores the default), which `rusticol_virtual_set_stability_checks` keeps. The weight changes no value
 and no other estimate (the fallback guard keeps deciding with 16 u S), and
 every estimate reports the weight it was formed with
 (`VirtualStabilityEstimate.floor_weight`).

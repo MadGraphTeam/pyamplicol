@@ -150,13 +150,15 @@ def rescue_policy(
     precision other than ``default_precision`` or stability checks (such a
     call evaluates in that one carrier, without rescue). Checks that run
     nothing but set a floor weight are no checks: their weight reaches the
-    policy's levels that set none (``VirtualRescuePolicy.
-    with_floor_weight``)."""
+    policy's levels that set none (``VirtualRescuePolicy.with_floor_weight``;
+    a level's own weight wins), resolved per call, never stored in the
+    policy. Empty checks (no check, no weight) are explicit checks, as
+    before the weight existed: a plain call without the policy."""
 
-    checks = stability_checks is not None and getattr(stability_checks, "enabled", True)
     weight = None
-    if stability_checks is not None and not checks:
+    if stability_checks is not None and not getattr(stability_checks, "enabled", True):
         weight = getattr(stability_checks, "floor_weight", None)
+    checks = stability_checks is not None and weight is None
     explicit = (
         arithmetic is not None
         or (precision is not None and precision != default_precision)

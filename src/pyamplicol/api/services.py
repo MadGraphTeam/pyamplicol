@@ -8,6 +8,7 @@ import os
 import time
 import weakref
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import replace
 from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
@@ -544,6 +545,8 @@ class Runtime:
     # The call options of the runtime options (``Runtime.load(options=)``);
     # none by default.
     _call_defaults: Mapping[str, object] = MappingProxyType({})
+    # The load-time rescue policy (``Runtime.load(stability=)``), if any.
+    _load_policy: VirtualRescuePolicy | None = None
 
     def __init__(self, backend: RuntimeBackend) -> None:
         # Python 3.11 runtime Protocol checks invoke properties. Match the
@@ -666,15 +669,13 @@ class Runtime:
                 threads = given.get("threads")
             calls = {name: given[name] for name in CALL_OPTIONS if name in given}
             card = cast(VirtualStabilityChecks | None, calls.get("stability_checks"))
-            if stability is not None and card is not None:
-                if card.enabled:
-                    raise ConfigurationError(
-                        "the runtime options' stability_checks and a load-time "
-                        "stability policy are exclusive"
-                    )
-                # A floor weight alone: the policy's levels that set none
-                # take it (``VirtualRescuePolicy.with_floor_weight``).
-                stability = stability.with_floor_weight(card.floor_weight)
+            if stability is not None and card is not None and card.enabled:
+                # (A floor weight alone is no check: the policy's levels that
+                # set none take it per call, ``rescue.resolve``.)
+                raise ConfigurationError(
+                    "the runtime options' stability_checks and a load-time "
+                    "stability policy are exclusive"
+                )
         path = Path(os.fspath(artifact)).expanduser().resolve(strict=False)
         parameters = dict(model_parameters) if model_parameters is not None else None
         loads: dict[str, object] = {}
@@ -735,6 +736,9 @@ class Runtime:
                 and not (name == "stability_checks" and value is None)
             }
         )
+        # The load-time rescue policy (``_v2_options``: empty per-call checks
+        # keep selecting a plain call under it).
+        runtime._load_policy = stability
         return runtime
 
     @property
@@ -1089,6 +1093,7 @@ class Runtime:
                 reduction_unchecked,
                 lane_rescue,
                 rescue=stability is not None,
+                rescuable=True,
             )
         )
         options.update(
@@ -1182,12 +1187,6 @@ class Runtime:
         if stability is not None:
             if not isinstance(stability, VirtualRescuePolicy):
                 raise TypeError("stability requires a VirtualRescuePolicy")
-            # The runtime options' floor weight reaches the levels that set
-            # none (the policy owns its checks, not its weight's default).
-            card = self._call_defaults.get("stability_checks")
-            weight = getattr(card, "floor_weight", None)
-            if weight is not None:
-                stability = stability.with_floor_weight(weight)
             options["stability"] = stability
         if not self._virtual and (
             mu_r2 is not None or r2_strategy is not None or stability is not None
@@ -1207,17 +1206,42 @@ class Runtime:
         lane_rescue: bool | None = None,
         *,
         rescue: bool = False,
+        rescuable: bool = False,
     ) -> dict[str, object]:
         """Pole-selection, stability-check, reduction-backend, target
         accuracy, unchecked-reduction and lane-rescue options, forwarded only
         when set. A pole selection or stability checks the call does not
         name are the runtime options' (``Runtime.load(options=)``), the
-        checks only for a call naming no stability policy (``rescue``)."""
+        checks only for a call naming no stability policy (``rescue``). The
+        floor weight is one setting with one precedence, resolved here and
+        in ``rescue.resolve`` per call: a rescue level's own weight, else the
+        call's checks', else the runtime options', else the process's default
+        (``stability.default_floor_weight``); a layer that names no weight
+        keeps the one below it."""
         options: dict[str, object] = {}
         if poles is None:
             poles = cast(Any, self._call_defaults.get("poles"))
+        card = cast(Any, self._call_defaults.get("stability_checks"))
+        weight = None if card is None else card.floor_weight
         if checks is None and not rescue:
-            checks = cast(Any, self._call_defaults.get("stability_checks"))
+            checks = card
+        elif checks is None and weight is not None:
+            # A rescue call: the policy owns the checks, the runtime options
+            # still give its levels their weight (``rescue.rescue_policy``).
+            checks = VirtualStabilityChecks(floor_weight=weight)
+        elif checks is not None and checks.floor_weight is None and weight is not None:
+            if checks.enabled:
+                checks = replace(checks, floor_weight=weight)
+            elif not rescue:
+                # Empty checks (no check, no weight) keep their meaning, a
+                # plain call that runs no rescue policy (as before the
+                # weight existed): the runtime options' weight goes along
+                # separately, for the estimates the call still forms (its
+                # best-effort pass), after the policy is decided.
+                if rescuable and self._load_policy is not None:
+                    options["inherited_floor_weight"] = weight
+                else:
+                    checks = replace(checks, floor_weight=weight)
         if poles is not None:
             options["poles"] = pole_selection(poles)
         if checks is not None:
