@@ -496,3 +496,73 @@ def test_released_flow_ids_select_the_same_flows_in_every_entry(artifacts):
                 assert left == right, (entry, precision, old)
                 served += left[0] == "served"
     assert served >= 8
+
+
+@pytest.fixture(scope="module")
+def eight_partons(tmp_path_factory):
+    """On-the-fly leading-colour artifacts with eight coloured partons:
+    g g > g g g g g g, and u u~ > g g g g g g (selected as u~ u > ...)."""
+
+    root = tmp_path_factory.mktemp("eight-partons")
+    return {
+        name: _generate(root / name, ((name, expression),), "on-the-fly", "lc", False)
+        for name, expression in (
+            ("g8", "g g > g g g g g g"),
+            ("uu6", "u u~ > g g g g g g"),
+        )
+    }
+
+
+def test_a_single_on_the_fly_flow_builds_no_catalogue(eight_partons, monkeypatch):
+    """Selecting one flow by ID on an on-the-fly handle, with no metadata
+    read before, keeps the compact path: neither the flow nor the helicity
+    catalogue is built (5,040 flows and 256 helicities for eight gluons),
+    on a handle in its stored order and on a permuted one, and the lookup
+    takes far less than the catalogue would."""
+
+    import time
+
+    from pyamplicol.runtime import backend as backend_module
+
+    built = []
+    original = backend_module._physics_from_native
+
+    def spy(*arguments, **options):
+        built.append(1)
+        return original(*arguments, **options)
+
+    monkeypatch.setattr(backend_module, "_physics_from_native", spy)
+    for name, spelling, flow in (
+        ("g8", "g g > g g g g g g", "flow:1,2,3,4,5,6,7,8"),
+        ("uu6", "u~ u > g g g g g g", "flow:1,3,4,5,6,7,8,2"),
+    ):
+        runtime = _load(eight_partons[name], spelling)
+        backend = runtime._backend
+        started = time.perf_counter()
+        resolved = backend._resolve_color_flows([flow])
+        elapsed = time.perf_counter() - started
+        assert resolved == (flow,)
+        assert elapsed < 0.5, (spelling, elapsed)
+        assert not built and backend._physics is None, spelling
+    # A whole selection on the permuted handle stays compact as well.
+    runtime = _load(eight_partons["uu6"], "u~ u > g g g g g g")
+    runtime.evaluate(
+        [
+            [
+                [500.0, 0.0, 0.0, 500.0],
+                [500.0, 0.0, 0.0, -500.0],
+                *[
+                    [
+                        1000.0 / 6,
+                        sign * 1000.0 / 6 * component[0],
+                        sign * 1000.0 / 6 * component[1],
+                        sign * 1000.0 / 6 * component[2],
+                    ]
+                    for component in ((0.6, 0.0, 0.8), (0.0, 0.6, 0.8), (0.8, 0.6, 0.0))
+                    for sign in (1.0, -1.0)
+                ],
+            ]
+        ],
+        color_flows=["flow:1,3,4,5,6,7,8,2"],
+    )
+    assert not built and runtime._backend._physics is None

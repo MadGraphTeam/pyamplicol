@@ -1817,8 +1817,19 @@ class RusticolRuntimeBackend:
         is what releases before the canonical naming published (and still
         select); an ID that is listed, or names no flow word, is unchanged.
         Every selection path (global and per point, every carrier) passes its
-        flow IDs through here (``_resolve_color_flows``)."""
+        flow IDs through here (``_resolve_color_flows``). Nothing is read for
+        an on-the-fly handle (its native selector accepts both spellings,
+        and its catalogue stays unbuilt) or a handle in its stored leg order
+        (its IDs never changed): neither builds the physics catalogue."""
 
+        if self._execution_mode == "on-the-fly":
+            return tuple(color_flows)
+        try:
+            permutation = self.external_permutation
+        except CompatibilityError:
+            return tuple(color_flows)
+        if all(index == image for index, image in enumerate(permutation)):
+            return tuple(color_flows)
         listed = {flow.id for flow in self.physics.color_flows}
         if all(requested in listed for requested in color_flows):
             return tuple(color_flows)
