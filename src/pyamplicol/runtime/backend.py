@@ -2236,14 +2236,30 @@ def load_runtime_backend(
             "select precision when evaluating a tree artifact"
         )
     module = _load_native_module()
-    runtime = _invoke(
-        module,
-        module.Runtime.load,
-        path,
-        process=process,
-        model_parameters=parameters,
-        mute_warnings=mute_warnings,
-    )
+    try:
+        runtime = _invoke(
+            module,
+            module.Runtime.load,
+            path,
+            process=process,
+            model_parameters=parameters,
+            mute_warnings=mute_warnings,
+        )
+    except EvaluationError as error:
+        # The artifact selector's refusal of the process selector (rusticol
+        # ``Selector`` errors at load): typed, with the loop runtime's keys.
+        native = getattr(module, "SelectorError", None)
+        if isinstance(native, type) and isinstance(error.__cause__, native):
+            from pyamplicol.api.errors import ProcessSelectionError
+
+            message = str(error)
+            raise ProcessSelectionError(
+                message,
+                key="process-ambiguous"
+                if "ambiguous" in message
+                else "process-not-served",
+            ) from error
+        raise
     backend = RusticolRuntimeBackend(
         runtime,
         module,

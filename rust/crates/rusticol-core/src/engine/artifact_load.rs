@@ -787,6 +787,21 @@ pub(super) fn apply_process_permutation_metadata(
         helicity.representative_id = representative_id;
     }
 
+    // The selected process's legs' colour representations (the stored legs'
+    // on their public slots), when the artifact's model names them: each
+    // relabelled LC word is then named by its canonical spelling, the ID a
+    // single-process artifact of the selected expression gives the flow.
+    // The word keeps the stored process's block order (the execution's LC
+    // topology replay matches words).
+    let public_colours = selection.stored_leg_colours.as_ref().and_then(|stored| {
+        (stored.len() == particle_count).then(|| {
+            let mut public = vec![0; particle_count];
+            for (representative_index, alias_index) in permutation.iter().copied().enumerate() {
+                public[alias_index] = stored[representative_index];
+            }
+            public
+        })
+    });
     let mut color_id_map = BTreeMap::new();
     let mut color_updates = Vec::with_capacity(physics.color_components.len());
     for color in &physics.color_components {
@@ -808,7 +823,14 @@ pub(super) fn apply_process_permutation_metadata(
                         Ok(alias_index + 1)
                     })
                     .collect::<RusticolResult<Vec<_>>>()?;
-                let alias_id = canonical_color_id(&alias_word);
+                let canonical = public_colours.as_ref().and_then(|colours| {
+                    crate::canonical_lc_flow_word(&alias_word, |label| {
+                        label
+                            .checked_sub(1)
+                            .and_then(|index| colours.get(index).copied())
+                    })
+                });
+                let alias_id = canonical_color_id(canonical.as_deref().unwrap_or(&alias_word));
                 color_id_map.insert(flow.id.clone(), alias_id.clone());
                 color_updates.push((Some(alias_word), alias_id));
             }

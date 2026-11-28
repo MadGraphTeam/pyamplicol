@@ -557,6 +557,20 @@ impl OnTheFlyCompactSelectorAdapterV1 {
                     .ok_or_else(|| invalid("LC color ID contains an unknown external label"))
             })
             .collect::<RusticolResult<Vec<_>>>()?;
+        // A permuted selection names its flows in its own canonical spelling
+        // (`color_id_at`): the same flow in the representative's canonical
+        // spelling (its block order, its trace anchor) selects it. Words
+        // that are no flows stay refused below.
+        let identity = self
+            .representative_to_public
+            .iter()
+            .enumerate()
+            .all(|(representative, public)| *public as usize == representative);
+        let representative_labels = if identity {
+            representative_labels
+        } else {
+            self.canonical_word(&representative_labels, Some)
+        };
         let selector = self.selector_from_labels(&representative_labels)?;
         Ok((representative_labels.into_boxed_slice(), selector))
     }
@@ -697,6 +711,54 @@ impl OnTheFlyCompactSelectorAdapterV1 {
             public[public_slot] = value;
         }
         Ok(public.into_boxed_slice())
+    }
+
+    /// A representative label's colour representation with every leg
+    /// outgoing (`metadata::canonical_lc_flow_word`'s convention).
+    fn representative_colour(&self, label: u32) -> Option<i32> {
+        let slot = *self.public_slot_by_label.get(&label)?;
+        Some(match self.externals_by_public_slot.get(slot)?.color_role {
+            OnTheFlyExternalColorRoleV1::Singlet => 1,
+            OnTheFlyExternalColorRoleV1::Fundamental => 3,
+            OnTheFlyExternalColorRoleV1::Antifundamental => -3,
+            OnTheFlyExternalColorRoleV1::Adjoint => 8,
+        })
+    }
+
+    /// A trace-basis LC word in its canonical spelling (open lines by their
+    /// fundamental label, a trace from its smallest label), its labels read
+    /// through `representative_label`; an adjoint-basis word (fixed
+    /// endpoints) or a word of another shape unchanged.
+    fn canonical_word(
+        &self,
+        word: &[u32],
+        representative_label: impl Fn(u32) -> Option<u32>,
+    ) -> Vec<u32> {
+        if self.color_basis != OnTheFlyColorBasis::Trace {
+            return word.to_vec();
+        }
+        let labels: Vec<usize> = word.iter().map(|label| *label as usize).collect();
+        crate::canonical_lc_flow_word(&labels, |label| {
+            representative_label(u32::try_from(label).ok()?)
+                .and_then(|label| self.representative_colour(label))
+        })
+        .map_or_else(
+            || word.to_vec(),
+            |canonical| canonical.into_iter().map(|label| label as u32).collect(),
+        )
+    }
+
+    /// The canonical spelling of a public LC word (the ID a single-process
+    /// artifact of the selected expression gives the flow).
+    fn canonical_public_word(&self, public: &[u32]) -> Vec<u32> {
+        self.canonical_word(public, |label| {
+            Some(
+                self.representative_label_by_public_label
+                    .get(&label)
+                    .copied()
+                    .unwrap_or(label),
+            )
+        })
     }
 
     fn public_labels_from_representative(
@@ -1138,7 +1200,9 @@ impl OnTheFlyLazySelectionV1<'_> {
         let public = self
             .adapter
             .public_labels_from_representative(&representative)?;
-        Ok(canonical_color_id(&public))
+        Ok(canonical_color_id(
+            &self.adapter.canonical_public_word(&public),
+        ))
     }
 
     pub(super) fn request_at(&self, position: usize) -> RusticolResult<OnTheFlyLcQueryRequestV1> {
@@ -1888,6 +1952,7 @@ mod tests {
             external_permutation: vec![0, 1, 3, 2],
             inferred_permutation: true,
             process_group: None,
+            stored_leg_colours: None,
         };
         let lazy = super::super::native_runtime::LazyProcessPhysicsV1::deferred_on_the_fly(
             metadata,

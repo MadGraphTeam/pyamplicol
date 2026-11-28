@@ -287,6 +287,13 @@ pub struct ArtifactSelection {
     /// Present when the caller selected a process that was not generated and
     /// is routed through `process-groups.json` to `process`.
     pub process_group: Option<ProcessGroupRelation>,
+    /// The stored process's legs' colour representations with every leg
+    /// outgoing (3, -3, 8, 1; stored order), read from the artifact's
+    /// compiled model ([`VerifiedArtifact::stored_leg_colours`]) for a
+    /// remapped selection, so that its LC flows are named in the canonical
+    /// spelling of the selected process (`canonical_lc_flow_word`); `None`
+    /// keeps the stored words relabelled as they are.
+    pub stored_leg_colours: Option<Vec<i32>>,
 }
 
 impl ArtifactSelection {
@@ -1065,6 +1072,59 @@ impl VerifiedArtifact {
     pub fn select_process(&self, requested: Option<&str>) -> RusticolResult<ArtifactSelection> {
         self.manifest
             .select_process_with_groups(requested, || self.process_groups())
+    }
+
+    /// The colour representation of each leg of `process` with every leg
+    /// outgoing (stored order): the particle colours of the artifact's
+    /// compiled model (`model/compiled-model.json`, `ir.particles[]`
+    /// `pdg_code` and `color`; an antiparticle absent from it takes its
+    /// particle's, conjugated for a triplet), conjugated for an incoming
+    /// triplet. `None` when the artifact declares no compiled model or the
+    /// model does not name a leg's particle (a caller then keeps the stored
+    /// words as they are).
+    pub fn stored_leg_colours(&self, process: &ArtifactProcess) -> Option<Vec<i32>> {
+        let payload = self
+            .payloads
+            .values()
+            .find(|payload| payload.role == PayloadRole::CompiledModel)?;
+        let bytes = read_declared_payload(&self.root, payload).ok()?;
+        let document: Value = serde_json::from_slice(&bytes).ok()?;
+        let colours = document
+            .get("ir")?
+            .get("particles")?
+            .as_array()?
+            .iter()
+            .filter_map(|particle| {
+                Some((
+                    i32::try_from(particle.get("pdg_code")?.as_i64()?).ok()?,
+                    i32::try_from(particle.get("color")?.as_i64()?).ok()?,
+                ))
+            })
+            .collect::<BTreeMap<_, _>>();
+        let initial_count = parse_process_expression(&process.expression)?.initial.len();
+        process
+            .external_pdgs
+            .iter()
+            .enumerate()
+            .map(|(index, pdg)| {
+                let colour = match colours.get(pdg) {
+                    Some(colour) => *colour,
+                    None => {
+                        let particle = *colours.get(&pdg.checked_neg()?)?;
+                        if particle.abs() == 3 {
+                            -particle
+                        } else {
+                            particle
+                        }
+                    }
+                };
+                Some(if index < initial_count && colour.abs() == 3 {
+                    -colour
+                } else {
+                    colour
+                })
+            })
+            .collect()
     }
 
     fn process_groups(&self) -> RusticolResult<Option<ProcessGroups>> {
@@ -2096,6 +2156,7 @@ impl ArtifactManifest {
                     external_permutation: permutation,
                     inferred_permutation: true,
                     process_group: None,
+                    stored_leg_colours: None,
                 });
             } else if process_tokens_are_permutation_equivalent_ignoring_sides(
                 &representative_tokens,
@@ -2163,6 +2224,7 @@ fn representative_selection(process: &ArtifactProcess) -> ArtifactSelection {
         external_permutation: (0..process.external_pdgs.len()).collect(),
         inferred_permutation: false,
         process_group: None,
+        stored_leg_colours: None,
     }
 }
 
@@ -2176,6 +2238,7 @@ fn alias_selection(process: &ArtifactProcess, alias: &ProcessAlias) -> ArtifactS
         external_permutation: alias.external_permutation.clone(),
         inferred_permutation: false,
         process_group: None,
+        stored_leg_colours: None,
     }
 }
 
@@ -2593,6 +2656,7 @@ impl ProcessGroupMember {
                 external_particles: particles,
                 basis: self.basis.clone(),
             }),
+            stored_leg_colours: None,
         })
     }
 }

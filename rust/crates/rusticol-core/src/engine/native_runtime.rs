@@ -2007,7 +2007,12 @@ impl NativeRuntime {
             }
         })?;
         let artifact_id = artifact.manifest().artifact_id.clone();
-        let selection = artifact.select_process(process_id)?;
+        let mut selection = artifact.select_process(process_id)?;
+        if selection.remaps_public_process() {
+            // The selected process's LC flows are named canonically from the
+            // artifact's model colours (`apply_process_permutation_metadata`).
+            selection.stored_leg_colours = artifact.stored_leg_colours(&selection.process);
+        }
         if selection.process_group.is_some() {
             ensure_selected_runtime_capabilities_supported(
                 &selection.process.required_runtime_capabilities,
