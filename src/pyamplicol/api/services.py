@@ -208,11 +208,12 @@ def _process_set(
     *,
     reserved: Mapping[str, str] | None = None,
     blocked: Iterable[str] = (),
+    identity: Callable[[str], str] | None = None,
 ) -> ProcessSet:
     """The request set of a call; automatic names are unique among its
-    expressions and against ``reserved`` (``name -> expression`` of the
-    processes already in an artifact appended to) and ``blocked`` (the
-    artifact's process aliases)."""
+    expressions and against ``reserved`` (``name -> process identity`` of
+    the processes already in an artifact appended to, ``identity`` giving an
+    expression's) and ``blocked`` (the artifact's process aliases)."""
 
     from dataclasses import replace
 
@@ -234,6 +235,7 @@ def _process_set(
             tuple(request.automatic_name for request in processes.requests),
             reserved,
             (*blocked, *(alias.name for alias in processes.aliases)),
+            identity,
         )
         renamed = {
             old.name: new.name
@@ -254,15 +256,25 @@ def _process_set(
     if isinstance(processes, str):
         processes = (processes,)
     return ProcessSet(
-        parse_process_requests(processes, reserved=reserved, blocked=blocked)
+        parse_process_requests(
+            processes, reserved=reserved, blocked=blocked, identity=identity
+        )
     )
 
 
+def _process_identity(pdgs: Sequence[object], initial_count: int) -> str:
+    """A process by its particles: the incoming and the outgoing PDG codes,
+    in order (the arrow is part of it)."""
+
+    codes = [str(int(cast(int, pdg))) for pdg in pdgs]
+    return " ".join(codes[:initial_count]) + " > " + " ".join(codes[initial_count:])
+
+
 def _appended_process_names(destination: Path) -> dict[str, str]:
-    """``process id -> expression`` of the artifact an append extends: its
-    stored processes and the process-group members it serves through them
-    (public IDs too; empty when there is none or it cannot be read: the
-    writer then reports it)."""
+    """``public id -> process identity`` (``_process_identity``) of the
+    artifact an append extends: its stored processes and the process-group
+    members it serves through them (empty when there is none or it cannot
+    be read: the writer then reports it)."""
 
     from pyamplicol.artifacts.manifest import load_manifest
     from pyamplicol.artifacts.process_groups import read_process_groups
@@ -273,14 +285,54 @@ def _appended_process_names(destination: Path) -> dict[str, str]:
     except Exception:  # the writer reports an unreadable artifact
         return {}
     names = {
-        str(record["id"]): str(record.get("expression", ""))
+        str(record["id"]): _process_identity(
+            cast(Sequence[object], record.get("external_pdgs", ())),
+            len(str(record.get("expression", "")).partition(">")[0].split()),
+        )
         for record in manifest.processes
     }
     for representative, group in (groups.groups if groups else {}).items():
         for member in group.members:
             if not member.generated and member.process_id != representative:
-                names.setdefault(member.process_id, member.expression)
+                names.setdefault(
+                    member.process_id,
+                    _process_identity(member.pdgs, member.initial_count),
+                )
     return names
+
+
+def _appended_process_identity(destination: Path) -> Callable[[str], str]:
+    """The identity of the process an expression names, by the particles
+    of the appended artifact's own model (any accepted spelling: letter
+    case, the model's names), as ``_appended_process_names`` gives the
+    artifact's; an expression it cannot resolve (a multiparticle label) is
+    its own text, which no identity equals."""
+
+    from pyamplicol.models.loading import load_compiled_model
+    from pyamplicol.processes.model import ModelParticleCatalog
+
+    try:
+        model = load_compiled_model(destination / "model" / "compiled-model.json")
+        catalog = ModelParticleCatalog(
+            model.ir.name, model.ir.particles, model.ir.parameters
+        )
+    except Exception:  # the writer reports an unreadable artifact
+        catalog = None
+
+    def identity(expression: str) -> str:
+        initial, arrow, final = expression.partition(">")
+        if catalog is None or not arrow or ">" in final:
+            return expression
+        try:
+            pdgs = [
+                catalog.resolve(token).pdg_code
+                for token in (*initial.split(), *final.split())
+            ]
+        except Exception:  # not one concrete process
+            return expression
+        return _process_identity(pdgs, len(initial.split()))
+
+    return identity
 
 
 def _appended_alias_names(destination: Path) -> tuple[str, ...]:
@@ -564,6 +616,7 @@ class Generator:
             processes,
             reserved=_appended_process_names(destination) if appending else None,
             blocked=_appended_alias_names(destination) if appending else (),
+            identity=_appended_process_identity(destination) if appending else None,
         )
         if destination.exists() and not destination.is_dir():
             raise GenerationError(

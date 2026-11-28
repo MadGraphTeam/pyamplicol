@@ -133,3 +133,56 @@ output = {json.dumps(str(tmp_path / "unused"))}
         generator.generate(second, artifact, mode="append")
     assert _digest(artifact) == before
     assert Runtime.load(artifact, process="take").physics.process == kept
+
+
+def test_an_identical_unnamed_append_is_refused_on_a_compiled_tree(tmp_path):
+    # Compiled tree on a UFO (the gluon spelled G), with flavour grouping:
+    # re-appending g u > g u unnamed, in either spelling, is the same process
+    # as the stored one, refused (not stored again under a digest name), and
+    # its expression stays unambiguous.
+    import io
+
+    from pyamplicol.api.errors import GenerationError
+    from pyamplicol.cli import run_cli
+
+    cache = tmp_path / "models"
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = "loop_sm"
+restriction = "no_b_mass"
+cache_dir = {json.dumps(str(cache))}
+[process]
+entries = [{{ expression = "u g > u g", name = "unused" }}]
+flavor_blind = true
+[evaluator]
+execution_mode = "compiled"
+[generation]
+output = {json.dumps(str(tmp_path / "unused"))}
+"""
+    )
+    assert (
+        run_cli(
+            ("model", "inspect", "--card", str(card), "--json"),
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+        == 0
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("u g > u g"), ProcessRequest.parse("g u > g u"))
+        ),
+        artifact,
+    )
+    assert Runtime.load(artifact, process="g u > g u").physics.process == "G u > G u"
+    before = _digest(artifact)
+    for spelling in ("g u > g u", "G u > G u"):
+        with pytest.raises(GenerationError, match="g_u_to_g_u"):
+            generator.generate(ProcessRequest.parse(spelling), artifact, mode="append")
+        assert _digest(artifact) == before
+    assert Runtime.load(artifact, process="g u > g u").physics.process == "G u > G u"
