@@ -445,3 +445,54 @@ def test_a_subset_alias_keeps_its_ids_and_the_stored_positions(subset, mode, tmp
         scale,
         (subset, mode),
     )
+
+
+def test_released_flow_ids_select_the_same_flows_in_every_entry(artifacts):
+    """Every Python entry that takes a flow ID (``color_flows`` of
+    ``evaluate``, ``evaluate_resolved`` and ``evaluate_orders``, and
+    ``color_flow_by_point``), at 16 and 32 digits, serves the IDs released
+    versions listed for ``u d > u d`` with exactly the values of the
+    canonical IDs of the same flows (on-the-fly evaluates at 16 digits only)."""
+
+    from pyamplicol.api.errors import CompatibilityError
+
+    stored, _singles, accuracy = artifacts
+    if accuracy != "lc":
+        pytest.skip("colour flows exist at leading colour")
+    mapped = _load(stored, "u d > u d")
+
+    def entries(flow: str, precision: int | None):
+        options = {} if precision is None else {"precision": precision}
+        yield "evaluate", lambda: mapped.evaluate(POINTS, color_flows=[flow], **options)
+        yield (
+            "by-point",
+            lambda: mapped.evaluate(
+                POINTS, color_flow_by_point=[flow, flow], **options
+            ),
+        )
+        yield (
+            "resolved",
+            lambda: mapped.evaluate_resolved(POINTS, color_flows=[flow], **options),
+        )
+        yield (
+            "orders",
+            lambda: mapped.evaluate_orders(POINTS, color_flows=[flow], **options),
+        )
+
+    def outcome(call):
+        try:
+            result = call()
+        except CompatibilityError as error:
+            return ("refused", str(error))
+        return ("served", repr(result))
+
+    served = 0
+    for old, canonical in PUBLISHED.items():
+        for precision in (None, 32):
+            for (entry, released), (_entry, current) in zip(
+                entries(old, precision), entries(canonical, precision), strict=True
+            ):
+                left, right = outcome(released), outcome(current)
+                assert left == right, (entry, precision, old)
+                served += left[0] == "served"
+    assert served >= 8
