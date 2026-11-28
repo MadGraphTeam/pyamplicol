@@ -581,7 +581,7 @@ def test_a_colourless_process_has_no_sector_to_name(
 _FOLDED_SUBSETS = (
     pytest.param({"max_color_sectors": 1}, id="cap"),
     pytest.param({"selected_color_sector_ids": [0]}, id="fixed"),
-    pytest.param({"max_color_sectors": 2, "selected_color_sector_ids": [1]}, id="both"),
+    pytest.param({"max_color_sectors": 2, "selected_color_sector_ids": [0]}, id="both"),
 )
 
 
