@@ -431,14 +431,19 @@ def feynman_gauge_model(compiled: Any, request: Any) -> Any:
 
 def is_zero(name: str, parameters: Mapping[str, Any], fixed: Mapping[str, Any]) -> bool:
     """Whether the mass or width parameter ``name`` is zero: ``ZERO``, a
-    compile-time zero or fixed to zero by ``fixed``."""
+    compile-time zero or fixed to zero by ``fixed`` (a value, or the
+    ``(real, imaginary)`` pair of ``[loop.preparation] fixed_parameters``,
+    which the formal-colour preparation hands on: zero when both parts are)."""
 
     from pyamplicol.models.compiler_kernels import _is_compile_time_zero_parameter
 
     if _is_compile_time_zero_parameter(name, parameters):
         return True
     value = fixed.get(name)
-    return value is not None and Decimal(str(value)) == 0
+    if value is None:
+        return False
+    parts = value if isinstance(value, tuple) else (value,)
+    return all(Decimal(str(part)) == 0 for part in parts)
 
 
 def is_photon(record: Any, parameters: Mapping[str, Any], fixed) -> bool:
