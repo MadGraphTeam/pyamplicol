@@ -30,6 +30,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 from pyamplicol.api.errors import GenerationError
@@ -56,7 +57,7 @@ def list_request_processes(
 
     backend = GenerationBackend(configuration, None)
     run = backend._run_config
-    source = ModelSource.from_config(run.model)
+    source = _model_for(backend, ModelSource.from_config(run.model))
     if backend._loop_execution_enabled:
         route = "one-loop"
         rows, served, skipped = _one_loop(backend, processes, source)
@@ -99,6 +100,28 @@ def list_request_processes(
     }
 
 
+def _model_for(backend: Any, source: ModelSource) -> Any:
+    """The model the listing plans with. The configured source as the dry
+    run resolves it (built-in packaged preparations, the model cache); a
+    model the dry run cannot load yet (not compiled or cached, or caching
+    off) is prepared on demand through its normal preparation, as
+    generation prepares it: compiled into the cache (then planned through
+    the dry run's path), or in memory without the cache (then planned with
+    the prepared model). Listed refusals of a model source stay refusals."""
+
+    from pyamplicol.api.errors import ModelError
+
+    try:
+        backend._resolve_model_for_plan(source)
+        return source
+    except ModelError as error:
+        if getattr(error, "key", None) is not None:
+            raise
+    run = backend._run_config
+    compiled = source.compile(cache_dir=run.model.cache_dir, use_cache=run.model.cache)
+    return source if run.model.cache else compiled
+
+
 def _row(name: str, process_ir: Any, serves: Sequence[str] = ()) -> dict[str, Any]:
     return {
         "name": name,
@@ -118,46 +141,6 @@ def _minimal_limits(
     return infer_minimal_coupling_order_limits(
         process, model=model, max_coupling_orders=bounds or None
     )
-
-
-def _require_selected_support(backend: Any, process: Any, model: Any) -> None:
-    """With a fixed colour-sector or helicity selection, the generation's
-    own check of the SELECTED content: the compiled lane's construction of
-    the process (``GenerationBackend._compile_concrete_process``: the colour
-    plan, the selected sectors and source helicities, the DAG), which refuses
-    a selection that keeps no tree-level amplitude (a structurally vanishing
-    sector or helicity) with generation's error. The dry run checks only that
-    the selected IDs exist. The recurrence lane serves the same selections
-    from the same amplitudes; the on-the-fly lane refuses selections in its
-    dry run."""
-
-    from dataclasses import replace
-
-    from pyamplicol.config.models import EvaluatorExecutionMode
-
-    from .service import GenerationBackend
-
-    selection = backend._process_selection
-    if (
-        selection.selected_color_sector_ids is None
-        and not selection.selected_source_helicities
-    ):
-        return
-    run = backend._run_config
-    lane = (
-        backend
-        if run.evaluator.execution_mode == EvaluatorExecutionMode.COMPILED
-        else GenerationBackend(
-            replace(
-                run,
-                evaluator=replace(
-                    run.evaluator, execution_mode=EvaluatorExecutionMode.COMPILED
-                ),
-            ),
-            None,
-        )
-    )
-    lane._compile_concrete_process(process, model)
 
 
 def _planned(backend: Any, processes: ProcessSet, source: Any) -> Any:
@@ -218,19 +201,18 @@ def _one_loop(
 def _tree(
     backend: Any, processes: ProcessSet, source: Any
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    """The tree listing: the dry run of the request's mode, then the stages
+    of that mode's generation that decide which processes it stores, short
+    of writing them (``_mode_admission``)."""
+
     from dataclasses import replace
 
-    from pyamplicol.color.plan_build import build_color_plan
-
-    from .dag_algorithms import (
-        has_model_supported_amplitudes,
-        request_coupling_order_limits,
-    )
+    from .dag_algorithms import request_coupling_order_limits
     from .loop_service import _quark_line_cut
     from .singlet_exchange import require_representable_singlet_exchange
 
-    # The mode's own admission (selections, colour accuracy, kernel packs):
-    # a request its dry run refuses is refused.
+    # The mode's own dry run (selections, colour accuracy, kernel packs): a
+    # request it refuses is refused.
     planned = {
         request.name
         for request in _planned(backend, processes, source).concrete_processes
@@ -257,57 +239,44 @@ def _tree(
         str(name).upper(): int(value)
         for name, value in backend._coupling_order_limits.items()
     }
-    limits = request_coupling_order_limits(
-        explicit, model, policy=backend._coupling_order_policy
-    )
-    rows: list[dict[str, Any]] = []
-    served: list[dict[str, Any]] = []
-    skipped: list[dict[str, Any]] = []
-    for entry in expanded:
-        if entry.request.name not in planned:
-            continue
-        process = entry.process_ir
-        plan = build_color_plan(
-            process,
-            color_accuracy=backend._color_accuracy,
-            fold_trace_reflections=model.lc_trace_reflection_equivalence_is_proven(
-                process
-            ),
-        )
-        if not has_model_supported_amplitudes(
-            process, model=model, color_plan=plan, max_coupling_orders=limits or None
-        ):
-            skipped.append(
-                {
-                    "process": entry.request.name,
-                    "expression": entry.request.expression,
-                    "reason": "no tree-level diagram within the coupling-order "
-                    "limits (tree generation skips it)",
-                }
-            )
-            continue
-        members = [
-            member
-            for member in entry.group_members
-            if not member.generated and member.process_id != entry.request.name
-        ]
-        # The lanes' own admission of a colour-singlet exchange (a closed
-        # gluon trace times an open colour line), which the dry run does not
-        # run: within the limits the lanes build in, for the request's mode.
+    entries = tuple(entry for entry in expanded if entry.request.name in planned)
+    for entry in entries:
+        # The lanes' admission of a colour-singlet exchange (a closed gluon
+        # trace times an open colour line), within the limits they build in.
         require_representable_singlet_exchange(
-            process,
+            entry.process_ir,
             model=model,
             max_coupling_orders=request_coupling_order_limits(
                 explicit,
                 model,
                 policy=backend._coupling_order_policy,
-                infer=partial(_minimal_limits, process, model),
+                infer=partial(_minimal_limits, entry.process_ir, model),
             )
             or None,
             execution_mode=str(backend._run_config.evaluator.execution_mode),
         )
-        _require_selected_support(backend, process, model)
-        rows.append(_row(entry.request.name, process, [m.process_id for m in members]))
+    kept = _mode_admission(backend, resolved, entries)
+    rows: list[dict[str, Any]] = []
+    served: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = [
+        {
+            "process": entry.request.name,
+            "expression": entry.request.expression,
+            "reason": "no tree-level amplitude within the coupling-order limits "
+            "(generation skips it)",
+        }
+        for entry in entries
+        if entry.request.name not in {item.request.name for item in kept}
+    ]
+    for entry in kept:
+        members = [
+            member
+            for member in entry.group_members
+            if not member.generated and member.process_id != entry.request.name
+        ]
+        rows.append(
+            _row(entry.request.name, entry.process_ir, [m.process_id for m in members])
+        )
         served.extend(
             {
                 "name": member.process_id,
@@ -317,3 +286,63 @@ def _tree(
             for member in members
         )
     return rows, served, skipped
+
+
+def _mode_admission(
+    backend: Any, resolved: Any, entries: tuple[Any, ...]
+) -> tuple[Any, ...]:
+    """The processes the request's tree mode stores: its generation's own
+    stages that decide it, short of code generation and writing; a process
+    without an amplitude in a multiparticle request is skipped, a request
+    left without one refused, as generation does.
+
+    * compiled (and eager): each process's DAG construction
+      (``_compile_for_generation``: the colour plan, a cap or the selected
+      sectors and source helicities, the DAG), partitioned as generation
+      partitions it;
+    * recurrence: its amplitude pre-check (``_drop_processes_without_amplitudes``)
+      and, with a colour-sector cap or selection or a helicity selection,
+      each process's compact recurrence construction
+      (``_construct_recurrence_artifact``), which decides what such a
+      selection keeps (seconds per process, no code generation);
+    * on-the-fly: its dry run projects every process (and refuses colour or
+      helicity selections); members without an amplitude are skipped by the
+      same pre-check."""
+
+    from pyamplicol.config.models import EvaluatorExecutionMode
+
+    from .service import _partition_model_supported_processes
+
+    mode = backend._run_config.evaluator.execution_mode
+    model = resolved.model
+    phase = PhaseHandle("model-processes", None, len(entries))
+    if mode in (EvaluatorExecutionMode.COMPILED, EvaluatorExecutionMode.EAGER):
+        supported, _unsupported = _partition_model_supported_processes(
+            [backend._compile_for_generation(entry, model, phase) for entry in entries]
+        )
+        return tuple(result.expanded for result in supported)
+    kept = backend._drop_processes_without_amplitudes(entries, model)
+    selection = backend._process_selection
+    if mode == EvaluatorExecutionMode.RECURRENCE and (
+        selection.selected_color_sector_ids is not None
+        or selection.max_color_sectors is not None
+        or selection.selected_source_helicities
+    ):
+        from tempfile import TemporaryDirectory
+
+        from .recurrence_schedule_sharing import RecurrenceScheduleLoweringCache
+
+        inputs = backend._recurrence_model_inputs(resolved)
+        cache: Any = RecurrenceScheduleLoweringCache()
+        with TemporaryDirectory(prefix="pyamplicol-model-processes-") as temporary:
+            for index, entry in enumerate(kept):
+                backend._construct_recurrence_artifact(
+                    entry,
+                    model,
+                    inputs,
+                    Path(temporary),
+                    index=index,
+                    phase=phase,
+                    lowering_cache=cache,
+                )
+    return tuple(kept)

@@ -238,6 +238,8 @@ def _outcome(*arguments):
     stdout, stderr = io.StringIO(), io.StringIO()
     code = run_cli((*arguments, "--progress", "off"), stdout=stdout, stderr=stderr)
     if code == 0:
+        if "--json" not in arguments:
+            return code, None
         payload = json.loads(stdout.getvalue())
         rows = payload.get("entries", payload.get("concrete_processes"))
         return code, [row["name"] for row in rows]
@@ -257,7 +259,8 @@ def _outcome(*arguments):
             'source = "loop_sm"\nrestriction = "no_b_mass"\ncache_dir = "{cache}"',
             "compiled",
         ),
-        # Without a compiled model the dry run's own error.
+        # Without a compiled model: the dry run refuses, the listing prepares
+        # the model as generation does (into the cache, or in memory).
         ('source = "loop_sm"\ncache_dir = "{empty}"', "compiled"),
         ('source = "loop_sm"\ncache = false', "compiled"),
     ],
@@ -291,19 +294,30 @@ output = {json.dumps(str(tmp_path / "artifact"))}
         _cli("model", "inspect", "--card", str(card), "--json")
     planned = _outcome("generate", "--card", str(card), "--dry-run", "--json")
     listed = _outcome("model", "processes", "--card", str(card), "--json")
-    assert listed == planned
-    assert (listed[0] == 0) == (
-        "empty" not in model and 'loop_sm"\ncache = false' not in model
-    )
+    cold = "empty" in model or 'loop_sm"\ncache = false' in model
+    if cold:
+        assert planned[0] != 0 and "dry-run does not compile" in planned[1]
+        assert listed == (0, ["p"])
+        # After a generation, the same (the cache filled, or still off).
+        _cli("generate", "--card", str(card))
+        assert _outcome("model", "processes", "--card", str(card), "--json") == (
+            0,
+            ["p"],
+        )
+    else:
+        assert listed == planned
+        assert listed[0] == 0
 
 
 @pytest.mark.parametrize("mode", ["compiled", "recurrence"])
 @pytest.mark.parametrize(
     ("expression", "selection", "accuracy", "orders", "listed"),
     [
-        # A leading-colour sector without a tree amplitude, and one with.
+        # A leading-colour sector without a tree amplitude, and one with;
+        # a cap that keeps only the former.
         ("c d > u s", "selected_color_sector_ids = [0]", "lc", True, False),
         ("c d > u s", "selected_color_sector_ids = [1]", "lc", True, True),
+        ("c d > u s", "max_color_sectors = 1", "lc", True, False),
         # A helicity configuration whose amplitude vanishes.
         (
             "e+ e- > mu+ mu-",
@@ -313,7 +327,12 @@ output = {json.dumps(str(tmp_path / "artifact"))}
             False,
         ),
     ],
-    ids=["sector-without-amplitude", "sector-with-amplitude", "all-plus-helicities"],
+    ids=[
+        "sector-without-amplitude",
+        "sector-with-amplitude",
+        "cap-without-amplitude",
+        "all-plus-helicities",
+    ],
 )
 def test_a_fixed_selection_is_checked_on_what_it_selects(
     tmp_path, mode, expression, selection, accuracy, orders, listed
@@ -339,9 +358,43 @@ output = {json.dumps(str(tmp_path / "artifact"))}
     if listed:
         assert (code, result) == (0, ["sample"])
     else:
+        # The mode's generation refuses with the same reason (its own).
         assert code != 0
-        assert "has no model-supported tree-level amplitudes" in result
-        if mode == "compiled":
-            # Generation refuses with the same reason.
-            generated = _outcome("generate", "--card", str(card))
-            assert generated[0] != 0 and result in generated[1]
+        generated = _outcome("generate", "--card", str(card))
+        # Long reasons are shortened in the error line: their beginning.
+        assert generated[0] != 0 and result[:80] in generated[1]
+
+
+@pytest.mark.parametrize("mode", ["recurrence", "compiled"])
+def test_a_helicity_selection_follows_the_requested_mode(tmp_path, mode):
+    # Built-in HEFT z z > g g with leg 1 at helicity +1: recurrence serves it
+    # (a nonzero value), compiled construction refuses it; the listing says
+    # what the requested mode does.
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+source = "built-in-sm-heft"
+[process]
+entries = [{{ expression = "z z > g g", name = "sample" }}]
+coupling_order_policy = "explicit"
+max_coupling_orders = {{ QCD = 0, QED = 1, HIG = 1 }}
+selected_source_helicities = {{ 1 = 1 }}
+[color]
+accuracy = "full"
+[evaluator]
+execution_mode = "{mode}"
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    listed = _outcome("model", "processes", "--card", str(card), "--json")
+    generated = _outcome("generate", "--card", str(card))
+    if mode == "recurrence":
+        assert generated[0] == 0
+        manifest = json.loads((tmp_path / "artifact" / "artifact.json").read_text())
+        assert listed == (0, [row["id"] for row in manifest["processes"]])
+    else:
+        assert listed[0] != 0 and generated[0] != 0
+        assert listed[1][:80] in generated[1]

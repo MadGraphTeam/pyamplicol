@@ -608,7 +608,15 @@ tree-level diagram, which generation skips. For a one-loop request
 Born-less members its `process.loop_induced` policy skips under `skipped`. A
 request generation refuses (a colour selection it cannot serve, a closed
 gluon trace times an open colour line, a missing prepared kernel pack for the
-mode) is refused with the same error.
+mode) is refused with the same error. For a tree-level request the listing
+runs the stages of the requested execution mode's own generation that
+decide what it stores, short of code generation and writing (compiled: each
+process's DAG construction; recurrence: its compact recurrence construction
+when the request fixes or caps colour sectors or fixes helicities), so a
+selection the mode serves is listed and one it refuses is refused with that
+mode's error. A model that is not compiled or cached yet is prepared on
+demand, as generation prepares it (into the model cache, or in memory with
+`model.cache = false`); `generate --dry-run` itself never compiles one.
 
 ## Permutation-equivalent processes
 
