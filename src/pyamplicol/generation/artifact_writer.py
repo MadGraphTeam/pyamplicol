@@ -12,7 +12,7 @@ import os
 import re
 import time
 import zipfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
 from functools import cache
@@ -125,7 +125,12 @@ from .loop_artifact import (
     LoopV2ProcessArtifact,
     loop_process_payloads,
 )
-from .process_grouping import PROCESS_GROUPS_PATH, PROCESS_GROUPS_ROLE, ProcessGroupMap
+from .process_grouping import (
+    PROCESS_GROUPS_PATH,
+    PROCESS_GROUPS_ROLE,
+    GroupMember,
+    ProcessGroupMap,
+)
 from .recurrence_schedule_sharing import (
     RECURRENCE_PROCESS_BINDING_ABI,
     RECURRENCE_SCHEDULE_INDEX_PATH,
@@ -5465,7 +5470,9 @@ def _validate_public_process_ids(
             )
         owners[public_id] = (owner, pdgs, member)
 
-    def served_members(group_map: ProcessGroupMap | None):
+    def served_members(
+        group_map: ProcessGroupMap | None,
+    ) -> Iterator[tuple[str, GroupMember]]:
         if group_map is None:
             return
         for representative, group in group_map.groups.items():
@@ -5479,7 +5486,10 @@ def _validate_public_process_ids(
             claim(
                 process_id,
                 f"the artifact's process {process_id!r}",
-                tuple(int(pdg) for pdg in _sequence(record.get("external_pdgs", ()))),
+                tuple(
+                    int(cast(int, pdg))
+                    for pdg in _sequence(record.get("external_pdgs", ()))
+                ),
             )
             for alias in _sequence(record.get("aliases", ())):
                 claim(

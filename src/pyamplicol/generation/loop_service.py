@@ -14,7 +14,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import ExitStack, nullcontext
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
@@ -383,7 +383,9 @@ def quark_lines(process_ir: Any) -> int:
     return int(process_ir.color_endpoints.pair_count)
 
 
-def _quark_line_cut(limit: int | None):
+def _quark_line_cut(
+    limit: int | None,
+) -> Callable[[Any, Sequence[Any]], tuple[int, ...]] | None:
     """``process.max_quark_lines`` on the one-loop route, as on the tree
     route: the member filter of the shared expansion
     (``_expand_process_set(member_filter=...)``, applied before a request's
@@ -395,7 +397,7 @@ def _quark_line_cut(limit: int | None):
     if limit is None:
         return None
 
-    def kept(request, expanded) -> tuple[int, ...]:
+    def kept(request: Any, expanded: Sequence[Any]) -> tuple[int, ...]:
         lines = [quark_lines(process) for process in expanded]
         indices = tuple(index for index, count in enumerate(lines) if count <= limit)
         if not indices:
