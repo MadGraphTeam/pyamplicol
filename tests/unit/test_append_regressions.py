@@ -525,20 +525,23 @@ def test_an_unnamed_append_avoids_the_id_of_a_served_member(tmp_path, model_cach
     assert served.physics.process == "e- u > e- u"
     before = _values(artifact, "e_u_to_e_u")
     stored_before = {row["id"] for row in _manifest(artifact)["processes"]}
-    for expression in ("e+ u > e+ u", "u e+ > u e+"):
-        generator.generate(ProcessRequest.parse(expression), artifact, mode="append")
+    generator.generate(ProcessRequest.parse("e+ u > e+ u"), artifact, mode="append")
     stored = {row["id"]: row["expression"] for row in _manifest(artifact)["processes"]}
     added = {name: stored[name] for name in set(stored) - stored_before}
-    assert sorted(added.values()) == ["e+ u > e+ u", "u e+ > u e+"]
-    # Both readable names are taken (a served member's, a stored process's):
-    # both appended processes take the digest-suffixed form.
-    assert all(name.startswith(("e_u_to_e_u_", "u_e_to_u_e_")) for name in added)
+    assert list(added.values()) == ["e+ u > e+ u"]
+    # The readable name is a served member's: the digest-suffixed form.
+    assert all(name.startswith("e_u_to_e_u_") for name in added)
     assert _values(artifact, "e_u_to_e_u") == before
-    # An exact same-expression duplicate under the served ID is still refused.
+    # The same process again, in either order, is a duplicate (refused).
     from pyamplicol.api.errors import ProcessIdCollisionError
 
-    with pytest.raises(ProcessIdCollisionError):
-        generator.generate(ProcessRequest.parse("e- u > e- u"), artifact, mode="append")
+    digest = _digest(artifact)
+    for expression in ("e- u > e- u", "u e+ > u e+"):
+        with pytest.raises(ProcessIdCollisionError):
+            generator.generate(
+                ProcessRequest.parse(expression), artifact, mode="append"
+            )
+        assert _digest(artifact) == digest
 
 
 def test_an_identical_unnamed_append_is_refused_in_any_spelling(tmp_path, model_cache):
@@ -971,30 +974,66 @@ output = {json.dumps(str(tmp_path / "unused"))}
 # The invariant, by the runtime's own loaders (r8) ------------------------------
 
 
+def _spellings(expression):
+    """Every spelling a selector serves by a side permutation of
+    ``expression``: each order of the particles on each side."""
+
+    from itertools import permutations, product
+
+    initial, final = (side.split() for side in expression.split(">"))
+    return {
+        " ".join(left) + " > " + " ".join(right)
+        for left, right in product(permutations(initial), permutations(final))
+    }
+
+
 def _resolution_table(artifact):
-    """Every public ID and addressable expression of ``artifact`` -> what
-    ``Runtime.load`` serves for it (process ID and expression), or the
-    error it raises."""
+    """Every public ID of ``artifact`` and every spelling of every process it
+    serves (each order of each recorded expression's particles on each side)
+    -> what the real selectors serve for it: ``Runtime.load`` (the native
+    selector for a tree artifact, the Python one at one loop) and, on a tree
+    artifact, the Python selector too; or the error they raise."""
+
+    from pyamplicol.artifacts.manifest import load_manifest
+    from pyamplicol.loops.v2.artifact import _select
 
     manifest = json.loads((artifact / "artifact.json").read_text())
-    keys = []
+    ids, expressions = [], []
     for record in manifest["processes"]:
-        keys += [record["id"], record["expression"]]
+        ids.append(record["id"])
+        expressions.append(record["expression"])
         for alias in record.get("aliases", ()):
-            keys += [alias["id"], alias["expression"]]
+            ids.append(alias["id"])
+            expressions.append(alias["expression"])
     groups_path = artifact / "process-groups.json"
     if groups_path.is_file():
         for group in json.loads(groups_path.read_text())["groups"]:
             for member in group["members"]:
                 if not member["generated"]:
-                    keys += [member["process_id"], member["process"]]
+                    ids.append(member["process_id"])
+                    expressions.append(member["process"])
+    keys = list(
+        dict.fromkeys(
+            [*ids, *(s for expression in expressions for s in _spellings(expression))]
+        )
+    )
+    tree = "loop" not in json.dumps(manifest["runtime"]).lower()
+    loaded = load_manifest(artifact) if tree else None
     table = {}
-    for key in dict.fromkeys(keys):
+    for key in keys:
         try:
             physics = Runtime.load(artifact, process=key).physics
-            table[key] = (physics.process_id, physics.process)
+            served = (physics.process_id, physics.process)
         except Exception as error:
-            table[key] = f"error: {type(error).__name__}"
+            served = f"error: {type(error).__name__}"
+        if tree:
+            try:
+                record, member = _select(loaded, key, any_basis=True)
+                python = str(member.process_id) if member is not None else record["id"]
+            except Exception as error:
+                python = f"error: {type(error).__name__}"
+            served = (served, python)
+        table[key] = served
     return table
 
 
@@ -1013,7 +1052,7 @@ def _check_invariant(base, artifact, generator, batch):
         assert _digest(artifact) == before_digest
         return "refused"
     after = _resolution_table(artifact)
-    assert all(not str(value).startswith("error") for value in after.values()), after
+    assert all("error" not in str(value) for value in after.values()), after
     assert all(after[key] == value for key, value in before.items()), (before, after)
     return "admitted"
 
@@ -1099,12 +1138,21 @@ def test_appends_keep_the_resolution_invariant_on_a_compiled_tree(tmp_path):
                 ProcessRequest.parse("c g > c g", name="cg"),
                 ProcessRequest.parse("e- u > e- u"),
                 ProcessRequest.parse("e+ u > e+ u"),
+                ProcessRequest.parse("u u~ > g g g", name="three"),
             ),
             (ProcessAlias("first_swap", "ug", (1, 0, 2, 3)),),
         ),
         base,
     )
     candidates = {
+        "another order of a stored process under a fresh ID": (
+            ProcessRequest.parse("g u > g u", name="fresh"),
+            "refused",
+        ),
+        "another order of a stored 2 -> 3 process": (
+            ProcessRequest.parse("u~ u > g g g", name="three_crossed"),
+            "refused",
+        ),
         "second alias of an aliased expression": (
             ProcessSet(
                 (ProcessRequest.parse("u g > g u", name="second"),),
@@ -1191,6 +1239,10 @@ def test_appends_keep_the_resolution_invariant_at_one_loop(tmp_path, model_cache
         base,
     )
     candidates = {
+        "another order of a stored process under a fresh ID": (
+            ProcessRequest.parse("g u > g u", name="fresh"),
+            "refused",
+        ),
         "second alias of an aliased expression": (
             ProcessSet(
                 (ProcessRequest.parse("u g > g u", name="second"),),
