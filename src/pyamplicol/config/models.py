@@ -1537,6 +1537,12 @@ class EvaluationStabilityChecksConfig:
     # The reduction-direction check at rescaled inputs (master integrals
     # evaluated again); requires reduction_direction.
     rescaled: bool = field(default=False, metadata=_setting("bool"))
+    # The weight of a loop-induced estimate's first-order floor term
+    # (``VirtualStabilityChecks.floor_weight``; None: the process's default,
+    # by its highest-point loop).
+    floor_weight: float | None = field(
+        default=None, metadata=_setting("float", nullable=True)
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -1544,6 +1550,17 @@ class EvaluationStabilityChecksConfig:
             "rotations",
             _tuple_of_strings(self.rotations, "evaluation.stability_checks.rotations"),
         )
+        if self.floor_weight is not None:
+            from pyamplicol.loops.v2.stability import checked_floor_weight
+
+            try:
+                weight = checked_floor_weight(self.floor_weight)
+            except (TypeError, ValueError):
+                raise ConfigurationError(
+                    "evaluation.stability_checks.floor_weight must be a finite "
+                    "non-negative number"
+                ) from None
+            object.__setattr__(self, "floor_weight", weight)
         _integer(
             self.rotation_count, "evaluation.stability_checks.rotation_count", minimum=0
         )
@@ -1555,7 +1572,10 @@ class EvaluationStabilityChecksConfig:
         self.to_checks()
 
     def to_checks(self) -> VirtualStabilityChecks | None:
-        """The requested checks, or None when none is requested."""
+        """The requested checks, or None when neither a check nor a floor
+        weight is requested: a floor weight alone gives checks that run
+        nothing but carry the weight to every estimate the evaluation forms
+        (the best-effort pass's recommended checks, a rescue's levels)."""
         from pyamplicol.api.virtual_results import VirtualStabilityChecks
 
         if self.rotations and self.rotation_count:
@@ -1567,10 +1587,11 @@ class EvaluationStabilityChecksConfig:
                 self.rotations or self.rotation_count,
                 self.reduction_direction,
                 self.rescaled,
+                floor_weight=self.floor_weight,
             )
         except (TypeError, ValueError, ZeroDivisionError) as error:
             raise ConfigurationError(f"evaluation.stability_checks: {error}") from error
-        return checks if checks.enabled else None
+        return checks if checks.enabled or self.floor_weight is not None else None
 
 
 @dataclass(frozen=True, slots=True)

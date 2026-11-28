@@ -952,3 +952,553 @@ def test_a_point_failing_only_in_its_check_rows_keeps_its_unchecked_value(heavy)
         assert entry["uncertainty"] is None and entry["source"] == "none", p
     for p in without:
         assert policy["statuses"][p] == FAILED_STATUS, p
+
+
+# --------------------------------------------------- the floor weight's routes
+
+FLOOR_WEIGHT = 1024.0
+
+
+def _weighted_python(artifact, points, scales, way, explicit):
+    """One TIRust call on g g > a a g with the floor weight ``FLOOR_WEIGHT``
+    set by ``way``: the runtime-options card, the CLI (its flag resolved to
+    the checks ``evaluate`` passes), or the Python object; with one rotation
+    (``explicit``) or no check (the best-effort pass's recommended checks
+    only)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+    from pyamplicol.cli import parse_cli
+
+    call = dict(mu_r2=scales, poles="none", reduction="tirust")
+    count = 1 if explicit else 0
+    if way == "card":
+        card = "[evaluation.stability_checks]\n" + (
+            "rotation_count = 1\n" if explicit else ""
+        )
+        card += f"floor_weight = {FLOOR_WEIGHT}\n"
+        runtime = Runtime.load(artifact, process="p", options=card)
+        return runtime.evaluate(points, **call)
+    if way == "cli":
+        flags = ["evaluate", "artifact", "--stability-floor-weight", str(FLOOR_WEIGHT)]
+        flags += ["--stability-rotations", "1"] if explicit else []
+        resolved = parse_cli(tuple(flags)).resolve().effective
+        checks = resolved.evaluation.stability_checks.to_checks()
+        assert checks == VirtualStabilityChecks(count, floor_weight=FLOOR_WEIGHT)
+    else:
+        checks = VirtualStabilityChecks(count, floor_weight=FLOOR_WEIGHT)
+    runtime = Runtime.load(artifact, process="p")
+    return runtime.evaluate(points, stability_checks=checks, **call)
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("explicit", [False, True], ids=["implicit", "explicit"])
+def test_the_floor_weight_reaches_every_estimate_by_every_route(aag, explicit):
+    """A floor weight is a setting of the estimate, whichever checks run: set
+    by the runtime-options card, the CLI flag or the Python object, with an
+    explicit rotation or with no check (the best-effort pass then runs its
+    recommended checks), it gives the refused points the same best-effort
+    uncertainty, and the checked points the same estimates reporting it; the
+    default weight gives another uncertainty (the setting acts). Review r1:
+    the card's weight without checks was dropped and the best-effort pass ran
+    with the default."""
+
+    from pyamplicol import Runtime
+
+    artifact, points, scales = aag
+    found = {
+        way: _weighted_python(artifact, points, scales, way, explicit)
+        for way in ("object", "card", "cli")
+    }
+    reference = found["object"]
+    refused = [p for p, s in enumerate(reference.statuses) if s == "best-effort"]
+    assert refused
+
+    def uncertainties(result):
+        return [result.diagnostics[p].best_effort.uncertainty for p in refused]
+
+    for way, result in found.items():
+        assert result.statuses == reference.statuses, way
+        assert result.values == reference.values, way
+        assert uncertainties(result) == uncertainties(reference), way
+        if explicit:
+            served = [e for e in result.stability if e is not None]
+            assert served and {e.floor_weight for e in served} == {FLOOR_WEIGHT}
+            assert [e.relative for e in served] == [
+                e.relative for e in reference.stability if e is not None
+            ], way
+        else:
+            assert result.stability is None or not any(result.stability), way
+    from pyamplicol.api.virtual_results import VirtualStabilityChecks
+
+    default = Runtime.load(artifact, process="p").evaluate(
+        points,
+        mu_r2=scales,
+        poles="none",
+        reduction="tirust",
+        stability_checks=VirtualStabilityChecks(1 if explicit else 0),
+    )
+    assert default.statuses == reference.statuses
+    assert uncertainties(default) != uncertainties(reference)
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("explicit", [False, True], ids=["implicit", "explicit"])
+@pytest.mark.parametrize("route", ["card", "setter"])
+def test_the_sdk_floor_weight_reaches_its_best_effort_checks(
+    aag, loop_native, explicit, route
+):
+    """The C ABI the same: a floor weight from the runtime-options TOML or
+    from ``rusticol_virtual_set_stability_floor_weight``, with one rotation
+    or no check, gives the refused points the best-effort uncertainty the
+    Python API's runtime-options card gives on the same points."""
+
+    import ctypes
+
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import _open
+
+    artifact, exact_points, exact_scales = aag
+    points = [[[float(c) for c in leg] for leg in point] for point in exact_points]
+    scales = [float(Fraction(s)) for s in exact_scales]
+    python = _weighted_python(artifact, exact_points, exact_scales, "card", explicit)
+    refused = [p for p, s in enumerate(python.statuses) if s == "best-effort"]
+    sdk = _sdk()
+    sdk.rusticol_virtual_set_stability_floor_weight.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_double,
+    ]
+    handle = _open(sdk, artifact)
+    try:
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"tirust") == 0
+        if route == "card":
+            card = "[evaluation.stability_checks]\n" + (
+                "rotation_count = 1\n" if explicit else ""
+            )
+            card += f"floor_weight = {FLOOR_WEIGHT}\n"
+            assert sdk.rusticol_virtual_set_options(handle, card.encode()) == 0, _error(
+                sdk
+            )
+        else:
+            if explicit:
+                assert (
+                    sdk.rusticol_virtual_set_stability_checks(handle, 1, None, 0, 0, 0)
+                    == 0
+                )
+            assert (
+                sdk.rusticol_virtual_set_stability_floor_weight(handle, FLOOR_WEIGHT)
+                == 0
+            )
+        uncertainties = _uncertainties(sdk, handle, points, scales)
+    finally:
+        sdk.rusticol_virtual_free(handle)
+    mine = [python.diagnostics[p].best_effort.uncertainty for p in refused]
+    assert [uncertainties[p] for p in refused] == pytest.approx(mine, rel=1e-12)
+
+
+@pytest.mark.loop_physics
+def test_a_rescue_level_takes_the_floor_weight_it_sets_or_the_cards(aag):
+    """A rescue policy owns its levels' checks: a level's own floor weight
+    applies to its estimates, and the runtime-options card's weight reaches
+    every level that sets none (per call and at load time), reported on the
+    estimates; a level's own weight wins over the card's."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import VirtualRescueLevel, VirtualRescuePolicy
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none")
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+
+    def level(weight=None):
+        return VirtualRescuePolicy(
+            (VirtualRescueLevel("double", reduction="ninjars", floor_weight=weight),)
+        )
+
+    own = Runtime.load(artifact, process="p").evaluate(
+        points, stability=level(FLOOR_WEIGHT), **call
+    )
+    per_call = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, stability=level(), **call
+    )
+    at_load = Runtime.load(
+        artifact, process="p", options=card, stability=level()
+    ).evaluate(points, **call)
+    wins = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, stability=level(2.0), **call
+    )
+    for result in (own, per_call, at_load):
+        assert result.values == own.values
+        assert {e.floor_weight for e in result.stability if e is not None} == {
+            FLOOR_WEIGHT
+        }
+        assert [e.relative for e in result.stability] == [
+            e.relative for e in own.stability
+        ]
+    assert {e.floor_weight for e in wins.stability if e is not None} == {2.0}
+
+
+@pytest.mark.loop_physics
+def test_a_profile_with_only_a_floor_weight_weighs_its_default_checks(aag):
+    """``profile --stability`` with ``evaluation.stability_checks.floor_weight``
+    set and no check keeps its default set (one rotation; TIRust's points
+    add the rescaled reduction check) and weighs its estimates: 0 and 1024
+    give different estimates on both backends (review r1: identical)."""
+
+    import io
+
+    from pyamplicol.cli.main import run_cli
+    from tests.unit.test_loop_v2_orders_profile import _records
+
+    artifact, _points, _scales = aag
+    estimates = {}
+    for weight in ("0.0", "1024.0"):
+        stdout = io.StringIO()
+        code = run_cli(
+            [
+                "profile",
+                str(artifact),
+                "--stability",
+                "--stability-points",
+                "2",
+                "--ground-truth",
+                "none",
+                "--set",
+                f"evaluation.stability_checks.floor_weight={weight}",
+                "--progress",
+                "off",
+                "--json",
+            ],
+            stdout=stdout,
+            stderr=io.StringIO(),
+        )
+        assert code == 0
+        report = json.loads(stdout.getvalue())
+        estimates[weight] = [
+            [sample["estimate_relative"] for sample in _records(row["samples"])]
+            for row in report["stability"]
+        ]
+    low, high = estimates["0.0"], estimates["1024.0"]
+    assert len(low) == len(high) >= 2
+    for row_low, row_high in zip(low, high, strict=True):
+        pairs = [
+            (a, b)
+            for a, b in zip(row_low, row_high, strict=True)
+            if a is not None and b is not None
+        ]
+        assert pairs and all(a < b for a, b in pairs), (row_low, row_high)
+
+
+@pytest.mark.loop_physics
+def test_a_weight_alone_leaves_an_ordinary_evaluation_without_an_estimate(
+    aag, loop_native, monkeypatch
+):
+    """A floor weight on its own runs no check: an ordinary successful call
+    (NinjaRS serves every point here) with a runtime-options card setting
+    only ``floor_weight`` returns the plain call's values, no estimate, no
+    finiteness ratio and no other diagnostic, after the same number of
+    executor runs; the C ABI the same (no ``stability`` record)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.loops.v2 import plan_export
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import _evaluate, _open, _same
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none", reduction="ninjars")
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+    runs = []
+    original = plan_export.NativeExecutor._runs
+
+    def counted(self, *args, **kwargs):
+        runs.append(1)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(plan_export.NativeExecutor, "_runs", counted)
+    plain = Runtime.load(artifact, process="p").evaluate(points, **call)
+    plain_runs, runs[:] = len(runs), []
+    weighted = Runtime.load(artifact, process="p", options=card).evaluate(
+        points, **call
+    )
+    assert plain.statuses == ("success",) * len(points)
+    assert weighted.statuses == plain.statuses and weighted.values == plain.values
+    assert plain.stability is None and weighted.stability is None
+    assert weighted.diagnostics == plain.diagnostics
+    assert len(runs) == plain_runs
+    sdk = _sdk()
+    floats = [[[float(c) for c in leg] for leg in point] for point in points]
+    mu = [float(Fraction(s)) for s in scales]
+    handle = _open(sdk, artifact)
+    try:
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"ninjars") == 0
+        before = _evaluate(sdk, handle, floats, mu)
+        assert sdk.rusticol_virtual_set_options(handle, card.encode()) == 0, _error(sdk)
+        after = _evaluate(sdk, handle, floats, mu)
+    finally:
+        sdk.rusticol_virtual_free(handle)
+    assert before["diagnostics"]["stability"] is None
+    assert after["diagnostics"]["stability"] is None
+    assert after["statuses"] == before["statuses"]
+    assert _same(after["virtual"], before["virtual"])
+
+
+# The floor weight's one precedence, resolved per call: a rescue level's own
+# weight, else the call's checks', else the runtime options' (card), else the
+# process's default (g g > a a g reduces pentagons: w = 1). A layer that
+# names no weight keeps the one below it; empty checks per call stay a plain
+# call (as before the weight existed).
+_CALLS = {
+    "weight-only": lambda c: c(floor_weight=0.0),
+    "rotation+weight": lambda c: c(1, floor_weight=0.0),
+    "rotation": lambda c: c(1),
+    "none": lambda c: None,
+}
+
+
+def _expected_weight(policy, call, level, card):
+    """The weight the call's estimates report, None for no estimate, or
+    "refused" (a call-time policy owns the checks)."""
+
+    below = card if card is not None else 1.0
+    if call in ("rotation+weight", "rotation"):
+        if policy == "call":
+            return "refused"
+        return 0.0 if call == "rotation+weight" else below
+    if policy == "none":
+        return None
+    if level is not None:
+        return level
+    return 0.0 if call == "weight-only" else below
+
+
+# Every layer combination that exists: a rescue level exists under a policy only.
+_PRECEDENCE_CELLS = [
+    pytest.param(policy, call, level, card, id=f"{policy}-{call}-{level_id}-{card_id}")
+    for policy in ("load", "call", "none")
+    for call in _CALLS
+    for level, level_id in ((2.0, "level"), (None, "no-level"))
+    for card, card_id in ((FLOOR_WEIGHT, "card"), (None, "no-card"))
+    if not (policy == "none" and level is not None)
+]
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize(("policy", "call", "level", "card"), _PRECEDENCE_CELLS)
+def test_the_floor_weight_precedence_over_every_layer(aag, policy, call, level, card):
+    from pyamplicol import Runtime
+    from pyamplicol.api.errors import CompatibilityError
+    from pyamplicol.api.virtual_results import (
+        VirtualRescueLevel,
+        VirtualRescuePolicy,
+        VirtualStabilityChecks,
+    )
+
+    artifact, points, scales = aag
+    points, scales = points[:2], scales[:2]
+    rescue = VirtualRescuePolicy(
+        (VirtualRescueLevel("double", reduction="ninjars", floor_weight=level),)
+    )
+    load = {}
+    if card is not None:
+        load["options"] = f"[evaluation.stability_checks]\nfloor_weight = {card}\n"
+    if policy == "load":
+        load["stability"] = rescue
+    runtime = Runtime.load(artifact, process="p", **load)
+    call_options = dict(mu_r2=scales, poles="none", reduction="ninjars")
+    checks = _CALLS[call](VirtualStabilityChecks)
+    if checks is not None:
+        call_options["stability_checks"] = checks
+    if policy == "call":
+        call_options["stability"] = rescue
+    expected = _expected_weight(policy, call, level, card)
+    if expected == "refused":
+        with pytest.raises(CompatibilityError):
+            runtime.evaluate(points, **call_options)
+        return
+    result = runtime.evaluate(points, **call_options)
+    assert result.statuses == ("success",) * len(points)
+    if expected is None:
+        assert result.stability is None
+        return
+    assert {e.floor_weight for e in result.stability} == {expected}
+
+
+@pytest.mark.loop_physics
+@pytest.mark.parametrize("card", [FLOOR_WEIGHT, None], ids=["card", "no-card"])
+def test_empty_checks_keep_a_load_time_policy_out_of_the_call(aag, card, monkeypatch):
+    """A user who sets no weight sees no change: empty per-call checks
+    (``VirtualStabilityChecks()``) on a runtime with a load-time two-carrier
+    policy select a plain binary64 call, as before the weight existed: the
+    values, statuses and diagnostics of the plain call, no estimate, no
+    rescue record and the same executor runs; a card's weight changes none
+    of that (it only reaches the call's best-effort checks)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import (
+        VirtualRescueLevel,
+        VirtualRescuePolicy,
+        VirtualStabilityChecks,
+    )
+    from pyamplicol.loops.v2 import plan_export
+
+    artifact, points, scales = aag
+    policy = VirtualRescuePolicy(
+        (
+            VirtualRescueLevel("double", reduction="ninjars"),
+            VirtualRescueLevel("double-double", reduction="ninjars"),
+        )
+    )
+    runs = []
+    original = plan_export.NativeExecutor._runs
+
+    def counted(self, *args, **kwargs):
+        runs.append(1)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(plan_export.NativeExecutor, "_runs", counted)
+    call = dict(mu_r2=scales, poles="none", reduction="ninjars")
+    plain = Runtime.load(artifact, process="p").evaluate(points, **call)
+    plain_runs, runs[:] = len(runs), []
+    load = {"stability": policy}
+    if card is not None:
+        load["options"] = f"[evaluation.stability_checks]\nfloor_weight = {card}\n"
+    found = Runtime.load(artifact, process="p", **load).evaluate(
+        points, stability_checks=VirtualStabilityChecks(), **call
+    )
+    assert found.statuses == plain.statuses
+    assert found.values == plain.values
+    assert found.stability is None and found.rescue is None
+    assert found.diagnostics == plain.diagnostics
+    assert len(runs) == plain_runs
+
+
+@pytest.mark.loop_physics
+def test_the_sdk_floor_weight_layers(aag, loop_native):
+    """The C ABI's layers: the runtime-options TOML's weight, kept by the
+    stability checks' setter (a layer without a weight does not reset it),
+    replaced by the weight setter, and NaN back to the process's default
+    (w = 1 for g g > a a g's pentagons); the estimates report each."""
+
+    import ctypes
+
+    from tests.unit.test_loop_v2_sdk_extras import _error, _sdk
+    from tests.unit.test_loop_v2_sdk_induced import _evaluate, _open
+
+    artifact, exact_points, exact_scales = aag
+    points = [[[float(c) for c in leg] for leg in point] for point in exact_points[:2]]
+    scales = [float(Fraction(s)) for s in exact_scales[:2]]
+    sdk = _sdk()
+    sdk.rusticol_virtual_set_stability_floor_weight.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_double,
+    ]
+
+    def weights(handle):
+        found = _evaluate(sdk, handle, points, scales)
+        records = found["diagnostics"]["stability"]["estimates"]
+        return {record["floor_weight"] for record in records}
+
+    handle = _open(sdk, artifact)
+    try:
+        assert sdk.rusticol_virtual_set_poles(handle, b"none") == 0, _error(sdk)
+        assert sdk.rusticol_virtual_set_reduction(handle, b"ninjars") == 0
+        card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+        assert sdk.rusticol_virtual_set_options(handle, card.encode()) == 0
+        assert sdk.rusticol_virtual_set_stability_checks(handle, 1, None, 0, 0, 0) == 0
+        assert weights(handle) == {FLOOR_WEIGHT}
+        assert sdk.rusticol_virtual_set_stability_floor_weight(handle, 0.0) == 0
+        assert weights(handle) == {0.0}
+        assert sdk.rusticol_virtual_set_stability_checks(handle, 1, None, 1, 1, 0) == 0
+        assert weights(handle) == {0.0}
+        assert (
+            sdk.rusticol_virtual_set_stability_floor_weight(handle, float("nan")) == 0
+        )
+        assert weights(handle) == {1.0}
+    finally:
+        sdk.rusticol_virtual_free(handle)
+
+
+@pytest.mark.loop_physics
+def test_a_floor_weight_keeps_the_default_rescue_ladder(aag):
+    """A weight does not change which ladder runs: the loop-induced default
+    stack (TIRust binary64, NinjaRS binary64, then the default ladder's
+    higher levels) is chosen on the policy apart from its weights, and its
+    rungs then take the weight. On the frozen g g > a a g points with the
+    default policy, the class default given explicitly (w = 1, pentagons)
+    in the card or on the call reproduces the implicit run exactly (the
+    same statuses, rungs and estimates per attempt, the same values); other
+    weights try the same stack's rungs in its order (review r3: an explicit
+    weight dropped the NinjaRS rung)."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api.virtual_results import (
+        VirtualRescuePolicy,
+        VirtualStabilityChecks,
+    )
+    from pyamplicol.loops.v2.rescue import loop_induced_stack
+
+    artifact, points, scales = aag
+    call = dict(mu_r2=scales, poles="none")
+
+    def run(card=None, weight=None):
+        options = None
+        if card is not None:
+            options = f"[evaluation.stability_checks]\nfloor_weight = {card}\n"
+        runtime = Runtime.load(artifact, process="p", options=options)
+        extra = {}
+        if weight is not None:
+            extra["stability_checks"] = VirtualStabilityChecks(floor_weight=weight)
+        return runtime.evaluate(
+            points, stability=VirtualRescuePolicy(), **call, **extra
+        )
+
+    def ladder(result):
+        return [
+            [
+                (
+                    attempt.arithmetic,
+                    attempt.reduction.requested if attempt.reduction else None,
+                    attempt.failure is not None,
+                    attempt.estimate,
+                )
+                for attempt in record.attempts
+            ]
+            for record in result.rescue
+        ]
+
+    implicit = run()
+    assert "rescued" in implicit.statuses
+    for explicit in (run(card=1.0), run(weight=1.0), run(card=4.0, weight=1.0)):
+        assert explicit.statuses == implicit.statuses
+        assert explicit.values == implicit.values
+        assert ladder(explicit) == ladder(implicit)
+    rungs = [
+        (level.arithmetic, level.reduction) for level in loop_induced_stack().levels
+    ]
+    for weight in (0.0, 4.0, 1024.0):
+        for attempts in ladder(run(weight=weight)):
+            tried = [(arithmetic, requested) for arithmetic, requested, *_ in attempts]
+            assert tried == rungs[: len(tried)], (weight, tried)
+
+
+@pytest.mark.loop_physics
+def test_invalid_stability_checks_keep_their_type_error(aag):
+    """A ``stability_checks`` that is no ``VirtualStabilityChecks`` (a dict)
+    is refused with the same TypeError and message as before the floor
+    weight, with and without a runtime-options weight (review r3 follow-up:
+    it raised AttributeError)."""
+
+    from pyamplicol import Runtime
+
+    artifact, points, scales = aag
+    card = f"[evaluation.stability_checks]\nfloor_weight = {FLOOR_WEIGHT}\n"
+    for options in (None, card):
+        runtime = Runtime.load(artifact, process="p", options=options)
+        with pytest.raises(
+            TypeError, match="stability_checks requires VirtualStabilityChecks"
+        ):
+            runtime.evaluate(
+                points, mu_r2=scales, stability_checks={"floor_weight": 1.0}
+            )

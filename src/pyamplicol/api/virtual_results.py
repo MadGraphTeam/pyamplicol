@@ -25,6 +25,7 @@ from pyamplicol.loops.v2.stability import (
     RESCUE_ROTATION,
     Rotation,
     StabilityChecks,
+    checked_floor_weight,
     default_rescue,
     relative_text,
 )
@@ -186,6 +187,19 @@ class VirtualStabilityChecks:
     ``VirtualStabilityChecks(1, True, rescaled=True)`` is the recommended
     configuration (``loops.v2.stability.RECOMMENDED_CHECKS``).
 
+    ``floor_weight`` weighs the first-order term of a loop-induced
+    estimate's rounding floor, w x 2^14 u (N S' + S N') (N the amplitude's
+    size, S the size of what cancelled, per side): w = 1 is the calibrated
+    coverage (every point the previous floor covered within ten times E,
+    fewer than 1 in 10^4 above E), w = 0 leaves the checks and the
+    second-order term (16 u)^2 S S'. None (the default) takes the process's
+    default by the highest-point loop it reduces
+    (``loops.v2.stability.default_floor_weight``): 2^14 floor units (w = 1)
+    up to pentagons, 2^8 for hexagons, 4 for heptagons and above, a typical
+    one-digit overestimate on strongly cancelling processes such as
+    g g > z z g g g. It changes no value and no other estimate; each
+    estimate reports the weight it used.
+
     ``cross_backend`` evaluates every point a
     second time on the other reduction backend (NinjaRS for a call reduced
     by TIRust, TIRust for one reduced by NinjaRS) and adds the deviation of
@@ -204,8 +218,13 @@ class VirtualStabilityChecks:
     reduction_direction: bool = False
     rescaled: bool = False
     cross_backend: bool = False
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         given = self.rotations
         if isinstance(given, bool):
             raise TypeError("rotations take a count or rotation records")
@@ -246,6 +265,7 @@ class VirtualStabilityChecks:
             self.reduction_direction,
             self.rescaled,
             self.cross_backend,
+            self.floor_weight,
         )
 
 
@@ -312,6 +332,10 @@ class VirtualStabilityEstimate:
     with its reason (``cross-backend``: the other reduction backend failed
     or refused the point, ``VirtualStabilityChecks.cross_backend``); the
     estimate is then the other checks'.
+
+    ``floor_weight`` is the weight of the loop-induced floor's first-order
+    term this estimate was formed with (``VirtualStabilityChecks.
+    floor_weight``; None for an estimate without that floor).
     """
 
     relative: float
@@ -323,8 +347,13 @@ class VirtualStabilityEstimate:
     absolute: tuple[LaurentCoefficients, ...] | None = None
     magnitude: tuple[LaurentCoefficients, ...] | None = None
     not_run: tuple[tuple[str, str], ...] = ()
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         for name in ("relative", "finite", "single_pole", "double_pole", "scale"):
             value = getattr(self, name)
             if value is None and name in ("single_pole", "double_pole", "scale"):
@@ -643,6 +672,8 @@ class VirtualRescueLevel:
     rotation_axis``), ``target`` with ``metric`` its
     ``required_precision_for_re`` / ``_im`` (one relative target here),
     and ``reduction`` the backend gammaloop has no counterpart for.
+    ``floor_weight`` is the level's weight of the loop-induced floor's
+    first-order term (``VirtualStabilityChecks.floor_weight``).
     """
 
     arithmetic: Literal["double", "double-double", "arbitrary"]
@@ -652,8 +683,13 @@ class VirtualRescueLevel:
     target: float = field(default_factory=_default_target)
     metric: Literal["relative", "finite", "scale"] = "relative"
     reduction: Literal["auto", "ninjars", "tirust"] = "auto"
+    floor_weight: float | None = None
 
     def __post_init__(self) -> None:
+        if self.floor_weight is not None:
+            object.__setattr__(
+                self, "floor_weight", checked_floor_weight(self.floor_weight)
+            )
         spec = VirtualArithmeticSpec(self.arithmetic, self.precision)
         # Arbitrary precision without digits: the default (500).
         object.__setattr__(self, "precision", spec.precision)
@@ -672,6 +708,7 @@ class VirtualRescueLevel:
             self.rotations,
             self.reduction_check != "none",
             rescaled=self.reduction_check == "rescaled",
+            floor_weight=self.floor_weight,
         )
         object.__setattr__(self, "rotations", checks.rotations)
         object.__setattr__(self, "target", float(target))
@@ -684,6 +721,7 @@ class VirtualRescueLevel:
             self.rotations,
             self.reduction_check != "none",
             rescaled=self.reduction_check == "rescaled",
+            floor_weight=self.floor_weight,
         )
 
     @property
@@ -767,6 +805,30 @@ class VirtualRescuePolicy:
                 "only the last rescue level may run without a stability check"
             )
         object.__setattr__(self, "levels", levels)
+
+    def without_floor_weight(self) -> VirtualRescuePolicy:
+        """This policy with no level naming a floor weight: what it is
+        apart from its weights (``rescue.default_stack`` chooses the ladder
+        on it)."""
+
+        return VirtualRescuePolicy(
+            tuple(replace(level, floor_weight=None) for level in self.levels)
+        )
+
+    def with_floor_weight(self, weight: float | None) -> VirtualRescuePolicy:
+        """This policy with the floor weight ``weight`` on every level that
+        sets none (``VirtualRescueLevel.floor_weight``; None: unchanged)."""
+
+        if weight is None:
+            return self
+        return VirtualRescuePolicy(
+            tuple(
+                level
+                if level.floor_weight is not None
+                else replace(level, floor_weight=weight)
+                for level in self.levels
+            )
+        )
 
 
 @dataclass(frozen=True, slots=True)

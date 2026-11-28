@@ -607,6 +607,9 @@ class _ProcessView:
         externals: Collection[str] | None = None,
     ):
         self.native = native
+        # The plan's highest-point loop, set by the native executor
+        # (``plan_export.NativeExecutor.native``).
+        self.largest_loop: int | None = None
         # The caller's names, else the record's (a record of an older build
         # has none: its views then do not check names; regenerate it).
         if externals is None:

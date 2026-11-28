@@ -4689,10 +4689,17 @@ def _stability(
     evaluation = config.evaluation
     space = evaluation.phase_space
     configured = evaluation.stability_checks.to_checks()
-    checks = configured if configured is not None else VirtualStabilityChecks(1)
     # The default set follows the serving backend (``reduction.default_checks``:
-    # TIRust's points add the rescaled reduction-direction check).
-    defaulted = configured is None
+    # TIRust's points add the rescaled reduction-direction check); a floor
+    # weight configured without checks weighs that default set's estimates.
+    defaulted = configured is None or not configured.enabled
+    checks = (
+        VirtualStabilityChecks(
+            1, floor_weight=None if configured is None else configured.floor_weight
+        )
+        if defaulted
+        else configured
+    )
     target = (
         evaluation.reduction_target
         if evaluation.reduction_target is not None

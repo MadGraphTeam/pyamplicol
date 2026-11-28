@@ -2649,10 +2649,14 @@ class V2VirtualRuntime:
         reduction_unchecked: bool | None = None,
         kinematics_improvement: str | None = None,
         kinematics_improvement_binary64: bool | None = None,
+        inherited_floor_weight: float | None = None,
     ) -> VirtualEvaluation:
         """The virtual of every point in one carrier, or under a rescue
         policy (``stability``, else the load-time default; ``loops.v2.
         rescue``) level by level from the original exact inputs.
+        ``inherited_floor_weight``: the runtime options' floor weight for
+        empty per-call checks, which still select a plain call (applied
+        after the policy is decided, ``Runtime._v2_options``).
         ``reduction`` overrides the runtime's reduction-backend request for
         the call (resolved once per carrier, before any point is
         evaluated), ``reduction_target`` its target accuracy (a rescue
@@ -2691,6 +2695,15 @@ class V2VirtualRuntime:
             default_precision=self.default_precision,
             stability_checks=stability_checks,
         )
+        if (
+            policy is None
+            and inherited_floor_weight is not None
+            and stability_checks is not None
+            and stability_checks.floor_weight is None
+        ):
+            stability_checks = replace(
+                stability_checks, floor_weight=inherited_floor_weight
+            )
         selected = bool(helicities or color_flows)
         if policy is not None:
             requested = self._requested(reduction)

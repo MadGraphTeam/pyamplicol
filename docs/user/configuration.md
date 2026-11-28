@@ -1000,7 +1000,45 @@ The keys read, every one also settable on its own:
 | `stability_checks.rotation_count` | `set_stability_checks` (`rotation_count`) | `evaluate(stability_checks=VirtualStabilityChecks(count))` | `--stability-rotations` |
 | `stability_checks.reduction_direction` | `set_stability_checks` (`reduction_direction`) | `evaluate(stability_checks=VirtualStabilityChecks(..., True))` | `--stability-reduction-direction` |
 | `stability_checks.rescaled` | `set_stability_checks` (`rescaled`) | `evaluate(stability_checks=VirtualStabilityChecks(..., rescaled=True))` | `--stability-rescaled` |
+| `stability_checks.floor_weight` | `set_stability_floor_weight` | `evaluate(stability_checks=VirtualStabilityChecks(..., floor_weight=))` | `--stability-floor-weight` |
 | `threads` | `set_threads` | `Runtime.load(threads=)` | `--threads` |
+
+The **floor weight** (`stability_checks.floor_weight`, a finite
+non-negative number) weighs the first-order term of a loop-induced
+estimate's rounding floor, w x 2^14 u (N S' + S N'), with N the size of the
+computed amplitude and S the size of what cancelled in it, per side of
+|A|^2. The floor stands for the roundings no stability check samples. With
+w = 1 it has its calibrated coverage: on 95,857 binary64 reference points
+of both backends, every point the previous floor covered stays within ten
+times E and fewer than 1 in 10^4 exceed E. Unset, the default depends on
+the highest-point loop the process reduces, in whole floor units (w x
+2^14): 2^14 units (w = 1) up to pentagons, 2^8 (w = 2^-6) for hexagons, 4
+(w = 2^-12) for heptagons and above, not extrapolated beyond. Box and
+pentagon processes have misses below the calibrated count; the hexagon
+value rests on a small sample (2,662 reference points), and the heptagon
+value on projections of stored estimates (693 points), where the full floor
+overestimates the error by about four digits and 4 units leave a typical
+one-digit overestimate (g g > z z g g g). w = 0 leaves twice the checks
+plus the second-order term (16 u)^2 S S', which keeps an exact zero "zero
+within its estimate". A weight that is set applies to every process.
+
+The weight has one precedence, resolved per call: a rescue level's own
+`floor_weight` (`VirtualRescueLevel(..., floor_weight=)`), else the call's
+checks' (`evaluate(stability_checks=VirtualStabilityChecks(...,
+floor_weight=))`), else the runtime options' (`stability_checks.floor_weight`,
+the CLI flag), else the process's default. A layer that names no weight keeps
+the one below it (a call requesting one rotation without a weight keeps the
+runtime options' weight). A weight given without any check runs no check: an
+ordinary call forms no estimate, and the weight reaches the estimates the call
+forms with checks of its own (the best-effort pass, the profile's default set,
+the levels of a rescue policy). Empty checks per call
+(`VirtualStabilityChecks()`, no check and no weight) still select a plain call
+under a load-time rescue policy. In the SDKs the weight setter and the
+runtime-options TOML set the same runtime setting (the last call wins; NaN
+restores the default), which `rusticol_virtual_set_stability_checks` keeps. The weight changes no value
+and no other estimate (the fallback guard keeps deciding with 16 u S), and
+every estimate reports the weight it was formed with
+(`VirtualStabilityEstimate.floor_weight`).
 
 Rules, the same in every interface:
 

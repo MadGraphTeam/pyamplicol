@@ -690,7 +690,10 @@ The precision-rescue options (`--stability-higher`,
 the legacy loop engine, the only one that served them; naming one is refused
 with the reason. v2 evaluations return stability estimates
 (`--stability-rotations`, `--stability-reduction-direction`,
-`--stability-rescaled`) and leave escalating `--arithmetic` to the caller.
+`--stability-rescaled`; `--stability-floor-weight` weighs a loop-induced
+estimate's first-order floor term; unset, the process's default by its
+highest-point loop) and leave escalating
+`--arithmetic` to the caller.
 
 `--on-failure best-effort` is the default (since 1.0.3): a point that no
 configured alternative accepts (the reduction backend's own acceptance

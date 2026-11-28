@@ -32,6 +32,22 @@ use symbolica::domains::rational::Rational;
 /// `stability.SAFETY`, `stability.FLOOR_UNITS`.
 pub const SAFETY: f64 = 2.0;
 pub const FLOOR_UNITS: f64 = 16.0;
+/// `stability.BILINEAR_FLOOR_UNITS`: the first-order term's units of a
+/// loop-induced output's floor (its second-order term keeps FLOOR_UNITS).
+pub const BILINEAR_FLOOR_UNITS: f64 = 16384.0;
+/// `stability.default_floor_weight`: the default weight of the first-order
+/// floor term of a process whose highest-point loop has `largest_loop` legs
+/// (`StabilityChecks.floor_weight` unset), in whole floor units: 2^14 (w =
+/// 1, the calibrated coverage) up to pentagons, 2^8 for hexagons, 4 for
+/// heptagons and above.
+pub fn default_floor_weight(largest_loop: usize) -> f64 {
+    let units: f64 = match largest_loop {
+        0..=5 => 16384.0,
+        6 => 256.0,
+        _ => 4.0,
+    };
+    units / BILINEAR_FLOOR_UNITS
+}
 /// The check names (`stability.ROTATION`, `REDUCTION`, `RESCALED`, `CROSS`,
 /// `TRANSVERSE`).
 pub const REDUCTION: &str = "reduction-direction";
@@ -499,13 +515,41 @@ pub enum Frame {
 /// Which checks an evaluation runs (`stability.StabilityChecks`): rotations
 /// (any number), the reduction check (reversed, or rescaled) and the
 /// cross-backend check (with at least one other). The default runs none.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct StabilityChecks {
     rotations: Vec<Rotation>,
     reduction_direction: bool,
     rescaled: bool,
     cross_backend: bool,
+    floor_weight: Option<f64>,
 }
+
+impl Default for StabilityChecks {
+    /// No check, the default floor weight.
+    fn default() -> Self {
+        Self {
+            rotations: Vec::new(),
+            reduction_direction: false,
+            rescaled: false,
+            cross_backend: false,
+            floor_weight: None,
+        }
+    }
+}
+
+// The weight is finite and non-negative (`with_floor_weight`, which also
+// maps -0 to 0): its bits compare as the number.
+impl PartialEq for StabilityChecks {
+    fn eq(&self, other: &Self) -> bool {
+        self.rotations == other.rotations
+            && self.reduction_direction == other.reduction_direction
+            && self.rescaled == other.rescaled
+            && self.cross_backend == other.cross_backend
+            && self.floor_weight.map(f64::to_bits) == other.floor_weight.map(f64::to_bits)
+    }
+}
+
+impl Eq for StabilityChecks {}
 
 impl StabilityChecks {
     /// The checks, validated as `StabilityChecks.__post_init__`.
@@ -535,6 +579,23 @@ impl StabilityChecks {
             reduction_direction,
             rescaled,
             cross_backend,
+            floor_weight: None,
+        })
+    }
+
+    /// These checks with the weight `weight` of the loop-induced floor's
+    /// first-order term (`StabilityChecks.floor_weight`): a finite
+    /// non-negative number, or None for the process's default
+    /// ([`default_floor_weight`]).
+    pub fn with_floor_weight(self, weight: Option<f64>) -> RusticolResult<Self> {
+        if let Some(weight) = weight
+            && (!weight.is_finite() || weight < 0.0)
+        {
+            return Err(invalid("floor_weight must be a finite non-negative number"));
+        }
+        Ok(Self {
+            floor_weight: weight.map(|weight| weight + 0.0),
+            ..self
         })
     }
 
@@ -563,6 +624,17 @@ impl StabilityChecks {
     }
     pub fn cross_backend(&self) -> bool {
         self.cross_backend
+    }
+    /// The weight of the loop-induced floor's first-order term the caller
+    /// set (None: the process's default).
+    pub fn floor_weight(&self) -> Option<f64> {
+        self.floor_weight
+    }
+    /// The weight an estimate of a process whose highest-point loop has
+    /// `largest_loop` legs uses: the one set, else [`default_floor_weight`].
+    pub fn resolved_floor_weight(&self, largest_loop: usize) -> f64 {
+        self.floor_weight
+            .unwrap_or_else(|| default_floor_weight(largest_loop))
     }
     /// These checks without the cross-backend check (the evaluations of a
     /// per-point fallback, whose cross-backend check is not run: m-lit R6).
@@ -821,6 +893,13 @@ pub struct Estimate {
     pub roundoff: f64,
     /// Each requested check that did not run, with its reason.
     pub not_run: Vec<(String, String)>,
+    /// The absolute floor per sector and Laurent coefficient of a
+    /// loop-induced output, in place of FLOOR_UNITS u S
+    /// (`StabilityEstimate.floor`).
+    pub floor: Option<Budget>,
+    /// The first-order weight `floor` was formed with
+    /// (`StabilityEstimate.floor_weight`).
+    pub floor_weight: Option<f64>,
 }
 
 impl Estimate {
@@ -831,6 +910,20 @@ impl Estimate {
         reference: &Budget,
         budgets: Vec<(String, Budget)>,
         scale: Budget,
+        roundoff: f64,
+        not_run: Vec<(String, String)>,
+    ) -> RusticolResult<Self> {
+        Self::from_checks_floor(reference, budgets, scale, None, roundoff, not_run)
+    }
+
+    /// [`Estimate::from_checks`] with the absolute floor `floor` per sector
+    /// and Laurent coefficient of a loop-induced output, used in place of
+    /// FLOOR_UNITS u S (`StabilityEstimate.from_checks`' `floor`).
+    pub fn from_checks_floor(
+        reference: &Budget,
+        budgets: Vec<(String, Budget)>,
+        scale: Budget,
+        floor: Option<Budget>,
         roundoff: f64,
         not_run: Vec<(String, String)>,
     ) -> RusticolResult<Self> {
@@ -868,7 +961,11 @@ impl Estimate {
                     }
                 }
                 let sampled = rotated.unwrap_or(0.0) + reductions;
-                row.push(SAFETY * sampled + FLOOR_UNITS * roundoff * at(&scale, sector, k)?);
+                let bottom = match &floor {
+                    None => FLOOR_UNITS * roundoff * at(&scale, sector, k)?,
+                    Some(floor) => at(floor, sector, k)?,
+                };
+                row.push(SAFETY * sampled + bottom);
             }
             combined.push(row);
         }
@@ -885,6 +982,8 @@ impl Estimate {
             scale,
             roundoff,
             not_run,
+            floor,
+            floor_weight: None,
         })
     }
 }
@@ -1378,12 +1477,63 @@ impl InducedShape {
             .collect())
     }
 
-    /// The scale S of the estimate's floor (`induced.scale`): the |A|^2
-    /// product of the per-row term floors.
+    /// Per key of the amplitude vectors and Laurent coefficient k the
+    /// absolute size of the computed amplitude on the term floor's footing
+    /// (`induced.row_values`): N_k = sum_t |a_{t,k}| sqrt(G_tt).
+    pub fn row_values(&self, point: &InducedPoint) -> Keyed<Vec<f64>> {
+        let roots: Vec<f64> = (0..self.size)
+            .map(|t| py_pow(py_max(self.metric(t, t).0, 0.0), 0.5))
+            .collect();
+        point
+            .amplitudes
+            .iter()
+            .map(|(key, vector)| {
+                (
+                    *key,
+                    (0..self.width)
+                        .map(|k| {
+                            (0..self.size).fold(0.0_f64, |sum, t| {
+                                let (re, im) = vector[t][k];
+                                sum + modulus(re, im) * roots[t]
+                            })
+                        })
+                        .collect(),
+                )
+            })
+            .collect()
+    }
+
+    /// The scale S of the estimate (`induced.scale`, the public estimate's
+    /// `magnitude`): the |A|^2 product of the per-row term floors.
     pub fn scale(&self, point: &InducedPoint) -> RusticolResult<Budget> {
         let scales = self.row_scales(point)?;
         let get = |key: Key| lookup(&scales, &key).cloned();
         Ok(self.sector_form(get, get, |a, b| a * b))
+    }
+
+    /// The estimate's floor (`induced.floor`): the |A|^2 first-order form of
+    /// the per-row term floors S against the computed amplitude's sizes N
+    /// ([`floor_kernel`] on (value, floor) pairs, its first-order term
+    /// weighted by `weight`; a key with only one of them counts with a zero
+    /// for the other).
+    pub fn floor(
+        &self,
+        point: &InducedPoint,
+        roundoff: f64,
+        weight: f64,
+    ) -> RusticolResult<Budget> {
+        let scales = self.row_scales(point)?;
+        let values = self.row_values(point);
+        let zero = vec![0.0_f64; self.width];
+        let pairs = |key: Key| -> Option<Vec<(f64, f64)>> {
+            let (found, value) = (lookup(&scales, &key), lookup(&values, &key));
+            if found.is_none() && value.is_none() {
+                return None;
+            }
+            let (found, value) = (found.unwrap_or(&zero), value.unwrap_or(&zero));
+            Some((0..self.width).map(|k| (value[k], found[k])).collect())
+        };
+        Ok(self.sector_form(pairs, pairs, floor_kernel(roundoff, weight)))
     }
 
     /// The point's finiteness ratio (`induced.point_finiteness` with the
@@ -1422,7 +1572,9 @@ impl InducedShape {
 /// point_estimate` of an amplitude-mode point): its rotation checks' budgets,
 /// the re-test's (named `reduction`), the cross-backend check's (or its
 /// `not_run` record), against |A|^2 per sector (`reference`), with the term
-/// floor's scale.
+/// floor's scale and the floor's first-order term weighted by
+/// `floor_weight` (`StabilityChecks::floor_weight`).
+#[allow(clippy::too_many_arguments)]
 pub fn induced_estimate(
     shape: &InducedShape,
     roundoff: f64,
@@ -1431,6 +1583,7 @@ pub fn induced_estimate(
     rotated: &[InducedPoint],
     reduction: Option<&str>,
     cross: Option<&CrossRun<InducedPoint>>,
+    floor_weight: f64,
 ) -> RusticolResult<Estimate> {
     let mut budgets = Vec::with_capacity(rotated.len() + 2);
     for (k, run) in rotated.iter().enumerate() {
@@ -1445,7 +1598,30 @@ pub fn induced_estimate(
         Some(CrossRun::NotRun(why)) => not_run.push((CROSS.to_string(), why.clone())),
         None => {}
     }
-    Estimate::from_checks(reference, budgets, shape.scale(direct)?, roundoff, not_run)
+    let mut estimate = Estimate::from_checks_floor(
+        reference,
+        budgets,
+        shape.scale(direct)?,
+        Some(shape.floor(direct, roundoff, floor_weight)?),
+        roundoff,
+        not_run,
+    )?;
+    estimate.floor_weight = Some(floor_weight);
+    Ok(estimate)
+}
+
+/// The floor's bilinear kernel on (value, floor) pairs of the two sides
+/// (`induced.floor_kernel`): w eps1 (x S' + S y) + eps2 (eps2 S S'), eps1 =
+/// BILINEAR_FLOOR_UNITS u, eps2 = FLOOR_UNITS u and w the first-order
+/// term's weight.
+pub fn floor_kernel(roundoff: f64, weight: f64) -> impl Fn(&(f64, f64), &(f64, f64)) -> f64 {
+    let (first, second) = (
+        weight * (BILINEAR_FLOOR_UNITS * roundoff),
+        FLOOR_UNITS * roundoff,
+    );
+    move |&(x, s): &(f64, f64), &(y, t): &(f64, f64)| {
+        first * (x * t + s * y) + second * (second * s * t)
+    }
 }
 
 #[cfg(test)]
