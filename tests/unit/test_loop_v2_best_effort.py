@@ -1273,11 +1273,19 @@ def _expected_weight(policy, call, level, card):
     return 0.0 if call == "weight-only" else below
 
 
+# Every layer combination that exists: a rescue level exists under a policy only.
+_PRECEDENCE_CELLS = [
+    pytest.param(policy, call, level, card, id=f"{policy}-{call}-{level_id}-{card_id}")
+    for policy in ("load", "call", "none")
+    for call in _CALLS
+    for level, level_id in ((2.0, "level"), (None, "no-level"))
+    for card, card_id in ((FLOOR_WEIGHT, "card"), (None, "no-card"))
+    if not (policy == "none" and level is not None)
+]
+
+
 @pytest.mark.loop_physics
-@pytest.mark.parametrize("card", [FLOOR_WEIGHT, None], ids=["card", "no-card"])
-@pytest.mark.parametrize("level", [2.0, None], ids=["level", "no-level"])
-@pytest.mark.parametrize("call", list(_CALLS))
-@pytest.mark.parametrize("policy", ["load", "call", "none"])
+@pytest.mark.parametrize(("policy", "call", "level", "card"), _PRECEDENCE_CELLS)
 def test_the_floor_weight_precedence_over_every_layer(aag, policy, call, level, card):
     from pyamplicol import Runtime
     from pyamplicol.api.errors import CompatibilityError
@@ -1287,8 +1295,6 @@ def test_the_floor_weight_precedence_over_every_layer(aag, policy, call, level, 
         VirtualStabilityChecks,
     )
 
-    if policy == "none" and level is not None:
-        pytest.skip("a level exists under a policy only")
     artifact, points, scales = aag
     points, scales = points[:2], scales[:2]
     rescue = VirtualRescuePolicy(
