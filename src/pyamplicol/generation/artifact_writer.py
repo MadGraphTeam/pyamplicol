@@ -5596,7 +5596,7 @@ def _validate_append_invariant(
 
     from pyamplicol.loops.v2.mapping import side_class
 
-    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], str] = {}
+    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], tuple[str, str, bool]] = {}
 
     def own(expression: object, public_id: str, *, incoming: bool) -> None:
         key = side_class(str(expression))
@@ -5604,17 +5604,28 @@ def _validate_append_invariant(
             return
         previous = owners.get(key)
         if previous is None:
-            owners[key] = public_id
+            owners[key] = (public_id, str(expression), incoming)
             return
-        if incoming:
+        if not incoming:
+            return
+        owner_id, owner_expression, owner_incoming = previous
+        if owner_incoming:
+            # Two processes of the batch: the artifact holds neither yet.
             raise ProcessIdCollisionError(
-                f"the appended process {str(expression)!r} ({public_id!r}) is "
-                f"already in the artifact as {previous!r} (it is a spelling of "
-                "it: any order of the particles on each side selects it); "
-                "nothing was written. An artifact holds a process once: select "
-                "it by that ID",
-                process_ids=(previous, public_id),
+                f"the appended processes {owner_expression!r} ({owner_id!r}) and "
+                f"{str(expression)!r} ({public_id!r}) are spellings of one "
+                "process (any order of the particles on each side selects "
+                "either); nothing was written. Append one of them",
+                process_ids=(owner_id, public_id),
             )
+        raise ProcessIdCollisionError(
+            f"the appended process {str(expression)!r} ({public_id!r}) is "
+            f"already in the artifact as {owner_id!r} (it is a spelling of "
+            "it: any order of the particles on each side selects it); "
+            "nothing was written. An artifact holds a process once: select "
+            "it by that ID",
+            process_ids=(owner_id, public_id),
+        )
 
     for record in existing.processes:
         own(record.get("expression", ""), str(record["id"]), incoming=False)

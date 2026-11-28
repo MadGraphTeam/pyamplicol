@@ -1393,3 +1393,27 @@ def test_a_fresh_generation_refuses_two_aliases_of_one_spelling(
     )
     table = _resolution_table(tmp_path / "one")
     assert all("error" not in str(value) for value in table.values()), table
+
+
+def test_a_collision_within_the_batch_names_both_appended_processes(tmp_path):
+    # Two orders of one new process in one append: the refusal names both
+    # appended processes and does not point at an ID the artifact never got.
+    generator = _tree_generator(tmp_path)
+    artifact = tmp_path / "artifact"
+    generator.generate(ProcessRequest.parse("d d~ > g g", name="ddgg"), artifact)
+    before = _digest(artifact)
+    with pytest.raises(ProcessIdCollisionError) as error:
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("c c~ > g g", name="charm"),
+                    ProcessRequest.parse("c~ c > g g", name="charm_crossed"),
+                )
+            ),
+            artifact,
+            mode="append",
+        )
+    message = str(error.value)
+    assert "'charm'" in message and "'charm_crossed'" in message
+    assert "Append one of them" in message and "select it by that ID" not in message
+    assert _digest(artifact) == before
