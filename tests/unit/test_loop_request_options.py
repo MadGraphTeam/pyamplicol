@@ -818,3 +818,42 @@ def test_the_arrow_is_part_of_a_process_identity(tmp_path, model_cache, directio
         generator.generate(incoming, artifact, mode="append")
     assert _digest(artifact) == before
     assert Runtime.load(artifact, process="take").physics.process == kept
+
+
+def test_an_unnamed_append_avoids_the_id_of_a_served_member(tmp_path, model_cache):
+    # e- u > e- u is served through u e- > u e- (a side permutation) as
+    # e_u_to_e_u; an unnamed e+ u > e+ u, whose readable name is the same,
+    # takes the digest-suffixed name, as against a stored ID.
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u e- > u e-",
+        name="unused",
+        extra="flavor_blind = true",
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("u e- > u e-"), ProcessRequest.parse("e- u > e- u"))
+        ),
+        artifact,
+    )
+    served = Runtime.load(artifact, process="e_u_to_e_u")
+    assert served.physics.process == "e- u > e- u"
+    before = _values(artifact, "e_u_to_e_u")
+    stored_before = {row["id"] for row in _manifest(artifact)["processes"]}
+    for expression in ("e+ u > e+ u", "u e+ > u e+"):
+        generator.generate(ProcessRequest.parse(expression), artifact, mode="append")
+    stored = {row["id"]: row["expression"] for row in _manifest(artifact)["processes"]}
+    added = {name: stored[name] for name in set(stored) - stored_before}
+    assert sorted(added.values()) == ["e+ u > e+ u", "u e+ > u e+"]
+    # Both readable names are taken (a served member's, a stored process's):
+    # both appended processes take the digest-suffixed form.
+    assert all(name.startswith(("e_u_to_e_u_", "u_e_to_u_e_")) for name in added)
+    assert _values(artifact, "e_u_to_e_u") == before
+    # An exact same-expression duplicate under the served ID is still refused.
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    with pytest.raises(ProcessIdCollisionError):
+        generator.generate(ProcessRequest.parse("e- u > e- u"), artifact, mode="append")

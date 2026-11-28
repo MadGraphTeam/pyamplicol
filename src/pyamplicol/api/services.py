@@ -259,19 +259,28 @@ def _process_set(
 
 
 def _appended_process_names(destination: Path) -> dict[str, str]:
-    """``process id -> expression`` of the artifact an append extends (empty
-    when there is none or it cannot be read: the writer then reports it)."""
+    """``process id -> expression`` of the artifact an append extends: its
+    stored processes and the process-group members it serves through them
+    (public IDs too; empty when there is none or it cannot be read: the
+    writer then reports it)."""
 
     from pyamplicol.artifacts.manifest import load_manifest
+    from pyamplicol.artifacts.process_groups import read_process_groups
 
     try:
         manifest = load_manifest(destination)
+        groups = read_process_groups(destination)
     except Exception:  # the writer reports an unreadable artifact
         return {}
-    return {
+    names = {
         str(record["id"]): str(record.get("expression", ""))
         for record in manifest.processes
     }
+    for representative, group in (groups.groups if groups else {}).items():
+        for member in group.members:
+            if not member.generated and member.process_id != representative:
+                names.setdefault(member.process_id, member.expression)
+    return names
 
 
 def _appended_alias_names(destination: Path) -> tuple[str, ...]:
