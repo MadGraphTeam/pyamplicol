@@ -242,8 +242,14 @@ class CorrelatedGenerationBackend(GenerationBackend):
         return super().generate(processes, output, model=model, mode=mode)
 
     def _prepare_process_construction(
-        self, process: CanonicalProcessIR, model: Model
+        self,
+        process: CanonicalProcessIR,
+        model: Model,
+        *,
+        topology_replay: bool = True,
     ) -> _PreparedProcessConstruction:
+        # Full colour: no leading-colour topology replay to keep or drop.
+        del topology_replay
         if process.color_accuracy != "full":
             raise GenerationError("correlated process expansion must use full colour")
         by_label = {leg.label: leg for leg in process.legs}
@@ -325,9 +331,18 @@ class CorrelatedGenerationBackend(GenerationBackend):
                 f"process {process.process!r} DAG was unexpectedly truncated"
             )
         if not dag.has_amplitudes:
+            limit = self._max_quark_pairs
+            cut = (
+                ""
+                if limit is None or process.color_endpoints.pair_count <= limit
+                else (
+                    f": process.max_quark_lines = {limit} removes it (it has "
+                    f"{process.color_endpoints.pair_count} quark lines)"
+                )
+            )
             raise _NoModelSupportedAmplitudes(
                 f"process {process.process!r} has no model-supported "
-                "tree-level amplitudes"
+                f"tree-level amplitudes{cut}"
             )
         return dag, {
             "key": process.key,

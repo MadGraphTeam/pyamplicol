@@ -9,6 +9,7 @@ import json
 import logging
 import math
 import os
+import re
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -31,7 +32,9 @@ from pyamplicol.api.errors import (
     ConfigurationError,
     GenerationError,
     ModelError,
+    NoTreeDiagramError,
     PyAmpliColError,
+    RequestFilterError,
 )
 from pyamplicol.api.models import CompiledModel, _compiled_model_payload
 from pyamplicol.api.requests import (
@@ -165,6 +168,7 @@ from .helicity_materialization import materialize_helicity_recurrence
 from .helicity_replay import (
     HELICITY_RECURRENCE_CONTRACT_VERSION,
     build_helicity_recurrence_plan,
+    topology_replay_opens_helicity_support,
 )
 from .numerical_current_warmup import (
     generic_dag_numerical_current_opt_out_report,
@@ -267,6 +271,7 @@ from .validation import (
 
 if TYPE_CHECKING:
     from ..licensing import SymbolicaLicenseState
+    from ..models.builtin.process_types import BuiltinProcessSelectionReport
     from .artifact_writer import ApiBundleHook, ProcessArtifact
     from .process_grouping import ProcessGroupMap
 
@@ -2800,6 +2805,48 @@ class _NoModelSupportedAmplitudes(GenerationError):
     """A concrete tree-level subprocess has no amplitude in the active model."""
 
 
+class _RequestWithoutTreeDiagram(Exception):
+    """A tree-level request without a diagram, collected for the one refusal
+    of the call (``reason``: why, when known; ``loop_hint``: whether a loop
+    could serve it). With ``settings`` the request has diagrams and those
+    settings remove them all (``RequestFilterError``); without, it has none
+    (``NoTreeDiagramError``). ``uncut``: every concrete process of the request
+    without the quark-line cut ``cut`` (``process.max_quark_lines = limit``;
+    ``reason`` says what it removes), with its number of quark lines in
+    ``lines``, for the refusal step to decide which settings empty the
+    request."""
+
+    def __init__(
+        self,
+        expression: str,
+        reason: str | None = None,
+        *,
+        loop_hint: bool = True,
+        settings: tuple[str, ...] = (),
+        uncut: tuple[CanonicalProcessIR, ...] = (),
+        cut: str | None = None,
+        lines: tuple[int, ...] = (),
+    ) -> None:
+        super().__init__(expression)
+        self.expression = expression
+        self.reason = reason
+        self.loop_hint = loop_hint and not settings
+        self.settings = settings
+        self.uncut = uncut
+        self.cut = cut
+        self.lines = lines
+
+
+#: Why the built-in process selection rejects a concrete process
+#: (``BuiltinProcessSelectionReport.rejection_counts``) when no loop can serve it.
+_BUILTIN_CONSERVATION_REJECTIONS = {
+    "charge": "it violates electric-charge conservation",
+    "fermion-family": "it changes a fermion family number, which the built-in "
+    "model conserves",
+    "single-coloured-state": "a single coloured particle cannot be colour neutral",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class _UnsupportedProcess:
     expanded: _ExpandedProcess
@@ -3522,6 +3569,7 @@ class GenerationBackend:
                 processes,
                 resolved_model,
                 PhaseHandle(task_id, self._progress, len(processes.requests)),
+                tree_refusal=True,
             )
             self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
@@ -3716,7 +3764,9 @@ class GenerationBackend:
                 "Expanding concrete processes",
                 total=len(processes.requests),
             ) as phase:
-                expanded = self._expand_process_set(processes, resolved_model, phase)
+                expanded = self._expand_process_set(
+                    processes, resolved_model, phase, tree_refusal=True
+                )
                 phase.summary = f"{len(expanded):,} concrete " + (
                     "process" if len(expanded) == 1 else "processes"
                 )
@@ -4796,14 +4846,28 @@ class GenerationBackend:
         processes: ProcessSet,
         resolved: _ResolvedModel,
         phase: PhaseHandle,
+        *,
+        tree_refusal: bool = False,
     ) -> tuple[_ExpandedProcess, ...]:
+        """Expand every request. ``tree_refusal=True`` (tree generation and
+        planning) refuses, before any lane is built and in one
+        ``NoTreeDiagramError``, every request without a tree-level diagram
+        (``_refuse_requests_without_tree_diagrams``)."""
+
+        without_diagram: list[_RequestWithoutTreeDiagram] = []
         aliases_by_target: dict[str, list[ProcessAlias]] = {}
         for alias in processes.aliases:
             aliases_by_target.setdefault(alias.process_name, []).append(alias)
         result: list[_ExpandedProcess] = []
         names: set[str] = set()
         for request_index, request in enumerate(processes.requests, start=1):
-            expanded = self._expand_request(request, resolved)
+            try:
+                expanded = self._expand_request(
+                    request, resolved, tree_refusal=tree_refusal
+                )
+            except _RequestWithoutTreeDiagram as refusal:
+                without_diagram.append(refusal)
+                continue
             request_aliases = aliases_by_target.get(request.name, [])
             if request_aliases and len(expanded) != 1:
                 raise GenerationError(
@@ -4876,6 +4940,19 @@ class GenerationBackend:
                 table,
                 consider_charge_conjugation=self._consider_charge_conjugation,
                 relation_warning=self._flavor_blind_relation_warning(resolved, table),
+            )
+        if tree_refusal:
+            self._refuse_requests_without_tree_diagrams(
+                result,
+                resolved.model,
+                without_diagram,
+                builtin_selection=(
+                    resolved.compiled is None
+                    or not resolved.use_compiled_process_catalog
+                ),
+                request_order=tuple(
+                    request.expression for request in processes.requests
+                ),
             )
         return tuple(result)
 
@@ -5712,6 +5789,583 @@ class GenerationBackend:
             recurrence_process_executor_pack=process_executor_pack,
         )
 
+    def _coupling_order_request_text(self) -> str:
+        run = self._run_config
+        if run is None:
+            limits = dict(self._coupling_order_limits)
+            squared: tuple[str, ...] = ()
+        else:
+            limits = dict(run.process.max_coupling_orders)
+            squared = tuple(run.process.squared_coupling_orders)
+        parts = [f"{name}<={value}" for name, value in sorted(limits.items())]
+        parts.extend(squared)
+        return " ".join(parts)
+
+    def _no_tree_diagram_error(
+        self,
+        refusals: Sequence[_RequestWithoutTreeDiagram],
+    ) -> GenerationError:
+        """The one refusal of tree-level requests without a diagram: a
+        ``RequestFilterError`` naming the settings when a setting removes the
+        diagrams of some (the others, without any, follow in its message),
+        else a ``NoTreeDiagramError``."""
+
+        filtered = [refusal for refusal in refusals if refusal.settings]
+        missing = [refusal for refusal in refusals if not refusal.settings]
+        orders = self._coupling_order_request_text()
+        message = ""
+        if missing:
+            quoted = ", ".join(
+                repr(refusal.expression)
+                + (f" ({refusal.reason})" if refusal.reason else "")
+                for refusal in missing
+            )
+            single = len(missing) == 1
+            message = (
+                f"no tree-level diagram: {'process' if single else 'processes'} "
+                f"{quoted} {'has' if single else 'have'} no tree-level Feynman "
+                "diagram at any coupling order, so there is nothing to generate."
+            )
+            if any(refusal.loop_hint for refusal in missing):
+                message += (
+                    " A process without a tree-level diagram may be "
+                    "loop-induced: it is generated at one loop (MG5_aMC syntax "
+                    "'<process> [noborn=QCD]', or process.loop_coupling_orders "
+                    "with process.loop_induced)."
+                )
+        if not filtered:
+            return NoTreeDiagramError(
+                message,
+                processes=tuple(refusal.expression for refusal in missing),
+                coupling_orders=orders,
+            )
+        settings = tuple(
+            dict.fromkeys(name for refusal in filtered for name in refusal.settings)
+        )
+        text = "request filter: " + " ".join(
+            str(refusal.reason) for refusal in filtered
+        )
+        return RequestFilterError(
+            f"{text} {message}" if message else text,
+            processes=tuple(refusal.expression for refusal in filtered),
+            settings=settings,
+        )
+
+    def _builtin_expanded_request(self, request: ProcessRequest) -> str:
+        """A built-in request with its multiparticle labels expanded."""
+
+        from ..models.builtin.process_catalog import PDGS
+        from ..processes.core_syntax import expand_process_variants
+
+        multiparticles = {"all": tuple(PDGS)}
+        if self._run_config is not None:
+            multiparticles.update(self._run_config.process.multiparticles)
+        return " | ".join(
+            expand_process_variants(request.expression, aliases=multiparticles)
+        )
+
+    def _builtin_uncut_processes(
+        self, expanded_request: str
+    ) -> tuple[tuple[CanonicalProcessIR, ...], tuple[int, ...]]:
+        """The concrete processes of a built-in request without the
+        quark-line cut, and their quark-line counts."""
+
+        from ..models.builtin.process_ir import build_process_ir
+        from ..models.builtin.process_selection import (
+            build_generic_process_selection_report,
+        )
+        from ..models.builtin.process_types import BuiltinProcessOptions
+
+        uncut = build_generic_process_selection_report(
+            expanded_request,
+            BuiltinProcessOptions(
+                flavour_scheme=self._builtin_process_options.flavour_scheme,
+                include_3qqbar=True,
+            ),
+            max_quark_pairs=None,
+        )
+        lines = {record.key: record.quark_lines for record in uncut.records}
+        return (
+            tuple(
+                build_process_ir(
+                    entry.process,
+                    color_accuracy=self._color_accuracy,
+                    options=uncut.options,
+                )
+                for entry in uncut.entries
+            ),
+            tuple(lines.get(entry.key, 0) for entry in uncut.entries),
+        )
+
+    def _builtin_partly_cut_request(
+        self,
+        request: ProcessRequest,
+    ) -> _RequestWithoutTreeDiagram | None:
+        """For a built-in request whose kept members have no Born: every
+        member without the quark-line cut, as the candidates of the decision
+        (``_filter_refusal``); None without a cut or when it removed none."""
+
+        limit = self._max_quark_pairs
+        if limit is None:
+            return None
+        uncut, lines = self._builtin_uncut_processes(
+            self._builtin_expanded_request(request)
+        )
+        # The cut removes the members with more quark lines than it allows
+        # (by their enumerated counts, not by the members missing from those
+        # kept: one may be a side permutation of a kept member).
+        removed = [count for count in lines if count > limit]
+        if not removed:
+            return None
+        counted = " or ".join(str(count) for count in sorted(set(removed)))
+        # What the members it keeps lack is said with the active bounds
+        # (``_filter_refusal``).
+        return _RequestWithoutTreeDiagram(
+            request.expression,
+            f"process.max_quark_lines = {limit} removes {len(removed)} of the "
+            f"{len(uncut)} concrete processes of {request.expression!r} (those "
+            f"with {counted} quark line{'' if removed == [1] * len(removed) else 's'})",
+            cut=f"process.max_quark_lines = {limit}",
+            uncut=uncut,
+            lines=lines,
+        )
+
+    def _builtin_request_without_process(
+        self,
+        expression: str,
+        expanded_request: str,
+        report: BuiltinProcessSelectionReport,
+        message: str,
+    ) -> _RequestWithoutTreeDiagram:
+        """Why the built-in selection keeps no concrete process of a request
+        (``message``: the selection's own words): the quark-line cut when the
+        request has processes without it, else the conservation laws its
+        candidates violate, else no connection in the model (loop-induced)."""
+
+        limit = self._max_quark_pairs
+        if limit is not None:
+            uncut, counts = self._builtin_uncut_processes(expanded_request)
+            if uncut:
+                lines = sorted(set(counts))
+                counted = " or ".join(str(count) for count in lines)
+                # Whether the cut is why there is nothing to generate (a Born
+                # exists without it) is decided with the other settings.
+                return _RequestWithoutTreeDiagram(
+                    expression,
+                    f"{message}: process.max_quark_lines = {limit} removes every "
+                    f"concrete process of the request (they have {counted} quark "
+                    + ("line)" if lines == [1] else "lines)"),
+                    cut=f"process.max_quark_lines = {limit}",
+                    uncut=uncut,
+                    lines=counts,
+                )
+        reasons = dict(report.rejection_counts)
+        violated = [
+            text
+            for key, text in _BUILTIN_CONSERVATION_REJECTIONS.items()
+            if reasons.get(key)
+        ]
+        if violated and not reasons.get("model-reachability"):
+            return _RequestWithoutTreeDiagram(
+                expression, "; ".join(violated), loop_hint=False
+            )
+        return _RequestWithoutTreeDiagram(
+            expression,
+            "the built-in model connects none of its concrete processes",
+            loop_hint=True,
+        )
+
+    def _refuse_requests_without_tree_diagrams(
+        self,
+        expanded: Sequence[_ExpandedProcess],
+        model: Model | None,
+        without_concrete_process: Sequence[_RequestWithoutTreeDiagram] = (),
+        *,
+        request_order: Sequence[str] = (),
+        builtin_selection: bool = False,
+    ) -> None:
+        """Refuse, before any lane is built, the requests none of whose
+        concrete processes has a tree-level closure within the coupling-order
+        limits (``has_model_supported_amplitudes``: it never rejects a process
+        with amplitudes), with those that expanded to no concrete process.
+        Members without one inside a multiparticle request that has others
+        stay the lanes' business (skipped with a warning). The on-the-fly
+        lane builds no colour plan before its seeds: there the check is the
+        colour-blind closure sweep its Born coupling orders come from
+        (``process_born_amplitude_orders``), which over-estimates no less."""
+
+        # The limits every lane builds within (``request_coupling_order_limits``:
+        # explicit, else the model's expansion orders under the minimal
+        # policy); the expansion-order caps among them.
+        explicit = {
+            str(name).upper(): int(value)
+            for name, value in self._coupling_order_limits.items()
+        }
+        bounds = (
+            explicit
+            if model is None
+            else request_coupling_order_limits(
+                explicit, model, policy=self._coupling_order_policy
+            )
+        )
+        caps = {
+            name: value
+            for name, value in sorted(bounds.items())
+            if name not in explicit
+        }
+
+        # Caches of this call, keyed by the identity of a process and holding
+        # the process itself: an entry keeps its key's object alive, so no
+        # other process of the call (the members a cut removed are built for
+        # one request and dropped after it) can reuse that identity.
+        color_plans: dict[int, tuple[CanonicalProcessIR, GenericColorPlan]] = {}
+        all_totals: dict[
+            int, tuple[CanonicalProcessIR, tuple[dict[str, int], ...]]
+        ] = {}
+
+        def color_plan(process: CanonicalProcessIR) -> GenericColorPlan:
+            assert model is not None
+            found = color_plans.get(id(process))
+            if found is None or found[0] is not process:
+                found = color_plans[id(process)] = (
+                    process,
+                    build_color_plan(
+                        process,
+                        color_accuracy=self._color_accuracy,
+                        fold_trace_reflections=(
+                            model.lc_trace_reflection_equivalence_is_proven(process)
+                        ),
+                    ),
+                )
+            return found[1]
+
+        def has_diagram(
+            process: CanonicalProcessIR, limits: Mapping[str, int] | None
+        ) -> bool:
+            assert model is not None
+            if self._on_the_fly_execution_enabled:
+                return bool(
+                    process_born_amplitude_orders(
+                        process, model=model, max_coupling_orders=limits
+                    )
+                )
+            return has_model_supported_amplitudes(
+                process,
+                model=model,
+                color_plan=color_plan(process),
+                max_coupling_orders=limits,
+            )
+
+        requests: dict[str, ProcessRequest] = {}
+        supported: set[str] = set()
+        members: dict[str, list[CanonicalProcessIR]] = {}
+        for entry in expanded:
+            source = _source_request(entry)
+            requests.setdefault(source.name, source)
+            if source.name in supported or model is None:
+                supported.add(source.name)
+                continue
+            if has_diagram(entry.process_ir, bounds or None):
+                supported.add(source.name)
+            else:
+                members.setdefault(source.name, []).append(entry.process_ir)
+
+        def totals(process: CanonicalProcessIR) -> tuple[dict[str, int], ...]:
+            """The total coupling orders of every tree-level closure, without
+            limits (the sweep ``has_diagram`` runs within them)."""
+
+            assert model is not None
+            found = all_totals.get(id(process))
+            if found is None or found[0] is not process:
+                if self._on_the_fly_execution_enabled:
+                    raw: Iterable[CouplingOrders] = process_born_amplitude_orders(
+                        process, model=model, max_coupling_orders=None
+                    )
+                else:
+                    raw = _closure_totals_from_color_plan(
+                        process, model=model, color_plan=color_plan(process)
+                    )
+                found = all_totals[id(process)] = (
+                    process,
+                    tuple(
+                        {str(name).upper(): int(value) for name, value in total}
+                        for total in raw
+                    ),
+                )
+            return found[1]
+
+        def limits_for(changes: Mapping[str, int]) -> dict[str, int]:
+            """The limits of the same request with the explicit limits
+            ``changes`` stated in addition (as a user states them: an
+            explicit limit replaces the expansion-order cap of its order)."""
+
+            assert model is not None
+            return request_coupling_order_limits(
+                {**explicit, **changes}, model, policy=self._coupling_order_policy
+            )
+
+        def decide(
+            expression: str,
+            kept: Sequence[CanonicalProcessIR],
+            cut: _RequestWithoutTreeDiagram | None,
+        ) -> _RequestWithoutTreeDiagram:
+            return self._filter_refusal(
+                expression,
+                kept,
+                cut,
+                totals,
+                has_diagram,
+                explicit=explicit,
+                caps=caps,
+                bounds=bounds,
+                limits_for=limits_for,
+                minimal_policy=self._coupling_order_policy == "minimal",
+                quark_line_limit=self._max_quark_pairs,
+            )
+
+        refused: dict[str, _RequestWithoutTreeDiagram] = {}
+        for refusal in without_concrete_process:
+            refused[refusal.expression] = (
+                decide(refusal.expression, (), refusal)
+                if refusal.uncut and model is not None
+                else refusal
+            )
+        for name, request in requests.items():
+            if name not in supported:
+                kept = members.get(name, ())
+                # The members the built-in quark-line cut removed count too.
+                partly_cut = (
+                    self._builtin_partly_cut_request(request)
+                    if builtin_selection and model is not None
+                    else None
+                )
+                refused.setdefault(
+                    request.expression, decide(request.expression, kept, partly_cut)
+                )
+        if refused:
+            # In request order.
+            order = {
+                expression: index for index, expression in enumerate(request_order)
+            }
+            raise self._no_tree_diagram_error(
+                sorted(
+                    refused.values(),
+                    key=lambda refusal: order.get(refusal.expression, -1),
+                )
+            )
+
+    @staticmethod
+    def _filter_refusal(
+        expression: str,
+        kept: Sequence[CanonicalProcessIR],
+        cut: _RequestWithoutTreeDiagram | None,
+        totals: Callable[[CanonicalProcessIR], tuple[dict[str, int], ...]],
+        has_diagram: Callable[[CanonicalProcessIR, Mapping[str, int] | None], bool],
+        *,
+        explicit: Mapping[str, int],
+        caps: Mapping[str, int],
+        bounds: Mapping[str, int],
+        limits_for: Callable[[Mapping[str, int]], Mapping[str, int]],
+        minimal_policy: bool,
+        quark_line_limit: int | None,
+    ) -> _RequestWithoutTreeDiagram:
+        """Which settings leave a request without a Born, from the total
+        coupling orders of its tree-level closures (``totals``, the sweep that
+        decides service): those of the members it keeps and, with the
+        quark-line cut (``cut``: its removal, every concrete process of the
+        request without it and their quark lines), of all its members.
+        Without any closure, none (``NoTreeDiagramError``; the cut is
+        mentioned as also excluding it). Else every sentence is a fact the
+        generator acts on: the active bounds (all of them), what the cut
+        removes, and the fewest changes that admit a closure, each a setting
+        with its new value (``process.max_quark_lines`` raised to a number of
+        quark lines; a coupling-order limit raised, or stated in place of an
+        expansion order) that is confirmed by the same check on the request
+        as it is with that change made the way the message says
+        (``limits_for``; the members the raised cut keeps) before it is
+        named. Under the ``minimal`` policy a limit goes in
+        ``process.max_coupling_orders`` only: an MG5_aMC annotation of the
+        process would switch to the ``explicit`` policy, which drops the
+        expansion orders of the other couplings and changes the request."""
+
+        uncut = tuple(cut.uncut) if cut is not None else ()
+        lines = tuple(cut.lines) if cut is not None else ()
+        # (quark lines the cut must allow or None, raised limits) -> changes.
+        Option = tuple[int | None, tuple[tuple[str, int], ...]]
+        options: dict[Option, int] = {}
+
+        def add(needed: int | None, process: CanonicalProcessIR) -> None:
+            for total in totals(process):
+                raised = tuple(
+                    sorted(
+                        (name, value)
+                        for name, value in total.items()
+                        if name in bounds and value > bounds[name]
+                    )
+                )
+                options[(needed, raised)] = int(needed is not None) + len(raised)
+
+        for process in kept:
+            add(None, process)
+        removed = [
+            (process, count)
+            for process, count in zip(uncut, lines, strict=True)
+            if quark_line_limit is not None and count > quark_line_limit
+        ]
+        for process, count in removed:
+            add(count, process)
+        if not options:
+            return _RequestWithoutTreeDiagram(
+                expression, None if cut is None else f"also excluded by {cut.cut}"
+            )
+
+        def admitted(needed: int | None) -> tuple[CanonicalProcessIR, ...]:
+            """The members a cut raised to ``needed`` quark lines keeps."""
+
+            if needed is None:
+                return tuple(kept)
+            return tuple(kept) + tuple(
+                process for process, count in removed if count <= needed
+            )
+
+        def confirmed(option: Option) -> bool:
+            needed, raised = option
+            limits = limits_for(dict(raised))
+            return any(
+                has_diagram(process, limits or None) for process in admitted(needed)
+            )
+
+        fewest = min(options.values())
+        chosen = sorted(
+            (
+                option
+                for option, changes in options.items()
+                if changes == fewest and changes > 0 and confirmed(option)
+            ),
+            key=lambda option: (
+                option[0] is not None,
+                option[0] or 0,
+                [value for _, value in option[1]],
+                [name for name, _ in option[1]],
+            ),
+        )
+        # One change per setting and set of orders: the smallest.
+        unique: dict[tuple[bool, tuple[str, ...]], Option] = {}
+        for option in chosen:
+            unique.setdefault(
+                (option[0] is not None, tuple(name for name, _ in option[1])), option
+            )
+        chosen = list(unique.values())
+
+        def listed(limits: Mapping[str, int]) -> str:
+            return " ".join(f"{name}<={value}" for name, value in limits.items())
+
+        # Every active bound: a closure needs all of them to admit it.
+        within = []
+        if explicit:
+            within.append(
+                f"the coupling-order limits {listed(dict(sorted(explicit.items())))}"
+            )
+        if caps:
+            within.append(
+                f"the model's expansion orders ({listed(caps)}), which the "
+                "minimal coupling-order policy applies to the orders the request "
+                "leaves open"
+            )
+        within_text = " and ".join(within)
+        settings_named = tuple(
+            name
+            for name, present in (
+                ("process.max_quark_lines", cut is not None),
+                ("process.max_coupling_orders", bool(explicit or caps)),
+            )
+            if present
+        )
+        if cut is not None and any(option[0] is not None for option in chosen):
+            # Raising the cut is part of the remedy: say what it removes and,
+            # with the bounds they are checked within, what the rest lacks.
+            text = str(cut.reason)
+            if kept:
+                text += ", and none of those it keeps has a tree-level diagram"
+                if within:
+                    text += " within " + within_text
+            if within and not any(
+                needed is not None and not raised for needed, raised in options
+            ):
+                text += (
+                    ", and without the cut none has one within "
+                    + within_text
+                    + " either"
+                )
+        else:
+            text = (
+                f"process {expression!r} has tree-level diagrams, but none within "
+                + (within_text or "its settings")
+            )
+            if cut is not None and not chosen:
+                text += f" with {cut.cut}"
+        if not chosen:
+            # No checked change serves it: say what removes it, promise nothing.
+            return _RequestWithoutTreeDiagram(
+                expression,
+                text + ", so there is nothing to generate; no checked change of "
+                "these settings serves it.",
+                settings=settings_named,
+            )
+
+        def remedy(option: Option) -> str:
+            changes = []
+            if option[0] is not None:
+                changes.append(f"raising process.max_quark_lines to {option[0]}")
+            raised_explicit = {
+                name: value for name, value in option[1] if name in explicit
+            }
+            raised_caps = {name: value for name, value in option[1] if name in caps}
+            if raised_explicit:
+                changes.append(
+                    "raising the limit "
+                    + listed({name: explicit[name] for name in raised_explicit})
+                    + f" to {listed(raised_explicit)}"
+                )
+            if raised_caps:
+                changes.append(
+                    f"stating the limit {listed(raised_caps)}, which replaces "
+                    "the expansion order "
+                    + listed({name: caps[name] for name in raised_caps})
+                )
+            return " together with ".join(changes)
+
+        text += ", so there is nothing to generate; " + " or ".join(
+            remedy(option) for option in chosen
+        )
+        text += " serves the request"
+        example = next((option[1][0] for option in chosen if option[1]), None)
+        if example is not None and minimal_policy:
+            # Every limit of a minimal-policy request is stated in the
+            # configuration: an annotation would switch the policy.
+            text += (
+                "; state a limit in process.max_coupling_orders, not as an "
+                f"MG5_aMC annotation of the process such as {example[0]}="
+                f"{example[1]}: an annotation asks for the explicit coupling-order "
+                "policy, which drops the expansion orders of the other couplings"
+            )
+        elif example is not None:
+            # Under the explicit policy every limit is stated by the user, in
+            # the configuration or as an annotation of the process.
+            text += (
+                "; change a limit where it is stated: in "
+                "process.max_coupling_orders or in the MG5_aMC annotation of the "
+                f"process ({example[0]}={example[1]})"
+            )
+        settings = []
+        if any(option[0] is not None for option in chosen):
+            settings.append("process.max_quark_lines")
+        if any(option[1] for option in chosen):
+            settings.append("process.max_coupling_orders")
+        return _RequestWithoutTreeDiagram(
+            expression, text + ".", settings=tuple(settings)
+        )
+
     def _drop_processes_without_amplitudes(
         self,
         expanded: tuple[_ExpandedProcess, ...],
@@ -5771,6 +6425,45 @@ class GenerationBackend:
         lowering_cache: RecurrenceScheduleLoweringCache[_RustRecurrenceLoweringOutput],
         generation_timings: dict[str, float] | None = None,
     ) -> _GeneratedRecurrenceProcess:
+        """Construct one recurrence process; an LC topology replay whose
+        permuted helicity support leaves the materialized one (identical
+        fermion lines joined by colour-singlet exchange only) is built again
+        with every sector materialized, as the DAG lanes do
+        (``topology_replay_opens_helicity_support``)."""
+
+        def attempt(topology_replay: bool) -> _GeneratedRecurrenceProcess:
+            return self._construct_recurrence_artifact_attempt(
+                expanded,
+                model,
+                model_inputs,
+                temporary_root,
+                index=index,
+                phase=phase,
+                lowering_cache=lowering_cache,
+                generation_timings=generation_timings,
+                topology_replay=topology_replay,
+            )
+
+        try:
+            return attempt(True)
+        except GenerationError as exc:
+            if not _recurrence_replay_opens_helicity_support(exc):
+                raise
+        return attempt(False)
+
+    def _construct_recurrence_artifact_attempt(
+        self,
+        expanded: _ExpandedProcess,
+        model: Model,
+        model_inputs: _RecurrenceModelInputs,
+        temporary_root: Path,
+        *,
+        index: int,
+        phase: PhaseHandle,
+        lowering_cache: RecurrenceScheduleLoweringCache[_RustRecurrenceLoweringOutput],
+        generation_timings: dict[str, float] | None,
+        topology_replay: bool,
+    ) -> _GeneratedRecurrenceProcess:
         process_name = expanded.request.name
         profile_started = time.perf_counter()
         profile: dict[str, float] = {}
@@ -5782,7 +6475,9 @@ class GenerationBackend:
             details={"process": process_name, "step": "colour planning"},
         ) as task:
             preparation_started = time.perf_counter()
-            prepared = self._prepare_process_construction(expanded.process_ir, model)
+            prepared = self._prepare_process_construction(
+                expanded.process_ir, model, topology_replay=topology_replay
+            )
             profile["process-model-color-preparation"] = (
                 time.perf_counter() - preparation_started
             )
@@ -8479,33 +9174,44 @@ class GenerationBackend:
         self,
         request: ProcessRequest,
         resolved_model: _ResolvedModel,
+        *,
+        tree_refusal: bool = False,
     ) -> tuple[CanonicalProcessIR, ...]:
+        """The concrete processes of one request. ``tree_refusal=True`` (tree
+        generation and planning) reports a request without a concrete process
+        as ``_RequestWithoutTreeDiagram`` for the one tree-level refusal."""
+
         if (
             resolved_model.compiled is None
             or not resolved_model.use_compiled_process_catalog
         ):
-            from ..models.builtin.process_catalog import PDGS
             from ..models.builtin.process_ir import build_process_ir
             from ..models.builtin.process_selection import (
+                build_generic_process_selection_report,
                 enumerate_generic_process_set,
             )
-            from ..processes.core_syntax import expand_process_variants
 
-            multiparticles = {"all": tuple(PDGS)}
-            if self._run_config is not None:
-                multiparticles.update(self._run_config.process.multiparticles)
-            expanded_request = " | ".join(
-                expand_process_variants(
-                    request.expression,
-                    aliases=multiparticles,
+            expanded_request = self._builtin_expanded_request(request)
+
+            try:
+                enumeration = enumerate_generic_process_set(
+                    expanded_request,
+                    self._builtin_process_options,
+                    max_quark_pairs=self._max_quark_pairs,
                 )
-            )
-
-            enumeration = enumerate_generic_process_set(
-                expanded_request,
-                self._builtin_process_options,
-                max_quark_pairs=self._max_quark_pairs,
-            )
+            except ValueError as exc:
+                # The enumeration finds no concrete process the built-in model
+                # connects (and says so with a ValueError).
+                report = build_generic_process_selection_report(
+                    expanded_request,
+                    self._builtin_process_options,
+                    max_quark_pairs=self._max_quark_pairs,
+                )
+                if not tree_refusal or report.entries:
+                    raise
+                raise self._builtin_request_without_process(
+                    request.expression, expanded_request, report, str(exc)
+                ) from exc
             return tuple(
                 build_process_ir(
                     entry.process,
@@ -8543,6 +9249,13 @@ class GenerationBackend:
             )
         )
         if not candidates:
+            if tree_refusal:
+                raise _RequestWithoutTreeDiagram(
+                    request.expression,
+                    "no concrete process conserves the additive charges of the "
+                    "model vertices",
+                    loop_hint=False,
+                )
             raise GenerationError(
                 f"process request {request.expression!r} has no concrete process "
                 "conserving the additive charges of the model vertices"
@@ -8836,7 +9549,18 @@ class GenerationBackend:
                 for partition in replay_plan.partitions
                 if int(partition.materialized_sector_id) not in root_sector_ids
             }
-            if missing_representatives:
+            if missing_representatives or topology_replay_opens_helicity_support(
+                dag,
+                model,
+                tuple(
+                    mapping
+                    for partition in replay_plan.partitions
+                    for mapping in partition.label_permutations
+                ),
+            ):
+                # Materialize every sector: a representative without roots,
+                # or a replay whose permuted helicity support leaves the
+                # materialized one (the helicity axis is shared by all flows).
                 replay_plan = None
                 dag = compile_generic_dag(
                     process,
@@ -8875,9 +9599,18 @@ class GenerationBackend:
                 f"process {process.process!r} DAG was unexpectedly truncated"
             )
         if not dag.has_amplitudes:
+            limit = self._max_quark_pairs
+            cut = (
+                ""
+                if limit is None or process.color_endpoints.pair_count <= limit
+                else (
+                    f": process.max_quark_lines = {limit} removes it (it has "
+                    f"{process.color_endpoints.pair_count} quark lines)"
+                )
+            )
             raise _NoModelSupportedAmplitudes(
                 f"process {process.process!r} has no model-supported tree-level "
-                "amplitudes"
+                f"amplitudes{cut}"
             )
         return (
             dag,
@@ -8935,8 +9668,12 @@ class GenerationBackend:
         self,
         process: CanonicalProcessIR,
         model: Model,
+        *,
+        topology_replay: bool = True,
     ) -> _PreparedProcessConstruction:
-        """Prepare the shared model/color contract before choosing a builder."""
+        """Prepare the shared model/color contract before choosing a builder.
+
+        ``topology_replay=False`` materializes every LC sector."""
 
         selection = self._process_selection
         self._validate_lc_flow_layout(selection)
@@ -9018,6 +9755,7 @@ class GenerationBackend:
             pass
         elif (
             self._color_accuracy == "lc"
+            and topology_replay
             and not self._all_flow_union_enabled
             and selection.selected_color_sector_ids is None
             and selection.selected_source_helicities is None
@@ -9237,6 +9975,20 @@ def _select_color_ready_processes(
         detail = "; ".join(color_plan.diagnostics) or "no color sectors"
         rejected.append(f"{process.process}: {detail}")
     return tuple(selected), tuple(rejected)
+
+
+# The recurrence lowering's refusal of an LC topology replay that maps a
+# resolved helicity of the materialized sector outside the retained
+# source-state coverage (``recurrence/direct_lowering.rs``): the permuted
+# helicity support leaves the materialized one.
+_RECURRENCE_REPLAY_OPEN_SUPPORT = re.compile(
+    r"replay target \d+ maps resolved helicity \d+ outside retained "
+    r"source-state coverage"
+)
+
+
+def _recurrence_replay_opens_helicity_support(error: BaseException) -> bool:
+    return _RECURRENCE_REPLAY_OPEN_SUPPORT.search(str(error)) is not None
 
 
 def _expanded_name(base: str, index: int, count: int) -> str:

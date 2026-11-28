@@ -691,6 +691,46 @@ def build_helicity_recurrence_plan(
     )
 
 
+def topology_replay_opens_helicity_support(
+    dag: GenericDAG,
+    model: Model,
+    label_permutations: Sequence[Sequence[tuple[int, int]]],
+) -> bool:
+    """Whether a topology replay maps the DAG's helicity support outside itself.
+
+    A replayed colour sector reuses the materialized sector's amplitudes with
+    its external labels permuted, so its non-zero helicities are the permuted
+    non-zero helicities of the materialized sector. The artifacts record one
+    helicity axis for every colour flow, derived from the materialized
+    amplitude roots: it is complete only when that support is closed under
+    every replay permutation. It is not when the materialized flow carries one
+    pairing of identical fermion lines only (identical quark flavours with
+    colour-singlet exchange), and the replayed flow the other.
+
+    Returns ``True`` only for a proven open support; an unreadable root keeps
+    the replay as it was.
+    """
+
+    source_by_bit, _contracts, _diagnostics = _source_contracts(dag, model)
+    support: set[_SelectorState] = set()
+    for root in dag.amplitude_roots:
+        states, error = _root_selector_states(root, dag, source_by_bit)
+        if error is not None:
+            return False
+        support.update(states)
+    for raw_mapping in label_permutations:
+        mapping = {int(left): int(right) for left, right in raw_mapping}
+        for state in support:
+            image = tuple(
+                sorted(
+                    (mapping.get(label, label), helicity) for label, helicity in state
+                )
+            )
+            if image not in support:
+                return True
+    return False
+
+
 def _source_contracts(
     dag: GenericDAG,
     model: Model,
