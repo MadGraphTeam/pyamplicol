@@ -944,3 +944,52 @@ def test_an_append_holding_a_process_already_there_is_refused(tmp_path, model_ca
     assert Runtime.load(artifact, process="e- u > e- u").physics.process_id == member
     assert _values(artifact, "e- u > e- u") == values
     assert Runtime.load(artifact, process="u~ u > g g").physics.process == "u~ u > G G"
+
+
+def test_an_appended_target_may_bring_its_own_aliases(tmp_path, model_cache):
+    # A new u u~ > g g with an alias exchanging its identical gluons is one
+    # process: admitted, the alias served by it at the exchanged momenta. An
+    # alias whose name is taken, and two appended targets of one process,
+    # are refused.
+    from pyamplicol.api import ProcessAlias
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(tmp_path, model_cache, expression="d d~ > g g", name="ddgg")
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(ProcessRequest.parse("d d~ > g g", name="ddgg"), artifact)
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("u u~ > g g", name="jets"),),
+            (ProcessAlias("swap_jets", "jets", (0, 1, 3, 2)),),
+        ),
+        artifact,
+        mode="append",
+    )
+    points = _points()
+    swapped = [[point[0], point[1], point[3], point[2]] for point in points]
+    alias = Runtime.load(artifact, process="swap_jets").evaluate(
+        points, mu_r2=[8315.0, 8315.0]
+    )
+    target = Runtime.load(artifact, process="jets").evaluate(
+        swapped, mu_r2=[8315.0, 8315.0]
+    )
+    assert repr((alias.born_values, alias.values)) == repr(
+        (target.born_values, target.values)
+    )
+    before = _digest(artifact)
+    for batch in (
+        ProcessSet(
+            (ProcessRequest.parse("s s~ > g g", name="strange"),),
+            (ProcessAlias("ddgg", "strange", (0, 1, 3, 2)),),
+        ),
+        ProcessSet(
+            (
+                ProcessRequest.parse("c c~ > g g", name="charm"),
+                ProcessRequest.parse("c c~ > g g", name="charm_again"),
+            )
+        ),
+    ):
+        with pytest.raises(ProcessIdCollisionError):
+            generator.generate(batch, artifact, mode="append")
+        assert _digest(artifact) == before

@@ -5517,11 +5517,13 @@ def _validate_appended_processes_are_new(
     particles in order (``_process_identity``: any spelling, the arrow
     included); every process the artifact stores, publishes as an alias or
     serves through a representative is held, whatever its ID (plain,
-    digest-suffixed, alias or member). An appended process, alias or served
-    member identical to one of them, or to another of the batch, is refused
-    with a ``ProcessIdCollisionError`` naming both IDs (the whole append,
-    also when the batch brings new processes too), as it would make the
-    expression select two IDs."""
+    digest-suffixed, alias or member). An appended process or served member
+    identical to one of them, or to another appended process or member, is
+    refused with a ``ProcessIdCollisionError`` naming both IDs (the whole
+    append, also when the batch brings new processes too), as it would make
+    the expression select two IDs. An appended process's own aliases are no
+    processes of their own (an alias exchanging identical particles names its
+    target's identity): ``_validate_public_process_ids`` checks their IDs."""
 
     if existing is None:
         return
@@ -5577,15 +5579,6 @@ def _validate_appended_processes_are_new(
             process.process_id,
             process.expression,
         )
-        for alias in process.aliases:
-            refuse(
-                _process_identity(
-                    _sequence(alias.get("external_pdgs", ())),
-                    alias.get("expression", ""),
-                ),
-                str(alias["id"]),
-                alias.get("expression", ""),
-            )
     if process_groups is not None:
         for representative, group in process_groups.groups.items():
             for item in group.members:

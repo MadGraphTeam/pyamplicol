@@ -229,3 +229,58 @@ output = {json.dumps(str(tmp_path / "unused"))}
     assert (
         Runtime.load(artifact, process="e- u > e- u").physics.process == "e- u > e- u"
     )
+
+
+def test_a_compiled_tree_target_may_bring_its_own_aliases(tmp_path):
+    from pyamplicol.api import ProcessAlias
+
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[process]
+entries = [{{ expression = "d d~ > g g", name = "ddgg" }}]
+[evaluator]
+execution_mode = "compiled"
+[generation]
+output = {json.dumps(str(tmp_path / "unused"))}
+"""
+    )
+    generator = Generator(resolve_config(card))
+    artifact = tmp_path / "artifact"
+    generator.generate(ProcessRequest.parse("d d~ > g g", name="ddgg"), artifact)
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("u u~ > g g", name="jets"),),
+            (ProcessAlias("swap_jets", "jets", (0, 1, 3, 2)),),
+        ),
+        artifact,
+        mode="append",
+    )
+    energy = 500.0
+    point = [
+        [energy, 0.0, 0.0, energy],
+        [energy, 0.0, 0.0, -energy],
+        [energy, 300.0, 0.0, 400.0],
+        [energy, -300.0, 0.0, -400.0],
+    ]
+    swapped = [point[0], point[1], point[3], point[2]]
+    alias = Runtime.load(artifact, process="swap_jets").evaluate([point])
+    target = Runtime.load(artifact, process="jets").evaluate([swapped])
+    assert repr(alias) == repr(target)
+    before = _digest(artifact)
+    for batch in (
+        ProcessSet(
+            (ProcessRequest.parse("s s~ > g g", name="strange"),),
+            (ProcessAlias("ddgg", "strange", (0, 1, 3, 2)),),
+        ),
+        ProcessSet(
+            (
+                ProcessRequest.parse("c c~ > g g", name="charm"),
+                ProcessRequest.parse("c c~ > g g", name="charm_again"),
+            )
+        ),
+    ):
+        with pytest.raises(ProcessIdCollisionError):
+            generator.generate(batch, artifact, mode="append")
+        assert _digest(artifact) == before
