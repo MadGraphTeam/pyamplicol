@@ -928,3 +928,42 @@ def test_untagged_photon_request_on_the_alpha_mz_model_generates(
             strict=True,
         ):
             assert abs(float(x) - float(y)) <= 1e-12 * size, sector
+
+
+@pytest.mark.loop_nightly
+def test_a_positional_photon_tag_is_kept(gmu_a0, loop_native):
+    """The photon tags passed positionally (the 17th argument, as callers
+    before ``SliceRequest.colour_selectors`` passed them) keep their meaning:
+    G_mu u u~ > a g with ``external_photons="none"`` tags no photon and
+    keeps the Born of the untagged request (0.29665972832606435 at the
+    reference's first point; tagging leg 3 would give 0.286855...)."""
+
+    import argparse
+    from dataclasses import fields, replace
+
+    from pyamplicol.loops.v2.assemble import LoopSlice, SliceRequest
+    from tools import loop_v2_generate
+
+    reference = _reference("uux_ag_ew")
+    request, _ignored = loop_v2_generate._fixture_request(
+        reference, gmu_a0, argparse.Namespace()
+    )
+    request = replace(request, external_photons="none")
+    arguments = []
+    for item in fields(SliceRequest):
+        arguments.append(getattr(request, item.name))
+        if item.name == "external_photons":
+            break
+    assert len(arguments) == 17
+    positional = SliceRequest(*arguments)
+    assert positional.external_photons == "none"
+    slice_ = LoopSlice.generate(gmu_a0, positional, loop_native)
+    assert slice_.external_photons is None
+    point = reference["points"][0]
+    scale = str(Fraction(reference["mu_r"][0]) ** 2)
+    answer = slice_.evaluate(
+        point,
+        scale,
+        parameters={**reference["parameters"], "aEW0M1": ALPHA0_INVERSE},
+    )
+    assert float(answer.totals[0]) == 0.29665972832606435
