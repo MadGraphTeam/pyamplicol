@@ -454,6 +454,140 @@ def request_flows(compiled: Any, request: Any, basis: Any) -> tuple[Flow, ...]:
     return out
 
 
+def outgoing_colours(
+    legs: Sequence[tuple[int, bool]], colours: Mapping[int, int]
+) -> dict[int, int]:
+    """Each leg's colour representation with every leg outgoing, by 1-based
+    label: ``legs`` are (signed PDG, incoming) in label order, ``colours``
+    the model's representation of each particle PDG (an antiparticle absent
+    from it takes its particle's, conjugated for a triplet). 3 marks the
+    start of an open colour line in a flow word, -3 its end, 8 an adjoint
+    label; the tree engine's ``color_role`` (``processes.ir``)."""
+
+    out = {}
+    for label, (pdg, incoming) in enumerate(legs, start=1):
+        colour = colours.get(pdg)
+        if colour is None:
+            colour = colours.get(-pdg, 1)
+            if abs(colour) == 3:
+                colour = -colour
+        if incoming and abs(colour) == 3:
+            colour = -colour
+        out[label] = int(colour)
+    return out
+
+
+def _flow_blocks(
+    word: Sequence[int], colours: Mapping[int, int]
+) -> tuple[tuple[int, ...], ...] | None:
+    """The open colour lines of a flow word (each from a 3 through adjoint
+    labels to a -3), or None when the word is not a sequence of such lines."""
+
+    blocks = []
+    start = 0
+    while start < len(word):
+        if colours.get(word[start]) != 3:
+            return None
+        end = start + 1
+        while end < len(word) and colours.get(word[end]) == 8:
+            end += 1
+        if end >= len(word) or colours.get(word[end]) != -3:
+            return None
+        blocks.append(tuple(word[start : end + 1]))
+        start = end + 1
+    return tuple(blocks)
+
+
+def _single_trace(word: Sequence[int], colours: Mapping[int, int]) -> bool:
+    return bool(word) and all(colours.get(label) == 8 for label in word)
+
+
+def canonical_flow_word(
+    word: Sequence[int], colours: Mapping[int, int]
+) -> tuple[int, ...] | None:
+    """The tree engine's spelling of a leading-colour flow given in any
+    spelling (a relabelled flow of another process): open lines ordered by
+    their first (fundamental) label, the order the leading-colour plan
+    writes its words in (``color.plan_build``; the on-the-fly selector's
+    canonical block order), a single trace rotated to start at its smallest
+    label. None for a word of another shape (kept as given)."""
+
+    from .colour import _canonical_rotation
+
+    word = tuple(int(label) for label in word)
+    if not word:
+        return word
+    if _single_trace(word, colours):
+        return _canonical_rotation(word)
+    blocks = _flow_blocks(word, colours)
+    if blocks is None:
+        return None
+    return tuple(label for block in sorted(blocks) for label in block)
+
+
+def _plan_order(
+    word: tuple[int, ...], colours: Mapping[int, int], folded: bool
+) -> tuple[Any, ...]:
+    """The position of a canonical flow word in the tree engine's
+    leading-colour plan of its process (``color.plan_build``): open lines
+    enumerate the antifundamental labels' permutations, then the adjoint
+    labels' permutations, then their split between the lines (shorter first
+    lines first); a single trace the permutations of the labels after its
+    smallest, with folded reflections each after its sector's word."""
+
+    if not word:
+        return ()
+    if _single_trace(word, colours):
+        rest = word[1:]
+        if not folded:
+            return (rest,)
+        lowest = min(rest, tuple(reversed(rest)))
+        return (lowest, rest != lowest)
+    blocks = _flow_blocks(word, colours) or ()
+    return (
+        tuple(block[-1] for block in blocks),
+        tuple(label for block in blocks for label in block[1:-1]),
+        tuple(len(block) - 2 for block in blocks),
+    )
+
+
+def member_flows(
+    flows: Sequence[Flow],
+    legs: Sequence[int],
+    colours: Mapping[int, int],
+    *,
+    keep_order: bool = False,
+) -> tuple[Flow, ...]:
+    """A stored process's leading-colour flows as a process it serves through
+    a leg mapping names them (``legs[i]`` is the stored leg, 0-based, of the
+    mapped process's leg i; ``colours`` the stored legs' outgoing
+    representations, ``outgoing_colours``): each word read on the mapped
+    process's labels and written in the tree engine's spelling
+    (``canonical_flow_word``), so that its ID is the one a single-process
+    artifact of that spelling gives the flow, and numbered in that
+    artifact's plan order (``_plan_order``; ``keep_order``, a request with a
+    reference colour order, keeps the stored order). Each keeps its Born
+    basis element and sector: a selection by these IDs reads the stored
+    process's basis elements."""
+
+    from dataclasses import replace
+
+    public = {rep + 1: leg + 1 for leg, rep in enumerate(legs)}
+    own = {public.get(label, label): colour for label, colour in colours.items()}
+    sectors: dict[int, int] = {}
+    for flow in flows:
+        sectors[flow.sector] = sectors.get(flow.sector, 0) + 1
+    folded = any(count > 1 for count in sectors.values())
+    out = []
+    for flow in flows:
+        word = tuple(public.get(label, label) for label in flow.word)
+        word = canonical_flow_word(word, own) or word
+        out.append(replace(flow, id=flow_id(word), word=word))
+    if keep_order or any(canonical_flow_word(f.word, own) is None for f in out):
+        return tuple(out)
+    return tuple(sorted(out, key=lambda f: _plan_order(f.word, own, folded)))
+
+
 @dataclass(frozen=True)
 class Catalogue:
     """The selectors of a v2 virtual: its Born helicity rows and (leading
@@ -461,6 +595,12 @@ class Catalogue:
 
     rows: tuple[rx.Row, ...]
     flows: tuple[Flow, ...]
+    # False for a process served through a leg mapping whose request carries
+    # a reference colour order that no listing reproduces for its spelling
+    # (``V2VirtualRuntime._ordinals_refused``): its flows keep the stored
+    # process's order, which is not the order a single-process artifact of
+    # its own spelling lists them in, so a flow is selected by its ID only.
+    ordinals: bool = True
 
     def resolve(
         self,
@@ -508,6 +648,17 @@ class Catalogue:
             ordinal = int(name, 10)
         except ValueError:
             ordinal = None
+        if not self.ordinals and ordinal is not None and str(ordinal) == name.strip():
+            raise CompatibilityError(
+                f"colour-flow ordinal {name!r} is not available for this process: "
+                "it is served by a stored process through a leg mapping, its "
+                "request's colour selectors (a reference colour order, a sector "
+                "cap or fixed sector ids) applied to this spelling keep other "
+                "flows than the stored process's, so its flows are not numbered "
+                "as a single-process "
+                "artifact of this spelling numbers them; select the flow by its ID "
+                "(flow:<word>, physics.born_anchored_color_components)"
+            )
         if ordinal is None or str(ordinal) != name.strip():
             raise EvaluationError(
                 f"unknown colour-flow selector {name!r}; choose a colour-flow "

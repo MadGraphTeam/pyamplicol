@@ -501,6 +501,78 @@ def test_configuration_refuses_the_engine_and_selects_the_runtime_options(tmp_pa
         resolve_config(card)
 
 
+# ``SliceRequest``'s positional parameters, in their order (as released):
+# callers pass them positionally, so a new field is keyword-only.
+SLICE_REQUEST_POSITIONAL = (
+    "process",
+    "born_orders",
+    "loop_orders",
+    "corrections",
+    "fixed_parameters",
+    "particle_veto",
+    "allow_anomalous_veto",
+    "accuracy",
+    "colour_declaration",
+    "scale_parameter",
+    "alpha_s_parameter",
+    "compress_colour",
+    "colour_contraction",
+    "compatibility",
+    "counterterms",
+    "selection",
+    "external_photons",
+    "alpha0_conversion",
+    "alpha0_inverse",
+    "contribution",
+    "reduction",
+    "squared_orders",
+)
+
+
+@pytest.mark.loop_fast
+def test_slice_request_signature():
+    """Every released positional parameter of ``SliceRequest`` keeps its
+    position (a new field is keyword-only): a call that passes the photon
+    tags positionally, as callers before ``colour_selectors`` did, keeps
+    them."""
+
+    import inspect
+
+    from pyamplicol.loops.v2.assemble import SliceRequest
+
+    parameters = inspect.signature(SliceRequest).parameters.values()
+    positional = tuple(
+        item.name
+        for item in parameters
+        if item.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+    )
+    assert positional == SLICE_REQUEST_POSITIONAL
+    assert {
+        item.name for item in parameters if item.kind is inspect.Parameter.KEYWORD_ONLY
+    } == {"colour_selectors"}
+    request = SliceRequest(
+        "u u~ > a g",
+        {"QCD": 1, "QED": 1},
+        {"QCD": 3, "QED": 1},
+        ("QCD", "QED"),
+        {},
+        (),
+        False,
+        "full",
+        None,
+        None,
+        None,
+        True,
+        "auto",
+        None,
+        "recursion",
+        None,
+        "none",
+    )
+    assert request.external_photons == "none"
+    assert request.colour_selectors is None
+
+
 @pytest.mark.loop_fast
 def test_slice_request_records_round_trip():
     """Every ``SliceRequest`` field is recorded and restored (a field added
@@ -542,6 +614,7 @@ def test_slice_request_records_round_trip():
         alpha0_inverse="ainv0",
         reduction="tirust",
         squared_orders=("QCD^2<=6", "QED^2<=2"),
+        colour_selectors={"max_color_sectors": 2, "reference_color_order": [1, 2]},
     )
     default = SliceRequest("g g > g g", {"QCD": 2}, {"QCD": 4})
     # A loop-induced request is full colour without a selection (m-lit Q8):
@@ -572,6 +645,7 @@ def test_slice_request_records_round_trip():
         "contribution",
         "reduction",
         "squared_orders",
+        "colour_selectors",
     } & set(single)
     assert request_from_record(single) == default
     with pytest.raises(ArtifactError, match=r"unknown.*future_option"):

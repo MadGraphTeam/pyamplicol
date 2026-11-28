@@ -638,14 +638,15 @@ def test_leading_colour_components_of_a_permuted_process(leading):
     """At leading colour a permuted alias is anchored to the stored flows
     read on its own legs: each resolved Born and virtual component equals
     the directly generated process's component of the same flow (per
-    helicity row, binary64 at 1e-12); its selection capabilities are none
-    (selection of a mapped process is refused)."""
+    helicity row, binary64 at 1e-12); its flows are the direct process's
+    (IDs and order) and it selects them as the direct process does."""
 
     alias, own = _load(leading, "dg_out"), _load(leading, "dgd")
     anchors = alias.physics.born_anchored_color_components
     direct = {a.id: a for a in own.physics.born_anchored_color_components}
-    assert anchors and sorted(a.id for a in anchors) == sorted(direct)
-    assert alias.physics.selector_capabilities == ()
+    assert anchors and [a.id for a in anchors] == list(direct)
+    assert alias.physics.selector_capabilities == own.physics.selector_capabilities
+    assert alias.physics.selector_capabilities == ("helicity", "color_flow")
     left = alias.evaluate_resolved(POINTS[:1], mu_r2=SCALES[:1])
     right = own.evaluate_resolved(POINTS[:1], mu_r2=SCALES[:1])
     rows = [tuple(h.values) for h in alias.physics.helicities]
@@ -693,28 +694,50 @@ def test_double_double_through_the_mapping(mapped_qg):
     assert _values(left) == _values(right)
 
 
-def test_selection_on_a_mapped_process_names_its_mapping(leading):
-    """Helicity and colour-flow selection of a mapped process is refused
-    typed (``CompatibilityError``) at leading colour, where its
-    representative selects, and the message says how the process is served:
-    the permutation alias ``dg_out`` and the side-permuted selector
-    ``g d > d g`` of ``d g > d g`` (no longer "flavour member" for both)."""
+def test_selection_on_a_mapped_process_is_served(leading):
+    """Helicity and colour-flow selection of a mapped process (the
+    permutation alias ``dg_out`` and the side-permuted selector
+    ``g d > d g`` of ``d g > d g``) is served on its own rows and flows:
+    the alias's selections equal those of ``d g > g d`` generated directly
+    (binary64 at 1e-12 of the inclusive's largest coefficient), and every
+    mapped process's selections sum to its inclusive value."""
 
-    from pyamplicol.api.errors import CompatibilityError
+    def coefficients(result) -> list[complex]:
+        return [
+            complex(c)
+            for sector in result.values[0]
+            for c in (sector.finite, sector.single_pole, sector.double_pole)
+            if c is not None
+        ]
 
-    cases = (
-        ("dg_out", "a permutation alias"),
-        ("g d > d g", "a side permutation of the stored process"),
-    )
-    for process, kind in cases:
+    for process, own in (("dg_out", "dgd"), ("g d > d g", None)):
         runtime = _load(leading, process)
-        for selection in ({"helicities": ["h0"]}, {"color_flows": ["flow-0"]}):
-            with pytest.raises(CompatibilityError) as error:
-                runtime.evaluate(POINTS[:1], mu_r2=SCALES[:1], **selection)
-            message = str(error.value)
-            assert f"selection of {kind} (" in message, message
-            assert "flavour member" not in message
-            assert "select on its representative process" in message
+        inclusive = coefficients(runtime.evaluate(POINTS[:1], mu_r2=SCALES[:1]))
+        size = max(abs(v) for v in inclusive)
+        physics = runtime.physics
+        flows = [a.id for a in physics.born_anchored_color_components]
+        assert flows
+        for axis, names in (
+            ("helicities", [h.id for h in physics.helicities]),
+            ("color_flows", flows),
+        ):
+            total = [0j] * len(inclusive)
+            for name in names:
+                options = {axis: [name]}
+                found = coefficients(
+                    runtime.evaluate(POINTS[:1], mu_r2=SCALES[:1], **options)
+                )
+                if own is not None:
+                    direct = coefficients(
+                        _load(leading, own).evaluate(
+                            POINTS[:1], mu_r2=SCALES[:1], **options
+                        )
+                    )
+                    for a, b in zip(found, direct, strict=True):
+                        assert abs(a - b) <= 1e-12 * size, (process, name)
+                total = [a + b for a, b in zip(total, found, strict=True)]
+            for a, b in zip(total, inclusive, strict=True):
+                assert abs(a - b) <= 1e-12 * size, (process, axis)
 
 
 def test_mapping_kinds_name_flavour_members_and_aliases():

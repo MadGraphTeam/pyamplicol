@@ -71,6 +71,41 @@ pub struct LoopSchemeDeclaration {
     pub model_convention: String,
 }
 
+/// The process-group basis of a species substitution proved exactly at the
+/// generation of a loop artifact (`process.flavor_blind`).
+pub const EXACT_LOOP_FLAVOR_BASIS: &str = "exact-loop-flavor";
+
+/// A loop artifact serves a process-group member through its stored
+/// representative only for an exact species substitution (basis
+/// [`EXACT_LOOP_FLAVOR_BASIS`], factor 1, no charge conjugation); any other
+/// relation (a numerical process-group analysis) is refused with a typed
+/// selector error in the Python runtime's words.
+pub fn loop_group_member(group: &crate::ProcessGroupRelation, process: &str) -> RusticolResult<()> {
+    if group.basis.as_deref() == Some(EXACT_LOOP_FLAVOR_BASIS)
+        && group.has_unit_factor()
+        && !group.conjugated
+    {
+        return Ok(());
+    }
+    let factor = if group.factor_denominator == 1 {
+        group.factor_numerator.to_string()
+    } else {
+        format!("{}/{}", group.factor_numerator, group.factor_denominator)
+    };
+    Err(RusticolError::selector(format!(
+        "process '{process}' is a process-group member of basis '{}' (factor \
+         {factor}{}); a loop artifact serves exact species-substitution members \
+         (basis '{EXACT_LOOP_FLAVOR_BASIS}', process.flavor_blind) only, never a \
+         numerical process-group relation; generate the process itself",
+        group.basis.as_deref().unwrap_or("unrecorded"),
+        if group.conjugated {
+            ", charge-conjugated"
+        } else {
+            ""
+        },
+    )))
+}
+
 fn require(condition: bool, message: &str) -> RusticolResult<()> {
     if condition {
         Ok(())
@@ -413,16 +448,16 @@ pub fn load_loop_v2_artifact(
         "v2 loop processes (v4/v5) cannot share an artifact with other runtimes",
     )?;
     let selection = artifact.select_process(requested_process)?;
-    // A stored process may list permutation aliases: the Python runtime
-    // serves an alias (and a process-group member) through its stored
-    // process at the permuted momenta (`loops/v2/artifact.py`), so this
-    // admission takes a stored process selected as itself only.
-    require(
-        !selection.remaps_public_process(),
-        "plan v4 admits a stored virtual process selected by its id or stored \
-         expression; its permutation aliases and process-group members are \
-         served by the Python runtime",
-    )?;
+    // A permutation alias, a stored expression in another order within each
+    // side and a process-group member are served by their stored process at
+    // the permuted momenta (`selection.external_permutation`), as the Python
+    // runtime serves them (`loops/v2/artifact.py`): the admission loads the
+    // stored process. A member must be an exact species substitution proved
+    // at generation; any other relation is refused in the Python runtime's
+    // words (`_group_record`).
+    if let Some(group) = &selection.process_group {
+        loop_group_member(group, &selection.requested_id)?;
+    }
     let entries = crate::engine::verified_execution_payloads(artifact)?;
     let (_, path, bytes) = entries
         .into_iter()
@@ -917,7 +952,9 @@ fn validate_v2_metadata(metadata: &LoopV2ExecutionMetadata) -> RusticolResult<()
 
 #[cfg(all(test, feature = "loop-v2"))]
 mod stored_member_tests {
-    use super::{inflate_loop_v2_member, inflate_loop_v2_section};
+    use super::{
+        EXACT_LOOP_FLAVOR_BASIS, inflate_loop_v2_member, inflate_loop_v2_section, loop_group_member,
+    };
     use crate::loop_v2::trees::binary::{BINARY, JSON, write_container};
 
     #[test]
@@ -948,5 +985,46 @@ mod stored_member_tests {
         assert!(error.to_string().contains("tree-program.bin.zlib"));
         assert!(inflate_loop_v2_member("m", &payload[..payload.len() / 2]).is_err());
         assert!(inflate_loop_v2_section("m", &payload[..payload.len() / 2], "absent").is_err());
+    }
+
+    #[test]
+    fn a_loop_artifact_serves_exact_species_substitution_members_only() {
+        let relation =
+            |basis: Option<&str>, numerator: u64, conjugated: bool| crate::ProcessGroupRelation {
+                factor_numerator: numerator,
+                factor_denominator: if numerator == 1 { 1 } else { 2 },
+                conjugated,
+                external_particles: vec![],
+                basis: basis.map(str::to_owned),
+            };
+        assert!(
+            loop_group_member(
+                &relation(Some(EXACT_LOOP_FLAVOR_BASIS), 1, false),
+                "s~ s > g g"
+            )
+            .is_ok()
+        );
+        for (group, words) in [
+            (
+                relation(Some("numerical"), 1, false),
+                "basis 'numerical' (factor 1)",
+            ),
+            (
+                relation(Some(EXACT_LOOP_FLAVOR_BASIS), 3, false),
+                "(factor 3/2)",
+            ),
+            (
+                relation(Some(EXACT_LOOP_FLAVOR_BASIS), 1, true),
+                "charge-conjugated",
+            ),
+            (relation(None, 1, false), "basis 'unrecorded'"),
+        ] {
+            let error = loop_group_member(&group, "s~ s > g g").unwrap_err();
+            assert_eq!(error.kind(), crate::RusticolErrorKind::Selector);
+            let message = error.to_string();
+            assert!(message.contains("process 's~ s > g g'"), "{message}");
+            assert!(message.contains(words), "{message}");
+            assert!(message.contains("generate the process itself"), "{message}");
+        }
     }
 }

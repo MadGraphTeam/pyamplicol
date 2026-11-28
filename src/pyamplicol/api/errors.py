@@ -120,6 +120,21 @@ class EvaluationError(PyAmpliColError):
         self.verification = verification
 
 
+class ProcessSelectionError(EvaluationError):
+    """A process selector (``Runtime.load(..., process=...)``) names no
+    process the artifact serves, or several: ``key`` is
+    ``"process-not-served"`` (no stored process, permutation alias, stored
+    expression up to a permutation within each side or process-group member
+    matches) or ``"process-ambiguous"`` (the message lists the IDs to choose
+    from)."""
+
+    key = "process-not-served"
+
+    def __init__(self, message: str, *, key: str = "process-not-served") -> None:
+        super().__init__(message)
+        self.key = key
+
+
 class DependencyError(PyAmpliColError):
     """A required optional or native dependency is unavailable."""
 
@@ -205,6 +220,7 @@ __all__ = [
     "NativePlatformError",
     "NoTreeDiagramError",
     "ProcessIdCollisionError",
+    "ProcessSelectionError",
     "PyAmpliColError",
     "ReductionUnavailable",
     "RequestFilterError",

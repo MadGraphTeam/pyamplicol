@@ -2826,7 +2826,8 @@ type V2ArtifactPoint = (Option<(Vec<f64>, Vec<Vec<f64>>)>, Vec<String>);
 /// runtime the SDKs use (`rusticol_loop_reduction::v2_runtime::V2Runtime`):
 /// no Python generation or assembly, binary64. `momenta` are per point the
 /// physical momenta of every leg (`4 × legs` exact decimal or fraction
-/// strings), `scales` mu_R² per point, `parameters` the caller's model
+/// strings, in the order of the selected `process`: a mapped process's
+/// stored process is evaluated at the permuted momenta), `scales` mu_R² per point, `parameters` the caller's model
 /// parameter values (exact strings), `poles` the pole selection ("all",
 /// "none", "uv" or "ir"; True and False are "all" and "none"; a
 /// loop-induced process serves "all" and "none"), `reduction` the backend
@@ -2893,6 +2894,19 @@ fn evaluate_v2_artifact(
             if let Some(values) = &parameters {
                 runtime.set_parameters(values.iter().map(|(k, v)| (k.as_str(), v.as_str())))?;
             }
+            // The caller's momenta are in the selected process's leg order;
+            // a mapped process's stored process takes them permuted.
+            let momenta: Vec<Vec<_>> = momenta
+                .iter()
+                .map(|point| {
+                    let legs: Vec<&[_]> = point.chunks(4).collect();
+                    runtime
+                        .to_stored(&legs)
+                        .into_iter()
+                        .flat_map(|leg| leg.iter().cloned())
+                        .collect()
+                })
+                .collect();
             runtime.evaluate(&momenta, &scales, poles)
         })
         .map_err(error)?;
