@@ -30,9 +30,13 @@ from pyamplicol import (
     Generator,
     ModelSource,
     NoTreeDiagramError,
+    ProcessAlias,
+    ProcessRequest,
+    ProcessSet,
     RequestFilterError,
     Runtime,
 )
+from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
     ConfigurationError,
@@ -104,6 +108,8 @@ class Cell:
     value: float | None = None
     #: Generate as well as plan (the large served expansions are planned only).
     generate: bool = True
+    #: The members served, exactly (when given).
+    members: tuple[str, ...] | None = None
 
 
 _EXPLICIT = {"coupling_order_policy": "explicit"}
@@ -111,6 +117,10 @@ _LABEL = {"multiparticles": {"x": ("a", "u", "u~")}}
 _LINES = ("process.max_quark_lines",)
 _ORDERS = ("process.max_coupling_orders",)
 _SM = ("builtin", "ufo")
+# x = [g, u, u~, a], x x > t t~ at QCD<=0 QED<=2: the bounds remove the gluon
+# members (QCD trees only), the photon and quark members have a Born.
+_TOPS = {"multiparticles": {"x": ("g", "u", "u~", "a")}, **_EXPLICIT}
+_TOP_LIMITS = {"max_coupling_orders": {"QCD": 0, "QED": 2}}
 TABLE = (
     Cell("cut empties", "u d > u d", {"max_quark_lines": 1}, _SM, "filter", _LINES),
     Cell(
@@ -167,6 +177,40 @@ TABLE = (
         ("np",),
         "served",
         value=0.0018678450497771036,
+    ),
+    Cell(
+        "bounds remove some members of a label",
+        "x x > t t~",
+        {**_TOPS, **_TOP_LIMITS},
+        _SM,
+        "served",
+        members=("a a > t t~", "u u~ > t t~"),
+    ),
+    Cell(
+        "bounds and the cut remove some members of a label",
+        "x x > t t~",
+        {**_TOPS, **_TOP_LIMITS, "max_quark_lines": 1},
+        _SM,
+        "served",
+        max_lines=1,
+        members=("a a > t t~",),
+    ),
+    # g g > e+ e- has no tree-level diagram: skipped, in the plan as well.
+    Cell(
+        "a member without a tree-level diagram",
+        "p p > e+ e-",
+        {},
+        ("builtin",),
+        "served",
+        members=tuple(f"{q} {q}~ > e+ e-" for q in "bcdsu"),
+    ),
+    Cell(
+        "a member without a tree-level diagram",
+        "p p > e+ e-",
+        {},
+        ("ufo",),
+        "served",
+        members=tuple(f"{q} {q}~ > e+ e-" for q in "cdsu"),
     ),
     Cell("particle veto", "u u~ > e+ e- / z", {}, _SM, "veto"),
     Cell("no diagram", "a a > a a", {}, _SM, "physics"),
@@ -242,6 +286,8 @@ def test_every_filter_in_every_tree_mode(
     assert planned_members
     if cell.max_lines is not None:
         assert all(_lines(member) <= cell.max_lines for member in planned_members)
+    if cell.members is not None:
+        assert tuple(planned_members) == cell.members
     if not cell.generate:
         return
     output = tmp_path / "served"
@@ -253,3 +299,132 @@ def test_every_filter_in_every_tree_mode(
         runtime = Runtime.load(output, process=str(manifest["processes"][0]["id"]))
         value = complex(runtime.evaluate([_POINT])[0]).real
         assert value == pytest.approx(cell.value, rel=1e-10)
+
+
+@pytest.mark.parametrize("model", _SM)
+@pytest.mark.parametrize("mode", MODES)
+def test_members_without_a_born_go_before_any_mode_and_keep_the_ids(
+    mode: str, model: str, models: dict[str, ModelSource], tmp_path: Path
+) -> None:
+    # The served members keep the IDs they have without the bounds; on a UFO
+    # model also those they have without the quark-line cut.
+    source = models[model]
+
+    def plan_ids(settings: dict[str, object]) -> dict[str, str]:
+        plan = _generator(mode, settings).plan(["x x > t t~"], model=source)
+        return {process.expression: process.name for process in plan.concrete_processes}
+
+    unbounded = plan_ids({**_TOPS, "max_quark_lines": 1})
+    bounded = plan_ids({**_TOPS, **_TOP_LIMITS, "max_quark_lines": 1})
+    assert list(bounded) == ["a a > t t~"]
+    assert bounded["a a > t t~"] == unbounded["a a > t t~"]
+    if model == "ufo":
+        assert bounded["a a > t t~"] == plan_ids(_TOPS)["a a > t t~"]
+    output = tmp_path / "served"
+    _generator(mode, {**_TOPS, **_TOP_LIMITS, "max_quark_lines": 1}).generate(
+        ["x x > t t~"], output, model=source
+    )
+    manifest = json.loads((output / "artifact.json").read_text(encoding="utf-8"))
+    assert [(item["expression"], item["id"]) for item in manifest["processes"]] == [
+        ("a a > t t~", bounded["a a > t t~"])
+    ]
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_an_excluded_member_never_stands_for_a_flavour_class(
+    mode: str, models: dict[str, ModelSource], tmp_path: Path
+) -> None:
+    # NP fixture at the default NP<=1: d d~ > vm vm~ (NP^2) has no Born,
+    # u u~ > vm vm~ has one. Flavour-blind grouping may not let the excluded
+    # down member represent the class.
+    settings: dict[str, object] = {
+        "multiparticles": {"x": ("u", "d"), "y": ("u~", "d~")},
+        "flavor_blind": True,
+    }
+    plan = _generator(mode, settings).plan(["x y > vm vm~"], model=models["np"])
+    assert [process.expression for process in plan.concrete_processes] == [
+        "u u~ > vm vm~"
+    ]
+    output = tmp_path / "grouped"
+    _generator(mode, settings).generate(["x y > vm vm~"], output, model=models["np"])
+    manifest = json.loads((output / "artifact.json").read_text(encoding="utf-8"))
+    assert [item["expression"] for item in manifest["processes"]] == ["u u~ > vm vm~"]
+
+
+# An alias of a label request that the quark-line cut leaves with one member
+# follows that member's ID; a call that refuses publishes nothing.
+_COMPTON = {"multiparticles": {"x": ("u", "e-")}}
+_PUBLIC = [[100, 0, 0, -100], [100, 0, 0, 100], [100, -60, -80, 0], [100, 60, 80, 0]]
+
+
+def _compton() -> ProcessSet:
+    request = ProcessRequest.parse("x a > x a", name="compton")
+    return ProcessSet(
+        (request,), (ProcessAlias("crossed", request.name, (1, 0, 3, 2)),)
+    )
+
+
+@pytest.mark.parametrize("append", (False, True), ids=("fresh", "append"))
+@pytest.mark.parametrize("mode", ("compiled", "recurrence", "on-the-fly"))
+def test_an_alias_follows_the_one_member_the_cut_keeps(
+    mode: str, append: bool, models: dict[str, ModelSource], tmp_path: Path
+) -> None:
+    source = models["ufo"]
+    output = tmp_path / "artifact"
+    cut = {**_COMPTON, "max_quark_lines": 0}
+    if append:
+        _generator(mode, cut).generate(["e- mu- > e- mu-"], output, model=source)
+    if append and mode == "recurrence":
+        # The recurrence mode does not append; its refusal leaves the
+        # artifact as it was.
+        before = (output / "artifact.json").read_bytes()
+        with pytest.raises(GenerationError, match="instead of appending"):
+            _generator(mode, cut).generate(
+                _compton(), output, model=source, mode="append"
+            )
+        assert (output / "artifact.json").read_bytes() == before
+        return
+    result = _generator(mode, cut).generate(
+        _compton(), output, model=source, mode="append" if append else "error"
+    )
+    (alias,) = result.processes.aliases
+    assert alias.process_name == "compton_2"
+    manifest = json.loads((output / "artifact.json").read_text(encoding="utf-8"))
+    assert ("e- a > e- a", "compton_2") in [
+        (item["expression"], item["id"]) for item in manifest["processes"]
+    ]
+    crossed = complex(Runtime.load(output, process="crossed").evaluate([_PUBLIC])[0])
+    # The alias's leg i is the representative's leg (1, 0, 3, 2)[i].
+    representative = [_PUBLIC[index] for index in (1, 0, 3, 2)]
+    member = complex(
+        Runtime.load(output, process="compton_2").evaluate([representative])[0]
+    )
+    assert crossed.real == pytest.approx(member.real, rel=1e-12)
+    assert crossed.real > 0.0
+    # Without the cut the alias is ambiguous: refused before anything is
+    # published (a new output is not created, an appended one is unchanged).
+    target = tmp_path / ("ambiguous" if not append else "artifact")
+    before = (output / "artifact.json").read_bytes()
+    with pytest.raises(GenerationError, match="ambiguous"):
+        _generator(mode, _COMPTON).generate(
+            _compton(), target, model=source, mode="append" if append else "error"
+        )
+    if append:
+        assert (output / "artifact.json").read_bytes() == before
+    else:
+        assert not target.exists()
+
+
+@pytest.mark.parametrize("mode", MODES)
+def test_a_plan_reports_the_member_it_skips(
+    mode: str,
+    models: dict[str, ModelSource],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level("WARNING"):
+        plan = _generator(mode, {}).plan(["p p > e+ e-"], model=models["ufo"])
+    assert "g g > e+ e-" not in [p.expression for p in plan.concrete_processes]
+    assert (
+        "Skipped 1 concrete subprocess with no model-supported tree-level "
+        "amplitudes: p_p_to_e_e_1 (g g > e+ e-)"
+    ) in caplog.text

@@ -2763,6 +2763,23 @@ _BUILTIN_CONSERVATION_REJECTIONS = {
 }
 
 
+def _concrete_aliases(
+    processes: ProcessSet, expanded: Iterable[_ExpandedProcess]
+) -> tuple[ProcessAlias, ...]:
+    """The aliases of ``processes`` bound to the concrete process that
+    carries each (the one member of its request that the filters keep, under
+    the ID of the whole expansion)."""
+
+    carrier: dict[str, str] = {}
+    for entry in expanded:
+        for record in entry.aliases:
+            carrier[str(record["id"])] = entry.request.name
+    return tuple(
+        replace(alias, process_name=carrier.get(alias.name, alias.process_name))
+        for alias in processes.aliases
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class _UnsupportedProcess:
     expanded: _ExpandedProcess
@@ -3932,6 +3949,9 @@ class GenerationBackend:
                     )
 
                 concrete_requests = tuple(entry.expanded.request for entry in prepared)
+                concrete_aliases = _concrete_aliases(
+                    processes, (entry.expanded for entry in prepared)
+                )
                 validation_points_by_process = {
                     process.expanded.request.name: process.validation_points
                     for process in prepared
@@ -3985,7 +4005,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4116,6 +4136,9 @@ class GenerationBackend:
                 process.process_id for process in artifact_processes
             )
             concrete_requests = tuple(item.expanded.request for item in generated)
+            concrete_aliases = _concrete_aliases(
+                requested_processes, (item.expanded for item in generated)
+            )
             del artifact_processes
             del generated
             gc.collect()
@@ -4161,7 +4184,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=requested_processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4625,6 +4648,9 @@ class GenerationBackend:
                 process.process_id for process in artifact_processes
             )
             concrete_requests = tuple(item.expanded.request for item in generated)
+            concrete_aliases = _concrete_aliases(
+                requested_processes, (item.expanded for item in generated)
+            )
             del artifact_processes
             del generated
             gc.collect()
@@ -4659,7 +4685,7 @@ class GenerationBackend:
             output=write_result.output,
             processes=ProcessSet(
                 requests=concrete_requests,
-                aliases=requested_processes.aliases,
+                aliases=concrete_aliases,
             ),
             mode=write_mode,
             files=write_result.files,
@@ -4679,11 +4705,21 @@ class GenerationBackend:
         phase: PhaseHandle,
         *,
         tree_refusal: bool = False,
+        member_filter: Callable[
+            [ProcessRequest, Sequence[CanonicalProcessIR]], Sequence[int]
+        ]
+        | None = None,
     ) -> tuple[_ExpandedProcess, ...]:
         """Expand every request. ``tree_refusal=True`` (tree generation and
         planning) refuses, before any lane is built and in one
         ``NoTreeDiagramError``, every request without a tree-level diagram
-        (``_refuse_requests_without_tree_diagrams``)."""
+        (``_refuse_requests_without_tree_diagrams``), applies the quark-line
+        cut of a model's own catalog and drops the members without a Born
+        within the bounds. ``member_filter`` (a request filter of the
+        caller's, the one-loop route's quark-line cut) gives the indices of a
+        request's concrete processes it keeps. Filtered processes leave the
+        others the names of the whole expansion, and a request's aliases are
+        resolved on the processes every filter keeps."""
 
         without_diagram: list[_RequestWithoutTreeDiagram] = []
         # Requests of a model's own catalog (UFO) that the quark-line cut
@@ -4706,26 +4742,26 @@ class GenerationBackend:
                 without_diagram.append(refusal)
                 continue
             kept: Sequence[int] = range(len(expanded))
+            if member_filter is not None:
+                kept = member_filter(request, expanded)
             if tree_refusal and not builtin_selection:
                 # The built-in enumeration applies the cut itself.
-                kept, cut = self._model_quark_line_cut(request, expanded)
+                cut_kept, cut = self._model_quark_line_cut(request, expanded)
+                kept = tuple(index for index in cut_kept if index in kept)
                 if cut is not None and not kept:
                     without_diagram.append(cut)
                     continue
                 if cut is not None:
                     partly_cut[request.name] = cut
+            # Whether an alias names one concrete process is decided on the
+            # members that every filter keeps (below).
             request_aliases = aliases_by_target.get(request.name, [])
-            if request_aliases and len(kept) != 1:
-                raise GenerationError(
-                    f"process aliases for {request.name!r} are ambiguous after "
-                    f"expansion into {len(expanded)} concrete processes"
-                )
             side_permutation_classes: set[tuple[tuple[str, ...], tuple[str, ...]]] = (
                 set()
             )
             for concrete_index, process_ir in enumerate(expanded, start=1):
                 if concrete_index - 1 not in kept:
-                    # Cut: the others keep the names of the whole expansion.
+                    # Filtered: the others keep the names of the whole expansion.
                     continue
                 permutation_class = _process_side_permutation_class(process_ir)
                 if permutation_class in side_permutation_classes:
@@ -4781,6 +4817,39 @@ class GenerationBackend:
                     )
                 )
             phase.update(request_index, message=request.name)
+        if tree_refusal:
+            # Every member without a Born within the bounds goes before the
+            # flavour grouping, so that no excluded member stands for a class.
+            model = resolved.model
+            if model is None and resolved.compiled is not None:
+                # Planning resolves no model object for every mode: the same
+                # check needs the compiled model's.
+                from ..models.external import CompiledUFOModel
+
+                model = CompiledUFOModel(resolved.compiled)
+            result = list(
+                self._refuse_requests_without_tree_diagrams(
+                    result,
+                    model,
+                    without_diagram,
+                    partly_cut=partly_cut,
+                    builtin_selection=builtin_selection,
+                    request_order=tuple(
+                        request.expression for request in processes.requests
+                    ),
+                )
+            )
+        carriers: dict[str, int] = {}
+        for entry in result:
+            if entry.aliases:
+                source = _source_request(entry).name
+                carriers[source] = carriers.get(source, 0) + 1
+        for name, count in carriers.items():
+            if count != 1:
+                raise GenerationError(
+                    f"process aliases for {name!r} are ambiguous after "
+                    f"expansion into {count} concrete processes"
+                )
         if self._flavor_blind and not self._loop_execution_enabled:
             # Names are assigned above, so process IDs do not depend on the flag.
             table = self._grouping_particle_table(resolved)
@@ -4790,24 +4859,12 @@ class GenerationBackend:
                 consider_charge_conjugation=self._consider_charge_conjugation,
                 relation_warning=self._flavor_blind_relation_warning(resolved, table),
             )
-        if tree_refusal:
-            model = resolved.model
-            if model is None and resolved.compiled is not None:
-                # Planning resolves no model object for every mode: the same
-                # check needs the compiled model's.
-                from ..models.external import CompiledUFOModel
-
-                model = CompiledUFOModel(resolved.compiled)
-            self._refuse_requests_without_tree_diagrams(
-                result,
-                model,
-                without_diagram,
-                partly_cut=partly_cut,
-                builtin_selection=builtin_selection,
-                request_order=tuple(
-                    request.expression for request in processes.requests
-                ),
-            )
+        # The aliases of the call bound to the concrete processes that carry
+        # them, checked before any lane runs or anything is written.
+        ProcessSet(
+            requests=tuple(entry.request for entry in result),
+            aliases=_concrete_aliases(processes, result),
+        )
         return tuple(result)
 
     def _grouping_particle_table(
@@ -5881,13 +5938,15 @@ class GenerationBackend:
         request_order: Sequence[str] = (),
         builtin_selection: bool = False,
         partly_cut: Mapping[str, _RequestWithoutTreeDiagram] | None = None,
-    ) -> None:
+    ) -> tuple[_ExpandedProcess, ...]:
         """Refuse, before any lane is built, the requests none of whose
         concrete processes has a tree-level closure within the coupling-order
         limits (``has_model_supported_amplitudes``: it never rejects a process
         with amplitudes), with those that expanded to no concrete process.
         Members without one inside a multiparticle request that has others
-        stay the lanes' business (skipped with a warning). The on-the-fly
+        are dropped here, with a warning, for every mode and the plan alike
+        (the others keep their IDs); the kept members are returned. The
+        on-the-fly
         lane builds no colour plan before its seeds: there the check is the
         colour-blind closure sweep its Born coupling orders come from
         (``process_born_amplitude_orders``), which over-estimates no less."""
@@ -5957,16 +6016,17 @@ class GenerationBackend:
         requests: dict[str, ProcessRequest] = {}
         supported: set[str] = set()
         members: dict[str, list[CanonicalProcessIR]] = {}
+        # Every member is checked: those without a Born inside a request
+        # that has one are dropped here, once for every mode and the plan.
+        without_born: list[_ExpandedProcess] = []
         for entry in expanded:
             source = _source_request(entry)
             requests.setdefault(source.name, source)
-            if source.name in supported or model is None:
-                supported.add(source.name)
-                continue
-            if has_diagram(entry.process_ir, bounds or None):
+            if model is None or has_diagram(entry.process_ir, bounds or None):
                 supported.add(source.name)
             else:
                 members.setdefault(source.name, []).append(entry.process_ir)
+                without_born.append(entry)
 
         def totals(process: CanonicalProcessIR) -> tuple[dict[str, int], ...]:
             """The total coupling orders of every tree-level closure, without
@@ -6051,6 +6111,20 @@ class GenerationBackend:
                     key=lambda refusal: order.get(refusal.expression, -1),
                 )
             )
+        dropped = {id(entry) for entry in without_born}
+        _warn_unsupported_processes(
+            [
+                _UnsupportedProcess(
+                    expanded=entry,
+                    reason=(
+                        f"process {entry.process_ir.process!r} has no "
+                        "model-supported tree-level amplitudes"
+                    ),
+                )
+                for entry in without_born
+            ]
+        )
+        return tuple(entry for entry in expanded if id(entry) not in dropped)
 
     @staticmethod
     def _filter_refusal(
