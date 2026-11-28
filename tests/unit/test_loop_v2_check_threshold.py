@@ -294,7 +294,7 @@ def test_a_ward_row_whose_physical_reference_is_not_a_number_is_inconclusive(
     monkeypatch.setattr(ward, "gauge_legs", lambda _target: [3])
     monkeypatch.setattr(ward, "ward_check", ward_check)
     monkeypatch.setattr(induced, "goldstone_applicability", lambda _t: "n/a")
-    monkeypatch.setattr(checks, "ward_applicability", lambda _t: None)
+    monkeypatch.setattr("pyamplicol.loops.v2.ward.hint_legs", lambda *a, **k: {})
     target = NS(unpredicted_sectors=lambda: {})
     with checks.tolerating(K):
         rows = checks.born_interfered_rows(target, [(None, 1)], (Precision.double(),))
@@ -338,7 +338,7 @@ def _scripted_ward(monkeypatch, physical_of, result_of):
     monkeypatch.setattr(ward, "gauge_legs", lambda _target: [3])
     monkeypatch.setattr(ward, "ward_check", ward_check)
     monkeypatch.setattr(induced, "goldstone_applicability", lambda _t: "n/a")
-    monkeypatch.setattr(checks, "ward_applicability", lambda _t: None)
+    monkeypatch.setattr("pyamplicol.loops.v2.ward.hint_legs", lambda *a, **k: {})
 
 
 def _ward_rows(carriers):

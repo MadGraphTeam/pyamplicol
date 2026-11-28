@@ -33,6 +33,7 @@ max(1e-12 of the scale, E) and within 10 E; the Born 1e-12 / 1e-24).
 from __future__ import annotations
 
 import json
+import math
 from fractions import Fraction
 from pathlib import Path
 
@@ -287,7 +288,9 @@ def test_ward_criterion_applies_the_o1_rule():
     coefficient): binary64 passes with |V| <= max(1e-12, E) and |V| <= 10 E
     and E <= 1e-9 (O1 rules 2 and 3 and scope), and fails on each alone;
     double-double needs |V| <= 1e-25; the Born ratio has its own bound; a
-    coefficient without a physical scale admits only zero."""
+    coefficient without a physical scale is judged on the Born x alpha /
+    (2 pi) floor where Catani predicts it zero, and admits only zero
+    otherwise."""
 
     from types import SimpleNamespace
 
@@ -329,12 +332,30 @@ def test_ward_criterion_applies_the_o1_rule():
     for virtual, passed in (((9e-26,), True), ((2e-25,), False)):
         row = ward.ward_row(physical, point(virtual), "double-double")
         assert row["passed"] is passed
-    # A coefficient no physical component has (scale 0) admits only zero.
+    # A coefficient no physical component has (scale 0): with Catani's
+    # prediction exactly zero for it (it vanishes physically) it is judged
+    # on the floor |Born| x alpha / (2 pi): rounding passes, a residue above
+    # 1e-25 of the floor fails; without a prediction it admits only zero.
     unscaled = point((0.0, 0.0), scale=(1.0, 0.0))
-    for virtual, passed in (((0.0, 0.0), True), ((0.0, 1e-40), False)):
+    unscaled.ir_poles = {sector: (0.0, 0.0)}
+    floor = ward.scale_floor(unscaled)
+    assert floor == pytest.approx(ward.SCALE_FLOOR_COUPLING / (2 * math.pi))
+    for virtual, passed in (
+        ((0.0, 0.0), True),
+        ((0.0, 1e-40), True),
+        ((0.0, 0.5e-25 * floor), True),
+        ((0.0, 2e-25 * floor), False),
+    ):
         result = point(virtual, scale=(1.0, 0.0))
         row = ward.ward_row(unscaled, result, "double-double")
+        assert row["passed"] is passed, virtual
+        assert row["scale_floor"] == [False, True]
+    unpredicted = point((0.0, 0.0), scale=(1.0, 0.0))
+    for virtual, passed in (((0.0, 0.0), True), ((0.0, 1e-40), False)):
+        result = point(virtual, scale=(1.0, 0.0))
+        row = ward.ward_row(unpredicted, result, "double-double")
         assert row["passed"] is passed
+        assert row["scale_floor"] == [False, False]
 
 
 def test_ward_criterion_reads_the_uncertified_lanes_bound():
