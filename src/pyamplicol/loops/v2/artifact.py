@@ -2385,6 +2385,7 @@ class V2VirtualRuntime:
         from .induced_observables import InducedObservables
         from .native_observables import StoredObservableSlice
         from .observables import FORCED_FFT_OBSERVABLES
+        from .selection import member_colours
 
         if self._induced:
             kind: Any = V2InducedObservablesRuntime
@@ -2422,6 +2423,11 @@ class V2VirtualRuntime:
                     mapping=self._mapping,
                     flows=None if self._induced else self._public_flows(),
                     flow_reference=self._ordinals_refused(),
+                    flow_colours=(
+                        None
+                        if self._member is None or not self._member.alias
+                        else member_colours(self._member.legs, self._colours)
+                    ),
                     arithmetic=self._load_request[0] or self.default_arithmetic,
                     precision=self._load_request[1],
                     **self._thread_options(),

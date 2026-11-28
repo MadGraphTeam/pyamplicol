@@ -213,8 +213,18 @@ and Rust wrappers) resolves a member ID or expression, in any side order,
 through `process-groups.json` to its representative. The representative is
 evaluated at the permuted momenta and every output is multiplied by the
 recorded factor. Helicity and colour-flow IDs are reported in the member's leg
-order; for a conjugated member each LC flow word is reversed, and colour-flow
-selectors given in member IDs are translated back. See
+order: an LC flow's ID is its canonical spelling on the member's legs (open
+lines ordered by their fundamental label, a trace from its smallest label),
+the ID a single-process artifact of that expression gives it, also for a
+stored expression in another side order or an alias, and every selector
+takes it. IDs are stable across spellings; positions are those of the stored
+process on tree artifacts: the listing order, the per-point selector
+indices, the resolved output's order and a reference colour order are read
+in the stored process's listing (the one-loop runtime lists a mapped process
+as a single-process artifact does). For a conjugated member each LC flow
+word is reversed, and colour-flow selectors given in member IDs are
+translated back. A selector no process matches raises
+`ProcessSelectionError` with a `key`. See
 [Process-group members](process-selection-and-permutations.md#process-group-members).
 
 ```python

@@ -959,3 +959,27 @@ def test_selector_free_requests_keep_their_record():
         "u u~ > g g", {"QCD": 2}, {"QCD": 4}, colour_selectors={"max_color_sectors": 1}
     )
     assert request_record(selected)["colour_selectors"] == {"max_color_sectors": 1}
+
+
+def test_another_spelling_of_a_flow_id_selects_the_flow(stored, accuracy):
+    """A mapped process's flow named in another valid spelling of the same
+    flow (its lines in the stored block order, as a tree runtime of the
+    stored process relabels them) selects the canonical flow; a word that
+    is no flow stays refused."""
+
+    from pyamplicol.api.errors import EvaluationError
+
+    if accuracy != "lc":
+        pytest.skip("colour flows exist at leading colour")
+    runtime = _load(stored, "u d > u d")
+    flows = [a.id for a in runtime.physics.born_anchored_color_components]
+    assert flows == ["flow:3,1,4,2", "flow:3,2,4,1"]
+    for canonical, other in (
+        ("flow:3,1,4,2", "flow:4,2,3,1"),
+        ("flow:3,2,4,1", "flow:4,1,3,2"),
+    ):
+        left = runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=[other])
+        right = runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=[canonical])
+        assert _numbers(left) == _numbers(right)
+    with pytest.raises(EvaluationError):
+        runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=["flow:1,3,2,4"])
