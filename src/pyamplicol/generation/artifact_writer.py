@@ -1422,8 +1422,9 @@ def _write_process_groups(
 ) -> ProcessGroupMap:
     """Stage ``process-groups.json`` covering every process of the artifact.
 
-    An append keeps the stored groups, and a newly generated process leaves a
-    group in which it was only an assumed member. Processes without a recorded
+    An append keeps the stored groups (the public-ID check refuses an
+    appended process that would take a served member's ID, so no group loses
+    a member here). Processes without a recorded
     group map to themselves.
     """
 

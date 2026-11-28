@@ -542,9 +542,11 @@ Every generation lane (compiled, eager, recurrence, on-the-fly) writes
 payload role `process-groups` and media type `application/json`. Without
 `--flavor-blind` and without numerical analysis, each generated subprocess is
 its own group with factor 1. An append keeps the stored groups and adds the
-new subprocesses. A newly generated subprocess whose process ID matches an
-ungenerated flavour-blind member replaces that member and becomes its own
-group.
+new subprocesses. An append never reuses a public process ID: a process, an
+alias, or a member served through a representative keeps what it serves, so
+an appended subprocess named like a served member, even the same
+subprocess, is refused before anything is written (`ProcessIdCollisionError`);
+generate it under another name, or into a new artifact.
 
 The example below comes from
 
