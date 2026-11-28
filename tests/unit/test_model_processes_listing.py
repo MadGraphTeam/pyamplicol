@@ -99,10 +99,15 @@ def test_the_one_loop_listing_leaves_out_the_skipped_members(tmp_path, model_cac
     assert [row["process"] for row in listing["skipped"]] == ["G G > e+ e-"]
 
 
-def test_the_tree_listing_is_what_tree_generation_stores(tmp_path, model_cache):
-    # g g > e+ e- has no tree-level diagram: tree generation skips it (the
-    # tree dry run still lists it); u u~ > j j with max_quark_lines = 1 keeps
-    # u u~ > g g only.
+@pytest.mark.parametrize("mode", ["compiled", "recurrence", "on-the-fly"])
+def test_the_tree_listing_is_the_tree_dry_run_in_every_mode(
+    tmp_path, model_cache, mode
+):
+    # g g > e+ e- has no tree-level diagram; u u~ > j j with
+    # max_quark_lines = 1 keeps u u~ > g g only. The listing equals the dry
+    # run of the request's mode (a mode the model cannot serve without a
+    # prepared kernel pack is refused by both, with one reason), and, where
+    # the mode generates, the processes it stores.
     for expression, extra, absent in (
         ("p p > e+ e-", "", "G G > e+ e-"),
         ("u u~ > j j", "max_quark_lines = 1", "u u~ > u u~"),
@@ -113,12 +118,16 @@ def test_the_tree_listing_is_what_tree_generation_stores(tmp_path, model_cache):
             root,
             model_cache,
             expression,
-            extra=extra + '\n[evaluator]\nexecution_mode = "compiled"',
+            extra=extra + f'\n[evaluator]\nexecution_mode = "{mode}"',
         )
-        listing, listed = _listed(card)
-        assert listing["route"] == "tree"
-        assert listed == _stored(card)
-        assert absent not in {process for _name, process in listed}
+        _cli("model", "inspect", "--card", str(card), "--json")
+        planned = _outcome("generate", "--card", str(card), "--dry-run", "--json")
+        listed = _outcome("model", "processes", "--card", str(card), "--json")
+        assert listed == planned
+        if listed[0] == 0:
+            assert absent not in {process for _name, process in _listed(card)[1]}
+            if mode == "compiled":
+                assert [name for name, _p in _stored(card)] == listed[1]
 
 
 def _artifact_groups(artifact):

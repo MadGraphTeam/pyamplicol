@@ -1515,11 +1515,9 @@ def _planned_members(
     invariance of its leg-keyed fields); a dry run declares no correlators,
     so every declared correlation is closed under a permutation."""
 
-    from types import SimpleNamespace
-
     from pyamplicol.loops.v2.artifact import request_record
     from pyamplicol.loops.v2.assemble import resolve_request
-    from pyamplicol.loops.v2.observables import admit_member
+    from pyamplicol.loops.v2.observables import MemberAdmission, admit_member
     from pyamplicol.processes.model import build_model_process_ir
 
     def recipe(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -1553,17 +1551,18 @@ def _planned_members(
             if index in served:
                 continue
         resolved = resolve_request(compiled, request)
-        # What ``admit_member`` reads of the representative's slice.
-        view = SimpleNamespace(
-            blocks=SimpleNamespace(
-                process=build_model_process_ir(
-                    resolved.process, compiled.ir, color_accuracy="full"
-                )
+        # What ``admit_member`` reads of the representative's slice, from the
+        # dry run's model preparation of its request.
+        view = MemberAdmission(
+            build_model_process_ir(
+                resolved.process, compiled.ir, color_accuracy="full"
             ),
-            compiled=compiled,
-            prepared=model.prepared,
-            request=resolved,
-            continuation=model.continuation,
+            compiled.ir,
+            model.prepared.structure,
+            model.prepared.counterterms,
+            tuple(rule.name for rule in model.prepared.structure.native.vertex_rules),
+            tuple(resolved.corrections),
+            model.continuation,
         )
         representatives.append((entry.request.name, request_record(request), view))
     return served
