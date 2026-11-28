@@ -967,6 +967,7 @@ def test_selector_free_requests_keep_their_record():
     assert request_record(selected)["colour_selectors"] == {"max_color_sectors": 1}
 
 
+@pytest.mark.parametrize("accuracy", ["lc"], indirect=True)
 def test_another_spelling_of_a_flow_id_selects_the_flow(stored, accuracy):
     """A mapped process's flow named in another valid spelling of the same
     flow (its lines in the stored block order, as a tree runtime of the
@@ -975,8 +976,7 @@ def test_another_spelling_of_a_flow_id_selects_the_flow(stored, accuracy):
 
     from pyamplicol.api.errors import EvaluationError
 
-    if accuracy != "lc":
-        pytest.skip("colour flows exist at leading colour")
+    del accuracy  # colour flows exist at leading colour only
     runtime = _load(stored, "u d > u d")
     flows = [a.id for a in runtime.physics.born_anchored_color_components]
     assert flows == ["flow:3,1,4,2", "flow:3,2,4,1"]
