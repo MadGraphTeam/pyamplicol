@@ -57,6 +57,8 @@ def list_request_processes(
 
     backend = GenerationBackend(configuration, None)
     run = backend._run_config
+    if run is None:  # pragma: no cover - a listing is always a run configuration
+        raise GenerationError("model processes requires a run configuration")
     source = _model_for(backend, ModelSource.from_config(run.model))
     if backend._loop_execution_enabled:
         route = "one-loop"
