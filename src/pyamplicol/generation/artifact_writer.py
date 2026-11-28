@@ -1123,7 +1123,11 @@ def write_schema_v3_artifact(
         adjustments=adjustments,
         processes=processes,
     )
-    _validate_public_process_ids(existing, processes)
+    _validate_public_process_ids(existing, processes, process_groups)
+    if existing is not None:
+        _require_stored_parameter_values(
+            output, compiled_model, _bound_parameters(loop_processes)
+        )
     if existing is not None:
         producer = _plain_mapping(existing.producer)
         model = _plain_mapping(existing.model)
@@ -1179,8 +1183,6 @@ def write_schema_v3_artifact(
                 effective_bytes=effective_bytes,
                 bound_parameters=_bound_parameters(loop_processes),
             )
-        else:
-            _require_stored_bound_parameters(output, _bound_parameters(loop_processes))
         _write_specialization_guards(
             builder,
             compiled_model=compiled_model,
@@ -1488,22 +1490,58 @@ def _bound_parameters(
     return bound
 
 
-def _require_stored_bound_parameters(output: Path, bound: Mapping[str, str]) -> None:
-    """An append to ``output`` binds the parameters its model parameter record
-    states (``model/parameters.json``, ``_write_global_payloads``): a value
-    fixed now (``bound``) that the record states otherwise is refused."""
+def _parameter_record(
+    compiled_model: CompiledModel, bound: Mapping[str, str]
+) -> dict[str, list[float]]:
+    """The model parameter record (``model/parameters.json``) of processes
+    that bind ``bound``: every external parameter at the value they evaluate
+    it with, the model's own (its restriction applied) unless bound."""
 
-    if not bound:
+    return {
+        name: (
+            [float(bound[name]), 0.0]
+            if name in bound
+            else [float(value[0]), float(value[1])]
+        )
+        for name, value in sorted(compiled_model.parameter_defaults.items())
+    }
+
+
+def _require_stored_parameter_values(
+    output: Path, compiled_model: CompiledModel, bound: Mapping[str, str]
+) -> None:
+    """An appended process evaluates every model parameter at the value the
+    artifact's parameter record states (``model/parameters.json``, the one
+    parameter point of the artifact): the value it binds (``bound``) or, for
+    a parameter it does not bind, the model's own. Compared in both
+    directions; a difference is refused, naming the parameter and both
+    values."""
+
+    path = output / _MODEL_PARAMETERS_PATH
+    if not path.is_file():
+        # An artifact written before the record existed states no point.
         return
-    record = json.loads((output / _MODEL_PARAMETERS_PATH).read_text(encoding="utf-8"))
-    stored = record.get("parameters", {})
-    for name, value in sorted(bound.items()):
-        if name in stored and float(stored[name][0]) != float(value):
-            raise ValueError(
-                f"cannot append: the processes bind {name} = {value}, the "
-                f"artifact's model parameters state {stored[name][0]} "
-                "(model/parameters.json); regenerate the artifact"
-            )
+    stored = json.loads(path.read_text(encoding="utf-8")).get("parameters", {})
+    incoming = _parameter_record(compiled_model, bound)
+    for name in sorted(set(stored) | set(incoming)):
+        old, new = stored.get(name), incoming.get(name)
+        if old is not None and new is not None and [float(x) for x in old] == new:
+            continue
+        how = "binds" if name in bound else "takes the model's value"
+
+        def text(value: Sequence[float] | None) -> str:
+            if value is None:
+                return "no value"
+            real, imaginary = (float(item) for item in value)
+            return f"{real!r}" if imaginary == 0 else f"{real!r} + {imaginary!r}i"
+
+        raise ValueError(
+            f"cannot append: the appended processes evaluate {name} = "
+            f"{text(new)} (it {how}), but the artifact's processes evaluate it at "
+            f"{text(old)} (model/parameters.json); one artifact holds one "
+            f"parameter point: fix {name} to one value for both requests "
+            "([loop.preparation] fixed_parameters), or write a separate artifact"
+        )
 
 
 def _write_global_payloads(
@@ -1545,14 +1583,7 @@ def _write_global_payloads(
         {
             "schema_version": 1,
             "kind": "pyamplicol-model-parameter-defaults",
-            "parameters": {
-                name: (
-                    [float(bound[name]), 0.0]
-                    if name in bound
-                    else [float(value[0]), float(value[1])]
-                )
-                for name, value in sorted(compiled_model.parameter_defaults.items())
-            },
+            "parameters": _parameter_record(compiled_model, bound),
         },
         role="model-parameters",
     )
@@ -5391,42 +5422,105 @@ def check_append_settings(
 def _validate_public_process_ids(
     existing: ArtifactManifest | None,
     processes: Sequence[ProcessArtifact],
+    process_groups: ProcessGroupMap | None = None,
 ) -> None:
     """Before anything is written: the public IDs of the artifact as it will
-    be (the process and process alias IDs of ``existing`` and of
-    ``processes``) are unique, as its loader requires; else a
-    ``ProcessIdCollisionError`` naming both owners."""
+    be are unique, as its loaders require; else a ``ProcessIdCollisionError``
+    naming both owners.
 
-    owners: dict[str, str] = {}
+    The public IDs are every ID the selectors resolve (the Python runtime's
+    and the native one's alike): process IDs, process alias IDs and the IDs
+    of the process-group members that are served through a representative
+    (not generated), of ``existing`` and of the call (``processes``,
+    ``process_groups``). One ID may name one process only: an appended
+    process that takes the ID of a served member of the same process
+    (equal external PDGs in order) promotes that member to a stored process,
+    and an incoming member whose ID already names the same process is the
+    one already served; any other reuse is refused."""
 
-    def claim(public_id: str, owner: str) -> None:
+    owners: dict[str, tuple[str, tuple[int, ...] | None, bool]] = {}
+
+    def claim(
+        public_id: str,
+        owner: str,
+        pdgs: tuple[int, ...] | None = None,
+        *,
+        member: bool = False,
+        incoming: bool = False,
+    ) -> None:
         previous = owners.get(public_id)
         if previous is not None:
+            label, previous_pdgs, previous_member = previous
+            same = pdgs is not None and pdgs == previous_pdgs
+            # A stored record replaces a served member of the same process
+            # (promotion), and a served member that is already public under
+            # its ID keeps it; nothing else may share an ID.
+            if incoming and same and (previous_member or member):
+                return
             raise ProcessIdCollisionError(
-                f"public process ID {public_id!r} would name both {previous} "
+                f"public process ID {public_id!r} would name both {label} "
                 f"and {owner}; nothing was written. Name the process or alias "
                 "differently (an unnamed request takes a digest-suffixed name)",
                 process_ids=(public_id,),
             )
-        owners[public_id] = owner
+        owners[public_id] = (owner, pdgs, member)
+
+    def served_members(group_map: ProcessGroupMap | None):
+        if group_map is None:
+            return
+        for representative, group in group_map.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    yield representative, item
 
     if existing is not None:
         for record in existing.processes:
             process_id = str(record["id"])
-            claim(process_id, f"the artifact's process {process_id!r}")
+            claim(
+                process_id,
+                f"the artifact's process {process_id!r}",
+                tuple(int(pdg) for pdg in _sequence(record.get("external_pdgs", ()))),
+            )
             for alias in _sequence(record.get("aliases", ())):
                 claim(
                     str(_mapping(alias)["id"]),
                     f"an alias of the artifact's process {process_id!r}",
                 )
+        stored_groups = existing.root / PROCESS_GROUPS_PATH
+        if stored_groups.is_file():
+            for representative, item in served_members(
+                ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
+            ):
+                claim(
+                    item.process_id,
+                    f"the artifact's process {item.expression!r} (served "
+                    f"through {representative!r})",
+                    tuple(item.pdgs),
+                    member=True,
+                )
     incoming = "appended" if existing is not None else "generated"
     for process in processes:
-        claim(process.process_id, f"the {incoming} process {process.process_id!r}")
+        claim(
+            process.process_id,
+            f"the {incoming} process {process.process_id!r}",
+            tuple(int(pdg) for pdg in process.external_pdgs),
+            incoming=True,
+        )
         for alias in process.aliases:
             claim(
                 str(alias["id"]),
                 f"an alias of the {incoming} process {process.process_id!r}",
+                incoming=True,
             )
+    for representative, item in served_members(process_groups):
+        claim(
+            item.process_id,
+            f"the {incoming} process {item.expression!r} (served through "
+            f"{representative!r})",
+            tuple(item.pdgs),
+            member=True,
+            incoming=True,
+        )
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:

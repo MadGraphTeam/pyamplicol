@@ -458,3 +458,218 @@ max_coupling_orders = {{ QCD = 2, QED = {qed} }}""",
     assert code != 0
     assert key in stderr
     assert not (tmp_path / "artifact").exists()
+
+
+# Public process IDs through an append (review r2) ----------------------------
+
+
+def _born(artifact, process):
+    result = Runtime.load(artifact, process=process).evaluate(
+        _points(), mu_r2=[8315.0, 8315.0]
+    )
+    return [float(value[0]) for value in result.born_values]
+
+
+@pytest.fixture(scope="module")
+def grouped_artifact(tmp_path_factory, model_cache):
+    """Exact flavour grouping: ``d d > d d`` stored as ``up``, ``s s > s s``
+    served through it as ``first`` and as ``second``."""
+
+    root = tmp_path_factory.mktemp("grouped")
+    card = _card(
+        root,
+        model_cache,
+        expression="d d > d d",
+        name="up",
+        extra="flavor_blind = true",
+    )
+    Generator(resolve_config(card)).generate(
+        ProcessSet(
+            (
+                ProcessRequest.parse("d d > d d", name="up"),
+                ProcessRequest.parse("s s > s s", name="first"),
+                ProcessRequest.parse("s s > s s", name="second"),
+            )
+        ),
+        root / "artifact",
+    )
+    assert [row["id"] for row in _manifest(root / "artifact")["processes"]] == ["up"]
+    return card, root / "artifact"
+
+
+def _copy(artifact, tmp_path):
+    import shutil
+
+    target = tmp_path / "copy"
+    shutil.copytree(artifact, target)
+    return target
+
+
+def test_an_append_cannot_take_a_served_member_id_for_another_process(
+    grouped_artifact, tmp_path
+):
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card, stored = grouped_artifact
+    artifact = _copy(stored, tmp_path)
+    before, born = _digest(artifact), _born(artifact, "first")
+    assert born[0] == 5.540289417365958
+    with pytest.raises(ProcessIdCollisionError, match="'first'"):
+        Generator(resolve_config(card)).generate(
+            ProcessRequest.parse("u u~ > g g", name="first"), artifact, mode="append"
+        )
+    assert _digest(artifact) == before
+    assert _born(artifact, "first") == born
+
+
+def test_an_append_may_promote_a_served_member_of_the_same_process(
+    grouped_artifact, tmp_path
+):
+    card, stored = grouped_artifact
+    artifact = _copy(stored, tmp_path)
+    served = _values(artifact, "first")
+    Generator(resolve_config(card)).generate(
+        ProcessRequest.parse("s s > s s", name="first"), artifact, mode="append"
+    )
+    assert [row["id"] for row in _manifest(artifact)["processes"]] == ["up", "first"]
+    # The promoted member keeps its contract: the same process and value
+    # (its own generation now, equal to the exact relation it was served by).
+    assert Runtime.load(artifact, process="first").physics.process == "s s > s s"
+    promoted = np.array(_born(artifact, "first"))
+    assert np.allclose(promoted, _born(stored, "first"), rtol=1e-13, atol=0)
+    assert _values(artifact, "second") == _values(stored, "second")
+    assert served is not None
+
+
+def test_an_incoming_member_cannot_take_a_stored_id(tmp_path, model_cache):
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u u~ > g g",
+        name="taken",
+        extra="flavor_blind = true",
+    )
+    artifact = tmp_path / "artifact"
+    generator = Generator(resolve_config(card))
+    generator.generate(ProcessRequest.parse("u u~ > g g", name="taken"), artifact)
+    before, values = _digest(artifact), _values(artifact, "taken")
+    with pytest.raises(ProcessIdCollisionError, match="'taken'"):
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("d d > d d", name="down"),
+                    ProcessRequest.parse("s s > s s", name="taken"),
+                )
+            ),
+            artifact,
+            mode="append",
+        )
+    assert _digest(artifact) == before
+    assert _values(artifact, "taken") == values
+
+
+def test_an_append_cannot_take_an_alias_id(tmp_path, model_cache):
+    from pyamplicol.api import ProcessAlias
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    card = _card(tmp_path, model_cache, expression="u u~ > g g", name="first")
+    artifact = tmp_path / "artifact"
+    generator = Generator(resolve_config(card))
+    generator.generate(
+        ProcessSet(
+            (ProcessRequest.parse("u u~ > g g", name="first"),),
+            (ProcessAlias("other", "first", (1, 0, 2, 3)),),
+        ),
+        artifact,
+    )
+    before, values = _digest(artifact), _values(artifact, "first")
+    with pytest.raises(ProcessIdCollisionError, match="'other'"):
+        generator.generate(
+            ProcessRequest.parse("d d~ > e+ e-", name="other"), artifact, mode="append"
+        )
+    assert _digest(artifact) == before
+    assert _values(artifact, "first") == values
+    assert Runtime.load(artifact, process="other").physics.process == "u~ u > G G"
+
+
+# Model parameters of an append (review r2) -----------------------------------
+
+
+@pytest.mark.parametrize(
+    ("stored", "appended"),
+    [("u u~ > z g", "u u~ > e+ e-"), ("u u~ > e+ e-", "u u~ > z g")],
+)
+def test_an_append_evaluating_another_parameter_point_is_refused(
+    tmp_path, model_cache, stored, appended
+):
+    # Stable external widths fix WZ = 0 for u u~ > z g only: the Drell-Yan
+    # process evaluates the model's Z width.
+    card = _card(tmp_path, model_cache, expression=stored, name="base")
+    text = card.read_text().replace(
+        'fixed_parameters = { WT = "0", WZ = "0", WW = "0", WH = "0" }',
+        'fixed_parameters = { WT = "0" }',
+    )
+    card.write_text(
+        text.replace(
+            "[loop.preparation]", '[loop]\nexternal_widths = "zero"\n[loop.preparation]'
+        )
+    )
+    artifact = tmp_path / "artifact"
+    generator = Generator(resolve_config(card))
+    generator.generate(ProcessRequest.parse(stored, name="base"), artifact)
+    before = _digest(artifact)
+    with pytest.raises(GenerationError, match=r"WZ = ") as error:
+        generator.generate(
+            ProcessRequest.parse(appended, name="more"), artifact, mode="append"
+        )
+    message = str(error.value)
+    assert "2.441404" in message and "0.0" in message
+    assert _digest(artifact) == before
+
+
+# Exact flavour members in the Python selector (review r2) --------------------
+
+
+def test_a_member_served_twice_is_ambiguous_in_every_spelling(grouped_artifact):
+    _, artifact = grouped_artifact
+    for spelling in ("s s > s s", "S S > S S"):
+        with pytest.raises(EvaluationError, match="ambiguous") as error:
+            Runtime.load(artifact, process=spelling)
+        assert "first, second" in str(error.value)
+    for process in ("first", "second"):
+        assert Runtime.load(artifact, process=process).physics.process == "s s > s s"
+
+
+# The quark-line cut before aliases (review r2) -------------------------------
+
+
+def test_the_quark_line_cut_applies_before_an_alias_is_resolved(tmp_path, model_cache):
+    from pyamplicol.api import ProcessAlias
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="x y > a a",
+        name="sample",
+        extra="""multiparticles = { x = ["g", "u"], y = ["g", "u~"] }
+max_quark_lines = 0
+loop_induced = "include"
+max_coupling_orders = { QCD = 2, QED = 2 }""",
+    )
+    request = ProcessSet(
+        (ProcessRequest.parse("x y > a a", name="sample"),),
+        (ProcessAlias("twophotons", "sample", (0, 1, 3, 2)),),
+    )
+    generator = Generator(resolve_config(card))
+    plan = generator.plan(request)
+    assert plan.unsupported_features == ()
+    assert [(p.name, p.expression) for p in plan.concrete_processes] == [
+        ("sample_1", "G G > A A")
+    ]
+    generator.generate(request, tmp_path / "artifact")
+    (record,) = _manifest(tmp_path / "artifact")["processes"]
+    assert record["id"] == "sample_1"
+    assert [alias["id"] for alias in record["aliases"]] == ["twophotons"]
+    assert Runtime.load(tmp_path / "artifact", process="twophotons").physics.process
