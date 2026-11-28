@@ -111,12 +111,70 @@ the largest physical component magnitude over the sectors
   per-lane rotation budget 1.6 times the physical scale, the virtual
   2e-12 of it before and after the rotation). An evaluation without the
   reduction check has no binary64 criterion (``passed`` None).
+
+**Vanishing coefficients** (``scale_floor``): a Laurent coefficient that
+vanishes physically (the double pole of a QED correction with massive
+emitters) has a physical scale of the size of its own rounding. Every
+coefficient's scale is therefore at least |physical Born| x alpha / (2 pi)
+(alpha = ``SCALE_FLOOR_COUPLING``, the fine-structure constant: the weakest
+coupling of a shipped correction), so that rounding over a rounding-size
+scale is not judged as a violation (``row["scale_floor"]`` marks the
+coefficients it set).
+
+**Unstable external legs** (``unstable_external_legs``,
+``stabilised_parameters``). In the real on-shell mass scheme (zero widths)
+an external particle that can decay at its own mass keeps the absorptive
+part of its self-energy: the mass counterterm renormalises Re Sigma only, so
+i Im Sigma(m^2) stays on the external leg, which is then not at the
+(complex) pole of its propagator. The Ward identity of the renormalised
+amplitude fails by a term of relative size about Gamma / m in the
+absorptive part of the amplitude, while the dispersive part and the
+interference a run serves are unaffected (g g > t t~ [QED] with MT > MW +
+MB: the c = 1 finite part 8.6e-3 of the physical scale, zero below the
+t -> W b threshold; MadLoop, Recola and OpenLoops agree with the served
+values). The legs this affects are those charged under the substituted
+boson: coloured legs for a gluon leg, electrically charged legs for a
+photon leg. A leg is unstable when it is massive, its width is zero at the
+check's parameters and a tree-level two-body channel of the model's
+three-point vertices (ghosts excluded) that carries a coupling order of a
+requested correction (a cut of the leg's one-loop self-energy) is open:
+m > m_a + m_b at the evaluated masses. The rows cannot separate the absorptive from the
+dispersive part (the substituted leg's helicity sum is i sqrt(2) times a
+real transverse vector, so the c = 1 row holds the absorptive part only
+for parity-even terms), so with an unstable leg ``ward_check``:
+
+* judges the rows at the requested parameters as before, except that a row
+  whose virtual fails becomes inconclusive (``passed`` None) with the
+  reason (``row["unstable"]``: the leg, its open channel and the remedy);
+  a passing row stays a pass, a Born failure stays a failure;
+* evaluates the same rows again on a STABILISED spectrum and judges them
+  normally (``check["stabilised"]``): every runtime mass input of a
+  massive vector boson scaled by one common factor (so the weak mixing
+  angle is kept), the smallest of the form k / 100 that closes every open
+  channel with a margin ``STABILISING_MARGIN`` (g g > t t~ at MT = 173.3:
+  MW = 80.419 -> 180.94275, MZ = 91.188 -> 205.173, the factor 2.25),
+  provided no external leg's mass moves; the benchmark's ``ward_parameters``
+  set such a spectrum by hand. The check's verdict comes from those rows, so a broken
+  amplitude still fails; the requested parameters' values are untouched
+  (every evaluation takes its parameters per call);
+* without such a spectrum (no runtime vector-boson mass input, or one
+  that moves an external mass, as for an external W, whose decays to
+  massless fermions are always open) the unstable rows stay inconclusive,
+  never a pass.
+
+The stabilised evaluation costs one more Ward batch (the physical entry
+and every leg and factor) per point, only where an unstable leg is
+present. Outside the real on-shell scheme the case does not arise: the
+complex-mass scheme refuses external unstable particles
+(``cms-external-width``).
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
+from decimal import ROUND_CEILING, Decimal
 from fractions import Fraction
 from typing import Any
 
@@ -142,6 +200,17 @@ BINARY64_FLOOR = 1e-12
 RESOLUTION_UNITS = {"double": 2.0**-53, "double-double": 2.0**-104}
 # The stability check the binary64 criterion reads.
 WARD_CHECKS = StabilityChecks(reduction_direction=True)
+# The coupling of a coefficient's scale floor (module docstring, "Vanishing
+# coefficients"): alpha(0).
+SCALE_FLOOR_COUPLING = 1 / 137.035999
+# Module docstring, "Unstable external legs": the stabilised spectrum puts
+# every open channel's threshold at least this factor above the decaying
+# mass; the common scale factor is searched in steps of 1/100 up to
+# ``STABILISING_LIMIT``.
+STABILISING_MARGIN = Fraction(26, 25)
+STABILISING_LIMIT = 20
+# Digits of the masses the instability test evaluates.
+MASS_DIGITS = 30
 
 
 def ward_slice(compiled: Any, request: Any, native: Any, **options: Any) -> LoopSlice:
@@ -243,6 +312,346 @@ def gauge_legs(slice_: Any) -> tuple[int, ...]:
         if int(entry["spin"]) == 3 and entry.get("mass") in (None, "ZERO", "0"):
             out.append(int(leg.label))
     return tuple(out)
+
+
+@dataclass(frozen=True)
+class UnstableLeg:
+    """An external leg that can decay at its own mass (module docstring,
+    "Unstable external legs"): its label and particle, its mass, the open
+    channel's decay products (the lowest open threshold, a physical channel
+    preferred to a Goldstone one of the same threshold) and that
+    threshold."""
+
+    leg: int
+    particle: str
+    mass: float
+    channel: tuple[str, str]
+    threshold: float
+
+    def describe(self) -> str:
+        a, b = self.channel
+        return (
+            f"leg {self.leg} ({self.particle}, mass {self.mass:.6g}) decays to "
+            f"{a} {b} (threshold {self.threshold:.6g})"
+        )
+
+
+def slice_masses(slice_: Any, parameters: Mapping[str, str] | None = None) -> Any:
+    """The slice's parameter evaluator at ``parameters`` (the caller's runtime
+    parameters, validated as an evaluation validates them, with the fixed
+    ones): parameter name -> |value| as a float, an external parameter its
+    value, a derived one its definition at ``MASS_DIGITS`` digits (as
+    ``assemble._model_masses`` evaluates masses, a vanishing one included),
+    ZERO -> 0."""
+
+    from decimal import Decimal as _Decimal
+
+    from .assemble import (
+        Precision,
+        _definition_value,
+        _kernel_parameters,
+        _substitutions,
+    )
+
+    compiled = slice_.compiled
+    values = slice_._point_parameters(
+        dict(parameters or {}), Fraction(1), Precision.double()
+    )
+    known = _kernel_parameters(compiled, values)
+    definitions = {
+        record.name: record.resolved_expression
+        for record in compiled.ir.parameters
+        if record.nature == "internal"
+    }
+    found: dict[str, float] = {}
+    substitutions: list[Any] = []
+
+    def value(name: str) -> float:
+        name = str(name)
+        if name in ("ZERO", "0"):
+            return 0.0
+        if name in known:
+            return abs(complex(known[name]))
+        if name not in found:
+            if name not in definitions:
+                raise KeyError(f"{name!r} is no model parameter")
+            if not substitutions:
+                external = {
+                    record.name: _Decimal(
+                        values.get(
+                            record.name,
+                            str(compiled.parameter_defaults[record.name][0]),
+                        )
+                    )
+                    for record in compiled.ir.parameters
+                    if record.nature == "external"
+                    and record.name in compiled.parameter_defaults
+                }
+                substitutions.append(_substitutions(compiled, external, MASS_DIGITS))
+            real, imaginary = _definition_value(
+                definitions[name], substitutions[0], MASS_DIGITS
+            )
+            found[name] = abs(complex(float(real), float(imaginary)))
+        return found[name]
+
+    return value
+
+
+def _particle_records(compiled: Any) -> tuple[dict[int, Any], dict[str, Any]]:
+    by_pdg: dict[int, Any] = {}
+    by_name: dict[str, Any] = {}
+    for record in compiled.ir.particles:
+        by_pdg[int(record.pdg_code)] = record
+        by_name[str(record.name)] = record
+    return by_pdg, by_name
+
+
+def _leg_record(by_pdg: Mapping[int, Any], pdg: int) -> Any:
+    return by_pdg.get(int(pdg)) or by_pdg.get(-int(pdg))
+
+
+def _substituted_kinds(
+    by_pdg: Mapping[int, Any], slice_: Any, legs: Sequence[int]
+) -> set[str]:
+    """What the substituted legs constrain: "colour" (a gluon leg), "charge"
+    (a photon leg: a massless colour-singlet neutral vector)."""
+
+    pdgs = {int(leg.label): int(leg.pdg) for leg in slice_.blocks.process.legs}
+    kinds = set()
+    for label in legs:
+        record = _leg_record(by_pdg, pdgs[int(label)])
+        if record is None:
+            continue
+        kinds.add("colour" if abs(int(record.color)) != 1 else "charge")
+    return kinds
+
+
+def unstable_external_legs(
+    slice_: Any,
+    legs: Sequence[int] | None = None,
+    parameters: Mapping[str, str] | None = None,
+    *,
+    masses: Callable[[str], float] | None = None,
+) -> tuple[UnstableLeg, ...]:
+    """The external legs of ``slice_`` that the Ward check of the substituted
+    ``legs`` (default: ``gauge_legs``) constrains and that can decay at their
+    own mass at ``parameters`` (module docstring, "Unstable external legs"):
+    coloured legs for a gluon leg, charged legs for a photon leg; massive,
+    of zero width, with an open tree-level two-body channel among the
+    model's three-point vertices (ghosts excluded). ``masses`` (default:
+    ``slice_masses``) maps a parameter name to its value. A stored process's
+    view (no model) has none it can name."""
+
+    compiled = getattr(slice_, "compiled", None)
+    blocks = getattr(slice_, "blocks", None)
+    if compiled is None or blocks is None:
+        return ()
+    legs = tuple(gauge_legs(slice_) if legs is None else legs)
+    if not legs:
+        return ()
+    value = masses or slice_masses(slice_, parameters)
+    by_pdg, by_name = _particle_records(compiled)
+    kinds = _substituted_kinds(by_pdg, slice_, legs)
+    # Only a channel whose vertex the requested corrections' loops carry
+    # opens a cut of the leg's self-energy (t -> W b is no cut of a QCD loop).
+    request = getattr(slice_, "request", None)
+    orders = None
+    if request is not None:
+        from .ew_policy import request_corrections
+
+        orders = set(request_corrections(compiled, request))
+    three = [
+        tuple(str(name) for name in term.particles)
+        for term in compiled.ir.vertex_terms
+        if len(term.particles) == 3
+        and (
+            orders is None
+            or any(str(order) in orders for order, _ in term.coupling_orders)
+        )
+    ]
+    found = []
+    for leg in sorted(blocks.process.legs, key=lambda x: x.label):
+        record = _leg_record(by_pdg, int(leg.pdg))
+        if record is None or int(leg.label) in legs:
+            continue
+        charged = ("colour" in kinds and abs(int(record.color)) != 1) or (
+            "charge" in kinds and float(record.charge) != 0
+        )
+        if not charged:
+            continue
+        mass = value(str(record.mass))
+        if mass == 0 or value(str(record.width)) != 0:
+            continue
+        name = (
+            str(record.name)
+            if int(leg.pdg) == int(record.pdg_code)
+            else str(record.antiname)
+        )
+        conjugate = (
+            str(record.antiname) if name == str(record.name) else str(record.name)
+        )
+        channels = []
+        for particles in three:
+            rest = list(particles)
+            if name in rest:
+                # Incoming parent: the others are the conjugates of the
+                # decay products.
+                rest.remove(name)
+                products = [
+                    str(by_name[x].antiname) if x in by_name else x for x in rest
+                ]
+            elif conjugate in rest:
+                rest.remove(conjugate)
+                products = rest
+            else:
+                continue
+            records = [by_name.get(x) for x in rest]
+            if any(
+                r is None or int(getattr(r, "ghost_number", 0) or 0) for r in records
+            ):
+                continue
+            threshold = sum(value(str(r.mass)) for r in records)
+            if mass > threshold * (1 + 1e-12) + 1e-300:
+                goldstone = any(
+                    bool(getattr(r, "goldstoneboson", False)) for r in records
+                )
+                channels.append((threshold, goldstone, tuple(sorted(products))))
+        if channels:
+            threshold, _goldstone, products = min(channels)
+            found.append(
+                UnstableLeg(
+                    int(leg.label), name, mass, (products[0], products[1]), threshold
+                )
+            )
+    return tuple(found)
+
+
+def unstable_reason(
+    unstable: Sequence[UnstableLeg],
+    stabilised: Mapping[str, str] | None,
+    why: str | None = None,
+) -> str:
+    """The reason of a Ward row inconclusive at the requested spectrum (module
+    docstring, "Unstable external legs"): the legs, their open channels and
+    the remedy (the stabilised spectrum the check judges instead, or why
+    there is none)."""
+
+    legs = "; ".join(leg.describe() for leg in unstable)
+    text = (
+        f"unstable external leg: {legs}; in the real on-shell scheme the Ward "
+        "identity does not hold for the absorptive part of the amplitude there"
+    )
+    if stabilised:
+        moved = ", ".join(f"{k} = {v}" for k, v in sorted(stabilised.items()))
+        return text + f"; judged on the stabilised spectrum {moved}"
+    return (
+        text
+        + "; no stabilised spectrum"
+        + (f" ({why})" if why else "")
+        + ": check on a spectrum where these legs are stable"
+    )
+
+
+def stabilised_parameters(
+    slice_: Any,
+    legs: Sequence[int] | None = None,
+    parameters: Mapping[str, str] | None = None,
+) -> tuple[dict[str, str] | None, str | None]:
+    """The stabilised spectrum of a Ward check at ``parameters`` (module
+    docstring, "Unstable external legs"): (the runtime inputs it moves with
+    their values, None), ({}, None) without an unstable leg, or (None, why
+    there is none). Every runtime mass input of a massive vector boson is
+    scaled by the smallest common factor k / 100 that leaves no unstable leg
+    with every open threshold of the requested spectrum at least
+    ``STABILISING_MARGIN`` above its leg's mass; refused if it moves an
+    external leg's mass."""
+
+    from .assemble import Precision
+
+    legs = tuple(gauge_legs(slice_) if legs is None else legs)
+    unstable = unstable_external_legs(slice_, legs, parameters)
+    if not unstable:
+        return {}, None
+    compiled = slice_.compiled
+    values = slice_._point_parameters(
+        dict(parameters or {}), Fraction(1), Precision.double()
+    )
+    runtime = set(slice_._external_parameters()) - set(slice_.fixed_parameters)
+    runtime -= set(getattr(slice_, "preparation_fixed_parameters", None) or ())
+    runtime.discard(slice_.scale_parameter)
+    names = sorted(
+        {
+            str(record.mass)
+            for record in compiled.ir.particles
+            if int(record.spin) == 3
+            and not int(getattr(record, "ghost_number", 0) or 0)
+            and str(record.mass) in runtime
+        }
+    )
+    if not names:
+        return None, "the model has no runtime mass input of a massive vector boson"
+    current = {
+        name: Decimal(str(values.get(name, compiled.parameter_defaults[name][0])))
+        for name in names
+    }
+    before = slice_masses(slice_, parameters)
+    by_pdg, _ = _particle_records(compiled)
+    externals = [
+        _leg_record(by_pdg, int(leg.pdg)) for leg in slice_.blocks.process.legs
+    ]
+    leg_masses = [before(str(r.mass)) if r is not None else 0.0 for r in externals]
+    need = max(
+        float(STABILISING_MARGIN) * leg.mass / leg.threshold
+        if leg.threshold
+        else math.inf
+        for leg in unstable
+    )
+    if not math.isfinite(need):
+        return None, "an open channel has massless decay products only"
+    step = Decimal("0.01")
+    factor = (Decimal(str(need))).quantize(step, rounding=ROUND_CEILING)
+    while factor <= STABILISING_LIMIT:
+        moved = {name: _decimal_text(current[name] * factor) for name in names}
+        trial = {**dict(parameters or {}), **moved}
+        after = slice_masses(slice_, trial)
+        if [
+            after(str(r.mass)) if r is not None else 0.0 for r in externals
+        ] != leg_masses:
+            return None, (f"scaling {', '.join(names)} moves an external leg's mass")
+        if not unstable_external_legs(slice_, legs, trial, masses=after) and all(
+            _threshold(compiled, leg, after) >= float(STABILISING_MARGIN) * leg.mass
+            for leg in unstable
+        ):
+            return moved, None
+        factor += step
+    return None, (
+        f"scaling {', '.join(names)} by up to {STABILISING_LIMIT} closes no open "
+        "channel"
+    )
+
+
+def _threshold(compiled: Any, leg: UnstableLeg, value: Callable[[str], float]) -> float:
+    """The threshold of ``leg``'s channel at the masses ``value``."""
+
+    _, by_name = _particle_records(compiled)
+    total = 0.0
+    for name in leg.channel:
+        record = by_name.get(name)
+        total += value(str(record.mass)) if record is not None else 0.0
+    return total
+
+
+def _decimal_text(value: Decimal) -> str:
+    return format(value.normalize(), "f")
+
+
+def scale_floor(physical: Any) -> float:
+    """The floor of every coefficient's scale (module docstring, "Vanishing
+    coefficients"): |physical Born| x alpha / (2 pi); 0 without a Born."""
+
+    born = getattr(physical, "born", None) or {}
+    total = abs(sum(complex(value) for value in born.values())) if born else 0.0
+    return total * SCALE_FLOOR_COUPLING / (2 * math.pi)
 
 
 def ward_scales(physical: Any) -> list[float]:
@@ -348,7 +757,13 @@ def judged(residual: float, allowed: float, uncertain: float) -> bool | None:
     return None
 
 
-def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
+def ward_row(
+    physical: Any,
+    result: Any,
+    carrier: str,
+    unstable: Sequence[UnstableLeg] = (),
+    reason: str | None = None,
+) -> dict[str, Any]:
     """The criterion of one Ward evaluation (module docstring): ``physical``
     and ``result`` are the ``PointResult`` of the same point without and with
     the Ward value, ``carrier`` "double" or "double-double". Returns the
@@ -365,7 +780,9 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
 
     if carrier not in BORN_BOUNDS:
         raise ValueError(f"no Ward criterion for the carrier {carrier!r}")
-    scale = ward_scales(physical)
+    measured = ward_scales(physical)
+    floor = scale_floor(physical)
+    scale = [max(s, floor) for s in measured]
     width = len(scale)
     parts = {
         name: [_ratio(v, s) for v, s in zip(largest(result, name), scale, strict=True)]
@@ -376,6 +793,7 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
         "born": born,
         "born_passed": born <= BORN_BOUNDS[carrier],
         "parts": parts,
+        "scale_floor": [s < floor for s in measured],
         "estimate": None,
         "estimate_over": None,
         "uncertified": None,
@@ -534,6 +952,12 @@ def ward_row(physical: Any, result: Any, carrier: str) -> dict[str, Any]:
     row["passed"] = (
         None if virtual_passed is None else bool(virtual_passed and row["born_passed"])
     )
+    if unstable and virtual_passed is False and row["born_passed"]:
+        # Module docstring, "Unstable external legs": not a failure at the
+        # requested spectrum; the stabilised rows judge.
+        row["passed"] = None
+        row["unstable"] = reason or unstable_reason(unstable, None)
+        row["inconclusive"] = "inconclusive: " + row["unstable"]
     return row
 
 
@@ -549,6 +973,7 @@ def ward_check(
     checks: bool | None = None,
     precision: Any = None,
     judge: bool = True,
+    stabilise: bool = True,
 ) -> dict[str, Any]:
     """The Ward check of one point in one batch of ``executor`` (a
     ``plan_export.NativeExecutor`` of a ``ward_slice``, either input path):
@@ -563,7 +988,19 @@ def ward_check(
     (``ward_row`` plus ``leg`` and ``factor``) and ``passed`` (every row;
     None if a row has no criterion). ``judge`` False: ``rows`` hold ``leg``
     and ``factor`` alone and ``passed`` is None (``pyamplicol check`` judges
-    the results itself, ``checks._ward_measures``)."""
+    the results itself, ``checks._ward_measures``).
+
+    ``unstable`` lists the external legs that can decay at their own mass
+    (``unstable_external_legs``, module docstring "Unstable external legs").
+    With one, a judged check whose ``stabilise`` is True (the default) also
+    evaluates the rows on the stabilised spectrum (``stabilised_parameters``)
+    in a second batch: ``stabilised`` holds its ``parameters`` (the moved
+    inputs; None without such a spectrum, ``why`` says why), ``physical``,
+    ``results`` and ``rows``; ``passed`` is then formed from the stabilised
+    rows and the requested-spectrum rows that are not inconclusive for the
+    unstable leg alone (None, never a pass, without a stabilised spectrum).
+    Each evaluation takes its parameters per call: the requested
+    spectrum's values are not changed by the stabilised one."""
 
     from .assemble import Precision
 
@@ -579,24 +1016,56 @@ def ward_check(
     legs = tuple(legs if legs is not None else gauge_legs(executor.slice))
     checked = carrier == "double" if checks is None else checks
     labels = [(leg, factor) for leg in legs for factor in factors]
-    results = executor.evaluate(
-        [point] * (len(labels) + 1),
-        [scale] * (len(labels) + 1),
-        parameters=parameters,
-        precision=precision,
-        ward=[None, *(gauge_ward(leg, factor, point) for leg, factor in labels)],
-        stability=WARD_CHECKS if checked else None,
-    )
-    physical, results = results[0], results[1:]
+
+    def batch(values: Any) -> tuple[Any, list[Any]]:
+        found = executor.evaluate(
+            [point] * (len(labels) + 1),
+            [scale] * (len(labels) + 1),
+            parameters=values,
+            precision=precision,
+            ward=[None, *(gauge_ward(leg, factor, point) for leg, factor in labels)],
+            stability=WARD_CHECKS if checked else None,
+        )
+        return found[0], list(found[1:])
+
+    unstable = unstable_external_legs(executor.slice, legs, parameters)
+    physical, results = batch(parameters)
+    stabilised: dict[str, Any] | None = None
+    reason = None
+    if unstable and judge and stabilise:
+        moved, why = stabilised_parameters(executor.slice, legs, parameters)
+        reason = unstable_reason(unstable, moved, why)
+        stabilised = {"parameters": moved, "why": why}
+        if moved:
+            stable_physical, stable_results = batch({**dict(parameters or {}), **moved})
+            stable_rows = []
+            for (leg, factor), result in zip(labels, stable_results, strict=True):
+                judged = ward_row(stable_physical, result, carrier)
+                stable_rows.append({**judged, "leg": leg, "factor": factor})
+            stabilised.update(
+                physical=stable_physical, results=stable_results, rows=stable_rows
+            )
     rows = []
     for (leg, factor), result in zip(labels, results, strict=True):
-        judged = ward_row(physical, result, carrier) if judge else {"passed": None}
+        judged = (
+            ward_row(physical, result, carrier, unstable, reason)
+            if judge
+            else {"passed": None}
+        )
         rows.append({**judged, "leg": leg, "factor": factor})
-    verdicts = [row["passed"] for row in rows]
+    verdicts = [
+        row["passed"]
+        for row in rows
+        if not (stabilised and stabilised.get("rows") and "unstable" in row)
+    ]
+    if stabilised and stabilised.get("rows"):
+        verdicts += [row["passed"] for row in stabilised["rows"]]
     return {
         "physical": physical,
         "results": results,
         "rows": rows,
+        "unstable": unstable,
+        "stabilised": stabilised,
         "passed": None if None in verdicts else all(verdicts),
     }
 
@@ -606,11 +1075,16 @@ __all__ = [
     "BINARY64_SCOPE",
     "BORN_BOUNDS",
     "ESTIMATE_FACTOR",
+    "MASS_DIGITS",
     "PARTS",
     "RESOLUTION_UNITS",
+    "SCALE_FLOOR_COUPLING",
+    "STABILISING_LIMIT",
+    "STABILISING_MARGIN",
     "VIRTUAL_BOUNDS",
     "WARD_CHECKS",
     "WARD_FACTORS",
+    "UnstableLeg",
     "born_ratio",
     "gauge_legs",
     "gauge_ward",
@@ -621,7 +1095,12 @@ __all__ = [
     "point_wards",
     "require_full_kernels",
     "rotated_ward",
+    "scale_floor",
+    "slice_masses",
+    "stabilised_parameters",
     "uncertified_bounds",
+    "unstable_external_legs",
+    "unstable_reason",
     "ward_check",
     "ward_leg",
     "ward_row",

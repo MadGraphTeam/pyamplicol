@@ -739,8 +739,9 @@ def test_a_refused_double_double_run_leaves_the_binary64_rows_inconclusive(
 
 def _toy_target(legs, corrections, fixed):
     """A probe-slice stand-in on a toy model (records): a gluon, a photon,
-    a massive top (MT, width WT), a massless up quark, a massive muon (MM,
-    width WM) whose orders are QCD (the gluon's vertices) and QED."""
+    a massive top (MT, width WT), a massless up quark, a massless bottom
+    quark, a W (MW, width WW) coupling t b W, a massive muon (MM, width WM)
+    whose orders are QCD (the gluon's vertices) and QED."""
 
     from types import SimpleNamespace as NS
 
@@ -766,6 +767,10 @@ def _toy_target(legs, corrections, fixed):
         particle("t~", "t", -6, 2, -3, -2 / 3, "MT", "WT"),
         particle("u", "u~", 2, 2, 3, 2 / 3),
         particle("u~", "u", -2, 2, -3, -2 / 3),
+        particle("b", "b~", 5, 2, 3, -1 / 3),
+        particle("b~", "b", -5, 2, -3, 1 / 3),
+        particle("W+", "W-", 24, 3, 1, 1.0, "MW", "WW"),
+        particle("W-", "W+", -24, 3, 1, -1.0, "MW", "WW"),
         particle("mu-", "mu+", 13, 2, 1, -1.0, "MM", "WM"),
         particle("mu+", "mu-", -13, 2, 1, 1.0, "MM", "WM"),
     ]
@@ -780,6 +785,8 @@ def _toy_target(legs, corrections, fixed):
         vertex(("t~", "t", "a"), "QED"),
         vertex(("u~", "u", "a"), "QED"),
         vertex(("mu+", "mu-", "a"), "QED"),
+        vertex(("b~", "t", "W-"), "QED"),
+        vertex(("t~", "b", "W+"), "QED"),
     ]
     compiled = NS(ir=NS(particles=particles, parameters=[], vertex_terms=vertices))
     return NS(
@@ -792,36 +799,95 @@ def _toy_target(legs, corrections, fixed):
     )
 
 
+def _toy_masses(monkeypatch, **values):
+    """``ward.slice_masses`` on the toy model: MT 173.3, MW 80.419, MM 0.105
+    (or ``values``), the widths from the target's fixed parameters (else 1)."""
+
+    from pyamplicol.loops.v2 import ward
+
+    masses = {"MT": 173.3, "MW": 80.419, "MM": 0.105, **values}
+
+    def slice_masses(target, parameters=None):
+        fixed = target.request.fixed_parameters
+
+        def value(name):
+            if name in ("ZERO", "0"):
+                return 0.0
+            if name.startswith("W"):
+                return float(fixed.get(name, 1.0))
+            return float(masses[name])
+
+        return value
+
+    monkeypatch.setattr(ward, "slice_masses", slice_masses)
+
+
+def _gauge(legs):
+    return [i + 1 for i, pdg in enumerate(legs) if pdg in (21, 22)]
+
+
 @pytest.mark.loop_fast
-def test_ew_corrections_with_a_zero_width_massive_quark_make_ward_not_applicable():
-    """The class of the USER ruling 2026-11-10 ~00:17 from the request's own
-    data: corrections other than the strong one (identified by the gluon's
-    vertices) and an external massive quark with zero width (an antiquark's
-    record carries colour -3). No sector split exists: the class takes the
-    process's whole (leg, factor) Ward rows."""
+def test_unstable_external_legs_are_found_from_the_model_spectrum(monkeypatch):
+    """The unstable legs of the Ward check (module docstrings of ``ward`` and
+    ``checks``, "Unstable external legs"): legs charged under the substituted
+    boson (coloured for a gluon, charged for a photon), massive, of zero
+    width, with an open two-body channel among the three-point vertices of
+    a requested correction's order; the antiquark's channel is the
+    conjugate one."""
 
-    from pyamplicol.loops.v2 import checks
+    from pyamplicol.loops.v2 import ward
 
+    _toy_masses(monkeypatch)
     zero = {"WT": "0", "WM": "0"}
     both = ("QCD", "QED")
-    reason = checks.ward_applicability(_toy_target([21, 21, 6, -6], both, zero))
-    assert reason and "QED" in reason and "(legs 3, 4)" in reason
-    # An antiquark as the only external massive quark.
-    reason = checks.ward_applicability(_toy_target([21, 2, 2, -6], both, zero))
-    assert reason and "(leg 4)" in reason
-    # QED corrections alone (no strong one) with an external top.
-    assert checks.ward_applicability(_toy_target([22, 6, -6], ("QED",), zero))
-    # Outside the class: QCD-only corrections with external tops; EW
-    # corrections with massless quarks only, or a massive colour-singlet
-    # fermion; a massive quark whose width is not zero.
-    for legs, corrections, fixed in (
-        ([21, 21, 6, -6], ("QCD",), zero),
-        ([2, -2, 21, 22], both, zero),
-        ([22, 22, 13, -13], both, zero),
-        ([21, 21, 6, -6], both, {"WM": "0"}),
-    ):
+
+    def found(legs, corrections=both, fixed=zero):
         target = _toy_target(legs, corrections, fixed)
-        assert checks.ward_applicability(target) is None, (legs, corrections)
+        return ward.unstable_external_legs(target, _gauge(legs))
+
+    top, antitop = found([21, 21, 6, -6])
+    assert (top.leg, top.particle, top.channel) == (3, "t", ("W+", "b"))
+    assert (antitop.leg, antitop.particle, antitop.channel) == (4, "t~", ("W-", "b~"))
+    assert top.threshold == pytest.approx(80.419) and top.mass == pytest.approx(173.3)
+    assert "leg 3 (t, mass 173.3) decays to W+ b" in top.describe()
+    # A photon leg constrains the charged legs; QED corrections alone.
+    assert [leg.leg for leg in found([22, 6, -6], ("QED",))] == [2, 3]
+    # QCD-only corrections: t -> W b is no cut of a QCD loop.
+    assert found([21, 21, 6, -6], ("QCD",)) == ()
+    # A width, massless quarks, a muon without an open channel.
+    assert found([21, 21, 6, -6], both, {"WM": "0", "WT": "1.4"}) == ()
+    assert found([2, -2, 21, 22]) == ()
+    assert found([22, 22, 13, -13]) == ()
+    # Below the threshold the top is stable.
+    _toy_masses(monkeypatch, MT=75)
+    assert found([21, 21, 6, -6]) == ()
+
+
+@pytest.mark.loop_fast
+def test_ward_is_not_applicable_only_without_a_stabilised_spectrum(monkeypatch):
+    """The USER ruling 2026-11-10 ~00:17 ("ignore ward check there"),
+    refined: an unstable external leg makes the Ward rows "not applicable"
+    only where no stabilised spectrum exists; with one they are checked; a
+    stable top is checked as any process."""
+
+    from pyamplicol.loops.v2 import checks, ward
+
+    _toy_masses(monkeypatch)
+    target = _toy_target([21, 21, 6, -6], ("QCD", "QED"), {"WT": "0"})
+    monkeypatch.setattr(
+        ward, "stabilised_parameters", lambda *a, **k: (None, "no input to move")
+    )
+    reason = checks.ward_applicability(target, [1, 2])
+    assert reason.startswith("unstable external leg: leg 3 (t, mass 173.3)")
+    assert "no stabilised spectrum (no input to move)" in reason
+    assert reason.endswith("not evaluated, every squared-order sector alike")
+    monkeypatch.setattr(
+        ward, "stabilised_parameters", lambda *a, **k: ({"MW": "180"}, None)
+    )
+    assert checks.ward_applicability(target, [1, 2]) is None
+    assert checks.ward_plan(target, [1, 2])[1] == {"MW": "180"}
+    _toy_masses(monkeypatch, MT=75)
+    assert checks.ward_plan(target, [1, 2]) == ((), {}, None)
 
 
 @pytest.mark.loop_fast
@@ -856,13 +922,17 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
     monkeypatch.setattr(ward, "ward_check", never)
     monkeypatch.setattr(ward, "gauge_legs", lambda _target: (1, 2))
     monkeypatch.setattr(induced, "goldstone_applicability", lambda _t: "n/a")
+    _toy_masses(monkeypatch)
+    monkeypatch.setattr(
+        ward, "stabilised_parameters", lambda *a, **k: (None, "no input to move")
+    )
     target = _toy_target([21, 21, 6, -6], ("QCD", "QED"), {"WT": "0"})
     carriers = (NS(arithmetic="double"), NS(arithmetic="double-double"))
     rows = checks.born_interfered_rows(target, [(None, 1)], carriers)
     (row,) = [row for row in rows if row.check == "ward"]
     assert row.verdict == checks.NOT_APPLICABLE and row.point is None
-    assert row.reason.startswith("legs 1, 2 not checked: EW corrections (QED)")
-    assert "(legs 3, 4)" in row.reason
+    assert row.reason.startswith("legs 1, 2 not checked: unstable external leg: leg 3")
+    assert "no stabilised spectrum (no input to move)" in row.reason
     poles = [row for row in rows if row.check == "poles"]
     assert len(poles) == 2 and {row.verdict for row in poles} == {checks.PASS}
     process = checks.ProcessCheck(
@@ -886,7 +956,7 @@ def test_a_process_in_the_class_reports_one_not_applicable_ward_row(monkeypatch)
     assert probed == [[]]
     assert [row.check for row in rows] == ["poles", "ward", "goldstone"]
     assert rows[1].verdict == checks.NOT_APPLICABLE
-    assert rows[1].reason.startswith("legs 1, 2 not checked: EW corrections")
+    assert rows[1].reason.startswith("legs 1, 2 not checked: unstable external leg")
 
 
 def _scripted_poles(monkeypatch, script):
@@ -1136,6 +1206,100 @@ def test_ward_rows_take_the_rung_by_the_threshold_rule(monkeypatch):
         ("double-double", None, False),
         ("arbitrary", 64, False),
     ]
+
+
+@pytest.mark.loop_fast
+def test_an_unstable_leg_is_judged_on_the_stabilised_spectrum(monkeypatch):
+    """With an unstable external leg (module docstring, "Unstable external
+    legs") each (leg, factor) Ward row is evaluated at the requested
+    spectrum and on the stabilised one, for the Ward rows only: a failure at
+    the requested spectrum is reported as inconclusive there and the
+    stabilised row decides; a failure on the stabilised spectrum fails the
+    row whatever the requested one did (a broken amplitude still fails)."""
+
+    from types import SimpleNamespace as NS
+
+    from pyamplicol.loops.v2 import checks, ward
+    from pyamplicol.loops.v2.assemble import Precision
+
+    sector = (("QCD", 4), ("QED", 2))
+    calls = []
+    stable = {"MW": "180.94275", "MZ": "205.173"}
+
+    def script(requested, stabilised):
+        def ward_check(_executor, _point, _scale, _name, *, legs, factors, **options):
+            parameters = options.get("parameters")
+            calls.append(parameters)
+            values = requested if parameters is None else stabilised
+            physical = NS(
+                components={"virtual": {sector: _laurent(0.05, 0.003, 0.0)}},
+                born={(("QCD", 4),): 1.0},
+                loop_born=None,
+                stability=None,
+            )
+            labels = [(leg, factor) for leg in legs for factor in factors]
+            results = [
+                NS(
+                    components={
+                        "virtual": {sector: _laurent(values[tuple(factor)], 0.0, 0.0)}
+                    },
+                    born={(("QCD", 4),): 1.0},
+                    loop_born={(("QCD", 4),): 0.0},
+                    stability=None,
+                )
+                for _leg, factor in labels
+            ]
+            return {
+                "physical": physical,
+                "results": results,
+                "rows": [{"leg": leg, "factor": factor} for leg, factor in labels],
+            }
+
+        return ward_check
+
+    unstable = (ward.UnstableLeg(3, "t", 173.3, ("W+", "b"), 80.419),)
+    stages = checks._stages((Precision.double_double(),), None)
+
+    def at(_carrier):
+        return None, 1, None
+
+    def rows(requested, stabilised):
+        monkeypatch.setattr(ward, "ward_check", script(requested, stabilised))
+        calls.clear()
+        found = checks._born_ward_rows(
+            None, 0, stages, at, [1], 1e-25, unstable=unstable, stabilised=stable
+        )
+        assert calls == [None, stable]
+        return {row.subject: row for row in found}
+
+    # g g > t t~ [QED]: the requested c = 1 row fails by the unstable top
+    # alone, c = i passes; the stabilised spectrum passes both.
+    found = rows({(1, 0): 4e-4, (0, 1): 1e-33}, {(1, 0): 1e-33, (0, 1): 1e-33})
+    one, i = found["leg 1, c = 1"], found["leg 1, c = i"]
+    assert one.verdict == checks.PASS and i.verdict == checks.PASS
+    assert "requested spectrum: inconclusive" in one.reason
+    assert "leg 3 (t, mass 173.3) decays to W+ b" in one.reason
+    assert (
+        "judged on the stabilised spectrum MW = 180.94275, MZ = 205.173" in one.reason
+    )
+    assert i.reason.endswith("stabilised spectrum: pass")
+    # A broken amplitude (the dispersive c = i row off on both spectra, the
+    # requested c = 1 row off by the unstable leg too): the stabilised rows
+    # fail it.
+    found = rows({(1, 0): 4e-4, (0, 1): 1e-7}, {(1, 0): 1e-33, (0, 1): 1e-7})
+    assert found["leg 1, c = 1"].verdict == checks.PASS
+    broken = found["leg 1, c = i"]
+    assert broken.verdict == checks.FAIL
+    assert "fails on the stabilised spectrum" in broken.reason
+    # A row passing at the requested spectrum fails where the stabilised
+    # spectrum fails.
+    found = rows({(1, 0): 1e-33, (0, 1): 1e-33}, {(1, 0): 1e-7, (0, 1): 1e-33})
+    assert found["leg 1, c = 1"].verdict == checks.FAIL
+    assert "fails on the stabilised spectrum" in found["leg 1, c = 1"].reason
+    process = checks.ProcessCheck(
+        "p", "g g > t t~", "virtual", "zero", (), "ninjars", tuple(found.values()), 0.0
+    )
+    assert process.status == checks.FAILED
 
 
 # --------------------------------------------------------------- physics

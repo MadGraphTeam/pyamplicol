@@ -1637,13 +1637,49 @@ kinematics_improvement`, default `z-shift`) in its own carrier, exactly as
 beam axis at twice the rung's digits already, so this moves them by about
 the rung's rounding, and
 each row records it (`CheckRow.kinematics`: the producing variant, `exact` or
-`not-improved`). The Ward rows of a request whose loop corrections include an
-electroweak one (any correction other than the model's strong one) and with
-an on-shell zero-width external massive quark (a top or a massive b, quark or
-antiquark) read "not applicable" and are not evaluated: the Ward identity of
-the asymmetric check is not guaranteed with electroweak corrections there;
-Ward rows are not split by squared-order sector, so that request's QCD-loop
-sectors are not Ward-checked either. A sector Catani's operators
+`not-improved`). A Born-interfered Ward coefficient that vanishes physically
+(the double pole of a QED correction with massive emitters) has a value and
+parts of the size of its own rounding: its P and T are at least
+|physical Born| x alpha / (2 pi), so rounding over rounding is not judged as
+a violation.
+
+**Unstable external legs.** In the real on-shell mass scheme (zero widths)
+an external particle that can decay at its own mass keeps the absorptive
+part of its self-energy (the mass counterterm renormalises its real part
+only), so the Ward identity fails in the absorptive part of the amplitude by
+about Gamma / m, although the values a run serves are unaffected: with
+electroweak corrections, a top above MW + MB decays to W b, and
+`g g > t t~` [QED] has a c = 1 Ward residue of about 1 % of its physical
+scale while its values equal MadLoop, Recola and OpenLoops. `check` finds
+such legs from the request itself: external legs charged under a substituted
+gluon (colour) or photon (electric charge), massive, of zero width, with an
+open tree-level two-body channel among the three-point vertices of a
+requested correction's order. The Ward rows of such a request are evaluated
+at the requested spectrum AND on a stabilised spectrum: every runtime mass
+input of a massive vector boson scaled by one common factor (the weak mixing
+angle kept), the smallest multiple of 0.01 that closes every open channel
+with a 4 % margin (for the top at 173.3 GeV: MW = 180.94275, MZ = 205.173).
+Each (leg, factor) row's verdict comes from the stabilised spectrum where the
+requested one does not pass; the reason then reads "requested spectrum:
+inconclusive" with the leg, its channel and the moved inputs. A failure on
+the stabilised spectrum fails the row, so a broken amplitude still fails. A
+row passing at the requested spectrum keeps that pass, with the stabilised
+verdict in its reason. The stabilised spectrum serves the Ward rows only:
+every evaluation takes its parameters per call, the pole rows and every
+value keep the requested inputs, and nothing is written to an artifact.
+Cost: one more Ward evaluation set (every leg and factor) per point, only for
+a request with such a leg; its requested-spectrum Ward rows skip the
+arbitrary-precision rung. This refines the earlier rule, under which every
+request with electroweak corrections and an external zero-width massive
+quark read "not applicable": a stable top (below MW + MB) is now checked as
+any process, and an unstable one on the stabilised spectrum. Where no
+stabilised spectrum exists (no runtime vector-boson mass input, or one that
+would move an external mass, as for an external W, whose decays to massless
+fermions are always open), the Ward rows still read "not applicable" with
+that reason and are not evaluated, never a pass; Ward rows are not split by
+squared-order sector, so that request's QCD-loop sectors are not Ward-checked
+either. The loop-induced Ward probes take no stabilised spectrum: with an
+unstable leg they read "not applicable". A sector Catani's operators
 do not predict (a QCD correction of a process with photon-exchange Borns,
 ...) is listed as "no prediction" with its reason; a sector they predict
 that got no pole row at a point reads "not run" (exit 3: an applicable

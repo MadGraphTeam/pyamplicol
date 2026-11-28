@@ -83,6 +83,21 @@ output = "artifacts/dy"
 - **Gauge.** Born, loops and counterterms of an electroweak request take the
   't Hooft-Feynman gauge of the models' counterterms, with explicit
   Goldstones and ghosts.
+- **Unstable external particles (a convention).** Masses are real and
+  on-shell; with every width zero an external particle that can decay at
+  its own mass (a top above MW + MB) is treated as stable, and its
+  self-energy's absorptive part (i Im Sigma(m^2), of order m Gamma) is left
+  unrenormalised, as in MadLoop, Recola and OpenLoops in this scheme. The
+  Born x virtual interference, summed or per helicity, does not depend on
+  it (pyAmpliCol equals MadLoop for `g g > t t~` [QED] to 1e-14 per
+  helicity). Complex outputs do: the imaginary parts of directed colour
+  correlations and of off-diagonal spin sources carry that unrenormalised
+  Im Sigma of the unstable leg, as any real-mass code's would, and the
+  gluon or photon Ward identity fails in the absorptive part (`pyamplicol
+  check` judges it on a stabilised spectrum, see
+  [the command line](command-line-interface.md)). A gauge-invariant
+  treatment of an unstable external particle needs the complex-mass scheme
+  with its width, which is refused today (`cms-external-width`).
 - **Colour.** Full colour by default, as MadLoop, and full colour serves
   every request on these models. Leading and next-to-leading colour are not
   implemented yet for QED and mixed QCD+QED corrections, nor on these models

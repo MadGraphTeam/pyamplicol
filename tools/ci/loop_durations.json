@@ -152,6 +152,7 @@
   "tests/unit/test_loop_v2_ufodb_models.py": 4.4,
   "tests/unit/test_loop_v2_vv_jet.py": 36.7,
   "tests/unit/test_loop_v2_ward.py": 113.6,
+  "tests/unit/test_loop_v2_ward_unstable.py": 70.0,
   "tests/unit/test_loop_wavefunction.py": 1.1,
   "tests/unit/test_model_kernel_equivalence_native.py": 7.9,
   "tests/unit/test_model_levi_civita_kernels.py": 1.6,

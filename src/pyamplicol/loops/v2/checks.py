@@ -95,12 +95,31 @@ nothing.
   (the poles, k >= 1: a known zero), T = the vector row's floor plus M/E
   times the Goldstone row's, over the union of both sides' rows
   (``goldstone.probe``); otherwise a "not applicable" row with the reason.
-* **Ward rows not applicable** (``ward_applicability``, USER 2026-11-10
-  ~00:17): a request whose corrections include one other than the model's
-  strong correction and with an on-shell zero-width external massive quark
-  has one "not applicable" Ward row (the Ward identity of the asymmetric
-  check is not guaranteed there), nothing evaluated; Ward rows are not split
-  by squared-order sector, so its QCD-loop sectors are not checked either.
+* **Unstable external legs** (``ward_plan``, ``ward.unstable_external_legs``;
+  refines the USER ruling 2026-11-10 ~00:17, "ignore ward check there"): in
+  the real on-shell scheme an external leg that can decay at its own mass
+  (the top above MW + MB with electroweak corrections) leaves the Ward
+  identity violated in the absorptive part of the amplitude, by about
+  Gamma / m, while the served values are unaffected. Where the request has
+  such a leg (charged under a substituted gluon or photon, zero width, a
+  tree-level two-body channel of a requested correction's vertices open)
+  the Ward rows are evaluated at the requested spectrum AND on the
+  stabilised spectrum (``ward.stabilised_parameters``: the runtime
+  vector-boson mass inputs scaled together until every channel closes), for
+  the Ward rows only (every evaluation takes its parameters per call; the
+  pole rows and every value keep the requested inputs). Each (leg, factor)
+  row's verdict comes from the stabilised spectrum where the requested one
+  does not pass (reported as inconclusive for the unstable leg, with the
+  leg, its open channel and the moved inputs, in the row's reason; those
+  requested rows skip the arbitrary-precision rung), and a failure on the
+  stabilised spectrum fails the row; a row passing at the requested
+  spectrum keeps that pass unless the stabilised one fails. Without a
+  stabilised spectrum (no runtime vector-boson mass input, or one that
+  moves an external mass) the process has one "not
+  applicable" Ward row with that reason, nothing evaluated, as before.
+  Cost: one more Ward evaluation set per point (every leg and factor), only
+  for such a request. The loop-induced probes take no stabilised spectrum:
+  with an unstable leg their Ward probes are not applicable.
 
 Carriers (``induced.probe_carriers``): binary64 first and double-double
 only for a row binary64 does not decide (a failure, an inconclusive or
@@ -1049,52 +1068,60 @@ def _unpredicted_rows(
     return rows
 
 
-def ward_applicability(target: Any) -> str | None:
-    """None where the Ward rows of a probe slice are checked, else why they
-    are not applicable (USER 2026-11-10 ~00:17: with EW corrections and an
-    on-shell zero-width external top "it may break some EW gauge relations
-    ... ignore ward check there"). One rule on the request's own data,
-    decided before any Ward evaluation: its corrections include one other
-    than the model's strong correction (``ew_policy.correction_orders``,
-    identified by the gluon's vertices, never by an order's name) AND an
-    external leg is a massive quark with zero width at the check's
-    parameters: a fermion (``ew_policy.FERMION_SPIN``) of colour triplet or
-    anti-triplet (|colour| = 3; an antiquark's record carries -3) whose mass
-    parameter is not zero and whose width parameter is (``ew_policy.
-    is_zero`` on the probe request's fixed parameters: outside the
-    complex-mass scheme the probe zeroes every width, ``ew_policy.
-    probe_widths``). Every external leg is on shell at a check point
-    (``induced.probe_point``). Ward rows are not split by squared-order
-    sector, so a pure-QCD-loop sector of such a request is not checked
-    either."""
+def ward_plan(
+    target: Any, legs: Sequence[int] | None = None
+) -> tuple[tuple[Any, ...], dict[str, str] | None, str | None]:
+    """The Ward rows' spectra of a probe slice (module docstring, "Unstable
+    external legs"): the external legs that can decay at their own mass at
+    the check's parameters (``ward.unstable_external_legs`` for the
+    substituted ``legs``, default ``ward.gauge_legs``), the stabilised
+    spectrum's moved inputs (``ward.stabilised_parameters``; {} without an
+    unstable leg, None without such a spectrum) and why there is none."""
 
-    from .ew_policy import FERMION_SPIN, correction_orders, is_zero, request_corrections
+    from . import ward
 
-    compiled, request = target.compiled, target.request
-    fixed = request.fixed_parameters
-    strong = correction_orders(compiled, fixed).strong
-    others = sorted(set(request_corrections(compiled, request)) - {strong})
-    if not others:
-        return None
-    particles = {int(record.pdg_code): record for record in compiled.ir.particles}
-    parameters = {record.name: record for record in compiled.ir.parameters}
-    quarks = [
-        int(leg.label)
-        for leg in sorted(target.blocks.process.legs, key=lambda x: x.label)
-        if (record := particles.get(int(leg.pdg))) is not None
-        and int(record.spin) == FERMION_SPIN
-        and abs(int(record.color)) == 3
-        and not is_zero(str(record.mass), parameters, fixed)
-        and is_zero(str(record.width), parameters, fixed)
-    ]
-    if not quarks:
+    legs = tuple(ward.gauge_legs(target) if legs is None else legs)
+    unstable = ward.unstable_external_legs(target, legs)
+    if not unstable:
+        return (), {}, None
+    moved, why = ward.stabilised_parameters(target, legs)
+    return unstable, moved, why
+
+
+def ward_applicability(target: Any, legs: Sequence[int] | None = None) -> str | None:
+    """None where the Ward rows of a probe slice are checked (at the
+    requested spectrum, and on the stabilised one where an external leg is
+    unstable: ``ward_plan``), else why they are not applicable: an external
+    leg can decay at its own mass and no stabilised spectrum exists (module
+    docstring, "Unstable external legs"; the USER ruling 2026-11-10 ~00:17,
+    "ignore ward check there", which the stabilised spectrum refines). Ward
+    rows are not split by squared-order sector, so a pure-QCD-loop sector of
+    such a request is not checked either."""
+
+    from . import ward
+
+    unstable, moved, why = ward_plan(target, legs)
+    if not unstable or moved is not None:
         return None
     return (
-        f"EW corrections ({', '.join(others)}) with an on-shell zero-width "
-        f"external massive quark ({_legs(quarks)}): the "
-        "gluon / photon Ward identity of the asymmetric check is not "
-        "guaranteed there (USER 2026-11-10); not evaluated, every "
-        "squared-order sector alike"
+        ward.unstable_reason(unstable, None, why)
+        + "; not evaluated, every squared-order sector alike"
+    )
+
+
+def _induced_ward_exclusion(target: Any, legs: Sequence[int]) -> str | None:
+    """Why the loop-induced Ward probes of ``legs`` are not applicable: an
+    unstable external leg (``ward_plan``; the amplitude-level probes take no
+    stabilised spectrum), else None."""
+
+    from . import ward
+
+    unstable = ward.unstable_external_legs(target, legs)
+    if not unstable:
+        return None
+    return (
+        ward.unstable_reason(unstable, None, "the loop-induced probes take none")
+        + "; not evaluated"
     )
 
 
@@ -1155,7 +1182,13 @@ def born_interfered_rows(
     executor = NativeExecutor(target, inputs="native", forward=False, catani=True)
     tolerance_ = tolerance()
     legs = ward.gauge_legs(target)
-    excluded = ward_applicability(target) if legs else None
+    unstable, stabilised, why = ward_plan(target, legs) if legs else ((), {}, None)
+    excluded = (
+        ward.unstable_reason(unstable, None, why)
+        + "; not evaluated, every squared-order sector alike"
+        if unstable and stabilised is None
+        else None
+    )
     stages = _stages(carriers, rung)
     # ``out``: the caller's list, which keeps the rows of an interrupted
     # check.
@@ -1246,7 +1279,18 @@ def born_interfered_rows(
         # Ward identities on every gluon and photon leg.
         if legs and excluded is None:
             status(f"{_point_text(index, points)}: Ward identities, {_legs(legs)}")
-            rows.extend(_born_ward_rows(executor, index, stages, at, legs, tolerance_))
+            rows.extend(
+                _born_ward_rows(
+                    executor,
+                    index,
+                    stages,
+                    at,
+                    legs,
+                    tolerance_,
+                    unstable=unstable,
+                    stabilised=stabilised,
+                )
+            )
     if excluded is not None:
         rows.append(_not_applicable_ward(legs, excluded))
     if not legs:
@@ -1373,12 +1417,18 @@ def _ward_measures(physical: Any, result: Any) -> dict[Any, Measure]:
     tree is its own term); per virtual sector and Laurent coefficient R =
     |V_k| of the substituted evaluation, P = |V_k| of the physical one (E_P:
     its estimate where the physical evaluation ran its checks), T = the
-    physical evaluation's largest part (``_largest_part``), E the
-    substituted evaluation's estimate. Every sector and coefficient of
+    physical evaluation's largest part (``_largest_part``), P and T at least
+    the Born x alpha / (2 pi) floor (``ward.scale_floor``: a coefficient that
+    vanishes physically, the double pole of a QED correction with massive
+    emitters, has a value and parts of its own rounding's size, which judge
+    nothing), E the substituted evaluation's estimate. Every sector and coefficient of
     either evaluation is required: one only one of them has is a missing
     operand (incomplete: inconclusive), never skipped or vacuous."""
 
+    from . import ward
+
     out: dict[Any, Measure] = {}
+    floor = ward.scale_floor(physical)
     loop_born = result.loop_born
     born = physical.born or {}
     if loop_born is None:
@@ -1421,11 +1471,13 @@ def _ward_measures(physical: Any, result: Any) -> dict[Any, Measure]:
                 physical_error = magnitude(
                     physical_estimate.absolute[sector].coefficients[k]
                 )
+            size = magnitude(mine.coefficients[k])
+            terms = _largest_part(physical.components, sector, k)
             out[label] = Measure(
                 label,
                 magnitude(laurent.coefficients[k]),
-                magnitude(mine.coefficients[k]),
-                _largest_part(physical.components, sector, k),
+                None if size is None else max(size, floor),
+                None if terms is None else max(terms, floor),
                 error,
                 physical_error,
             )
@@ -1461,11 +1513,14 @@ def _ward_found(
     keys: Sequence[Any],
     legs: Sequence[int],
     carrier: Any,
+    parameters: Mapping[str, str] | None = None,
 ) -> dict[Any, dict[Any, Measure]]:
     """The Ward rows ``keys`` ((leg, factor)) of one point evaluated in
     ``carrier`` (``ward.ward_check``: the physical evaluation runs its
-    reduction-direction check in binary64), per (leg, factor) its required
-    rows (``_ward_measures``); a refused run raises ``FailedPoints``."""
+    reduction-direction check in binary64) at the runtime ``parameters``
+    (None: the probe's; the stabilised spectrum of an unstable leg, for
+    this call only), per (leg, factor) its required rows
+    (``_ward_measures``); a refused run raises ``FailedPoints``."""
 
     from . import ward
 
@@ -1479,6 +1534,7 @@ def _ward_found(
             "double" if name == "double" else "double-double",
             legs=batch_legs,
             factors=factors,
+            parameters=parameters,
             precision=carrier,
             judge=False,
         )
@@ -1495,13 +1551,102 @@ def _born_ward_rows(
     at: Callable[[Any], tuple[Any, Any, Any]],
     legs: Sequence[int],
     tolerance_: float,
+    *,
+    unstable: Sequence[Any] = (),
+    stabilised: Mapping[str, str] | None = None,
 ) -> list[CheckRow]:
-    """The Ward rows of one point, per (leg, factor) and per required row
-    (Born sector, virtual sector and coefficient) up the ladder of
-    ``stages`` (``ladder_step``): each row keeps its first decision, a
-    pending row absent from a later carrier is inconclusive, a refusal
-    leaves the next carrier to try; one check row per (leg, factor) from
-    its rows' final verdicts (``row_from_cells``)."""
+    """The Ward rows of one point, per (leg, factor) (``_ward_rows_at``); with
+    an unstable external leg (``ward_plan``) evaluated at the requested
+    spectrum (without the arbitrary-precision rung) and on the
+    ``stabilised`` one, one row per (leg, factor) (module docstring,
+    "Unstable external legs"): a stabilised failure fails the row; a
+    requested-spectrum pass stands, the stabilised verdict in its reason;
+    any other requested verdict is the unstable leg's (inconclusive there,
+    named in the reason with the leg, its channel and the moved inputs) and
+    the stabilised row decides."""
+
+    from . import ward
+
+    if not unstable or not stabilised:
+        return list(
+            _ward_rows_at(executor, index, stages, at, legs, tolerance_).values()
+        )
+    # The requested spectrum's rows decide only where they pass: they skip
+    # the arbitrary-precision rung (a failure there is the unstable leg's).
+    requested = _ward_rows_at(
+        executor,
+        index,
+        [stage for stage in stages if _carrier_name(stage) != "arbitrary"],
+        at,
+        legs,
+        tolerance_,
+    )
+    stable = _ward_rows_at(
+        executor, index, stages, at, legs, tolerance_, parameters=stabilised
+    )
+    note = ward.unstable_reason(unstable, stabilised)
+    rows = []
+    for key, mine in requested.items():
+        other = stable[key]
+        if other.verdict == FAIL:
+            rows.append(
+                _with(
+                    other,
+                    reason=_joined(
+                        other.reason,
+                        f"fails on the stabilised spectrum ({note}); requested "
+                        f"spectrum: {mine.verdict}",
+                    ),
+                )
+            )
+        elif mine.verdict == PASS:
+            rows.append(
+                _with(
+                    mine,
+                    reason=_joined(
+                        mine.reason, f"{note}; stabilised spectrum: {other.verdict}"
+                    ),
+                )
+            )
+        else:
+            seen = (
+                f", R / scale {mine.deviation:.3g}"
+                if mine.deviation is not None
+                else ""
+            )
+            rows.append(
+                _with(
+                    other,
+                    reason=_joined(
+                        other.reason,
+                        f"requested spectrum: inconclusive ({mine.verdict}{seen}): "
+                        f"{note}",
+                    ),
+                )
+            )
+    return rows
+
+
+def _joined(first: str | None, second: str) -> str:
+    return second if not first else f"{first}; {second}"
+
+
+def _ward_rows_at(
+    executor: Any,
+    index: int,
+    stages: Sequence[Any],
+    at: Callable[[Any], tuple[Any, Any, Any]],
+    legs: Sequence[int],
+    tolerance_: float,
+    parameters: Mapping[str, str] | None = None,
+) -> dict[Any, CheckRow]:
+    """The Ward rows of one point at the runtime ``parameters`` (None: the
+    probe's), per (leg, factor) and per required row (Born sector, virtual
+    sector and coefficient) up the ladder of ``stages`` (``ladder_step``):
+    each row keeps its first decision, a pending row absent from a later
+    carrier is inconclusive, a refusal leaves the next carrier to try; one
+    check row per (leg, factor) from its rows' final verdicts
+    (``row_from_cells``), keyed by (leg, factor)."""
 
     from . import ward
     from .plan_export import FailedPoints
@@ -1524,7 +1669,7 @@ def _born_ward_rows(
         moved, mu, improved = at(carrier)
         improvements[name] = improved
         try:
-            found = _ward_found(executor, moved, mu, pending, legs, carrier)
+            found = _ward_found(executor, moved, mu, pending, legs, carrier, parameters)
         except FailedPoints as error:
             for key in pending:
                 refusals[key].append(f"{name} refused: {error}")
@@ -1540,31 +1685,27 @@ def _born_ward_rows(
                 getattr(carrier, "unit_roundoff", None),
                 tolerance_,
             )
-    rows = []
+    rows: dict[Any, CheckRow] = {}
     for key in every:
         if key not in seen:
-            rows.append(
-                CheckRow(
-                    "ward",
-                    _ward_subject(*key),
-                    index,
-                    None,
-                    INCONCLUSIVE,
-                    reason="inconclusive: " + "; ".join(refusals[key]),
-                    tolerance=tolerance_,
-                )
-            )
-            continue
-        rows.append(
-            row_from_cells(
+            rows[key] = CheckRow(
                 "ward",
                 _ward_subject(*key),
                 index,
-                finished(cells[key]),
-                tolerance_,
-                improvements,
-                stages,
+                None,
+                INCONCLUSIVE,
+                reason="inconclusive: " + "; ".join(refusals[key]),
+                tolerance=tolerance_,
             )
+            continue
+        rows[key] = row_from_cells(
+            "ward",
+            _ward_subject(*key),
+            index,
+            finished(cells[key]),
+            tolerance_,
+            improvements,
+            stages,
         )
     return rows
 
@@ -1605,7 +1746,7 @@ def induced_rows(
         out.extend(zero)
         return out
     legs = induced.probe_legs(target)
-    excluded = ward_applicability(target) if legs else None
+    excluded = _induced_ward_exclusion(target, legs) if legs else None
     probed = legs if excluded is None else []
     executor = NativeExecutor(
         target,
@@ -1930,4 +2071,5 @@ __all__ = [
     "tolerance",
     "tolerating",
     "ward_applicability",
+    "ward_plan",
 ]
