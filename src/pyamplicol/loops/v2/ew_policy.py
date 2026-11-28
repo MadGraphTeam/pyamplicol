@@ -236,6 +236,55 @@ def request_corrections(compiled: Any, request: Any) -> tuple[str, ...]:
     return (strong,)
 
 
+def require_projectable_corrections(
+    compiled: Any,
+    accuracy: str,
+    corrections: Iterable[str],
+    fixed: Mapping[str, Any],
+    *,
+    declared: Iterable[str] = (),
+    colour_declared: bool = True,
+) -> None:
+    """Refuse (``lc-electroweak-corrections``) a leading- or next-to-leading-
+    colour one-loop request (``accuracy``) whose ``corrections`` hold an
+    order other than the model's strong one, or, without a colour
+    declaration (``colour_declared`` False), on a model whose ``declared``
+    corrections (its loop model declaration's) do: LC and NLC of QED and
+    QCD+QED corrections are not implemented yet. The strong order is the
+    model's (``correction_orders``: the order of the gluon's minimal
+    vertices, never an order's name; ``fixed`` binds masses to zero). The
+    one admission rule of every entry point: the shared request preparation
+    (``assemble.resolve_request``) and the service's early check
+    (``loop_service._prepare``) call it."""
+
+    if accuracy == "full":
+        return
+    strong = correction_orders(compiled, fixed).strong
+    requested = sorted(set(corrections) - {strong})
+    others = [] if colour_declared else sorted(set(declared) - {strong})
+    if not requested and not others:
+        return
+    label = accuracy.upper()
+    if requested:
+        what = (
+            f"{label} one-loop generation with corrections other than the "
+            f"model's strong one ({', '.join(requested)}) is not implemented yet"
+        )
+    else:
+        what = (
+            f"{label} one-loop generation is not implemented yet on a model "
+            "declaring corrections other than its strong one "
+            f"({', '.join(others)}) without a colour declaration, also for its "
+            "strong corrections alone"
+        )
+    raise LoopRequestUnsupported(
+        "lc-electroweak-corrections",
+        f"{what}: the model's counterterms have no formal-N_c colour "
+        "declaration (its electroweak counterterms sum an N_c-free part and a "
+        "closed-quark-loop part proportional to N_c)",
+    )
+
+
 def electroweak(
     compiled: Any, request: Any, species_orders: Mapping[int, Iterable[str]]
 ) -> bool:

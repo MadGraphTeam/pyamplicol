@@ -733,9 +733,10 @@ LOOP_CONFIGURATION_REFUSALS = (
         "lc-electroweak-corrections",
         "a leading- or next-to-leading-colour one-loop request with QED or "
         "mixed QCD+QED corrections (process.loop_coupling_orders other than "
-        "QCD), or any LC or NLC one-loop request on a model declaring them "
-        "(loop_qcd_qed_sm, loop_qcd_qed_sm_Gmu) that carries no formal-N_c "
-        "colour declaration",
+        "the model's strong order, the order of the gluon's vertices, "
+        "whatever its name), or any LC or NLC one-loop request on a model "
+        "declaring such corrections (loop_qcd_qed_sm, loop_qcd_qed_sm_Gmu) "
+        "that carries no formal-N_c colour declaration",
         "leading and next-to-leading colour of QED and QCD+QED corrections are "
         "not implemented yet: they grade every counterterm by its N_c "
         "dependence, and the electroweak counterterms of these models (sums of "

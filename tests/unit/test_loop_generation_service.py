@@ -180,6 +180,15 @@ def _colour_backend(monkeypatch, accuracy, declaration):
     monkeypatch.setattr(
         "pyamplicol.models.external.CompiledUFOModel", lambda _: object()
     )
+    # The stand-in model has no vertices: its strong order is stated (the
+    # structural classification, ``ew_policy.correction_orders``).
+    from pyamplicol.loops.v2 import ew_policy
+
+    monkeypatch.setattr(
+        ew_policy,
+        "correction_orders",
+        lambda *_: ew_policy.CorrectionOrders("QCD", None),
+    )
     return backend, scheme
 
 

@@ -216,49 +216,6 @@ class _LoopContext:
     colour_zero: tuple[tuple[dict[str, int], ...] | None, ...] = ()
 
 
-def _refuse_projected_electroweak(
-    accuracy: str,
-    corrections: tuple[str, ...],
-    model_corrections: tuple[str, ...],
-    *,
-    uncovered: bool = False,
-) -> None:
-    """Refuse (``lc-electroweak-corrections``) an LC or NLC one-loop request
-    (``accuracy``) whose ``corrections`` include an order other than QCD,
-    or, when ``uncovered`` (no colour declaration resolves for the model),
-    any request on a model whose declared ``model_corrections`` do: leading
-    colour of QED and QCD+QED corrections is not implemented yet (the
-    electroweak counterterms have no formal-N_c declaration)."""
-
-    def electroweak(orders: tuple[str, ...]) -> list[str]:
-        return [order for order in orders if order.upper() != "QCD"]
-
-    requested = electroweak(tuple(corrections))
-    declared = electroweak(tuple(model_corrections))
-    if not requested and not (uncovered and declared):
-        return
-    from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
-
-    label = accuracy.upper()
-    if requested:
-        what = (
-            f"{label} one-loop generation with "
-            f"{'+'.join(corrections)} corrections is not implemented yet"
-        )
-    else:
-        what = (
-            f"{label} one-loop generation is not implemented yet on a model "
-            f"declaring {'+'.join(model_corrections)} corrections, also for "
-            f"its {'+'.join(corrections)} corrections alone"
-        )
-    raise LoopRequestUnsupported(
-        "lc-electroweak-corrections",
-        f"{what}: the model's counterterms have no formal-N_c colour "
-        "declaration (its electroweak counterterms sum an N_c-free part and a "
-        "closed-quark-loop part proportional to N_c)",
-    )
-
-
 def _prepare(
     backend,
     processes,
@@ -333,19 +290,24 @@ def _prepare(
     # MG5_aMC's complex-mass model of the source at the card of the fixed
     # parameters (``loops.model_cms``); its refusals are listed, so the dry
     # run reports them.
+    real_fixed = require_real_fixed_parameters(preparation.fixed_parameters)
     compiled = apply_mass_scheme(
         compiled,
         declaration.scheme.mass_scheme,
-        fixed_parameters=require_real_fixed_parameters(preparation.fixed_parameters),
+        fixed_parameters=real_fixed,
         cache_dir=run.model.cache_dir,
     )
     color_data = None
     projected = run.color.accuracy in ("lc", "nlc")
+    from pyamplicol.loops.v2.ew_policy import require_projectable_corrections
+
     if projected:
-        # QED and QCD+QED corrections at LC/NLC: not implemented yet,
-        # whatever colour data the model carries (``lc-electroweak-corrections``).
-        _refuse_projected_electroweak(
-            run.color.accuracy, corrections, declaration.loop_coupling_orders
+        # Corrections other than the model's strong one at LC/NLC: not
+        # implemented yet, whatever colour data the model carries
+        # (``lc-electroweak-corrections``; the shared request preparation,
+        # ``assemble.resolve_request``, applies the same rule).
+        require_projectable_corrections(
+            compiled, run.color.accuracy, corrections, real_fixed
         )
     if projected or run.resolved_color.contraction != "direct":
         # LC and NLC take the shipped declaration of a model that carries
@@ -362,13 +324,16 @@ def _prepare(
         if color_data is None and projected:
             # No declaration covers this source and scheme (the shipped
             # N_c data are scheme-gated, MQ-NC: the QCD+QED models' scheme
-            # resolves none). A model declaring QED corrections is refused
-            # for that reason, also for its QCD corrections alone.
-            _refuse_projected_electroweak(
+            # resolves none). A model declaring corrections other than its
+            # strong one is refused for that reason, also for its strong
+            # corrections alone.
+            require_projectable_corrections(
+                compiled,
                 run.color.accuracy,
                 corrections,
-                declaration.loop_coupling_orders,
-                uncovered=True,
+                real_fixed,
+                declared=declaration.loop_coupling_orders,
+                colour_declared=False,
             )
             from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
 
