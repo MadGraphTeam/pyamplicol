@@ -156,6 +156,7 @@ fn fields(estimate: Estimate) -> PyEstimate {
 /// `v2_stability::default_floor_weight`).
 #[pyfunction]
 fn default_floor_weight(largest_loop: usize) -> f64 {
+    let _unlock = pyamplicol::unlock();
     stability::default_floor_weight(largest_loop)
 }
 
