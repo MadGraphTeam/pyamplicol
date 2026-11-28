@@ -290,14 +290,25 @@ def _prepare(
     # MG5_aMC's complex-mass model of the source at the card of the fixed
     # parameters (``loops.model_cms``); its refusals are listed, so the dry
     # run reports them.
+    real_fixed = require_real_fixed_parameters(preparation.fixed_parameters)
     compiled = apply_mass_scheme(
         compiled,
         declaration.scheme.mass_scheme,
-        fixed_parameters=require_real_fixed_parameters(preparation.fixed_parameters),
+        fixed_parameters=real_fixed,
         cache_dir=run.model.cache_dir,
     )
     color_data = None
     projected = run.color.accuracy in ("lc", "nlc")
+    from pyamplicol.loops.v2.ew_policy import require_projectable_corrections
+
+    if projected:
+        # Corrections other than the model's strong one at LC/NLC: not
+        # implemented yet, whatever colour data the model carries
+        # (``lc-electroweak-corrections``; the shared request preparation,
+        # ``assemble.resolve_request``, applies the same rule).
+        require_projectable_corrections(
+            compiled, run.color.accuracy, corrections, real_fixed
+        )
     if projected or run.resolved_color.contraction != "direct":
         # LC and NLC take the shipped declaration of a model that carries
         # none (MQ-NC, ``models.loop_color_declarations``); a full-colour
@@ -313,7 +324,17 @@ def _prepare(
         if color_data is None and projected:
             # No declaration covers this source and scheme (the shipped
             # N_c data are scheme-gated, MQ-NC: the QCD+QED models' scheme
-            # resolves none).
+            # resolves none). A model declaring corrections other than its
+            # strong one is refused for that reason, also for its strong
+            # corrections alone.
+            require_projectable_corrections(
+                compiled,
+                run.color.accuracy,
+                corrections,
+                real_fixed,
+                declared=declaration.loop_coupling_orders,
+                colour_declared=False,
+            )
             from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
 
             raise LoopRequestUnsupported(

@@ -574,6 +574,9 @@ quark lines. For one-loop requests, `lc` and `nlc` are the loop engine's
 formal-N_c projection (every U(1)-subtraction piece graded, each squared
 coupling-order sector truncated at its own leading degree; see the one-loop
 section below), and `strict-lc`, `strict-nlc` and `graded` are refused.
+One-loop `lc` and `nlc` are not implemented yet for QED or mixed QCD+QED
+corrections (`lc-electroweak-corrections`; full colour serves them, see
+[One-loop QCD+QED](electroweak-and-madloop.md)).
 For trees, `strict-lc` and
 `strict-nlc` are the formal 1/N_c expansion of the squared amplitude: every
 U(1)-subtraction piece counts as a power `1/N_c`, LC keeps the leading degree

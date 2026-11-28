@@ -143,7 +143,10 @@ def _colour_backend(monkeypatch, accuracy, declaration):
     scheme = LoopSchemeDeclaration(
         "HV", "4d", "source", "source", "real-on-shell", "source", "fixture"
     )
-    loop = LoopModelDeclaration(scheme, ("QCD", "QED"), True, True)
+    # A QCD model: LC/NLC on a model declaring QED corrections is refused
+    # earlier, for its own reason (``lc-electroweak-corrections``,
+    # ``test_loop_v2_lc_electroweak_refusal.py``).
+    loop = LoopModelDeclaration(scheme, ("QCD",), True, True)
     backend = GenerationBackend(
         loop_config(color={"accuracy": accuracy, "contraction": "direct"}), None
     )
@@ -176,6 +179,15 @@ def _colour_backend(monkeypatch, accuracy, declaration):
     )
     monkeypatch.setattr(
         "pyamplicol.models.external.CompiledUFOModel", lambda _: object()
+    )
+    # The stand-in model has no vertices: its strong order is stated (the
+    # structural classification, ``ew_policy.correction_orders``).
+    from pyamplicol.loops.v2 import ew_policy
+
+    monkeypatch.setattr(
+        ew_policy,
+        "correction_orders",
+        lambda *_: ew_policy.CorrectionOrders("QCD", None),
     )
     return backend, scheme
 
