@@ -612,21 +612,37 @@ class CoefficientLowering:
             for name, value in _numeric_constants(compiled.raw_loop_model).items()
             if name not in identities
         }
+        library = ScalarFunctionLibrary(compiled.raw_loop_model)
         # A formal-N_c continuation's colour invariants (CA -> N_c, ...)
-        # replace their numeric values (design §6.7).
-        self._fixed = [
-            (E(f"UFO::{{}}::{name}"), value)
-            for name, value in sorted(identities.items())
-        ] + [
-            (E(f"UFO::{{}}::{name}"), _number(value))
-            for name, value in sorted({**constants, **fixed_parameters}.items())
-        ]
+        # replace their numeric values (design §6.7). A fixed parameter's
+        # decimal value is lowered exactly, as the scalar bindings lower it
+        # (``scalar_bindings.prepare_scalar_bindings``): Symbolica would
+        # parse "173.3" as a binary64 float, which caps the coefficient's
+        # precision and which the N_c grading refuses.
+        fixed = {
+            name: value
+            for name, value in fixed_parameters.items()
+            if name not in identities
+        }
+        self._fixed = (
+            [
+                (E(f"UFO::{{}}::{name}"), value)
+                for name, value in sorted(identities.items())
+            ]
+            + [
+                (E(f"UFO::{{}}::{name}"), _number(value))
+                for name, value in sorted(constants.items())
+                if name not in fixed
+            ]
+            + [
+                (E(f"UFO::{{}}::{name}"), _exact_parameter(library, value))
+                for name, value in sorted(fixed.items())
+            ]
+        )
         self._substitution = dict(self._fixed)
         self._zero = E("0")
         self._log, self._conj = symbols.qualified("symbolica::log", "symbolica::conj")
-        self._standard = standard_helpers(
-            ScalarFunctionLibrary(compiled.raw_loop_model)
-        )
+        self._standard = standard_helpers(library)
         self.assumptions: set[str] = set()
         # Reference parameters: name -> (coupling or CT scalar, epsilon
         # power, "re" | "im"), and the scalar program they belong to.
@@ -1238,6 +1254,20 @@ def _number(value: Any) -> Any:
 
     real, imaginary = value if isinstance(value, tuple) else (value, "0")
     return E(str(real)) + E(str(imaginary)) * Expression.I
+
+
+def _exact_parameter(library: Any, value: Any) -> Any:
+    """A fixed parameter's value (a decimal, or a (real, imaginary) pair of
+    decimals) as an exact Symbolica number: the scalar frontend's lowering of
+    ``complex(real, imaginary)``, the scalar bindings' own conversion of fixed
+    parameters (``scalar_bindings.prepare_scalar_bindings``)."""
+
+    from decimal import Decimal
+
+    real, imaginary = value if isinstance(value, tuple) else (value, "0")
+    return library.lower(
+        f"complex({Decimal(str(real))},{Decimal(str(imaginary))})"
+    ).value
 
 
 # ------------------------------------------------------------------------ model
