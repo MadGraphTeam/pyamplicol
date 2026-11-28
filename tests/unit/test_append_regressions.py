@@ -1153,6 +1153,23 @@ def test_appends_keep_the_resolution_invariant_on_a_compiled_tree(tmp_path):
             ProcessRequest.parse("u~ u > g g g", name="three_crossed"),
             "refused",
         ),
+        "a 2 -> 3 target with two maps of its identical gluons": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g g", name="dgg"),),
+                (
+                    ProcessAlias("dgg_a", "dgg", (1, 0, 2, 3, 4)),
+                    ProcessAlias("dgg_b", "dgg", (1, 0, 2, 4, 3)),
+                ),
+            ),
+            "refused",
+        ),
+        "a 2 -> 3 target with one map": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g g", name="dgg"),),
+                (ProcessAlias("dgg_a", "dgg", (1, 0, 2, 3, 4)),),
+            ),
+            "admitted",
+        ),
         "second alias of an aliased expression": (
             ProcessSet(
                 (ProcessRequest.parse("u g > g u", name="second"),),
@@ -1198,6 +1215,33 @@ def test_appends_keep_the_resolution_invariant_on_a_compiled_tree(tmp_path):
                 ),
             ),
             "refused",
+        ),
+        "a new target with two aliases of one spelling": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g", name="dg"),),
+                (
+                    ProcessAlias("dg_a", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_b", "dg", (1, 0, 2, 3)),
+                ),
+            ),
+            "refused",
+        ),
+        "a new target with two aliases of different spellings": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g", name="dg"),),
+                (
+                    ProcessAlias("dg_initial", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_final", "dg", (0, 1, 3, 2)),
+                ),
+            ),
+            "admitted",
+        ),
+        "a new target with a nickname (its own spelling)": (
+            ProcessSet(
+                (ProcessRequest.parse("s g > s g", name="sg"),),
+                (ProcessAlias("sg_nickname", "sg"),),
+            ),
+            "admitted",
         ),
         "a new target with its own aliases": (
             ProcessSet(
@@ -1268,6 +1312,33 @@ def test_appends_keep_the_resolution_invariant_at_one_loop(tmp_path, model_cache
             ),
             "refused",
         ),
+        "a new target with two aliases of one spelling": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g", name="dg"),),
+                (
+                    ProcessAlias("dg_a", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_b", "dg", (1, 0, 2, 3)),
+                ),
+            ),
+            "refused",
+        ),
+        "a new target with two aliases of different spellings": (
+            ProcessSet(
+                (ProcessRequest.parse("d g > d g", name="dg"),),
+                (
+                    ProcessAlias("dg_initial", "dg", (1, 0, 2, 3)),
+                    ProcessAlias("dg_final", "dg", (0, 1, 3, 2)),
+                ),
+            ),
+            "admitted",
+        ),
+        "a new target with a nickname (its own spelling)": (
+            ProcessSet(
+                (ProcessRequest.parse("s g > s g", name="sg"),),
+                (ProcessAlias("sg_nickname", "sg"),),
+            ),
+            "admitted",
+        ),
         "a new target with its own aliases": (
             ProcessSet(
                 (ProcessRequest.parse("u u~ > g g", name="jets"),),
@@ -1282,3 +1353,67 @@ def test_appends_keep_the_resolution_invariant_at_one_loop(tmp_path, model_cache
     for index, (name, (batch, expected)) in enumerate(candidates.items()):
         outcome = _check_invariant(base, tmp_path / f"after{index}", generator, batch)
         assert outcome == expected, name
+
+
+@pytest.mark.parametrize("route", ["tree", "one-loop"])
+def test_a_fresh_generation_refuses_two_aliases_of_one_spelling(
+    tmp_path, model_cache, route
+):
+    # Two aliases mapping u g > u g onto g u > u g (the same map, or maps
+    # that differ on identical particles) would leave that expression
+    # ambiguous: refused before anything is written; one of them is served.
+    from pyamplicol.api import ProcessAlias
+    from pyamplicol.api.errors import ProcessIdCollisionError
+
+    generator = (
+        _tree_generator(tmp_path)
+        if route == "tree"
+        else Generator(
+            resolve_config(
+                _card(tmp_path, model_cache, expression="u g > u g", name="unused")
+            )
+        )
+    )
+    target = ProcessRequest.parse("u g > u g", name="first")
+    with pytest.raises(ProcessIdCollisionError, match="'a' and 'b'"):
+        generator.generate(
+            ProcessSet(
+                (target,),
+                (
+                    ProcessAlias("a", "first", (1, 0, 2, 3)),
+                    ProcessAlias("b", "first", (1, 0, 2, 3)),
+                ),
+            ),
+            tmp_path / "two",
+        )
+    assert not (tmp_path / "two").exists()
+    generator.generate(
+        ProcessSet((target,), (ProcessAlias("a", "first", (1, 0, 2, 3)),)),
+        tmp_path / "one",
+    )
+    table = _resolution_table(tmp_path / "one")
+    assert all("error" not in str(value) for value in table.values()), table
+
+
+def test_a_collision_within_the_batch_names_both_appended_processes(tmp_path):
+    # Two orders of one new process in one append: the refusal names both
+    # appended processes and does not point at an ID the artifact never got.
+    generator = _tree_generator(tmp_path)
+    artifact = tmp_path / "artifact"
+    generator.generate(ProcessRequest.parse("d d~ > g g", name="ddgg"), artifact)
+    before = _digest(artifact)
+    with pytest.raises(ProcessIdCollisionError) as error:
+        generator.generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("c c~ > g g", name="charm"),
+                    ProcessRequest.parse("c~ c > g g", name="charm_crossed"),
+                )
+            ),
+            artifact,
+            mode="append",
+        )
+    message = str(error.value)
+    assert "'charm'" in message and "'charm_crossed'" in message
+    assert "Append one of them" in message and "select it by that ID" not in message
+    assert _digest(artifact) == before

@@ -1130,6 +1130,7 @@ def write_schema_v3_artifact(
     )
     # One owner per public ID (for an append, part (i) of its invariant).
     _validate_public_process_ids(existing, processes, process_groups)
+    _validate_alias_spellings(existing, processes)
     if existing is not None:
         _validate_append_invariant(existing, processes, process_groups)
     if existing is not None:
@@ -5509,6 +5510,66 @@ def _validate_public_process_ids(
         )
 
 
+def _validate_alias_spellings(
+    existing: ArtifactManifest | None,
+    processes: Sequence[ProcessArtifact],
+) -> None:
+    """Before anything is written: no two alias records serve one spelling
+    that no stored process has. The selectors try stored expressions first,
+    then alias expressions, and count the matching alias records: two
+    aliases of one spelling (two maps of one target onto the same order, or
+    maps that differ only on identical particles) leave it ambiguous though
+    they serve one process. Such a second alias is refused
+    (``ProcessIdCollisionError`` naming both aliases and the spelling), in a
+    fresh generation and an append alike; an alias spelling the expression
+    of a stored process (a nickname of its target) is served by that
+    process and stays. Spellings compare as the selectors compare them
+    (whitespace-normalised, letter-case-insensitively)."""
+
+    from pyamplicol.loops.v2.artifact import _selector_text
+
+    def fold(expression: object) -> str:
+        return _selector_text(str(expression), fold=True)
+
+    records: list[tuple[Mapping[str, object], bool]] = [
+        (_plain_mapping(record), False)
+        for record in (existing.processes if existing is not None else ())
+    ]
+    records += [
+        (
+            {
+                "id": process.process_id,
+                "expression": process.expression,
+                "aliases": [dict(alias) for alias in process.aliases],
+            },
+            True,
+        )
+        for process in processes
+    ]
+    stored = {fold(record.get("expression", "")) for record, _incoming in records}
+    seen: dict[str, tuple[str, bool]] = {}
+    for record, incoming in records:
+        for alias in _sequence(record.get("aliases", ())):
+            entry = _mapping(alias)
+            spelling = fold(entry.get("expression", ""))
+            if spelling in stored:
+                continue
+            alias_id = str(entry["id"])
+            previous = seen.get(spelling)
+            if previous is None:
+                seen[spelling] = (alias_id, incoming)
+                continue
+            if incoming or previous[1]:
+                raise ProcessIdCollisionError(
+                    f"the aliases {previous[0]!r} and {alias_id!r} would both "
+                    f"serve {str(entry.get('expression', ''))!r}, which no stored "
+                    "process spells, and leave that expression ambiguous; "
+                    "nothing was written. Keep one alias per spelling (aliases "
+                    "that permute identical particles spell the same process)",
+                    process_ids=(previous[0], alias_id),
+                )
+
+
 def _validate_append_invariant(
     existing: ArtifactManifest,
     processes: Sequence[ProcessArtifact],
@@ -5535,7 +5596,7 @@ def _validate_append_invariant(
 
     from pyamplicol.loops.v2.mapping import side_class
 
-    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], str] = {}
+    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], tuple[str, str, bool]] = {}
 
     def own(expression: object, public_id: str, *, incoming: bool) -> None:
         key = side_class(str(expression))
@@ -5543,17 +5604,28 @@ def _validate_append_invariant(
             return
         previous = owners.get(key)
         if previous is None:
-            owners[key] = public_id
+            owners[key] = (public_id, str(expression), incoming)
             return
-        if incoming:
+        if not incoming:
+            return
+        owner_id, owner_expression, owner_incoming = previous
+        if owner_incoming:
+            # Two processes of the batch: the artifact holds neither yet.
             raise ProcessIdCollisionError(
-                f"the appended process {str(expression)!r} ({public_id!r}) is "
-                f"already in the artifact as {previous!r} (it is a spelling of "
-                "it: any order of the particles on each side selects it); "
-                "nothing was written. An artifact holds a process once: select "
-                "it by that ID",
-                process_ids=(previous, public_id),
+                f"the appended processes {owner_expression!r} ({owner_id!r}) and "
+                f"{str(expression)!r} ({public_id!r}) are spellings of one "
+                "process (any order of the particles on each side selects "
+                "either); nothing was written. Append one of them",
+                process_ids=(owner_id, public_id),
             )
+        raise ProcessIdCollisionError(
+            f"the appended process {str(expression)!r} ({public_id!r}) is "
+            f"already in the artifact as {owner_id!r} (it is a spelling of "
+            "it: any order of the particles on each side selects it); "
+            "nothing was written. An artifact holds a process once: select "
+            "it by that ID",
+            process_ids=(owner_id, public_id),
+        )
 
     for record in existing.processes:
         own(record.get("expression", ""), str(record["id"]), incoming=False)
