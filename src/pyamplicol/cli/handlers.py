@@ -985,7 +985,9 @@ class DefaultCliServices:
 
         # The processes a generation of the request stores, from the
         # generator's own expansion and filters (tree or one loop).
-        return list_request_processes(config, _process_set(config))
+        return list_request_processes(
+            self._generation_config(config), _process_set(config)
+        )
 
     def group_processes(self, config: RunConfig, progress: ProgressSink) -> object:
         if config.evaluation.artifact is None:

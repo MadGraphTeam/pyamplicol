@@ -52,6 +52,8 @@ output = {json.dumps(str(tmp_path / "artifact"))}
 
 
 def _listed(card):
+    # As a dry run, the listing compiles no model: fill the card's cache.
+    _cli("model", "inspect", "--card", str(card), "--json")
     listing = _cli("model", "processes", "--card", str(card), "--json")
     return listing, [(row["name"], row["process"]) for row in listing["entries"]]
 
@@ -173,6 +175,7 @@ def test_a_grouped_listing_says_what_is_stored_and_what_is_served(
         '{ expression = "s s > s s", name = "strange2" }]',
     )
     card.write_text(text)
+    _cli("model", "inspect", "--card", str(card), "--json")
     listing = _cli("model", "processes", "--card", str(card), "--json")
     listed = _listed_groups(listing)
     _cli("generate", "--card", str(card))
@@ -219,8 +222,126 @@ output = {json.dumps(str(tmp_path / "artifact"))}
         assert code != 0, stdout.getvalue()
         return [line for line in stderr.getvalue().splitlines() if "ERROR" in line][-1]
 
+    # As a dry run, the listing compiles no model: fill the cache first.
+    _cli("model", "inspect", "--card", str(card), "--json")
     listed = refusal("model", "processes", "--card", str(card), "--json")
     generated = refusal("generate", "--card", str(card))
     assert not (tmp_path / "artifact").exists()
     # The same reason (generation names the process it was compiling).
     assert listed.split(": ", 1)[1] in generated
+
+
+def _outcome(*arguments):
+    """Exit code and, on success, the listed (or planned) names; on failure
+    the reason of the last error line."""
+
+    stdout, stderr = io.StringIO(), io.StringIO()
+    code = run_cli((*arguments, "--progress", "off"), stdout=stdout, stderr=stderr)
+    if code == 0:
+        payload = json.loads(stdout.getvalue())
+        rows = payload.get("entries", payload.get("concrete_processes"))
+        return code, [row["name"] for row in rows]
+    error = [line for line in stderr.getvalue().splitlines() if "ERROR" in line][-1]
+    return code, error.split(": ", 1)[1]
+
+
+@pytest.mark.parametrize(
+    ("model", "mode"),
+    [
+        # The built-in SM without the model cache: the packaged preparation.
+        ("cache = false", "recurrence"),
+        ("cache = false", "on-the-fly"),
+        ('source = "built-in-sm-heft"\ncache = false', "recurrence"),
+        # A shipped UFO by name with a restriction (compiled first, below).
+        (
+            'source = "loop_sm"\nrestriction = "no_b_mass"\ncache_dir = "{cache}"',
+            "compiled",
+        ),
+        # Without a compiled model the dry run's own error.
+        ('source = "loop_sm"\ncache_dir = "{empty}"', "compiled"),
+        ('source = "loop_sm"\ncache = false', "compiled"),
+    ],
+    ids=[
+        "builtin-nocache-recurrence",
+        "builtin-nocache-on-the-fly",
+        "heft-nocache",
+        "ufo-restriction",
+        "ufo-uncompiled",
+        "ufo-nocache",
+    ],
+)
+def test_the_listing_resolves_the_model_as_the_dry_run(
+    tmp_path, model_cache, model, mode
+):
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[model]
+{model.format(cache=model_cache, empty=tmp_path / "empty")}
+[process]
+entries = [{{ expression = "u u~ > g g", name = "p" }}]
+[evaluator]
+execution_mode = "{mode}"
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    if "{cache}" in model:
+        _cli("model", "inspect", "--card", str(card), "--json")
+    planned = _outcome("generate", "--card", str(card), "--dry-run", "--json")
+    listed = _outcome("model", "processes", "--card", str(card), "--json")
+    assert listed == planned
+    assert (listed[0] == 0) == (
+        "empty" not in model and 'loop_sm"\ncache = false' not in model
+    )
+
+
+@pytest.mark.parametrize("mode", ["compiled", "recurrence"])
+@pytest.mark.parametrize(
+    ("expression", "selection", "accuracy", "orders", "listed"),
+    [
+        # A leading-colour sector without a tree amplitude, and one with.
+        ("c d > u s", "selected_color_sector_ids = [0]", "lc", True, False),
+        ("c d > u s", "selected_color_sector_ids = [1]", "lc", True, True),
+        # A helicity configuration whose amplitude vanishes.
+        (
+            "e+ e- > mu+ mu-",
+            "selected_source_helicities = { 1 = 1, 2 = 1, 3 = 1, 4 = 1 }",
+            "full",
+            False,
+            False,
+        ),
+    ],
+    ids=["sector-without-amplitude", "sector-with-amplitude", "all-plus-helicities"],
+)
+def test_a_fixed_selection_is_checked_on_what_it_selects(
+    tmp_path, mode, expression, selection, accuracy, orders, listed
+):
+    card = tmp_path / "card.toml"
+    card.write_text(
+        f"""
+action = "generate"
+[process]
+entries = [{{ expression = "{expression}", name = "sample" }}]
+{selection}
+{'coupling_order_policy = "explicit"' if orders else ""}
+{"max_coupling_orders = { QCD = 0, QED = 2 }" if orders else ""}
+[color]
+accuracy = "{accuracy}"
+[evaluator]
+execution_mode = "{mode}"
+[generation]
+output = {json.dumps(str(tmp_path / "artifact"))}
+"""
+    )
+    code, result = _outcome("model", "processes", "--card", str(card), "--json")
+    if listed:
+        assert (code, result) == (0, ["sample"])
+    else:
+        assert code != 0
+        assert "has no model-supported tree-level amplitudes" in result
+        if mode == "compiled":
+            # Generation refuses with the same reason.
+            generated = _outcome("generate", "--card", str(card))
+            assert generated[0] != 0 and result in generated[1]

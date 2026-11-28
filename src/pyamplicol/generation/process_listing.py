@@ -35,42 +35,50 @@ from typing import Any
 from pyamplicol.api.errors import GenerationError
 from pyamplicol.api.requests import ModelSource, ProcessSet
 from pyamplicol.config import RunConfig
+from pyamplicol.config.resolver import ConfigResolution
 
 from .progress import PhaseHandle
 
 
-def list_request_processes(config: RunConfig, processes: ProcessSet) -> dict[str, Any]:
-    """The listing of ``processes`` under ``config`` (``pyamplicol model
-    processes``'s payload)."""
+def list_request_processes(
+    configuration: RunConfig | ConfigResolution, processes: ProcessSet
+) -> dict[str, Any]:
+    """The listing of ``processes`` under ``configuration`` (``pyamplicol
+    model processes``'s payload): the configuration the CLI's dry run plans
+    with, the model resolved by the same call (``GenerationBackend.plan``
+    with the configured ``ModelSource``), so the listing refuses exactly what
+    the dry run refuses (an uncompiled model included) and then what the
+    generation's per-process admission refuses."""
 
     from pyamplicol.processes.model import ModelParticleCatalog
 
     from .service import GenerationBackend
 
-    compiled = ModelSource.from_config(config.model).compile(
-        cache_dir=config.model.cache_dir,
-        use_cache=config.model.cache,
-    )
-    backend = GenerationBackend(config, None)
-    payload = backend._private_compiled_model(compiled)
+    backend = GenerationBackend(configuration, None)
+    run = backend._run_config
+    source = ModelSource.from_config(run.model)
     if backend._loop_execution_enabled:
         route = "one-loop"
-        rows, served, skipped = _one_loop(backend, processes, compiled)
+        rows, served, skipped = _one_loop(backend, processes, source)
     else:
         route = "tree"
-        rows, served, skipped = _tree(backend, processes, compiled)
-    catalog = ModelParticleCatalog(
-        payload.ir.name, payload.ir.particles, payload.ir.parameters
-    )
-    multiparticles = {
-        **catalog.default_multiparticles(),
-        **config.process.multiparticles,
-    }
-    limit = config.process.max_quark_lines
+        rows, served, skipped = _tree(backend, processes, source)
+    # The model the plan resolved (it succeeded above, so this resolves).
+    compiled = backend._resolve_model_for_plan(source).compiled
+    multiparticles: dict[str, Sequence[str]] = {}
+    if compiled is not None:
+        catalog = ModelParticleCatalog(
+            compiled.ir.name, compiled.ir.particles, compiled.ir.parameters
+        )
+        multiparticles.update(catalog.default_multiparticles())
+    multiparticles.update(run.process.multiparticles)
+    limit = run.process.max_quark_lines
     return {
         "available": True,
-        "model": payload.name,
-        "model_source": dict(payload.source),
+        "model": compiled.name if compiled is not None else source.kind,
+        "model_source": dict(compiled.source)
+        if compiled is not None
+        else {"kind": source.kind},
         "route": route,
         "requests": [request.expression for request in processes.requests],
         "default_key": rows[0]["key"] if rows else None,
@@ -112,19 +120,51 @@ def _minimal_limits(
     )
 
 
-def _source(backend: Any, compiled: Any) -> Any:
-    """The model the dry run resolves: the configured source, as a
-    generation resolves it (built-in prepared packs, the model cache the
-    listing just filled), or, without the cache, the compiled model."""
+def _require_selected_support(backend: Any, process: Any, model: Any) -> None:
+    """With a fixed colour-sector or helicity selection, the generation's
+    own check of the SELECTED content: the compiled lane's construction of
+    the process (``GenerationBackend._compile_concrete_process``: the colour
+    plan, the selected sectors and source helicities, the DAG), which refuses
+    a selection that keeps no tree-level amplitude (a structurally vanishing
+    sector or helicity) with generation's error. The dry run checks only that
+    the selected IDs exist. The recurrence lane serves the same selections
+    from the same amplitudes; the on-the-fly lane refuses selections in its
+    dry run."""
 
-    return None if backend._run_config.model.cache else compiled
+    from dataclasses import replace
+
+    from pyamplicol.config.models import EvaluatorExecutionMode
+
+    from .service import GenerationBackend
+
+    selection = backend._process_selection
+    if (
+        selection.selected_color_sector_ids is None
+        and not selection.selected_source_helicities
+    ):
+        return
+    run = backend._run_config
+    lane = (
+        backend
+        if run.evaluator.execution_mode == EvaluatorExecutionMode.COMPILED
+        else GenerationBackend(
+            replace(
+                run,
+                evaluator=replace(
+                    run.evaluator, execution_mode=EvaluatorExecutionMode.COMPILED
+                ),
+            ),
+            None,
+        )
+    )
+    lane._compile_concrete_process(process, model)
 
 
-def _planned(backend: Any, processes: ProcessSet, compiled: Any) -> Any:
+def _planned(backend: Any, processes: ProcessSet, source: Any) -> Any:
     """The generator's dry run of the request: its refusals are the
     listing's."""
 
-    plan = backend.plan(processes, model=_source(backend, compiled))
+    plan = backend.plan(processes, model=source)
     if plan.unsupported_features:
         raise GenerationError(
             "the generation of this request is refused: "
@@ -134,12 +174,12 @@ def _planned(backend: Any, processes: ProcessSet, compiled: Any) -> Any:
 
 
 def _one_loop(
-    backend: Any, processes: ProcessSet, compiled: Any
+    backend: Any, processes: ProcessSet, source: Any
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     from pyamplicol.processes.model import build_model_process_ir
 
-    plan = _planned(backend, processes, compiled)
-    ir = backend._private_compiled_model(compiled).ir
+    plan = _planned(backend, processes, source)
+    ir = backend._resolve_model_for_plan(source).compiled.ir
     accuracy = str(backend._run_config.color.accuracy)
     coverage = {
         str(row["key"]): row
@@ -176,7 +216,7 @@ def _one_loop(
 
 
 def _tree(
-    backend: Any, processes: ProcessSet, compiled: Any
+    backend: Any, processes: ProcessSet, source: Any
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     from dataclasses import replace
 
@@ -193,11 +233,9 @@ def _tree(
     # a request its dry run refuses is refused.
     planned = {
         request.name
-        for request in _planned(backend, processes, compiled).concrete_processes
+        for request in _planned(backend, processes, source).concrete_processes
     }
-    resolved = backend._resolve_model_for_plan(
-        _source(backend, compiled) or backend._configured_model_source()
-    )
+    resolved = backend._resolve_model_for_plan(source)
     if resolved.model is None and resolved.compiled is not None:
         from pyamplicol.models.external import CompiledUFOModel
 
@@ -268,6 +306,7 @@ def _tree(
             or None,
             execution_mode=str(backend._run_config.evaluator.execution_mode),
         )
+        _require_selected_support(backend, process, model)
         rows.append(_row(entry.request.name, process, [m.process_id for m in members]))
         served.extend(
             {
