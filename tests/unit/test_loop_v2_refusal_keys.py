@@ -8,7 +8,8 @@ public dry run (m-sm PLAN MS-MODEL item 4).
   generation raises ``LoopRequestUnsupported`` with the key.
 * Admission refusals that need only the model and the Born DAG
   (``external-photon-scheme``, ``feynman-gauge``, ``loop-induced``,
-  ``colour-declaration-coverage``, ...) fire in the dry run too.
+  ``colour-declaration-coverage``, ...) fire in the dry run too, and the
+  configuration key ``lc-electroweak-corrections`` on the QCD+QED models.
 * Internal refusals (``refusals.LOOP_INTERNAL_REFUSALS``) are engine
   conditions met during generation; their error classes carry the key, which
   the generation boundary keeps (``refusals.keyed_error``), and the dry run
@@ -345,10 +346,10 @@ def test_feynman_gauge_fires_where_the_loops_need_it(tmp_path):
             ("QCD", "QED"),
             {"loop": "external_photons = [4]"},
         ),
-        # The shipped N_c data are scheme-gated (MQ-NC): none covers the
-        # QCD+QED models.
+        # LC/NLC of QED and QCD+QED corrections is not implemented yet: the
+        # QCD+QED models' counterterms have no formal-N_c declaration.
         (
-            "colour-declaration-coverage",
+            "lc-electroweak-corrections",
             "loop_qcd_qed_sm",
             "u u~ > d d~",
             ("QCD", "QED"),

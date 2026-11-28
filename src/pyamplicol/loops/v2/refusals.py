@@ -730,6 +730,24 @@ LOOP_CONFIGURATION_REFUSALS = (
         "none",
     ),
     LoopAdmissionRefusal(
+        "lc-electroweak-corrections",
+        "a leading- or next-to-leading-colour one-loop request with QED or "
+        "mixed QCD+QED corrections (process.loop_coupling_orders other than "
+        "the model's strong order, the order of the gluon's vertices, "
+        "whatever its name), or any LC or NLC one-loop request on a model "
+        "declaring such corrections (loop_qcd_qed_sm, loop_qcd_qed_sm_Gmu) "
+        "that carries no formal-N_c colour declaration",
+        "leading and next-to-leading colour of QED and QCD+QED corrections are "
+        "not implemented yet: they grade every counterterm by its N_c "
+        "dependence, and the electroweak counterterms of these models (sums of "
+        "an N_c-free part and a closed-quark-loop part proportional to N_c) "
+        "have no formal-N_c declaration in pyAmpliCol",
+        'full colour (color.accuracy = "full", the one-loop default), which '
+        "serves these corrections",
+        "MQ-NC (a guard)",
+        "leading colour of QED and QCD+QED corrections (planned)",
+    ),
+    LoopAdmissionRefusal(
         "scale-parameter",
         "a model whose renormalisation-scale parameter is not identified: no "
         "adjustable external parameter at (LOOP, 1) and not exactly one in "
