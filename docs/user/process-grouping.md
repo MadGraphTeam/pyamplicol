@@ -333,11 +333,39 @@ one-loop process and served the same way, and so is an expression equal to a
 stored one up to a permutation within each side; for these explicit
 relabellings a declared history or spin class whose relabelled image the
 stored process does not store is not served (`available_color_correlations()`
-lists the served histories; a call for another one is refused). Helicity and
-colour-flow selection (`helicities=` / `color_flows=`) of a mapped process is
-refused: select on the stored process. At leading colour its resolved Born
-components are the stored process's basis elements, anchored to the stored
-flows relabelled onto its own legs (`physics.born_anchored_color_components`).
+lists the served histories; a call for another one is refused).
+
+A mapped process (a member, an alias or a permuted expression) is selected
+and resolved as its own process. With multiparticle labels this is the usual
+case: the stored leg order is the expansion's canonical one, so `g u > g u`
+is served by the stored `u G > u G` and `u d > u d` by `d u > d u`.
+
+- `physics.helicities` lists its own helicity rows, in the order and with the
+  IDs (`h<i>`, and `h:<values in leg order>`) a single-process artifact
+  generated for that spelling lists them; `helicities=` selects them.
+- At leading colour `physics.born_anchored_color_components` lists its own
+  flows: each stored flow read on its legs and written as the tree engine
+  writes a flow word (open lines ordered by their fundamental label, a trace
+  starting at its smallest label), in that artifact's plan order. So the IDs
+  and the ordinals that `color_flows=` takes are those of a single-process
+  artifact of that spelling. A flow keeps the stored process's Born basis
+  element, so the resolved output's colour IDs (`basis-<b>`) are the stored
+  process's. A request with a `reference_color_order` keeps the stored flow
+  order.
+- Every call that takes or returns per-helicity, per-flow or resolved values
+  follows: `evaluate(helicities=..., color_flows=...)`,
+  `evaluate_resolved(...)` with or without a selection and `evaluate_orders`
+  with a selection, on every reduction backend. A selection returns what the
+  same selection returns on a single-process artifact of that spelling, up to
+  the rounding of a calculation in another leg order (bitwise where the
+  stored leg order is the requested one).
+
+A selector that no stored process, alias, permuted expression or member
+matches is refused with `ProcessSelectionError` (an `EvaluationError`) whose
+`key` is `"process-not-served"` (`"process-ambiguous"` when several match;
+the message lists their IDs). The native one-loop SDK (`rusticol_virtual.h`
+and its C++, Fortran, Rust and UMAMI wrappers) opens a mapped process the
+same way; see [Native APIs](native-apis.md#one-process-expression-in-all-five-languages).
 The numerical analysis is refused for one-loop requests
 (`process-group-analysis`), and a loaded one-loop artifact refuses a
 process-group member of any other basis.

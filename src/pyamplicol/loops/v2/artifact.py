@@ -1397,6 +1397,7 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
 
     from dataclasses import replace
 
+    from pyamplicol.api.errors import ProcessSelectionError
     from pyamplicol.artifacts.process_groups import read_process_groups
 
     from .mapping import permuted_expression, side_permutation
@@ -1408,8 +1409,9 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         elif len(records) == 1:
             return records[0], None
         else:
-            raise EvaluationError(
-                "this artifact holds several processes; select one with process="
+            raise ProcessSelectionError(
+                "this artifact holds several processes; select one with process=",
+                key="process-ambiguous",
             )
     for record in records:
         if record["id"] == process:
@@ -1432,9 +1434,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         ]
         if fold and len(matches) > 1:
             choices = ", ".join(sorted(str(record["id"]) for record in matches))
-            raise EvaluationError(
+            raise ProcessSelectionError(
                 f"process expression {process!r} is ambiguous; select one of "
-                f"these stable ids: {choices}"
+                f"these stable ids: {choices}",
+                key="process-ambiguous",
             )
         if matches:
             return matches[0], None
@@ -1446,9 +1449,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         ]
         if len(aliases) > 1:
             choices = ", ".join(sorted(str(alias["id"]) for _r, alias in aliases))
-            raise EvaluationError(
+            raise ProcessSelectionError(
                 f"process expression {process!r} is ambiguous; select one of "
-                f"these alias ids: {choices}"
+                f"these alias ids: {choices}",
+                key="process-ambiguous",
             )
         if aliases:
             return aliases[0][0], _alias_member(*aliases[0])
@@ -1465,9 +1469,10 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         permuted = [item for item in permuted if _displacement(item[1]) == least]
     if len(permuted) > 1:
         choices = ", ".join(sorted(str(record["id"]) for record, _p in permuted))
-        raise EvaluationError(
+        raise ProcessSelectionError(
             f"process expression {process!r} is permutation-ambiguous; select "
-            f"one of these stable ids: {choices}"
+            f"one of these stable ids: {choices}",
+            key="process-ambiguous",
         )
     if permuted:
         return permuted[0][0], _permuted_member(*permuted[0])
@@ -1498,7 +1503,7 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
                 permutation=tuple(permutation[m] for m in member.permutation),
             )
             return _group_record(records, representative, composed, process)
-    raise EvaluationError(f"artifact has no process {process!r}")
+    raise ProcessSelectionError(f"artifact has no process {process!r}")
 
 
 def _group_record(
@@ -1514,7 +1519,9 @@ def _group_record(
         or member.factor != 1
         or (member.conjugated)
     ):
-        raise EvaluationError(
+        from pyamplicol.api.errors import ProcessSelectionError
+
+        raise ProcessSelectionError(
             f"process {process!r} is a process-group member of basis "
             f"{str(member.basis)!r} (factor {member.factor}"
             + (", charge-conjugated" if member.conjugated else "")
@@ -1735,6 +1742,7 @@ class V2VirtualRuntime:
 
         from .native_process import AdmittedPlan
         from .rescue import rescue_policy
+        from .selection import outgoing_colours
 
         # A default policy owns the carriers: refused with load-time ones.
         self._rescue = rescue_policy(
@@ -1882,6 +1890,16 @@ class V2VirtualRuntime:
             )
         if group_member is not None:
             self._member = _stored_member(group_member, str(selected["expression"]))
+        # The stored legs' outgoing colour representations: a mapped
+        # process's leading-colour flows are read on its own labels in the
+        # tree engine's spelling and plan order (``selection.member_flows``).
+        self._colours = outgoing_colours(
+            [(int(leg["pdg"]), bool(leg["incoming"])) for leg in physics["state_legs"]],
+            {
+                int(record.pdg_code): int(record.color)
+                for record in compiled.ir.particles
+            },
+        )
         record = self._native_process.record
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
@@ -2359,6 +2377,7 @@ class V2VirtualRuntime:
                     found,
                     member=self._member,
                     mapping=self._mapping,
+                    flows=None if self._induced else self._public_flows(),
                     arithmetic=self._load_request[0] or self.default_arithmetic,
                     precision=self._load_request[1],
                     **self._thread_options(),
@@ -2471,11 +2490,9 @@ class V2VirtualRuntime:
             contribution_kind=self.contribution_kind,
             reduction=PhysicsReduction(kind, ()),
             model_parameters=(),
-            # Selection of a mapped process is refused (``_refuse_member_
-            # selection``).
-            selector_capabilities=("helicity", "color_flow")
-            if anchors and member is None
-            else (),
+            # A mapped process selects its own helicity rows and flows
+            # (``V2ObservablesRuntime.selection_catalogue``).
+            selector_capabilities=("helicity", "color_flow") if anchors else (),
         )
 
     def _helicity_rows(self) -> list[tuple[int, ...]]:
@@ -2499,21 +2516,22 @@ class V2VirtualRuntime:
     def _public_flows(self) -> tuple[Any, ...]:
         """The stored leading-colour flows on the selected process's legs: a
         permuted mapped process reads each word through its member legs
-        (representative label ``legs[i] + 1`` is its label ``i + 1``)."""
+        (representative label ``legs[i] + 1`` is its label ``i + 1``), in
+        the spelling and order a single-process artifact of its own
+        expression gives them (``selection.member_flows``)."""
 
-        from dataclasses import replace
-
-        from .selection import flow_id
+        from .selection import member_flows
 
         flows = self._flows()
         if self._member is None or not self._member.alias:
             return flows
-        public = {rep + 1: leg + 1 for leg, rep in enumerate(self._member.legs)}
-        out = []
-        for flow in flows:
-            word = tuple(public.get(label, label) for label in flow.word)
-            out.append(replace(flow, id=flow_id(word), word=word))
-        return tuple(out)
+        chosen = self._execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
+        return member_flows(
+            flows,
+            self._member.legs,
+            self._colours,
+            keep_order=chosen.get("color_order") is not None,
+        )
 
     def inspect(self) -> Mapping[str, object]:
         with self._lock:

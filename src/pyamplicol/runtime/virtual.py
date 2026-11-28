@@ -629,6 +629,7 @@ class V2ObservablesRuntime:
         executor: Literal["native", "python"] = "native",
         member: Any = None,
         mapping: str | None = None,
+        flows: Sequence[Any] | None = None,
         lanes: int | None = None,
         threads: int | None = None,
     ) -> None:
@@ -640,6 +641,10 @@ class V2ObservablesRuntime:
         # How the member is served, for messages (the artifact's selector
         # knows it; ``_mapping_kind`` otherwise).
         self._mapping = mapping
+        # The leading-colour flows a selection names, on the member's labels
+        # when given (an artifact runtime's ``_public_flows``); None: the
+        # observables' own, read on the member's labels (``_member_flows``).
+        self._flows = None if flows is None else tuple(flows)
         self._executor = executor
         self._native_options = {
             key: value
@@ -1389,20 +1394,64 @@ class V2ObservablesRuntime:
 
     def selection_catalogue(self) -> Any:
         """The helicity rows and leading-colour flows a selection names
-        (``loops.v2.selection.Catalogue``; no flows below leading colour)."""
+        (``loops.v2.selection.Catalogue``; no flows below leading colour).
+        A mapped process names its own: its rows in its resolved order
+        (``evaluate_resolved``) and its flows read on its labels
+        (``_member_flows``); ``_stored_rows`` reads its rows back on the
+        representative's legs, its flows keep their Born basis elements."""
 
         from pyamplicol.loops.v2 import selection
 
         with self._lock:
             if self._catalogue is None:
-                observables = self._observables
-                flows = getattr(observables, "flows", None)
-                if flows is None:
-                    flows = selection.slice_flows(observables.slice)
-                self._catalogue = selection.Catalogue(
-                    tuple(observables.rows), tuple(flows)
-                )
+                rows = tuple(self._observables.rows)
+                if self._member is not None:
+                    rows = tuple(sorted(self._member.row(row) for row in rows))
+                self._catalogue = selection.Catalogue(rows, self._member_flows())
             return self._catalogue
+
+    def _member_flows(self) -> tuple[Any, ...]:
+        """The leading-colour flows on the selected process's labels: the
+        given ones (``flows``), else the observables' (a slice's,
+        ``selection.slice_flows``), read on a permuted member's labels in the
+        tree engine's spelling and order (``selection.member_flows``)."""
+
+        from pyamplicol.loops.v2 import selection
+
+        if self._flows is not None:
+            return self._flows
+        observables = self._observables
+        flows = getattr(observables, "flows", None)
+        if flows is None:
+            flows = selection.slice_flows(observables.slice)
+        member = self._member
+        if member is None or not member.alias:
+            return tuple(flows)
+        slice_ = observables.slice
+        # The process legs' colour roles (``processes.ir.ProcessLegIR``) as
+        # outgoing representations.
+        roles = {"fundamental": 3, "antifundamental": -3, "adjoint": 8}
+        colours = {
+            int(leg.label): roles.get(str(leg.color_role), 1)
+            for leg in slice_.blocks.process.legs
+        }
+        chosen = slice_.request.selection
+        return selection.member_flows(
+            flows,
+            member.legs,
+            colours,
+            keep_order=chosen is not None and chosen.color_order is not None,
+        )
+
+    def _stored_rows(self, rows: frozenset[Any] | None) -> frozenset[Any] | None:
+        """A mapped process's selected helicity rows (its own legs) as the
+        representative's rows they relabel (``FlavourMember.row``)."""
+
+        member = self._member
+        if rows is None or member is None:
+            return rows
+        stored = {member.row(row): row for row in self._observables.rows}
+        return frozenset(stored[row] for row in rows)
 
     def evaluate(
         self,
@@ -1581,17 +1630,6 @@ class V2ObservablesRuntime:
         with self._lock:
             return dict(self._parameters)
 
-    def _refuse_member_selection(self) -> None:
-        member = self._member
-        if member is None:
-            return
-        kind = self._mapping or _mapping_kind(member)
-        raise CompatibilityError(
-            f"helicity and colour-flow selection of {kind} ({member.process!r}, "
-            f"served by {member.representative!r}) is not available; select on "
-            "its representative process"
-        )
-
     def _require_selection(
         self,
         helicities: Sequence[str] | None,
@@ -1676,9 +1714,10 @@ class V2ObservablesRuntime:
         poles, checks = v2_options(on_failure=on_failure, **options)
         observables = self._observables
         self._require_selection(helicities, color_flows)
-        self._refuse_member_selection()
+        # A mapped process names its own rows and flows; the column reads
+        # the representative's rows and Born basis elements.
         rows, basis = self.selection_catalogue().resolve(helicities, color_flows)
-        column = lc.column(rows, basis)
+        column = lc.column(self._stored_rows(rows), basis)
         arithmetic, carrier = self._precision(arithmetic, precision)
         points, scales = _inputs(momenta, mu_r2, self.external_count)
         # One immutable parameter snapshot for the call (the entry's, passed
@@ -1709,10 +1748,12 @@ class V2ObservablesRuntime:
             "stability": checks.to_checks() if checks.enabled else None,
         }
 
+        member = self._member
+
         def python(point: Any, scale: Any, _spin: Any) -> Any:
             return observables._run(
                 [column],
-                point,
+                point if member is None else member.point(point),
                 scale,
                 settings["parameters"],
                 settings["precision"],
@@ -1987,12 +2028,16 @@ class V2ObservablesRuntime:
         kept = basis = None
         if helicities or color_flows:
             self._require_selection(helicities, color_flows, resolved=True)
-            self._refuse_member_selection()
-            kept, basis = self.selection_catalogue().resolve(helicities, color_flows)
-            if kept is not None:
-                chosen = [k for k, row in enumerate(rows) if row in kept]
+            selected, basis = self.selection_catalogue().resolve(
+                helicities, color_flows
+            )
+            if selected is not None:
+                chosen = [k for k, row in enumerate(rows) if row in selected]
                 rows = tuple(rows[k] for k in chosen)
                 helicity_ids = tuple(helicity_ids[k] for k in chosen)
+            # The column set reads the representative's rows (a mapped
+            # process's are its own, ``_stored_rows``).
+            kept = self._stored_rows(selected)
             if basis is not None:
                 components = tuple(b for b in components if b in basis)
         settings = {
@@ -2255,10 +2300,11 @@ class V2InducedObservablesRuntime(V2ObservablesRuntime):
                 self._catalogue = selection.Catalogue(tuple(rows), ())
             return self._catalogue
 
-    def _refuse_member_selection(self) -> None:
-        """A mapped process selects its own helicity rows
-        (``selection_catalogue``) and has no colour flows
-        (``_require_selection``)."""
+    def _stored_rows(self, rows: frozenset[Any] | None) -> frozenset[Any] | None:
+        """A loop-induced process's columns read a mapped process's own rows
+        (``InducedObservables.native_columns`` relabels them)."""
+
+        return rows
 
     def _require_selection(
         self,

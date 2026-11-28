@@ -16,6 +16,7 @@ if TYPE_CHECKING:
         GenerationError,
         ModelError,
         NativePlatformError,
+        ProcessSelectionError,
         PyAmpliColError,
         ReductionUnavailable,
     )
@@ -152,6 +153,7 @@ __all__ = [
     "ProcessAlias",
     "ProcessPhysics",
     "ProcessRequest",
+    "ProcessSelectionError",
     "ProcessSet",
     "PyAmpliColError",
     "ReductionGroup",
@@ -199,6 +201,7 @@ _ERROR_EXPORTS = (
     "GenerationError",
     "ModelError",
     "NativePlatformError",
+    "ProcessSelectionError",
     "PyAmpliColError",
     "ReductionUnavailable",
 )

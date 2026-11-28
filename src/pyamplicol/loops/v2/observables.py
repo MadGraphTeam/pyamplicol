@@ -2301,9 +2301,10 @@ class _Batch:
 
 def _member_key(member: FlavourMember, key: Hashable) -> Hashable:
     """A member's output key: resolved (row, component) keys carry member
-    helicity rows; history ids are unchanged."""
+    helicity rows; history ids and selection columns' keys (which name the
+    selection, ``selection.column``) are unchanged."""
 
-    if isinstance(key, tuple):
+    if isinstance(key, tuple) and len(key) == 2:
         row, component = key
         return (None if row is None else member.row(row), component)
     return key
