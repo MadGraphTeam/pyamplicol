@@ -425,6 +425,24 @@ def _quark_line_cut(
     return kept
 
 
+# process.consider_charge_conjugation with one-loop flavour grouping
+# (process.flavor_blind): the one-loop grouping relates exact species
+# substitutions and side permutations only, so charge-conjugate subprocesses
+# are generated on their own; the dry run and the generation say so.
+CHARGE_CONJUGATION_NOTE = (
+    "at one loop, charge-conjugate subprocesses are generated separately: "
+    "process.consider_charge_conjugation has no effect on one-loop flavour "
+    "grouping (process.flavor_blind) yet; their values are unaffected"
+)
+
+
+def _charge_conjugation_unused(run: Any) -> bool:
+    """Whether the request asks for charge-conjugate grouping, which the
+    one-loop flavour grouping does not apply (``CHARGE_CONJUGATION_NOTE``)."""
+
+    return bool(run.process.flavor_blind and run.process.consider_charge_conjugation)
+
+
 def _with_stable_externals(backend, processes, resolved, compiled, preparation):
     """``preparation`` with the width parameters of every external particle
     of ``processes`` fixed to zero (``loops.external_widths``), logged."""
@@ -1601,6 +1619,11 @@ def _plan_v2(backend, processes, blockers, *, model=None):
         resolved=True,
         correlations=True,
         exact_flavor_grouping=backend._run_config.process.flavor_blind,
+        **(
+            {"charge_conjugate_grouping": CHARGE_CONJUGATION_NOTE}
+            if _charge_conjugation_unused(backend._run_config)
+            else {}
+        ),
         api_bundle=False,
         # The runtimes the planned artifact requires (its manifest's union,
         # sorted), and the one runtime when every process shares it (None for
@@ -1860,6 +1883,8 @@ def _generate_v2(backend, processes, output, *, model, mode, correlators):
     )
     started = time.perf_counter()
     grouping = backend._run_config.process.flavor_blind
+    if _charge_conjugation_unused(backend._run_config):
+        notice(_LOGGER, "grouping", "%s", CHARGE_CONJUGATION_NOTE)
     memo = PreparationMemo(store_for(backend._run_config.model))
     stack = ExitStack()
     try:

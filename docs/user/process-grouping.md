@@ -173,7 +173,9 @@ electroweak vertex breaks charge conjugation.
 
 `--no-consider-charge-conjugation` (`process.consider_charge_conjugation =
 false`) disables conjugated relations. The setting only matters together with
-`--flavor-blind` or the numerical analysis.
+`--flavor-blind` or the numerical analysis, and only at tree level: one-loop
+flavour grouping does not relate charge-conjugate subprocesses yet (see
+[One-loop artifacts](#one-loop-virtual-artifacts)).
 
 ## Flavour-blind generation
 
@@ -341,6 +343,13 @@ flows relabelled onto its own legs (`physics.born_anchored_color_components`).
 The numerical analysis is refused for one-loop requests
 (`process-group-analysis`), and a loaded one-loop artifact refuses a
 process-group member of any other basis.
+
+Charge conjugation is not among the one-loop relations yet: a
+charge-conjugate subprocess (`u~ g > u~ g` of `u g > u g`) is generated on its
+own, whatever `process.consider_charge_conjugation` says, and its value is its
+own generation's. With `--flavor-blind` and the setting on (its default) the
+dry run reports this in `estimated_coverage.charge_conjugate_grouping` and the
+generation logs it once.
 
 ## Conserved charges in UFO expansion
 

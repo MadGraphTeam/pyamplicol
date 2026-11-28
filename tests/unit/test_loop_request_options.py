@@ -670,3 +670,55 @@ max_coupling_orders = { QCD = 2, QED = 2 }""",
     assert record["id"] == "sample_1"
     assert [alias["id"] for alias in record["aliases"]] == ["twophotons"]
     assert Runtime.load(tmp_path / "artifact", process="twophotons").physics.process
+
+
+# process.consider_charge_conjugation at one loop -----------------------------
+
+
+@pytest.mark.parametrize(
+    ("extra", "reported"),
+    [
+        ("flavor_blind = true", True),
+        ("flavor_blind = true\nconsider_charge_conjugation = false", False),
+        ("", False),
+    ],
+)
+def test_the_plan_says_charge_conjugates_are_generated_separately(
+    tmp_path, model_cache, extra, reported
+):
+    from pyamplicol.generation.loop_service import CHARGE_CONJUGATION_NOTE
+
+    card = _card(tmp_path, model_cache, expression="u g > u g", name="ug", extra=extra)
+    _compiled(card)
+    coverage = _plan(card)["estimated_coverage"]
+    if reported:
+        assert coverage["charge_conjugate_grouping"] == CHARGE_CONJUGATION_NOTE
+    else:
+        assert "charge_conjugate_grouping" not in coverage
+
+
+def test_the_generation_says_it_once(tmp_path, model_cache, caplog):
+    import logging
+
+    from pyamplicol.generation.loop_service import CHARGE_CONJUGATION_NOTE
+
+    card = _card(
+        tmp_path,
+        model_cache,
+        expression="u u~ > g g",
+        name="uugg",
+        extra="flavor_blind = true",
+    )
+    with caplog.at_level(logging.INFO, logger="pyamplicol"):
+        Generator(resolve_config(card)).generate(
+            ProcessSet(
+                (
+                    ProcessRequest.parse("u u~ > g g", name="uugg"),
+                    ProcessRequest.parse("s s~ > g g", name="ssgg"),
+                )
+            ),
+            tmp_path / "artifact",
+        )
+    said = [r for r in caplog.records if r.getMessage() == CHARGE_CONJUGATION_NOTE]
+    assert len(said) == 1
+    assert said[0].name.startswith("pyamplicol")

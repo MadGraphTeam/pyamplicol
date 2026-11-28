@@ -532,7 +532,9 @@ analyze_process_groups = "none"      # or "numerical", run after generation
 `flavor_blind` is an assumption, not a check: members whose flavour relabelling
 is not a symmetry of the model couplings are reported with a warning.
 `consider_charge_conjugation` matters only with `flavor_blind` or numerical
-analysis. See
+analysis, and only for tree-level requests: one-loop flavour grouping
+generates charge-conjugate subprocesses separately (the dry run and the
+generation say so). See
 [Group equivalent subprocesses](command-line-interface.md#group-equivalent-subprocesses)
 for the CLI flags and the `group-processes` command, and
 [Process Grouping](process-grouping.md) for the full description.
