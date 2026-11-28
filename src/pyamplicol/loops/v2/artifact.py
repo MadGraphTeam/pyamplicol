@@ -1480,26 +1480,53 @@ def _select(manifest: Any, process: str | None) -> tuple[Mapping[str, Any], Any]
         for member in group.members
         if member.process_id != representative and not member.generated
     ]
-    for fold in (None, False, True):
-        for representative, member in members:
-            if (
-                member.process_id == process
-                if fold is None
-                else _selector_text(member.expression, fold=fold)
-                == _selector_text(process, fold=fold)
-            ):
-                return _group_record(records, representative, member, process)
     for representative, member in members:
-        permutation = side_permutation(member.expression, process)
-        if permutation is not None:
-            # Representative leg r -> member leg -> public leg.
-            composed = replace(
-                member,
-                expression=permuted_expression(member.expression, permutation),
-                pdgs=_permuted(member.pdgs, permutation),
-                permutation=tuple(permutation[m] for m in member.permutation),
+        if member.process_id == process:
+            return _group_record(records, representative, member, process)
+    # As the native selector: one member of an expression, else the ids of
+    # every member it names (a process stored twice is ambiguous in every
+    # spelling); then the least displaced side permutation, likewise.
+    for fold in (False, True):
+        found = [
+            (representative, member)
+            for representative, member in members
+            if _selector_text(member.expression, fold=fold)
+            == _selector_text(process, fold=fold)
+        ]
+        if len(found) > 1:
+            choices = ", ".join(sorted(member.process_id for _r, member in found))
+            raise EvaluationError(
+                f"process expression {process!r} is ambiguous; select one of "
+                f"these process-group member ids: {choices}"
             )
-            return _group_record(records, representative, composed, process)
+        if found:
+            return _group_record(records, *found[0], process)
+    permuted_members = [
+        (representative, member, permutation)
+        for representative, member in members
+        if (permutation := side_permutation(member.expression, process)) is not None
+    ]
+    if len(permuted_members) > 1:
+        least = min(_displacement(item[2]) for item in permuted_members)
+        permuted_members = [
+            item for item in permuted_members if _displacement(item[2]) == least
+        ]
+    if len(permuted_members) > 1:
+        choices = ", ".join(sorted(item[1].process_id for item in permuted_members))
+        raise EvaluationError(
+            f"process expression {process!r} is permutation-ambiguous; select "
+            f"one of these process-group member ids: {choices}"
+        )
+    if permuted_members:
+        representative, member, permutation = permuted_members[0]
+        # Representative leg r -> member leg -> public leg.
+        composed = replace(
+            member,
+            expression=permuted_expression(member.expression, permutation),
+            pdgs=_permuted(member.pdgs, permutation),
+            permutation=tuple(permutation[m] for m in member.permutation),
+        )
+        return _group_record(records, representative, composed, process)
     raise EvaluationError(f"artifact has no process {process!r}")
 
 
