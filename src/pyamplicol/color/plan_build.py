@@ -7,6 +7,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import replace
 from itertools import permutations
 
+from ..config.errors import ConfigurationError
 from ..processes.ir import CanonicalProcessIR, ProcessLegIR
 from .plan_types import (
     GenericColorPlan,
@@ -427,6 +428,47 @@ def _legs_by_labels(
     return tuple(by_label[label] for label in labels)
 
 
+def validate_reference_color_order(
+    process: CanonicalProcessIR,
+    reference_color_order: Sequence[int] | None,
+) -> None:
+    """Refuse a malformed ``process.reference_color_order`` before any work.
+
+    A reference is an ordering of the process's coloured legs: each coloured
+    leg exactly once. Colourless legs of the process may stand anywhere in it
+    (each at most once) and are ignored, as the shipped examples write them.
+    A repeated label, a label the process does not have, or a missing
+    coloured leg is a configuration error. A well-formed ordering that spells
+    no colour sector (a quark line interrupted by another leg) keeps its
+    meaning: it reorders nothing. A process without coloured legs has nothing
+    to name: only colourless labels are well formed there, and order nothing.
+    """
+
+    if not reference_color_order:
+        return
+    reference = tuple(int(label) for label in reference_color_order)
+    labels = [int(leg.label) for leg in process.legs]
+    coloured = {
+        *process.fundamental_labels,
+        *process.antifundamental_labels,
+        *process.adjoint_labels,
+    }
+    problems: list[str] = []
+    repeated = sorted({label for label in reference if reference.count(label) > 1})
+    if repeated:
+        problems.append(f"repeats the labels {repeated}")
+    if foreign := sorted(set(reference) - set(labels)):
+        problems.append(f"names labels {foreign} the process does not have")
+    if missing := sorted(coloured - set(reference)):
+        problems.append(f"leaves out the coloured legs {missing}")
+    if problems:
+        raise ConfigurationError(
+            f"process.reference_color_order={list(reference)} is not an ordering "
+            f"of the coloured legs {sorted(coloured)} of {process.process!r} "
+            f"(legs {labels}): it " + " and ".join(problems)
+        )
+
+
 def _reference_lc_color_sectors(
     process: CanonicalProcessIR,
     reference_color_order: Sequence[int] | None,
@@ -443,7 +485,8 @@ def _reference_lc_color_sectors(
         *process.adjoint_labels,
     }
     coloured_word = tuple(label for label in reference if label in coloured_labels)
-    if sorted(coloured_word) != sorted(coloured_labels):
+    if not coloured_word or sorted(coloured_word) != sorted(coloured_labels):
+        # A colourless process has no sector to name.
         return ()
     if not process.fundamental_labels:
         if (
@@ -507,8 +550,11 @@ def _reference_open_lines(
             fundamental_label = start
             antifundamental_label = stop
         else:
+            # The same line read from its antiquark end: its gluons in the
+            # reverse order.
             fundamental_label = stop
             antifundamental_label = start
+            middle = tuple(reversed(middle))
         if by_label[fundamental_label].color_role != "fundamental":
             return None
         if by_label[antifundamental_label].color_role != "antifundamental":

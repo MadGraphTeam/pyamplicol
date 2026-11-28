@@ -9,13 +9,22 @@ value equal those of the default order, in the recurrence, compiled and
 on-the-fly modes at LC, NLC and full colour, and every advertised flow is
 selectable. With a cap the reference sector is kept (it is the plan's first)
 and the kept flows are distinct and equal the same flows of the complete
-artifact.
+artifact. An open line read from its antiquark end is the same line, its
+gluons in the reverse order.
+
+A reference is an ordering of the process's coloured legs (colourless legs
+may stand in it and are ignored): a repeated, foreign or missing label is a
+configuration error before generation in every mode; a well-formed order that
+spells no sector reorders nothing, and a colourless process has nothing to
+name. The eager mode refuses a colour-sector subset of a plan with folded
+trace reflections.
 """
 
 from __future__ import annotations
 
 import importlib.util
 import math
+import re
 from itertools import permutations
 from pathlib import Path
 
@@ -25,6 +34,7 @@ from pyamplicol import Generator, ModelSource, Runtime
 from pyamplicol.api.errors import GenerationError
 from pyamplicol.config import (
     ColorConfig,
+    ConfigurationError,
     EvaluatorConfig,
     EvaluatorOptimizationConfig,
     GenerationConfig,
@@ -359,3 +369,307 @@ def test_the_cap_boundary_of_an_ordinary_plan(
             )
             total = [a + b for a, b in zip(total, expected, strict=True)]
         _assert_close(values, total, (cap, "subset"))
+
+
+def _flow_values(runtime: Runtime, points) -> dict[str, list[float]]:
+    return {
+        flow.id: _real(runtime.evaluate(points, color_flows=[flow.id]))
+        for flow in runtime.physics.color_flows
+    }
+
+
+@pytest.mark.parametrize("mode", ("compiled", "recurrence", "on-the-fly", "eager"))
+@pytest.mark.parametrize(
+    ("process", "spellings"),
+    [
+        # The incoming u is the outgoing antiquark 1: a line from 2 to 1.
+        pytest.param("u u~ > g g", ((2, 3, 4, 1), (1, 4, 3, 2)), id="one-line"),
+        pytest.param(
+            "u u~ > g g g", ((2, 3, 5, 4, 1), (1, 4, 5, 3, 2)), id="one-line-three"
+        ),
+        # Lines 2 -> 5 6 -> 1 and 3 -> 4, each read from either end, in either
+        # order.
+        pytest.param(
+            "d d~ > u u~ g g",
+            (
+                (2, 5, 6, 1, 3, 4),
+                (1, 6, 5, 2, 4, 3),
+                (4, 3, 2, 5, 6, 1),
+                (3, 4, 1, 6, 5, 2),
+            ),
+            id="two-lines",
+        ),
+    ],
+)
+def test_a_line_read_from_its_other_end_is_the_same_line(
+    generate, process: str, spellings, mode: str
+) -> None:
+    """Every spelling of the same open lines names the same sector: a cap of
+    one (compiled, eager) or the fixed sector 0 (compiled, recurrence) keeps
+    the same flow with the same value, that flow's value in the complete
+    artifact; on-the-fly lists it first."""
+
+    complete = generate("sm", process, "compiled", "lc", None)
+    points = _points(complete)
+    reference_values = _flow_values(complete, points)
+    selections = {
+        "compiled": ({"max_color_sectors": 1}, {"selected_color_sector_ids": [0]}),
+        "recurrence": ({"selected_color_sector_ids": [0]},),
+        "eager": ({"max_color_sectors": 1},),
+        "on-the-fly": ({},),
+    }[mode]
+    for selection in selections:
+        kept = set()
+        for spelling in spellings:
+            runtime = generate(
+                "sm",
+                process,
+                mode,
+                "lc",
+                None,
+                reference_color_order=list(spelling),
+                **selection,
+            )
+            flows = [flow.id for flow in runtime.physics.color_flows]
+            first = flows[0] if mode == "on-the-fly" else None
+            if mode != "on-the-fly":
+                assert len(flows) == 1, (spelling, flows)
+                first = flows[0]
+            kept.add(first)
+            _assert_close(
+                _real(runtime.evaluate(points, color_flows=[first])),
+                reference_values[first],
+                (spelling, first),
+            )
+        assert len(kept) == 1, (selection, kept)
+
+
+_MALFORMED = (
+    pytest.param([1, 2, 2, 4], r"repeats the labels \[2\]", id="repeated"),
+    pytest.param([1, 2, 3], r"leaves out the coloured legs \[4\]", id="missing"),
+    pytest.param([1, 2, 3, 4, 91], r"names labels \[91\]", id="foreign"),
+)
+
+
+@pytest.mark.parametrize("cap", [None, 1], ids=["uncapped", "cap-1"])
+@pytest.mark.parametrize("mode", ("compiled", "recurrence", "on-the-fly", "eager"))
+@pytest.mark.parametrize(("word", "problem"), _MALFORMED)
+def test_a_malformed_reference_is_a_configuration_error(
+    tmp_path: Path, word, problem: str, mode: str, cap
+) -> None:
+    """A reference that is not an ordering of the coloured legs is refused
+    in the dry run and in generation, before anything is written, with or
+    without a cap (on-the-fly refuses any cap first, for its own reason)."""
+
+    from dataclasses import replace
+
+    if mode == "on-the-fly" and cap is not None:
+        pytest.skip("on-the-fly refuses a cap before it reads the process")
+    selection = {"reference_color_order": word}
+    if cap is not None:
+        selection["max_color_sectors"] = cap
+    config = _config(mode, "lc", None, **selection)
+    message = r"process\.reference_color_order=.* is not an ordering of the "
+    message += r"coloured legs \[1, 2, 3, 4\] of 'g g > g g' .*" + problem
+    with pytest.raises(ConfigurationError, match=message):
+        Generator(replace(config, model=ModelConfig())).plan(
+            "g g > g g", model=_model("sm")
+        )
+    output = tmp_path / "artifact"
+    with pytest.raises(ConfigurationError, match=message):
+        Generator(config).generate("g g > g g", output, model=_model("sm"))
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(("word", "problem"), _MALFORMED)
+def test_the_cli_and_the_run_card_refuse_a_malformed_reference(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], word, problem: str
+) -> None:
+    from pyamplicol.cli.main import main as cli_main
+
+    setting = "process.reference_color_order=[" + ",".join(map(str, word)) + "]"
+    for dry_run in ((), ("--dry-run",)):
+        output = tmp_path / f"cli{len(dry_run)}"
+        code = cli_main(
+            [
+                "generate",
+                "g g > g g",
+                str(output),
+                "--set",
+                setting,
+                *dry_run,
+            ]
+        )
+        assert code == 2
+        assert re.search(problem, capsys.readouterr().err)
+        assert not output.exists()
+    card = tmp_path / "card.toml"
+    card.write_text(
+        'action = "generate"\n'
+        "[process]\n"
+        'entries = [{ expression = "g g > g g" }]\n'
+        f"reference_color_order = {list(word)}\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "card-artifact"
+    assert cli_main([str(card), "generate", "--output", str(output)]) == 2
+    assert re.search(problem, capsys.readouterr().err)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("mode", ("compiled", "recurrence"))
+def test_a_well_formed_order_that_names_no_sector_reorders_nothing(
+    generate, mode: str
+) -> None:
+    """``u u~ > g g`` ``[3, 1, 2, 4]`` interrupts the quark line with a gluon:
+    a well-formed order of the coloured legs that spells no sector keeps the
+    default order (fixed sector 0 is the default's first flow). A colourless
+    leg in a reference is ignored: ``[5, 2, 3, 4, 1]`` names the line
+    2 -> 3 4 -> 1 of ``u u~ > g g z``."""
+
+    for process, word, expected in (
+        ("u u~ > g g", [3, 1, 2, 4], None),
+        ("u u~ > g g z", [5, 2, 3, 4, 1], "flow:2,3,4,1"),
+        ("u u~ > g g z", [1, 4, 5, 3, 2], "flow:2,3,4,1"),
+    ):
+        complete = generate("sm", process, mode, "lc", None)
+        points = _points(complete)
+        first = expected or complete.physics.color_flows[0].id
+        fixed = generate(
+            "sm",
+            process,
+            mode,
+            "lc",
+            None,
+            reference_color_order=word,
+            selected_color_sector_ids=[0],
+        )
+        assert [flow.id for flow in fixed.physics.color_flows] == [first], word
+        _assert_close(
+            _real(fixed.evaluate(points)),
+            _real(complete.evaluate(points, color_flows=[first])),
+            word,
+        )
+
+
+@pytest.mark.parametrize("accuracy", ["lc", "nlc", "full"])
+@pytest.mark.parametrize("mode", _MODES)
+def test_a_colourless_process_has_no_sector_to_name(
+    generate, tmp_path: Path, mode: str, accuracy: str
+) -> None:
+    """``e+ e- > mu+ mu-`` with ``[4, 3, 2, 1]``: an ordering of its legs that
+    names nothing; the artifact loads and equals the default one (on-the-fly
+    stores no reference word). A label it does not have is refused."""
+
+    default = generate("sm", "e+ e- > mu+ mu-", mode, accuracy, None)
+    points = _points(default)
+    reordered = generate(
+        "sm",
+        "e+ e- > mu+ mu-",
+        mode,
+        accuracy,
+        None,
+        reference_color_order=[4, 3, 2, 1],
+    )
+    _assert_close(_real(reordered.evaluate(points)), _real(default.evaluate(points)), 0)
+    with pytest.raises(ConfigurationError, match=r"names labels \[5\]"):
+        Generator(
+            _config(mode, accuracy, None, reference_color_order=[1, 2, 3, 5])
+        ).generate("e+ e- > mu+ mu-", tmp_path / "foreign", model=_model("sm"))
+
+
+_FOLDED_SUBSETS = (
+    pytest.param({"max_color_sectors": 1}, id="cap"),
+    pytest.param({"selected_color_sector_ids": [0]}, id="fixed"),
+    pytest.param({"max_color_sectors": 2, "selected_color_sector_ids": [1]}, id="both"),
+)
+
+
+@pytest.mark.parametrize("reference", [None, [2, 4, 1, 3]], ids=["plain", "reference"])
+@pytest.mark.parametrize("selection", _FOLDED_SUBSETS)
+def test_eager_refuses_a_subset_of_a_folded_plan(
+    tmp_path: Path, selection, reference
+) -> None:
+    """``g g > g g`` folds each trace with its reflection: an eager subset of
+    its sectors would publish both orientations of a kept trace and serve
+    half of their value, so it is refused before any work, in the dry run
+    and in generation."""
+
+    from dataclasses import replace
+
+    extra = {} if reference is None else {"reference_color_order": reference}
+    config = _config("eager", "lc", None, **selection, **extra)
+    message = (
+        r"the eager mode does not generate a subset of the colour sectors of "
+        r"'g g > g g'.*compiled or recurrence mode"
+    )
+    with pytest.raises(GenerationError, match=message):
+        Generator(replace(config, model=ModelConfig())).plan(
+            "g g > g g", model=_model("sm")
+        )
+    with pytest.raises(GenerationError, match=message):
+        Generator(config).generate("g g > g g", tmp_path / "a", model=_model("sm"))
+    assert not (tmp_path / "a").exists()
+
+
+@pytest.mark.parametrize(
+    ("process", "selection", "reference"),
+    [
+        # A folded plan kept whole.
+        pytest.param("g g > g g", {"max_color_sectors": 3}, None, id="folded-cap-n"),
+        pytest.param(
+            "g g > g g", {"selected_color_sector_ids": [0, 1, 2]}, None, id="folded-all"
+        ),
+        # A quark line folds nothing: every subset is served.
+        pytest.param("u u~ > g g", {"max_color_sectors": 1}, None, id="line-cap"),
+        pytest.param(
+            "u u~ > g g", {"selected_color_sector_ids": [0]}, None, id="line-fixed"
+        ),
+        pytest.param(
+            "u u~ > g g", {"max_color_sectors": 1}, [1, 4, 3, 2], id="line-cap-ref"
+        ),
+        pytest.param(
+            "u u~ > g g",
+            {"selected_color_sector_ids": [0]},
+            [1, 4, 3, 2],
+            id="line-fixed-ref",
+        ),
+    ],
+)
+def test_eager_serves_every_other_subset(
+    generate, process: str, selection, reference
+) -> None:
+    complete = generate("sm", process, "eager", "lc", None)
+    points = _points(complete)
+    values = _flow_values(complete, points)
+    extra = {} if reference is None else {"reference_color_order": reference}
+    subset = generate("sm", process, "eager", "lc", None, **selection, **extra)
+    flows = [flow.id for flow in subset.physics.color_flows]
+    expected = [sum(values[flow][i] for flow in flows) for i in range(len(points))]
+    _assert_close(_real(subset.evaluate(points)), expected, flows)
+    if process == "u u~ > g g":
+        assert flows == ["flow:2,3,4,1"]
+
+
+@pytest.mark.parametrize("accuracy", ["nlc", "full"])
+@pytest.mark.parametrize("mode", _MODES)
+def test_every_single_helicity_has_its_squared_order_split(
+    generate, mode: str, accuracy: str
+) -> None:
+    """``g g > g g`` with ``[1, 3, 4, 2]``: every one of the 16 helicities,
+    physically vanishing ones included (their weights are roundoff), has its
+    one squared-order partial, equal to its value."""
+
+    runtime = generate(
+        "sm", "g g > g g", mode, accuracy, None, reference_color_order=[1, 3, 4, 2]
+    )
+    points = _points(runtime)
+    scale = max(abs(value) for value in _real(runtime.evaluate(points)))
+    helicities = [helicity.id for helicity in runtime.physics.helicities]
+    assert len(helicities) == 16
+    for helicity in helicities:
+        value = _real(runtime.evaluate(points, helicities=[helicity]))
+        split = runtime.evaluate_orders(points, helicities=[helicity])
+        (order,) = split.orders
+        for a, b in zip(_real(split.for_order(order)), value, strict=True):
+            assert a == pytest.approx(b, rel=1e-12, abs=1e-14 * scale), helicity

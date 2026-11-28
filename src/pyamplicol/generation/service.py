@@ -28,6 +28,7 @@ from pyamplicol._internal.versions import (
 )
 from pyamplicol.api.errors import (
     ArtifactError,
+    ConfigurationError,
     GenerationError,
     ModelError,
     PyAmpliColError,
@@ -73,6 +74,7 @@ from ..color.plan_build import (
     _canonical_cycle,
     _reference_lc_color_sectors,
     _sector_tensor_key,
+    validate_reference_color_order,
 )
 from ..models.adjoint_color_certificate import adjoint_tree_color_basis_is_proven
 from ..models.base import CouplingOrders, Model
@@ -3521,6 +3523,7 @@ class GenerationBackend:
                 resolved_model,
                 PhaseHandle(task_id, self._progress, len(processes.requests)),
             )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -3571,7 +3574,7 @@ class GenerationBackend:
                 self._progress.emit(
                     ProgressEnd(task_id, success=False, message=str(exc))
                 )
-            if isinstance(exc, (GenerationError, ModelError)):
+            if isinstance(exc, (GenerationError, ModelError, ConfigurationError)):
                 raise
             raise GenerationError(str(exc)) from exc
         if self._progress is not None:
@@ -3717,6 +3720,7 @@ class GenerationBackend:
                 phase.summary = f"{len(expanded):,} concrete " + (
                     "process" if len(expanded) == 1 else "processes"
                 )
+            self._validate_concrete_colour_selection(expanded, resolved_model)
             self._apply_symbolica_resource_policy(
                 license_state,
                 process_count=len(expanded),
@@ -4277,6 +4281,78 @@ class GenerationBackend:
             "run time on a complete artifact (eager, compiled, recurrence or "
             "on-the-fly)"
         )
+
+    def _validate_concrete_colour_selection(
+        self,
+        expanded: Sequence[_ExpandedProcess],
+        resolved_model: _ResolvedModel,
+    ) -> None:
+        """The colour selectors checked against each concrete process, before
+        any colour plan or generation: a malformed reference order is a
+        configuration error in every mode, and the eager mode refuses a
+        colour-sector subset of a plan with folded trace reflections."""
+
+        selection = self._process_selection
+        for entry in expanded:
+            validate_reference_color_order(
+                entry.process_ir, selection.reference_color_order
+            )
+        if (
+            not self._eager_execution_enabled
+            or self._color_accuracy != "lc"
+            or (
+                selection.max_color_sectors is None
+                and selection.selected_color_sector_ids is None
+            )
+        ):
+            return
+        model = resolved_model.model
+        if model is None and resolved_model.compiled is not None:
+            from ..models.external import CompiledUFOModel
+
+            model = CompiledUFOModel(resolved_model.compiled)
+        if model is None:  # pragma: no cover - model preflight invariant
+            raise GenerationError("eager colour selection requires a resolved model")
+        for entry in expanded:
+            process = entry.process_ir
+            if self._fft_color_basis(
+                process, model
+            ) != "trace" or not model.lc_trace_reflection_equivalence_is_proven(
+                process
+            ):
+                continue
+            plan = build_color_plan(
+                process,
+                basis="trace",
+                color_accuracy="lc",
+                max_sectors=selection.max_color_sectors,
+                reference_color_order=selection.reference_color_order,
+                fold_trace_reflections=True,
+            )
+            selected = selection.selected_color_sector_ids
+            if not plan.truncated and (
+                selected is None
+                or {int(sector.id) for sector in plan.sectors} <= set(selected)
+            ):
+                continue
+            settings = ", ".join(
+                f"process.{name}={value}"
+                for name, value in (
+                    ("max_color_sectors", selection.max_color_sectors),
+                    (
+                        "selected_color_sector_ids",
+                        None if selected is None else sorted(selected),
+                    ),
+                )
+                if value is not None
+            )
+            raise GenerationError(
+                "the eager mode does not generate a subset of the colour sectors "
+                f"of {process.process!r}, whose leading-colour traces are folded "
+                f"with their reflections ({settings}); generate the subset in the "
+                "compiled or recurrence mode, or select the flows at run time on "
+                "a complete artifact (eager, compiled, recurrence or on-the-fly)"
+            )
 
     def _validate_on_the_fly_process_selection(self) -> None:
         if not self._on_the_fly_execution_enabled:
