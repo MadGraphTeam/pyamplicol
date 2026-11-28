@@ -507,6 +507,11 @@ reduction_direction = false
 # inputs, evaluating the master integrals again (requires
 # reduction_direction). Default false.
 rescaled = false
+# evaluation.stability_checks.floor_weight: Weight w of the first-order term
+# of a loop-induced estimate's rounding floor, w x 2^14 u (CLI
+# --stability-floor-weight). Default null: by the highest-point loop the
+# process reduces (w = 1 up to pentagons, 2^-6 hexagons, 2^-12 beyond).
+floor_weight = 1.0
 
 [evaluation.phase_space]
 # Flat (RAMBO on diet) phase-space points that evaluate and profile draw when
