@@ -2672,17 +2672,12 @@ fn load_evaluator_state_bytes(
     } else {
         symbolica::state::StateMap::default()
     };
-    // Decoding the JIT members loads their stored SymJIT applications: never
-    // on huge pages (`crate::symjit_huge_pages`), neither these nor a later
-    // compilation with the saved settings.
-    let payload = crate::symjit_huge_pages::without_huge_pages(payload);
+    // Decoding the JIT members loads their stored SymJIT applications and
+    // compiles their nested functions: never on huge pages
+    // (`crate::symjit_huge_pages`), neither these nor a later compilation
+    // with the saved settings.
     let ((_, settings, evaluator, _, jit_complex), consumed) =
-        bincode::decode_from_slice_with_context::<_, SavedEvaluator, _>(
-            &payload,
-            bincode::config::standard(),
-            state_map,
-        )
-        .map_err(|error| incompatible(&error))?;
+        decode_saved_evaluator(payload, &state_map).map_err(|error| incompatible(&error))?;
     ensure_evaluator_state_consumed(display_name, payload.len(), consumed)?;
     Ok((without_huge_page_option(settings), evaluator, jit_complex))
 }
@@ -2763,6 +2758,100 @@ type SavedEvaluator = (
     Option<JITCompiledEvaluator<f64>>,
     Option<JITCompiledEvaluator<Complex<f64>>>,
 );
+
+/// Decodes a saved evaluator's bincode payload (`SavedEvaluator`) without any
+/// SymJIT code on huge pages (`crate::symjit_huge_pages`); returns it and the
+/// bytes consumed.
+///
+/// Decoding a JIT member compiles: Symbolica's decoder loads the member's
+/// stored application and JIT-compiles each of its nested (non-inlined)
+/// functions from `Config::default()` (`./symjit.toml`, `$SYMJIT_TOML`) and
+/// the member's stored `JITCompilationSettings`, either of which can ask for
+/// huge pages. So the stored application headers are cleared, and each
+/// member is decoded from its own bytes with its stored settings replaced by
+/// `without_huge_page_option` of them: the payload is walked element by
+/// element with Symbolica's own decoders (a bincode tuple is its elements in
+/// order; an `Option` is a one-byte variant, then the value; a JIT member is
+/// its functions, its stored application, then its settings), so the
+/// exact evaluator is decoded once.
+#[cfg(feature = "symbolica-runtime")]
+fn decode_saved_evaluator(
+    payload: &[u8],
+    state_map: &symbolica::state::StateMap,
+) -> Result<(SavedEvaluator, usize), String> {
+    use symbolica::evaluate::{EvaluationDomain, ExternalFunctionContainer, JITCompiledNumber};
+
+    fn next<'m, V: bincode::Decode<BorrowedStateMap<'m>>>(
+        payload: &[u8],
+        at: &mut usize,
+        state_map: &'m symbolica::state::StateMap,
+    ) -> Result<V, String> {
+        let (value, used) = bincode::decode_from_slice_with_context(
+            &payload[*at..],
+            bincode::config::standard(),
+            BorrowedStateMap(state_map),
+        )
+        .map_err(|error| error.to_string())?;
+        *at += used;
+        Ok(value)
+    }
+
+    fn member<'m, T>(
+        payload: &[u8],
+        at: &mut usize,
+        state_map: &'m symbolica::state::StateMap,
+    ) -> Result<Option<JITCompiledEvaluator<T>>, String>
+    where
+        T: JITCompiledNumber + EvaluationDomain + Clone + bincode::Decode<BorrowedStateMap<'m>>,
+    {
+        match next::<u8>(payload, at, state_map)? {
+            0 => return Ok(None),
+            1 => {}
+            variant => return Err(format!("unexpected variant {variant} of a JIT member")),
+        }
+        let start = *at;
+        next::<Vec<ExternalFunctionContainer<T>>>(payload, at, state_map)?;
+        next::<Vec<u8>>(payload, at, state_map)?;
+        let settings_start = *at;
+        let settings = next::<JITCompilationSettings>(payload, at, state_map)?;
+        let mut bytes = payload[start..settings_start].to_vec();
+        bincode::encode_into_std_write(
+            without_huge_page_option(settings),
+            &mut bytes,
+            bincode::config::standard(),
+        )
+        .map_err(|error| error.to_string())?;
+        let (jit, used) = bincode::decode_from_slice_with_context::<_, JITCompiledEvaluator<T>, _>(
+            &bytes,
+            bincode::config::standard(),
+            BorrowedStateMap(state_map),
+        )
+        .map_err(|error| error.to_string())?;
+        if used != bytes.len() {
+            return Err("a JIT member decoded to another length".into());
+        }
+        Ok(Some(jit))
+    }
+
+    let payload = crate::symjit_huge_pages::without_huge_pages(payload);
+    let payload = payload.as_ref();
+    let mut at = 0;
+    let native_code_generation = next::<bool>(payload, &mut at, state_map)?;
+    let settings = next::<JITCompilationSettings>(payload, &mut at, state_map)?;
+    let evaluator = next::<ExpressionEvaluator<Complex<Rational>>>(payload, &mut at, state_map)?;
+    let jit_real = member::<f64>(payload, &mut at, state_map)?;
+    let jit_complex = member::<Complex<f64>>(payload, &mut at, state_map)?;
+    Ok((
+        (
+            native_code_generation,
+            settings,
+            evaluator,
+            jit_real,
+            jit_complex,
+        ),
+        at,
+    ))
+}
 
 /// Suffix of a saved evaluator's symbol imported under a fresh name.
 #[cfg(feature = "symbolica-runtime")]
@@ -2846,16 +2935,10 @@ pub(crate) fn canonical_saved_evaluator(bytes: &[u8]) -> RusticolResult<Option<V
         Ok::<_, RusticolError>((section.len() - rest.len(), state_map))
     };
     let decode = |payload: &[u8], state_map: &StateMap| {
-        // The JIT members' stored applications load at decode: never on huge
-        // pages (`crate::symjit_huge_pages`).
-        let payload = crate::symjit_huge_pages::without_huge_pages(payload);
-        bincode::decode_from_slice_with_context::<_, SavedEvaluator, _>(
-            &payload,
-            bincode::config::standard(),
-            BorrowedStateMap(state_map),
-        )
-        .map(|(saved, _)| saved)
-        .map_err(|error| incompatible(&error))
+        // The JIT members load and compile at decode: never on huge pages.
+        decode_saved_evaluator(payload, state_map)
+            .map(|(saved, _)| saved)
+            .map_err(|error| incompatible(&error))
     };
     let encoded = |evaluator: &ExpressionEvaluator<Complex<Rational>>| {
         bincode::encode_to_vec(evaluator, bincode::config::standard())
@@ -4092,11 +4175,141 @@ mod huge_page_tests {
         assert_eq!(value(&mut jit), Complex::new(0.0, 0.75));
     }
 
-    /// One test for both routes: an unlicensed Symbolica admits one thread
+    /// `f(x)·y + 3` with `f(z) = z² + 1` kept as a separate (non-inlined)
+    /// function: decoding its JIT member compiles `f`.
+    fn nested_evaluator() -> ExpressionEvaluator<Complex<Rational>> {
+        use symbolica::evaluate::{FunctionRegistrationOptions, InliningPolicy};
+        use symbolica::symbol;
+        let evaluator = parse!(
+            "pyamplicol_huge_pages::f(pyamplicol_huge_pages::x) * pyamplicol_huge_pages::y + 3"
+        )
+        .evaluator(&[
+            parse!("pyamplicol_huge_pages::x"),
+            parse!("pyamplicol_huge_pages::y"),
+        ])
+        .add_function_with_options(
+            symbol!("pyamplicol_huge_pages::f"),
+            vec![symbol!("pyamplicol_huge_pages::z")],
+            parse!("pyamplicol_huge_pages::z^2 + 1"),
+            FunctionRegistrationOptions::new().inlining(InliningPolicy::Never),
+        )
+        .unwrap()
+        .build()
+        .unwrap();
+        assert_eq!(evaluator.export_instructions().sub_evaluators.len(), 1);
+        evaluator
+    }
+
+    /// f(1.5)·(−2 + 0.5i) + 3, exact in binary.
+    fn nested_value() -> Complex<f64> {
+        Complex::new(-3.5, 1.625)
+    }
+
+    /// A version 2 save of the nested evaluator whose JIT member stores
+    /// `stored` as its settings (the member's last element, so the payload's
+    /// last bytes).
+    fn nested_save(stored: JITCompilationSettings) -> Vec<u8> {
+        let evaluator = nested_evaluator();
+        let compiled_with = JITCompilationSettings::default();
+        let jit = evaluator
+            .jit_compile::<Complex<f64>>(compiled_with.clone())
+            .unwrap();
+        let mut payload = bincode::encode_to_vec(
+            (
+                true,
+                JITCompilationSettings::default(),
+                &evaluator,
+                None::<JITCompiledEvaluator<f64>>,
+                Some(jit),
+            ),
+            bincode::config::standard(),
+        )
+        .unwrap();
+        let tail = bincode::encode_to_vec(compiled_with, bincode::config::standard()).unwrap();
+        assert!(payload.ends_with(&tail));
+        payload.truncate(payload.len() - tail.len());
+        payload.extend(bincode::encode_to_vec(stored, bincode::config::standard()).unwrap());
+        let mut bytes = SAVED_EVALUATOR_MAGIC.to_vec();
+        bytes.extend([SAVED_EVALUATOR_V2, 1, 0]);
+        bytes.extend_from_slice(&payload);
+        bytes
+    }
+
+    /// Symbolica's own decode of the payload, without pyAmpliCol's walk.
+    fn plain_decode(bytes: &[u8]) -> Result<SavedEvaluator, String> {
+        let envelope = saved_evaluator_envelope(bytes).unwrap();
+        bincode::decode_from_slice_with_context::<_, SavedEvaluator, _>(
+            envelope.rest,
+            bincode::config::standard(),
+            symbolica::state::StateMap::default(),
+        )
+        .map(|(saved, _)| saved)
+        .map_err(|error| error.to_string())
+    }
+
+    /// Whether a huge-page allocation fails here: Linux with a huge-page size
+    /// and none preallocated, as on our test hosts. There SymJIT's huge-page
+    /// path cannot compile, so a compilation that asks for huge pages fails
+    /// (Symbolica's own decode is the control), and a success shows that none
+    /// was attempted.
+    fn huge_pages_fail_here() -> bool {
+        let meminfo = std::fs::read_to_string("/proc/meminfo").unwrap_or_default();
+        let field = |name: &str| {
+            meminfo
+                .lines()
+                .find_map(|line| line.strip_prefix(name))
+                .map(|rest| rest.trim().trim_end_matches("kB").trim().to_owned())
+        };
+        field("Hugepagesize:").is_some() && field("HugePages_Total:").as_deref() == Some("0")
+    }
+
+    /// Both ways a nested function's compilation could ask for huge pages:
+    /// the member's stored settings, and the host's SymJIT TOML.
+    fn nested_functions_compile_on_ordinary_pages() {
+        let control = huge_pages_fail_here();
+        let check = |bytes: &[u8], route: &str| {
+            if control {
+                // SymJIT's huge-page allocation fails here: an error, or a
+                // panic of its `unwrap` (2.28.5 machine.rs).
+                let plain = std::panic::catch_unwind(|| plain_decode(bytes));
+                assert!(
+                    !matches!(plain, Ok(Ok(_))),
+                    "{route}: Symbolica's own decode should attempt huge pages"
+                );
+            }
+            let (_, _, jit) = load_evaluator_state_bytes(bytes, route).unwrap();
+            let mut jit = jit.expect("the JIT member is kept");
+            assert_eq!(value(&mut jit), nested_value(), "{route}");
+            canonical_saved_evaluator(bytes).unwrap();
+        };
+        // The member's stored settings.
+        check(
+            &nested_save(JITCompilationSettings::default().with_option("huge", "true")),
+            "stored nested settings",
+        );
+        // The host's TOML (`Config::default()`), with neutral stored settings
+        // (saved before the TOML is set: that compile would ask too).
+        let neutral = nested_save(JITCompilationSettings::default());
+        let toml =
+            std::env::temp_dir().join(format!("pyamplicol-huge-pages-{}.toml", std::process::id()));
+        std::fs::write(&toml, "ty = \"native\"\n[options]\nhuge = true\n").unwrap();
+        // SAFETY: Symbolica tests run one per process (unlicensed: one thread).
+        unsafe { std::env::set_var("SYMJIT_TOML", &toml) };
+        let outcome = std::panic::catch_unwind(|| check(&neutral, "host SymJIT TOML"));
+        // SAFETY: as above.
+        unsafe { std::env::remove_var("SYMJIT_TOML") };
+        let _ = std::fs::remove_file(&toml);
+        if let Err(panic) = outcome {
+            std::panic::resume_unwind(panic);
+        }
+    }
+
+    /// One test for every route: an unlicensed Symbolica admits one thread
     /// per process.
     #[test]
     fn saved_evaluators_that_ask_for_huge_pages_run_on_ordinary_pages() {
         a_stored_jit_member_that_asks_for_huge_pages_loads_on_ordinary_pages();
         saved_settings_that_ask_for_huge_pages_compile_on_ordinary_pages();
+        nested_functions_compile_on_ordinary_pages();
     }
 }
