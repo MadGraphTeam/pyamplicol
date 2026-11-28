@@ -528,17 +528,24 @@ def test_ufo_sm_refuses_in_every_lane(
     assert (LOOP in message) is (request in _UFO_LOOP_HINT)
 
 
-def test_ufo_compiled_lane_names_the_quark_line_cut(
-    sm_model: ModelSource, tmp_path: Path
+@pytest.mark.parametrize("lane", LANES)
+def test_ufo_lanes_name_the_quark_line_cut(
+    lane: str, sm_model: ModelSource, tmp_path: Path
 ) -> None:
-    # On a UFO model the cut acts in the DAG of the compiled lane.
-    with pytest.raises(GenerationError) as caught:
-        _generator("compiled", process=ProcessConfig(max_quark_lines=1)).generate(
-            ["u d > u d"], tmp_path / "cut", model=sm_model
-        )
-    message = str(caught.value)
-    assert "process.max_quark_lines = 1 removes it (it has 2 quark lines)" in message
-    assert LOOP not in message
+    # On a UFO model the cut acts right after expansion, in every lane.
+    cut = _generator(lane, process=ProcessConfig(max_quark_lines=1))
+    message = (
+        "request filter: process.max_quark_lines = 1 removes every concrete "
+        "process of 'u d > u d' (they have 2 quark lines), so there is nothing to "
+        "generate; raising process.max_quark_lines to 2 serves the request."
+    )
+    with pytest.raises(RequestFilterError) as caught:
+        cut.generate(["u d > u d"], tmp_path / "cut", model=sm_model)
+    assert str(caught.value) == message
+    assert caught.value.settings == ("process.max_quark_lines",)
+    with pytest.raises(RequestFilterError) as caught:
+        cut.plan(["u d > u d"], model=sm_model)
+    assert str(caught.value) == message
 
 
 # Every change a refusal states, applied as the message says: a raised limit

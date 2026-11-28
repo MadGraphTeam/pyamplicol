@@ -219,7 +219,7 @@ carry a `ValueError` message instead of a code; they are marked below.
 | Multiparticle labels | conditional | `all` always exists; `p` and `j` exist only when the model has massless triplet fermions or octet vectors; define your own labels otherwise. |
 | Repetition syntax | conditional | write `3*g`; the built-in shorthands `3g` and `[d g]` are not understood by generic expansion. |
 | `flavor_scheme` | ignored | no effect on generic models; use multiparticle labels instead. |
-| `max_quark_lines` | conditional | bounds the number of external quark-antiquark pairs per subprocess; channels above it are dropped like loop-induced ones. |
+| `max_quark_lines` | supported | bounds the number of external quark-antiquark pairs (colour-triplet endpoint pairs) per subprocess, in every tree mode and in plans: channels above it are dropped right after expansion, and the others keep the process IDs they have without the bound (the built-in model applies it in its enumeration and numbers only what it keeps: see process-selection-and-permutations.md); a request it empties is refused with `RequestFilterError` (`request-filter`), which says whether relaxing it serves the request. |
 | Permutation representatives | supported | one generated representative serves every reordering within the incoming and within the outgoing side. |
 | Basis reductions | conditional | trace-reflection folding and the shared single-trace basis are applied only to certified pure Yang-Mills gluon processes; the unreduced exact basis is used otherwise. |
 | Execution modes | conditional | `compiled` works from a raw UFO or JSON model; `recurrence` (default), `eager` and `on-the-fly` need a prepared bundle: `pyamplicol model compile MODEL out.pyamplicol-model --backend jit`. |
