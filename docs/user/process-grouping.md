@@ -344,6 +344,12 @@ The numerical analysis is refused for one-loop requests
 (`process-group-analysis`), and a loaded one-loop artifact refuses a
 process-group member of any other basis.
 
+The one-loop dry run decides the same grouping without generating: each
+process record of `estimated_coverage.processes` that a generation serves
+through an earlier one names it under `served_by`, and
+`stored_process_count` / `served_process_count` count both kinds
+(`pyamplicol model processes` lists them as `entries` and `served`).
+
 Charge conjugation is not among the one-loop relations yet: a
 charge-conjugate subprocess (`u~ g > u~ g` of `u g > u g`) is generated on its
 own, whatever `process.consider_charge_conjugation` says, and its value is its

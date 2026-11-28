@@ -180,7 +180,22 @@ def test_max_quark_lines_generation_keeps_the_values_of_the_kept_processes(
 
 @pytest.mark.parametrize(
     ("model", "expected"),
-    [(("--model", "loop_sm", "--restriction", "no_b_mass"), 21), ((), None)],
+    [
+        (
+            (
+                "--model",
+                "loop_sm",
+                "--restriction",
+                "no_b_mass",
+                # A tree request on a UFO without a prepared kernel pack is
+                # generated (so listed) by the compiled mode.
+                "--set",
+                "evaluator.execution_mode=compiled",
+            ),
+            21,
+        ),
+        ((), None),
+    ],
 )
 def test_model_processes_applies_max_quark_lines(model, expected):
     def listed(*extra):

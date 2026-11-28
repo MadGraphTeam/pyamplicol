@@ -585,15 +585,30 @@ of every concrete process on every model, at tree level and at one loop (and in
 `flavor_scheme`. See
 [Conserved charges in UFO expansion](process-grouping.md#conserved-charges-in-ufo-expansion).
 
-`pyamplicol model processes` lists exactly the processes a generation of the
-same request stores, in its order and under its names: it runs the
-generator's own expansion with every filter (the built-in SM's catalogue,
-conserved charges, `max_quark_lines`, coupling-order limits). For a tree-level
-request it leaves out the members without a tree-level diagram, which
-generation skips; for a one-loop request (`--loop-coupling-order`) it is the
-one-loop dry run's list, with the Born-less members its `process.loop_induced`
-policy skips under `skipped`. A request generation refuses is refused with
-the same error.
+`pyamplicol model processes` lists exactly what a generation of the same
+request does, in its order and under its names. It runs the generator's own
+planning for the request as given: its execution mode, colour accuracy,
+selections, coupling-order limits and grouping, and every filter of the
+expansion (the built-in SM's catalogue, conserved charges, `max_quark_lines`).
+The listing has two parts:
+
+- `entries` are the processes the generation stores (`n_stored`; `n_entries`
+  is the same number). Each entry lists under `serves` the IDs served through
+  it.
+- `served` are the processes a generation with flavour grouping
+  (`process.flavor_blind`) serves through a stored one (`n_served`). Each
+  names its stored process under `served_by`.
+
+Every listed name loads from the generated artifact (`n_addressable` =
+`n_stored` + `n_served`).
+
+For a tree-level request the listing leaves out the members without a
+tree-level diagram, which generation skips. For a one-loop request
+(`--loop-coupling-order`) it is the one-loop dry run's list, with the
+Born-less members its `process.loop_induced` policy skips under `skipped`. A
+request generation refuses (a colour selection it cannot serve, a closed
+gluon trace times an open colour line, a missing prepared kernel pack for the
+mode) is refused with the same error.
 
 ## Permutation-equivalent processes
 
