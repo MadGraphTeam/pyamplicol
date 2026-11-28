@@ -315,7 +315,9 @@ def test_one_preparation_per_recipe_and_one_lowering_per_model(
 ):
     """Two loop-induced processes (g g > h, g g > h g): the order inference
     prepares their common recipe once, each slice its own (the inferred
-    loop orders differ): three preparations, one reuse, one lowering cold;
+    loop orders differ): three preparations, one reuse, and each slice's
+    recipe found again by the check of every request before the first
+    process; one lowering cold;
     zero lowerings with a filled cache (a cleared memo: a new generation in
     this process); the dry run shares the same way."""
 
@@ -328,8 +330,11 @@ def test_one_preparation_per_recipe_and_one_lowering_per_model(
     planned = _plan(tmp_path / "plan", "induced", tmp_path / "planned")
     assert not planned.unsupported_features
     cold, warm, plan = (memo.counts for memo in spy.memos)
+    # Generation checks every request before the first process
+    # (``loop_service._check_requests``) through the same memo: each slice's
+    # recipe is prepared once and found there again when the slice is built.
     for counts in (cold, warm):
-        assert counts["requests"] == 3 and counts["request_hits"] == 1
+        assert counts["requests"] == 3 and counts["request_hits"] == 3
         assert counts["restrictions"] == 1 and counts["restriction_hits"] == 2
     assert cold["lowerings"] == 1 and cold["program_loads"] == 0
     assert warm["lowerings"] == 0 and warm["program_loads"] == 1
@@ -454,7 +459,9 @@ def test_probe_slices_share_the_preparation(seeded, monkeypatch, tmp_path):
     # Two slices and their probe slices: the probes' recipes are the
     # slices' (zero widths, real masses), so they reuse them.
     assert memo.counts["requests"] == 3
-    assert memo.counts["request_hits"] == 1 + len(received)
+    # The check of every request before the first process found each slice's
+    # recipe again (two hits).
+    assert memo.counts["request_hits"] == 3 + len(received)
     # The Goldstone side hands the memo to its Ward slice.
     seen = []
     monkeypatch.setattr(
