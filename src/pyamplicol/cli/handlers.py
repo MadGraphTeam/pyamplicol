@@ -981,78 +981,13 @@ class DefaultCliServices:
         if not config.process.entries:
             raise ConfigurationError("model processes requires a process request")
 
-        from pyamplicol.processes.conservation import conserved_charges
-        from pyamplicol.processes.model import (
-            ModelParticleCatalog,
-            build_model_process_ir,
-            expand_model_processes,
-        )
+        from pyamplicol.generation.process_listing import list_request_processes
 
-        compiled = _compile_configured_model(config, require_supported=True)
-        charges = conserved_charges(compiled.ir)
-        catalog = ModelParticleCatalog(
-            compiled.ir.name,
-            compiled.ir.particles,
-            compiled.ir.parameters,
+        # The processes a generation of the request stores, from the
+        # generator's own expansion and filters (tree or one loop).
+        return list_request_processes(
+            self._generation_config(config), _process_set(config)
         )
-        multiparticles = {
-            **catalog.default_multiparticles(),
-            **config.process.multiparticles,
-        }
-        # process.max_quark_lines bounds the external quark lines of every
-        # listed process as it bounds generation's (tree and one loop): the
-        # colour triplet-antitriplet pairs with every leg outgoing.
-        max_quark_lines = config.process.max_quark_lines
-        dropped: set[str] = set()
-        entries: dict[str, dict[str, object]] = {}
-        for entry in config.process.entries:
-            request = entry.expression
-            for process in expand_model_processes(
-                request,
-                catalog,
-                multiparticles=multiparticles,
-                charges=charges,
-            ):
-                process_ir = build_model_process_ir(
-                    process,
-                    compiled.ir,
-                    color_accuracy=config.color.accuracy,
-                )
-                if (
-                    max_quark_lines is not None
-                    and process_ir.color_endpoints.pair_count > max_quark_lines
-                ):
-                    dropped.add(process_ir.key)
-                    continue
-                entries.setdefault(
-                    process_ir.key,
-                    {
-                        "key": process_ir.key,
-                        "process": process_ir.process,
-                        "ir": process_ir.to_json_dict(),
-                    },
-                )
-        concrete = list(entries.values())
-        return {
-            "available": True,
-            "model": compiled.name,
-            "model_source": dict(compiled.source),
-            "requests": [entry.expression for entry in config.process.entries],
-            "default_key": concrete[0]["key"] if concrete else None,
-            "n_entries": len(concrete),
-            **(
-                {
-                    "max_quark_lines": max_quark_lines,
-                    "n_dropped_by_max_quark_lines": len(dropped - set(entries)),
-                }
-                if max_quark_lines is not None
-                else {}
-            ),
-            "multiparticles": {
-                name: list(values) for name, values in sorted(multiparticles.items())
-            },
-            "entries": concrete,
-        }
 
     def group_processes(self, config: RunConfig, progress: ProgressSink) -> object:
         if config.evaluation.artifact is None:
