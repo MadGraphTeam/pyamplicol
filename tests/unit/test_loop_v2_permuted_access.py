@@ -41,6 +41,7 @@ from tests.unit.test_loop_v2_mapping import (
     SCALES,
     _generate,
     mapped,  # noqa: F401  (the mapping artifact fixture)
+    open_,  # noqa: F401  (the mapping artifact with open declarations)
 )
 
 pytestmark = pytest.mark.loop_physics
@@ -540,3 +541,133 @@ def test_the_native_sdk_serves_mapped_correlations(mapped):  # noqa: F811
             assert _bitwise(list(loop), want), name
         finally:
             sdk.rusticol_virtual_free(handle)
+
+
+# -- a reference colour order -----------------------------------------------
+
+# (stored process, its spelling, the reference colour order of the card)
+REFERENCED = {
+    "gluon": (("ug", "u g > u g"), ("gu", "g u > g u"), [3, 4, 2, 1]),
+    "quarks": (("du", "d u > d u"), ("ud", "u d > u d"), [3, 1, 4, 2]),
+}
+
+
+@pytest.fixture(scope="module", params=sorted(REFERENCED))
+def referenced(request, loop_sm_compiled_model, loop_native, tmp_path_factory):
+    """At leading colour, a card with ``process.reference_color_order``:
+    the stored process, and the spelling generated on its own with the same
+    card."""
+
+    del loop_native
+    stored_entry, single_entry, order = REFERENCED[request.param]
+    option = f"reference_color_order = {order}"
+    artifacts = [
+        _generate(
+            loop_sm_compiled_model,
+            tmp_path_factory.mktemp(f"referenced-{request.param}-{which}"),
+            (entry,),
+            process=option,
+            histories=[],
+            spin=[],
+            accuracy="lc",
+        )
+        for which, entry in (("stored", stored_entry), ("single", single_entry))
+    ]
+    return (*artifacts, single_entry)
+
+
+def test_a_reference_colour_order_keeps_the_fresh_spellings_ordinals(referenced):
+    """A reference colour order names the legs of the spelling it is written
+    for: a mapped process lists its flows as the spelling generated on its
+    own with the same card does (the plan of that spelling with the card's
+    reference), so every ordinal and every ID selects the flow the fresh
+    artifact's ordinal and ID select (the reference sector first), with its
+    value; the stored spelling keeps its own ordinals."""
+
+    stored, single, (name, spelling) = referenced
+    mapped_, own = _load(stored, spelling), _load(single, name)
+    flows = [a.id for a in mapped_.physics.born_anchored_color_components]
+    assert flows == [a.id for a in own.physics.born_anchored_color_components]
+    scale = _scale(mapped_.evaluate(POINTS, mu_r2=SCALES))
+    for ordinal, flow in enumerate(flows, start=1):
+        for selector in (flow, str(ordinal)):
+            left = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[selector])
+            right = own.evaluate(POINTS, mu_r2=SCALES, color_flows=[selector])
+            _close(left, right, scale, selector)
+        by_id = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[flow])
+        by_ordinal = mapped_.evaluate(POINTS, mu_r2=SCALES, color_flows=[str(ordinal)])
+        assert _numbers(by_id) == _numbers(by_ordinal)
+    stored_name = next(
+        entry[0][0] for entry in REFERENCED.values() if entry[1][1] == spelling
+    )
+    stored_runtime = _load(stored, stored_name)
+    first = stored_runtime.physics.born_anchored_color_components[0].id
+    assert _numbers(
+        stored_runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=["1"])
+    ) == _numbers(stored_runtime.evaluate(POINTS, mu_r2=SCALES, color_flows=[first]))
+
+
+def test_ordinals_no_listing_reproduces_are_refused():
+    """Where the plan of the mapped spelling with the card's reference lists
+    other flows than the stored process's, its ordinals are refused typed,
+    naming the selection by ID (never another flow under a valid ordinal)."""
+
+    from pyamplicol.api.errors import CompatibilityError
+    from pyamplicol.loops.v2.selection import Catalogue, Flow
+
+    flow = Flow("flow:3,1,4,2", (3, 1, 4, 2), 0, 0)
+    catalogue = Catalogue((), (flow,), ordinals=False)
+    assert catalogue.resolve(None, ["flow:3,1,4,2"]) == (None, frozenset({0}))
+    with pytest.raises(CompatibilityError) as error:
+        catalogue.resolve(None, ["1"])
+    assert "select the flow by its ID" in str(error.value)
+
+
+def test_the_native_sdk_refuses_a_spin_source_the_mapped_process_is_not_served(
+    open_,  # noqa: F811
+):
+    """The alias d~ d > g g of d d~ > g g with the spin class (4,) declared
+    is served no spin class (its leg 3 is the stored leg 4): the C ABI
+    lists none and refuses a source on public leg 3 as on public leg 4,
+    before anything is evaluated, as the Python API refuses them."""
+
+    from pyamplicol.api.errors import EvaluationError
+    from pyamplicol.correlators import CorrelatedRequest
+    from tests.unit.test_loop_v2_sdk_extras import (
+        _error,
+        _open,
+        _request,
+        _sdk,
+        _Sources,
+    )
+
+    sdk = _sdk()
+    runtime = _load(open_, "ddx_swap")
+    points = [[[float(c) for c in p] for p in point] for point in POINTS[:1]]
+    exact, mu = _exact(points), [str(Decimal(SCALES[0]))]
+    vector = [(0.5, 0.25), (0.75, -0.125), (0.375, 1.0), (-0.625, 0.5)]
+    handle = _open(sdk, open_, "ddx_swap")
+    try:
+        assert _capabilities(sdk, handle)["spin_correlation_classes"] == []
+        for leg in (3, 4):
+            spin = {leg: tuple((Decimal(re), Decimal(im)) for re, im in vector)}
+            with pytest.raises(EvaluationError):
+                runtime.evaluate_correlated_many(
+                    exact, {"born": CorrelatedRequest("born", spin)}, mu_r2=mu
+                )
+            flat = [x for pair in vector for x in pair]
+            values = (ctypes.c_double * len(flat))(*flat)
+            sources = _Sources((ctypes.c_size_t * 1)(leg), 1, values, len(vector))
+            request, _keep = _request(points, [float(SCALES[0])], False)
+            result = ctypes.c_void_p()
+            status = sdk.rusticol_virtual_evaluate_correlated_with_sources(
+                handle,
+                ctypes.byref(request),
+                ctypes.byref(sources),
+                ctypes.byref(result),
+            )
+            assert status != 0, leg
+            assert not result.value
+            assert f"spin legs [{leg}] are not a declared spin class" in _error(sdk)
+    finally:
+        sdk.rusticol_virtual_free(handle)

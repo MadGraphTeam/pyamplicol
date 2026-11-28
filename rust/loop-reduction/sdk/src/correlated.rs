@@ -224,8 +224,25 @@ impl Runtime {
         }
         .not_run_resolved();
         // The spin legs as the caller names them (a mapped process's own);
-        // the evaluation reads them on the stored process's legs.
+        // the evaluation reads them on the stored process's legs. They must
+        // form a class this handle serves (`spin_correlation_classes`, the
+        // Python API's rule) BEFORE they are relabelled: a mapped process is
+        // served only the declared classes whose image the stored process
+        // stores (`V2Runtime::mapped_correlations`). A leg 0 is left to the
+        // label check below.
         let spin_legs: Vec<usize> = inputs.spin_sources.keys().copied().collect();
+        if !spin_legs.is_empty()
+            && !spin_legs.contains(&0)
+            && !self.spin_classes.iter().any(|class| {
+                let mut class = class.clone();
+                class.sort_unstable();
+                class == spin_legs
+            })
+        {
+            return Err(RusticolError::invalid_argument(format!(
+                "plan v4 runtime: spin legs {spin_legs:?} are not a declared spin class"
+            )));
+        }
         let columns = self.history_columns.clone();
         let (inputs, kinematics) = self.improved_inputs(inputs)?;
         let (momenta, scales) = exact_inputs(&inputs, self.shape.external_count)?;

@@ -578,6 +578,12 @@ class Catalogue:
 
     rows: tuple[rx.Row, ...]
     flows: tuple[Flow, ...]
+    # False for a process served through a leg mapping whose request carries
+    # a reference colour order that no listing reproduces for its spelling
+    # (``V2VirtualRuntime._ordinals_refused``): its flows keep the stored
+    # process's order, which is not the order a single-process artifact of
+    # its own spelling lists them in, so a flow is selected by its ID only.
+    ordinals: bool = True
 
     def resolve(
         self,
@@ -625,6 +631,16 @@ class Catalogue:
             ordinal = int(name, 10)
         except ValueError:
             ordinal = None
+        if not self.ordinals and ordinal is not None and str(ordinal) == name.strip():
+            raise CompatibilityError(
+                f"colour-flow ordinal {name!r} is not available for this process: "
+                "it is served by a stored process through a leg mapping, its "
+                "request carries a reference colour order and the plan of this "
+                "spelling with that reference lists other flows than the stored "
+                "process's, so its flows are not numbered as a single-process "
+                "artifact of this spelling numbers them; select the flow by its ID "
+                "(flow:<word>, physics.born_anchored_color_components)"
+            )
         if ordinal is None or str(ordinal) != name.strip():
             raise EvaluationError(
                 f"unknown colour-flow selector {name!r}; choose a colour-flow "

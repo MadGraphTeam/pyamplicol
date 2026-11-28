@@ -350,8 +350,13 @@ is served by the stored `u G > u G` and `u d > u d` by `d u > d u`.
   and the ordinals that `color_flows=` takes are those of a single-process
   artifact of that spelling. A flow keeps the stored process's Born basis
   element, so the resolved output's colour IDs (`basis-<b>`) are the stored
-  process's. A request with a `reference_color_order` keeps the stored flow
-  order.
+  process's. With a `reference_color_order` the reference names the legs of
+  the spelling it is written for, so the flows are listed as the plan of the
+  mapped spelling with that reference lists them (its reference sector
+  first), as a fresh artifact of that spelling generated with the same card;
+  where that plan lists other flows than the stored process's (a sector
+  cap), the flows keep the stored order and an ordinal is refused
+  (`CompatibilityError`): select them by ID.
 - Every call that takes or returns per-helicity, per-flow or resolved values
   follows: `evaluate(helicities=..., color_flows=...)`,
   `evaluate_resolved(...)` with or without a selection and `evaluate_orders`

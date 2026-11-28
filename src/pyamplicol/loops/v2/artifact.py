@@ -1900,6 +1900,37 @@ class V2VirtualRuntime:
                 for record in compiled.ir.particles
             },
         )
+        # A mapped process of a request with a reference colour order: the
+        # reference names the legs of the spelling it was written for, so a
+        # fresh artifact of the mapped spelling generated with the same card
+        # puts first the sector the reference names on ITS legs. Its flow
+        # order is the tree engine's plan of that spelling with the card's
+        # reference and sector cap (``selection.leading_colour_plan``,
+        # ``plan_flows``: how generation numbers a fresh artifact's flows),
+        # built here from the stored model (``_public_flows``).
+        self._fresh_flow_order: tuple[str, ...] | None = None
+        chosen = execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
+        if (
+            group_member is not None
+            and self._member is not None
+            and self._member.alias
+            and chosen.get("color_order") is not None
+            and physics["metadata"]["color_accuracy"] == "lc"
+        ):
+            from .selection import leading_colour_plan, plan_flows
+
+            try:
+                plan = leading_colour_plan(
+                    compiled,
+                    str(group_member.expression),
+                    max_sectors=chosen.get("max_sectors"),
+                    reference_color_order=tuple(chosen["color_order"]),
+                )
+                self._fresh_flow_order = tuple(
+                    flow.id for flow in plan_flows(plan, None)
+                )
+            except (ValueError, KeyError, TypeError):
+                self._fresh_flow_order = None
         record = self._native_process.record
         self._fixed = dict(record["fixed_parameters"])
         self._prepared_fixed = frozenset(record.get("preparation_fixed_parameters", ()))
@@ -2378,6 +2409,7 @@ class V2VirtualRuntime:
                     member=self._member,
                     mapping=self._mapping,
                     flows=None if self._induced else self._public_flows(),
+                    flow_reference=self._ordinals_refused(),
                     arithmetic=self._load_request[0] or self.default_arithmetic,
                     precision=self._load_request[1],
                     **self._thread_options(),
@@ -2525,12 +2557,40 @@ class V2VirtualRuntime:
         flows = self._flows()
         if self._member is None or not self._member.alias:
             return flows
+        if not self._color_reference():
+            return member_flows(flows, self._member.legs, self._colours)
+        # A reference colour order: the order of the spelling's own plan with
+        # the card's reference (``_fresh_flow_order``), when it lists exactly
+        # these flows; else the stored order, selected by ID only
+        # (``_ordinals_refused``).
+        found = member_flows(flows, self._member.legs, self._colours, keep_order=True)
+        order = self._fresh_flow_order
+        if order is None or sorted(order) != sorted(flow.id for flow in found):
+            return found
+        position = {identifier: k for k, identifier in enumerate(order)}
+        return tuple(sorted(found, key=lambda flow: position[flow.id]))
+
+    def _color_reference(self) -> bool:
+        """Whether the request carries a reference colour order."""
+
         chosen = self._execution["request"].get(OPTIONAL_REQUEST_FIELD) or {}
-        return member_flows(
-            flows,
-            self._member.legs,
-            self._colours,
-            keep_order=chosen.get("color_order") is not None,
+        return chosen.get("color_order") is not None
+
+    def _ordinals_refused(self) -> bool:
+        """Whether a mapped process's flow ordinals are refused: its request
+        carries a reference colour order and the plan of its own spelling
+        with that reference does not list exactly the stored flows (a
+        sector cap or a flow selection that keeps other flows on its legs),
+        so no listing reproduces a fresh artifact's ordinals; flows are then
+        selected by ID (``selection.Catalogue.ordinals``)."""
+
+        if self._member is None or not self._member.alias:
+            return False
+        if not self._color_reference():
+            return False
+        order = self._fresh_flow_order
+        return order is None or sorted(order) != sorted(
+            flow.id for flow in self._public_flows()
         )
 
     def inspect(self) -> Mapping[str, object]:

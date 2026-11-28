@@ -630,6 +630,7 @@ class V2ObservablesRuntime:
         member: Any = None,
         mapping: str | None = None,
         flows: Sequence[Any] | None = None,
+        flow_reference: bool | None = None,
         lanes: int | None = None,
         threads: int | None = None,
     ) -> None:
@@ -645,6 +646,9 @@ class V2ObservablesRuntime:
         # when given (an artifact runtime's ``_public_flows``); None: the
         # observables' own, read on the member's labels (``_member_flows``).
         self._flows = None if flows is None else tuple(flows)
+        # Whether a mapped process's flow ordinals are refused (given with
+        # ``flows`` by an artifact runtime; None: read from the slice).
+        self._flow_reference = flow_reference
         self._executor = executor
         self._native_options = {
             key: value
@@ -1407,8 +1411,24 @@ class V2ObservablesRuntime:
                 rows = tuple(self._observables.rows)
                 if self._member is not None:
                     rows = tuple(sorted(self._member.row(row) for row in rows))
-                self._catalogue = selection.Catalogue(rows, self._member_flows())
+                self._catalogue = selection.Catalogue(
+                    rows, self._member_flows(), ordinals=not self._referenced_member()
+                )
             return self._catalogue
+
+    def _referenced_member(self) -> bool:
+        """Whether a mapped process's flow ordinals are refused (given by an
+        artifact runtime, ``V2VirtualRuntime._ordinals_refused``; a slice's
+        member with a reference colour order keeps the stored order): its
+        flows are then selected by ID only (``Catalogue.ordinals``)."""
+
+        member = self._member
+        if member is None or not member.alias:
+            return False
+        if self._flow_reference is not None:
+            return self._flow_reference
+        chosen = self._observables.slice.request.selection
+        return chosen is not None and chosen.color_order is not None
 
     def _member_flows(self) -> tuple[Any, ...]:
         """The leading-colour flows on the selected process's labels: the

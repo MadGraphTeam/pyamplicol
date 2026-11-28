@@ -429,7 +429,10 @@ for the same selector bit for bit (the kinematics improvement runs in the
 caller's legs, as in Python). The helicity rows are those the Python
 runtime lists (`physics.helicities`); the correlated outputs are the colour
 histories and spin classes the Python runtime serves the mapped process
-(`available_color_correlations()`). `rusticol_virtual_capabilities_json`
+(`available_color_correlations()`); a spin source is accepted only on the
+caller's legs of a class the handle serves (`spin_correlation_classes`),
+checked before the legs are mapped to the stored process.
+`rusticol_virtual_capabilities_json`
 reports `process_id`, `process`, `representative_process_id` and
 `external_permutation` (the caller's leg of each stored leg). A selector
 nothing matches is refused with a selector error.
