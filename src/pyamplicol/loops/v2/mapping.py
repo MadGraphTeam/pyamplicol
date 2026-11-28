@@ -64,6 +64,21 @@ def side_permutation(representative: str, requested: str) -> tuple[int, ...] | N
     return tuple(permutation)
 
 
+def side_class(expression: str) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+    """The selector's equivalence class of a process spelling: each side's
+    tokens, letter-case-insensitively, as a multiset (sorted). Two spellings
+    of one class are side permutations of each other (``side_permutation``,
+    the native ``side_preserving_process_permutation``), so the selectors
+    serve every spelling of a class by its owner (the exact spelling first,
+    else the least displaced permutation); a class with two owners leaves
+    spellings ambiguous. None for a text that is no process."""
+
+    sides = _sides(expression)
+    if sides is None:
+        return None
+    return tuple(sorted(sides[0])), tuple(sorted(sides[1]))
+
+
 def _sides(expression: str) -> list[list[str]] | None:
     parts = expression.split(">")
     if len(parts) != 2:

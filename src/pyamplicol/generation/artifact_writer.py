@@ -18,7 +18,7 @@ from decimal import Decimal
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, BinaryIO, Literal, cast
+from typing import TYPE_CHECKING, BinaryIO, Literal, cast
 
 from pyamplicol.api.errors import CompatibilityError, ProcessIdCollisionError
 from pyamplicol.api.requests import ModelSource
@@ -5514,167 +5514,63 @@ def _validate_append_invariant(
     processes: Sequence[ProcessArtifact],
     process_groups: ProcessGroupMap | None = None,
 ) -> None:
-    """Before anything is written, the one rule of an append, checked on its
-    result: the artifact's resolution table before the append and the one
-    it would have after it, by the runtime's own process selector
-    (``loops.v2.artifact._select``, the mirror of the native selector: ids,
-    alias ids, stored, alias and member expressions in any spelling).
+    """Before anything is written, the one rule of an append, stated on what
+    the selectors serve. A selector serves a public ID, or a spelling of a
+    process by the class it belongs to (``loops.v2.mapping.side_class``:
+    each side's particles as a multiset, any order, any letter case: the
+    native and the Python selector alike), through the class's owner: a
+    stored process (with its aliases, which are spellings of its class) or a
+    process-group member served through a representative.
 
-    The keys are every public ID (process, alias, served process-group
-    member) and every addressable expression (each stored process's, each
-    alias's served spelling, each served member's) of either table. The
-    append is admitted iff (i) every key of the table after it names one
-    owner: an ID one record, alias or member (``_validate_public_process_ids``,
-    run before), an expression one served process (no ambiguity); (ii) every
-    key of the table before it resolves after it to the same owner (nothing
-    that was there changes meaning; an owner is the stored process serving
-    the key and the public ID it is served under); and (iii) no appended
-    process is one the artifact holds already (its incoming and outgoing
-    particles in order), counting the rest of the batch. Else it is refused
-    (``ProcessIdCollisionError``) naming the key. An appended process and
-    its own aliases are one owner."""
+    The append is admitted iff after it (i) every public ID names one owner
+    (``_validate_public_process_ids``, run before) and (ii) every class has
+    one owner: an appended process or served member whose class the artifact
+    already owns, or another appended one owns, is refused
+    (``ProcessIdCollisionError``, naming the class and its owner) before
+    anything is written. Then every spelling and ID that resolved before
+    resolves to the same owner after (no class gains an owner, no ID
+    changes), and nothing after is ambiguous. An appended process and its
+    own aliases are one owner. A fresh generation keeps overlapping requests
+    as requested."""
 
-    from types import SimpleNamespace
+    from pyamplicol.loops.v2.mapping import side_class
 
-    from pyamplicol.api.errors import EvaluationError
-    from pyamplicol.loops.v2.artifact import _select
+    owners: dict[tuple[tuple[str, ...], tuple[str, ...]], str] = {}
 
-    before_records: list[Mapping[str, object]] = [
-        _plain_mapping(record) for record in existing.processes
-    ]
+    def own(expression: object, public_id: str, *, incoming: bool) -> None:
+        key = side_class(str(expression))
+        if key is None:
+            return
+        previous = owners.get(key)
+        if previous is None:
+            owners[key] = public_id
+            return
+        if incoming:
+            raise ProcessIdCollisionError(
+                f"the appended process {str(expression)!r} ({public_id!r}) is "
+                f"already in the artifact as {previous!r} (it is a spelling of "
+                "it: any order of the particles on each side selects it); "
+                "nothing was written. An artifact holds a process once: select "
+                "it by that ID",
+                process_ids=(previous, public_id),
+            )
+
+    for record in existing.processes:
+        own(record.get("expression", ""), str(record["id"]), incoming=False)
     stored_groups = existing.root / PROCESS_GROUPS_PATH
-    before_groups = (
-        ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
-        if stored_groups.is_file()
-        else ProcessGroupMap()
-    )
-    incoming_records: list[Mapping[str, object]] = [
-        {
-            "id": process.process_id,
-            "expression": process.expression,
-            "external_pdgs": [int(pdg) for pdg in process.external_pdgs],
-            "aliases": [dict(alias) for alias in process.aliases],
-        }
-        for process in processes
-    ]
-    after_records: list[Mapping[str, object]] = [*before_records, *incoming_records]
-    after_groups = SimpleNamespace(
-        groups={
-            **dict(before_groups.groups),
-            **(dict(process_groups.groups) if process_groups is not None else {}),
-        }
-    )
-
-    def served_members(groups: Any) -> list[Any]:
-        return [
-            item
-            for representative, group in groups.groups.items()
-            for item in group.members
-            if not item.generated and item.process_id != representative
-        ]
-
-    def keys(records: Sequence[Mapping[str, object]], groups: Any) -> list[str]:
-        found: list[str] = []
-        for record in records:
-            found += [str(record["id"]), str(record["expression"])]
-            for alias in _sequence(record.get("aliases", ())):
-                entry = _mapping(alias)
-                found += [str(entry["id"]), str(entry["expression"])]
-        for item in served_members(groups):
-            found += [item.process_id, item.expression]
-        return list(dict.fromkeys(found))
-
-    def resolve(
-        records: Sequence[Mapping[str, object]], groups: Any, key: str
-    ) -> tuple[str, str] | str:
-        manifest = SimpleNamespace(processes=tuple(records), default_process_id=None)
-        try:
-            record, member = _select(manifest, key, groups=groups, any_basis=True)
-        except EvaluationError as error:
-            return str(error)
-        return str(record["id"]), (
-            str(member.process_id) if member is not None else str(record["id"])
-        )
-
-    def refuse(reason: str, key: str) -> None:
-        raise ProcessIdCollisionError(
-            f"this append would leave {key!r} {reason}; nothing was written. An "
-            "append keeps what every public process ID and expression of the "
-            "artifact selects, and adds only processes it does not hold",
-            process_ids=(key,),
-        )
-
-    # (iii) an artifact holds a process once (any spelling).
-    held: dict[tuple[tuple[int, ...], tuple[int, ...]], str] = {}
-    for record in before_records:
-        held.setdefault(
-            _process_identity(
-                _sequence(record.get("external_pdgs", ())), record.get("expression", "")
-            ),
-            str(record["id"]),
-        )
-        for alias in _sequence(record.get("aliases", ())):
-            entry = _mapping(alias)
-            held.setdefault(
-                _process_identity(
-                    _sequence(entry.get("external_pdgs", ())),
-                    entry.get("expression", ""),
-                ),
-                str(entry["id"]),
-            )
-    for item in served_members(before_groups):
-        held.setdefault(_split_identity(item.pdgs, item.initial_count), item.process_id)
-    appended = [
-        (
-            _process_identity(process.external_pdgs, process.expression),
-            process.process_id,
-        )
-        for process in processes
-    ] + [
-        (_split_identity(item.pdgs, item.initial_count), item.process_id)
-        for item in (served_members(process_groups) if process_groups else [])
-    ]
-    for identity, public_id in appended:
-        found = held.get(identity)
-        held.setdefault(identity, public_id)
-        if found is not None:
-            refuse(f"naming a process already in the artifact as {found!r}", public_id)
-    # (i) one owner per expression, after the append (per public ID:
-    # ``_validate_public_process_ids``, run before).
-    after_keys = keys(after_records, after_groups)
-    resolved_after = {
-        key: resolve(after_records, after_groups, key) for key in after_keys
-    }
-    for key, outcome in resolved_after.items():
-        if isinstance(outcome, str):
-            refuse(f"unresolvable ({outcome})", key)
-    # (ii) every key of before resolves to the same owner after.
-    for key in keys(before_records, before_groups):
-        before = resolve(before_records, before_groups, key)
-        if isinstance(before, str):
-            continue  # already unresolvable: an append does not repair it
-        after = resolved_after.get(key, resolve(after_records, after_groups, key))
-        if after != before:
-            refuse(
-                f"selecting {after!r} instead of {before!r} (record, public ID)",
-                key,
-            )
-
-
-def _split_identity(
-    pdgs: Sequence[object], initial_count: int
-) -> tuple[tuple[int, ...], tuple[int, ...]]:
-    codes = tuple(int(cast(int, pdg)) for pdg in pdgs)
-    return codes[:initial_count], codes[initial_count:]
-
-
-def _process_identity(
-    pdgs: Sequence[object], expression: object
-) -> tuple[tuple[int, ...], tuple[int, ...]]:
-    """A process's incoming and outgoing PDG codes, in order: its PDGs
-    split where its expression's arrow is."""
-
-    return _split_identity(pdgs, len(str(expression).partition(">")[0].split()))
+    if stored_groups.is_file():
+        group_map = ProcessGroupMap.from_json(stored_groups.read_text(encoding="utf-8"))
+        for representative, group in group_map.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    own(item.expression, item.process_id, incoming=False)
+    for process in processes:
+        own(process.expression, process.process_id, incoming=True)
+    if process_groups is not None:
+        for representative, group in process_groups.groups.items():
+            for item in group.members:
+                if not item.generated and item.process_id != representative:
+                    own(item.expression, item.process_id, incoming=True)
 
 
 def _reject_legacy_eager_append(existing: ArtifactManifest) -> None:
